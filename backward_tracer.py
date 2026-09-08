@@ -163,9 +163,9 @@ def trace_dependenciesbackward(source_file, func_name, return_line):
                 variables = _extract_variables(m.group(1))
 
         # Function call: might be an assignment  ret = func(...)
-        elif re.match(r'\w[\w->.\[\]]*\s*=\s*\w+\s*\(', stripped):
+        elif re.match(r'\w[\w.\[\]>-]*\s*=\s*\w+\s*\(', stripped):
             kind = 'call'
-            m = re.match(r'([\w->.\[\]]+)\s*=\s*(\w+)\s*\(([^)]*)\)', stripped)
+            m = re.match(r'([\w.\[\]>-]+)\s*=\s*(\w+)\s*\(([^)]*)\)', stripped)
             if m:
                 variables = [m.group(1)]  # LHS variable
             else:
