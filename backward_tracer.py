@@ -234,68 +234,112 @@ def _extract_variables(expr):
 def _extract_function_body(code, func_name):
     """Extract the body of a function from source code.
 
-    Brace-matching skips braces inside comments (``//``, ``/* */``), string
-    literals (``"``), and character literals (``'``) so a stray ``{``/``}`` in a
-    comment or string does not corrupt the scope tracking.
+    Brace-matching skips braces inside comments, strings, char literals, and
+    preprocessor conditionals (``#if``/``#else``/``#endif``): for a conditional
+    only the *then* branch's braces are counted, so an ``{`` duplicated across
+    ``#if``/``#else`` branches (common in libtiff) does not corrupt scope
+    tracking.
     """
     pattern = rf'(?:static\s+)?(?:\w+\s+)*\b{re.escape(func_name)}\s*\([^)]*\)\s*\{{'
     m = re.search(pattern, code, re.DOTALL)
     if not m:
         return None
 
-    # The opening brace is the last character matched by the pattern.
-    start = m.end() - 1
+    start = m.end() - 1  # position of the opening brace
+    lines = code.split('\n')
+    start_line = code[:start].count('\n')  # 0-indexed line holding '{'
+
+    # Preprocessor state: for each nested conditional, are we in the
+    # "then" branch (count braces) or "skip" branch (ignore braces)?
+    pp_stack = []  # values: 'then' or 'skip'
+
     depth = 0
-    i = start
-    n = len(code)
+    i = start_line
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.lstrip()
+
+        if stripped.startswith('#'):
+            directive = stripped[1:].strip()
+            if directive.startswith('if'):
+                pp_stack.append('then')
+            elif directive.startswith(('else', 'elif')):
+                if pp_stack:
+                    pp_stack[-1] = 'skip'
+            elif directive.startswith('endif'):
+                if pp_stack:
+                    pp_stack.pop()
+            i += 1
+            continue
+
+        if pp_stack and pp_stack[-1] == 'skip':
+            i += 1
+            continue
+
+        # For the opening-brace line, only count braces AFTER the '{'.
+        seg = line
+        if i == start_line:
+            col = start - code[:start].rfind('\n') - 1
+            seg = line[col:]
+
+        depth += _count_braces_in_segment(seg)
+
+        if depth == 0 and i != start_line:
+            return '\n'.join(lines[start_line:i + 1])
+
+        i += 1
+
+    return None
+
+
+def _count_braces_in_segment(seg):
+    """Count ``{`` (as +1) and ``}`` (as -1) in a code segment, skipping
+    comments, strings, and char literals."""
+    delta = 0
+    i = 0
+    n = len(seg)
     while i < n:
-        c = code[i]
-        nxt = code[i + 1] if i + 1 < n else ''
+        c = seg[i]
+        nxt = seg[i + 1] if i + 1 < n else ''
         if c == '/' and nxt == '/':
-            # line comment: skip to end of line
             i += 2
-            while i < n and code[i] != '\n':
+            while i < n and seg[i] != '\n':
                 i += 1
             continue
         if c == '/' and nxt == '*':
-            # block comment: skip to closing */
             i += 2
-            while i < n and not (code[i] == '*' and i + 1 < n and code[i + 1] == '/'):
+            while i < n and not (seg[i] == '*' and i + 1 < n and seg[i + 1] == '/'):
                 i += 1
             i += 2
             continue
         if c == '"':
-            # string literal
             i += 1
             while i < n:
-                if code[i] == '\\':
+                if seg[i] == '\\':
                     i += 2
                     continue
-                if code[i] == '"':
+                if seg[i] == '"':
                     i += 1
                     break
                 i += 1
             continue
         if c == "'":
-            # character literal
             i += 1
             while i < n:
-                if code[i] == '\\':
+                if seg[i] == '\\':
                     i += 2
                     continue
-                if code[i] == "'":
+                if seg[i] == "'":
                     i += 1
                     break
                 i += 1
             continue
         if c == '{':
-            depth += 1
+            delta += 1
         elif c == '}':
-            depth -= 1
-            if depth == 0:
-                return code[start:i + 1]
+            delta -= 1
         i += 1
-    return None
+    return delta
 
 
 def _find_function_source(func_name, source_dirs):
@@ -335,13 +379,19 @@ def _extract_callee(statement):
     """Extract the called function name from an assignment statement.
 
     Handles ``var = Callee(...)``, ``var = Callee(...)`` with casts, and
-    multi-line calls. Returns the callee name or None.
+    multi-line calls. Returns the callee name or None.  Skips C keywords
+    (``sizeof``, ``if``, ``while``, ``for``, ``switch``, ``return``) which are
+    operators/control-flow, not function calls.
     """
     if not statement:
         return None
     m = re.search(r'=\s*(?:\([^)]*\)\s*)?(\w+)\s*\(', statement)
     if m:
-        return m.group(1)
+        name = m.group(1)
+        if name in ('sizeof', 'if', 'while', 'for', 'switch', 'return',
+                    'goto', 'case'):
+            return None
+        return name
     return None
 
 
