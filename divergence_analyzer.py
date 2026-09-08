@@ -249,28 +249,14 @@ def _semantic_pair_added_guard(callee_a, callee_b, source_dirs_a, source_dirs_b)
     candidates.sort(reverse=True)
     score, i, s = candidates[0]
 
-    # Locate the *target* (4.0.8) counterpart statement at the fork call site.
-    # The fork is in the *caller* (TIFFFetchStripThing), not inside the callee
-    # (TIFFReadDirEntryArray).  The caller calls different callees in the two
-    # versions.  We extract variables from the caller's call statement.
-    #
-    # E.g. for the added `datasize > tif_size` guard, the fork call site is:
-    #   4.4.0: err=TIFFReadDirEntryLong8ArrayWithLimit(tif,dir,&data,nstrips);
-    #   4.0.8: err=TIFFReadDirEntryLong8Array(tif,dir,&data);
-    # Variables to trace: dir, nstrips, tif, data.
+    # The fork call site (in the caller) is located by _locate_fork_call_site,
+    # not here.  We don't search for a target statement inside the callee —
+    # the callee is identical in both versions; the fork is in the caller.
+    # target_statement / target_vars are set by _locate_semantic_enhancement_divergence
+    # using the call_stmt_b from _locate_fork_call_site.
     target_line = None
     target_statement = None
     target_vars = []
-    head_b = code_b[:code_b.find(body_b)] if body_b in code_b else ''
-    body_b_start = head_b.count('\n') + 1
-    # Find the call to callee_b in the target function body.
-    for j, bline in enumerate(body_b.splitlines()):
-        bs = bline.strip()
-        if callee_b and callee_b in bs and '(' in bs:
-            target_line = body_b_start + j
-            target_statement = bs
-            target_vars = _extract_variables_from_expression(bs)
-            break
 
     return {
         'file': file_a,
