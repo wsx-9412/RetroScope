@@ -272,9 +272,9 @@ def compare_return_values(binary_a, binary_b, func_name,
                           timeout=120):
     """Compare return values of func_name between two versions.
 
-    Uses 'finish' command to run to function return, then reads $rax.
+    Uses GDB Python scripting to run to function return and capture $rax.
 
-    Returns: dict with return_line_a/b, val_a/b, condition_a/b or None
+    Returns: dict with val_a/b, condition_a/b, return_line_a/b, etc. or None
     """
     returns_a = find_return_statements(source_a, func_name)
     returns_b = find_return_statements(source_b, func_name)
@@ -285,14 +285,27 @@ def compare_return_values(binary_a, binary_b, func_name,
     env_a = _make_env(lib_path_a)
     env_b = _make_env(lib_path_b)
 
-    # Break at function entry, finish to get return value
+    run_args = _gdb_run_args(input_file)
+
+    # GDB Python script: break at func, run to return, capture $rax
+    script = f"""set pagination off
+set confirm off
+set env ASAN_OPTIONS=detect_leaks=0
+break {func_name}
+run {run_args}
+finish
+print $rax
+"""
+
+    out_a = run_gdb_batch(binary_a, ['-batch', '-ex', script.replace('\n', '\n-ex ')],
+                          env=env_a, timeout=timeout)
+    # Simpler: use sequential -ex commands
     cmds = [
         f'break {func_name}',
-        f'run {_gdb_run_args(input_file)}',
+        f'run {run_args}',
         'finish',
         'print $rax',
     ]
-
     out_a = run_gdb_batch(binary_a, cmds, env=env_a, timeout=timeout)
     val_a = _parse_rax(out_a)
 
@@ -300,7 +313,6 @@ def compare_return_values(binary_a, binary_b, func_name,
     val_b = _parse_rax(out_b)
 
     if val_a is not None and val_b is not None and val_a != val_b:
-        # Find which return statement matches each value
         ret_a = _find_matching_return(returns_a, val_a)
         ret_b = _find_matching_return(returns_b, val_b)
         return {
