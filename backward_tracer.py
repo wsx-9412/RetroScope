@@ -730,8 +730,7 @@ def _find_fork_recursive(func_name, binary_a, binary_b, src_dir_a, src_dir_b,
     src_a = _find_function_source(func_name, src_dir_a)
     src_b = _find_function_source(func_name, src_dir_b)
     if not src_a or not src_b:
-        print(f"{indent}  Source not found for {func_name} "
-              f"(a={src_a}, b={src_b})")
+        print(f"{indent}  Source not found for {func_name}")
         return {'status': 'source_not_found', 'func': func_name}
 
     # 2. Compare return values
@@ -740,7 +739,7 @@ def _find_fork_recursive(func_name, binary_a, binary_b, src_dir_a, src_dir_b,
         input_file, run_args, lib_path_a, lib_path_b, timeout
     )
     if not ret:
-        print(f"{indent}  Return values equal (or not found) — not the fork")
+        print(f"{indent}  Return values equal — not the fork")
         return {'status': 'no_return_difference', 'func': func_name}
 
     print(f"{indent}  Return values DIFFER:")
@@ -755,43 +754,52 @@ def _find_fork_recursive(func_name, binary_a, binary_b, src_dir_a, src_dir_b,
         'return_line_b': ret['return_line_b'],
     })
 
-    # 3. Trace backward from the return statement
-    deps_a = trace_dependenciesbackward(src_a, func_name, ret['return_line_a'])
-    deps_b = trace_dependenciesbackward(src_b, func_name, ret['return_line_b'])
+    # 3. Collect candidate callees that may determine the return value:
+    #    (a) function calls inside return conditions, and
+    #    (b) function calls that assign to the returned variable.
+    candidates = []
+    returns_a = find_return_statements(src_a, func_name)
+    for r in returns_a:
+        if r.get('condition'):
+            candidates.extend(_extract_calls_from_expression(r['condition']))
 
-    # 4. Find the callee that determines the return value
-    #    Look for the assignment right before the return that sets the returned
-    #    variable via a function call.
-    callee = None
+    deps_a = trace_dependenciesbackward(src_a, func_name, ret['return_line_a'])
     for dep in deps_a:
         if dep['kind'] in ('call', 'assignment'):
             c = _extract_callee(dep['statement'])
-            if c and c != func_name:
-                callee = c
-                print(f"{indent}  Return value comes from callee: {c} "
-                      f"(via '{dep['statement'].strip()}')")
-                break
+            if c:
+                candidates.append(c)
 
-    if callee and depth < max_depth:
-        # Recurse into the callee
-        sub = _find_fork_recursive(
-            callee, binary_a, binary_b, src_dir_a, src_dir_b,
-            input_file, run_args, lib_path_a, lib_path_b, timeout,
-            depth + 1, max_depth, chain
-        )
-        if sub.get('status') in ('found', 'fork_condition'):
-            return sub
-        # Callee didn't produce a clear fork; report this level's info
-        return {
-            'status': 'partial',
-            'func': func_name,
-            'return_diff': ret,
-            'callee': callee,
-            'sub_result': sub,
-        }
+    seen = set()
+    unique_candidates = []
+    for c in candidates:
+        if c and c != func_name and c not in seen:
+            seen.add(c)
+            unique_candidates.append(c)
 
-    # 5. No further callee: the fork is at this function's condition/assignment
-    #    Find the first dependency with a condition or differing variables
+    print(f"{indent}  Candidate callees: {unique_candidates}")
+
+    # 4. For each candidate, check if its return value also differs.
+    if depth < max_depth:
+        for callee in unique_candidates:
+            callee_src_a = _find_function_source(callee, src_dir_a)
+            callee_src_b = _find_function_source(callee, src_dir_b)
+            if not callee_src_a or not callee_src_b:
+                continue
+            sub_ret = compare_return_values(
+                binary_a, binary_b, callee, callee_src_a, callee_src_b,
+                input_file, run_args, lib_path_a, lib_path_b, timeout
+            )
+            if sub_ret:
+                print(f"{indent}  -> {callee} return value also differs; recursing")
+                return _find_fork_recursive(
+                    callee, binary_a, binary_b, src_dir_a, src_dir_b,
+                    input_file, run_args, lib_path_a, lib_path_b, timeout,
+                    depth + 1, max_depth, chain
+                )
+
+    # 5. No callee with a differing return value: the fork is a
+    #    variable comparison/assignment in this function.
     fork_dep = None
     for dep in deps_a:
         if dep['kind'] == 'condition':
@@ -800,7 +808,8 @@ def _find_fork_recursive(func_name, binary_a, binary_b, src_dir_a, src_dir_b,
     if not fork_dep and deps_a:
         fork_dep = deps_a[0]
 
-    print(f"{indent}  FORK at {func_name}: {fork_dep['statement'].strip() if fork_dep else '?'}")
+    print(f"{indent}  FORK at {func_name}: "
+          f"{fork_dep['statement'].strip() if fork_dep else '?'}")
     return {
         'status': 'found',
         'func': func_name,
