@@ -367,11 +367,24 @@ def _find_function_source(func_name, source_dirs):
                     matches.append(str(path))
     if not matches:
         return None
+
+    # Prefer the main library directory over auxiliary trees.  libtiff keeps
+    # duplicate function definitions under contrib/ (e.g. TIFFFetchStripThing
+    # in contrib/pds/tif_pdsdirread.c) that are NOT the compiled variant, so a
+    # naive rglob can pick the wrong file.
+    def _rank(p):
+        pl = p.lower()
+        if 'contrib' in pl or 'tools' in pl or 'test' in pl or 'utils' in pl:
+            return 2
+        if 'libtiff' in pl:
+            return 0
+        return 1
+
     # Prefer non-win32 files on Linux (they are the compiled variant)
     if os.name != 'nt':
-        preferred = [p for p in matches if 'win32' not in p.lower()]
-        if preferred:
-            return preferred[0]
+        matches = [p for p in matches if 'win32' not in p.lower()] or matches
+
+    matches.sort(key=_rank)
     return matches[0]
 
 
