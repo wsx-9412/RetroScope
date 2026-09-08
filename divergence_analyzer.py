@@ -5230,6 +5230,14 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 pt_vars = fork_vars
                 pt_func = sem.get("caller") or sem["callee_a"]
 
+            # Prefer the input-read statement as the fork statement (it reads
+            # the divergent value from the input); the derived computation is a
+            # secondary detail.
+            if input_reads:
+                read = input_reads[0]
+                fork_stmt = read["statement"]
+                fork_stmt_line = read["line"]
+
             result = {
                 "divergence_function": func_name,
                 "trace_a_index": a_idx,
