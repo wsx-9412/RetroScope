@@ -256,17 +256,15 @@ def _semantic_pair_added_guard(callee_a, callee_b, source_dirs_a, source_dirs_b)
     # datasize.
     #
     # We collect ALL assignment statements in the target function body that
-    # contain variable-like expressions (not just hardcoded names like
-    # `tdir_count`), because the input-derived value could come from any
-    # variable.  PolyTracker will later trace each variable back to its input
-    # file origin.
+    # contain variable-like expressions, because the input-derived value could
+    # come from any variable.  PolyTracker will later trace each variable back
+    # to its input file origin.
     target_line = None
     target_statement = None
     target_vars = []
     head_b = code_b[:code_b.find(body_b)] if body_b in code_b else ''
     body_b_start = head_b.count('\n') + 1
-    # Collect all candidate assignments: prefer assignments (where the raw input
-    # value enters the computation) over guards (`if (...)`).
+    # Collect all candidate assignments with extractable variables.
     candidates = []
     fallback = None
     for j, bline in enumerate(body_b.splitlines()):
@@ -287,18 +285,15 @@ def _semantic_pair_added_guard(callee_a, callee_b, source_dirs_a, source_dirs_b)
 
     # Pick the best candidate: prefer assignments whose LHS variable matches a
     # variable used in the guard's condition (e.g. `datasize = ...` when the
-    # guard checks `datasize > tif_size`).  Fall back to the first assignment
-    # with extractable variables.
+    # guard checks `datasize > tif_size`).  This is the statement where the
+    # raw input value enters the computation that the guard checks.
     guard_vars = set(_extract_variables_from_expression(s))
     best = None
     for line_no, stmt, vars_in in candidates:
-        # Extract LHS of assignment
         eq_pos = stmt.find('=')
         if eq_pos > 0:
             lhs = stmt[:eq_pos].strip().lstrip('*').strip()
-            # Strip casts like (uint32)
-            import re as _re
-            lhs = _re.sub(r'\([^)]*\)\s*$', '', lhs).strip()
+            lhs = re.sub(r'\([^)]*\)\s*$', '', lhs).strip()
             if lhs in guard_vars:
                 best = (line_no, stmt, vars_in)
                 break
