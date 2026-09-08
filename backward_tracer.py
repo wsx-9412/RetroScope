@@ -232,21 +232,70 @@ def _extract_variables(expr):
 
 
 def _extract_function_body(code, func_name):
-    """Extract the body of a function from source code."""
+    """Extract the body of a function from source code.
+
+    Brace-matching skips braces inside comments (``//``, ``/* */``), string
+    literals (``"``), and character literals (``'``) so a stray ``{``/``}`` in a
+    comment or string does not corrupt the scope tracking.
+    """
     pattern = rf'(?:static\s+)?(?:\w+\s+)*\b{re.escape(func_name)}\s*\([^)]*\)\s*\{{'
     m = re.search(pattern, code, re.DOTALL)
     if not m:
         return None
+
+    # The opening brace is the last character matched by the pattern.
     start = m.end() - 1
-    depth = 1
-    i = start + 1
-    while i < len(code) and depth > 0:
-        if code[i] == '{':
+    depth = 0
+    i = start
+    n = len(code)
+    while i < n:
+        c = code[i]
+        nxt = code[i + 1] if i + 1 < n else ''
+        if c == '/' and nxt == '/':
+            # line comment: skip to end of line
+            i += 2
+            while i < n and code[i] != '\n':
+                i += 1
+            continue
+        if c == '/' and nxt == '*':
+            # block comment: skip to closing */
+            i += 2
+            while i < n and not (code[i] == '*' and i + 1 < n and code[i + 1] == '/'):
+                i += 1
+            i += 2
+            continue
+        if c == '"':
+            # string literal
+            i += 1
+            while i < n:
+                if code[i] == '\\':
+                    i += 2
+                    continue
+                if code[i] == '"':
+                    i += 1
+                    break
+                i += 1
+            continue
+        if c == "'":
+            # character literal
+            i += 1
+            while i < n:
+                if code[i] == '\\':
+                    i += 2
+                    continue
+                if code[i] == "'":
+                    i += 1
+                    break
+                i += 1
+            continue
+        if c == '{':
             depth += 1
-        elif code[i] == '}':
+        elif c == '}':
             depth -= 1
+            if depth == 0:
+                return code[start:i + 1]
         i += 1
-    return code[start:i]
+    return None
 
 
 def _find_function_source(func_name, source_dirs):
