@@ -5177,6 +5177,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
             # but PolyTracker instruments the target (callee_b).  Find where the
             # guard's local variable is assigned in the target and instrument
             # there, so the taint traces to the exact input bytes.
+            target_sites = []
             try:
                 import backward_tracer as _bt
                 guard_vars = _bt._extract_variables(sem.get("statement", ""))
@@ -5188,14 +5189,23 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                     print(f"  [semantic-fork] target read site: "
                           f"{site['variable']} @ "
                           f"{os.path.basename(site['file'])}:{site['line']}")
-                    result["poly_track_file"] = site["file"]
-                    result["poly_track_line"] = site["line"]
-                    result["poly_track_statement"] = site["statement"]
-                    result["poly_track_function"] = sem["callee_b"]
-                    result["variables"] = [s["variable"] for s in target_sites]
-                    result["target_sites"] = target_sites
             except Exception as _e:
                 print(f"  [semantic-fork] target-site mapping failed: {_e}")
+
+            # Prefer the guard's target read site for PolyTracker; fall back to
+            # the fork call site if no local variable could be mapped.
+            if target_sites:
+                pt_file = target_sites[0]["file"]
+                pt_line = target_sites[0]["line"]
+                pt_stmt = target_sites[0]["statement"]
+                pt_vars = [s["variable"] for s in target_sites]
+                pt_func = sem["callee_b"]
+            else:
+                pt_file = call_file_b
+                pt_line = call_line_b
+                pt_stmt = call_stmt_b
+                pt_vars = fork_vars
+                pt_func = sem.get("caller") or sem["callee_a"]
 
             result = {
                 "divergence_function": func_name,
