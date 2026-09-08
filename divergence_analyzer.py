@@ -4935,6 +4935,94 @@ def _run_backward_tracer(func_name, binary_a, binary_b, source_dirs_a,
     return result
 
 
+def _find_last_common_entry_function(matches):
+    """Return the outermost (entry) function of the last LCS match.
+
+    This is the last common function both versions were inside when the traces
+    diverged (e.g. ``TIFFOpen``), the correct starting point for the backward
+    tracer.
+    """
+    if not matches:
+        return None
+    last_match = matches[-1]
+    funcs = last_match.get("functions", [])
+    if not funcs:
+        return None
+    outermost = min(funcs, key=lambda f: f.get("depth", 999))
+    return outermost.get("name")
+
+
+def _build_result_from_backward_tracer(bt_result, func_name, a_idx, b_idx):
+    """Build a divergence result dict from the backward tracer's output.
+
+    The backward tracer reports the fork statement (the input-read statement in
+    the *target* version) plus the guard (root cause, reference-only) and the
+    input-read sites.  This assembles them into the fields the downstream steps
+    (trace_fork_offsets.py, polytracker_offsets.py) expect.
+    """
+    import backward_tracer as bt
+
+    guard = bt_result.get("guard") or {}
+    input_reads = bt_result.get("input_reads") or []
+    target_sites = bt_result.get("target_sites") or []
+
+    # PolyTracker instrumentation: prefer the input-read site (reads the fork
+    # variable from the input bytes), else the target read site.
+    if input_reads:
+        read = input_reads[0]
+        pt_file = read["file"]
+        pt_line = read["line"] + 1  # instrument AFTER the read
+        pt_stmt = read["statement"]
+        pt_vars = [read["variable"]]
+        pt_func = bt._find_function_containing_line(read["file"], read["line"])
+    elif target_sites:
+        site = target_sites[0]
+        pt_file = site["file"]
+        pt_line = site["line"]
+        pt_stmt = site["statement"]
+        pt_vars = [s["variable"] for s in target_sites]
+        pt_func = bt_result.get("func_a")
+    else:
+        pt_file = pt_line = pt_stmt = pt_func = None
+        pt_vars = []
+
+    fork_stmt = bt_result.get("fork_statement")
+    guard_stmt = guard.get("statement") or ""
+    chain = bt_result.get("chain") or []
+    chain_desc = " -> ".join(c.get("func", "?") for c in chain)
+
+    result = {
+        "divergence_function": func_name,
+        "trace_a_index": a_idx,
+        "trace_b_index": b_idx,
+        "root_cause_function": bt_result.get("func_b") or func_name,
+        "root_cause_file": guard.get("file"),
+        "root_cause_line": guard.get("line"),
+        "fork_statement": fork_stmt,
+        "fork_statement_line": bt_result.get("fork_line"),
+        "fork_variables": bt_result.get("fork_variables") or [],
+        "input_reads": input_reads,
+        "target_sites": target_sites,
+        "guard": guard_stmt,
+        "backward_chain": chain,
+        "semantic_fork": True,
+        "backward_trace": bt_result,
+        "description": (
+            f"Divergence function: {func_name}\n"
+            f"Backward tracer chain: {chain_desc}\n"
+            f"Fork statement (target, input read): {fork_stmt}\n"
+            f"Root cause guard (reference only): {guard_stmt}"
+        ),
+    }
+    if pt_file:
+        result["poly_track_function"] = pt_func
+        result["poly_track_file"] = pt_file
+        result["poly_track_line"] = pt_line
+        result["poly_track_statement"] = pt_stmt
+        result["variables"] = pt_vars
+    return result
+
+
 def analyze_lcs_result(result_json_path, binary_a, binary_b,
                         args_a=None, args_b=None, input_file=None,
                         gdb_timeout=120, refactoring_map=None,
