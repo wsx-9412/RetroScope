@@ -221,14 +221,23 @@ def _extract_variables(expr):
     # Remove function calls (identifiers followed by '(') so we keep variables
     expr = re.sub(r'\b[A-Za-z_]\w*\s*\(', '', expr)
     # Find member access chains like direntry->tdir_count / tif->tif_size
-    chains = re.findall(r'\b\w+(?:->|\.)\w+(?:->|\.)\w*\b', expr)
-    # Find bare identifiers
+    chains = re.findall(r'\b\w+(?:->|\.)\w+\b', expr)
+    # Find bare identifiers (lowercase or _-prefixed, excluding type names)
     bare = re.findall(r'\b([a-z_]\w*)\b', expr)
     keywords = {'if', 'else', 'while', 'for', 'do', 'return', 'sizeof', 'null',
                 'true', 'false', 'static', 'const', 'void', 'int', 'uint8',
                 'uint16', 'uint32', 'uint64', 'char', 'unsigned', 'signed',
                 'long', 'short', 'float', 'double', 'struct', 'enum'}
-    result = list(chains) + [v for v in bare if v not in keywords]
+    # Filter out type names ending in _t (uint64_t, uint32_t, size_t, ...)
+    bare = [v for v in bare
+            if v not in keywords and not v.endswith('_t')]
+    # Drop bare identifiers already captured inside a chain
+    chained = set()
+    for c in chains:
+        for part in re.split(r'->|\.', c):
+            chained.add(part)
+    bare = [v for v in bare if v not in chained]
+    result = list(chains) + bare
     return result
 
 
