@@ -1135,11 +1135,40 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
     for callee, line, stmt in _extract_assign_calls(src_a, func_name_a):
         candidates.append(callee)
 
-    # 3b. If this is a semantic pair (different names), diff the bodies to find
-    #     a guard added in B — that is the fork statement directly.  If the
-    #     added statement is instead a call to a semantic variant, recurse into
-    #     that variant pair (the guard is one level deeper).
+    # 3b. If this is a semantic pair (different names), diff the bodies:
+    #     (a) find the FIRST variable whose value differs (same LHS, different
+    #         RHS) — its assignment in the target is the fork statement; or
+    #     (b) if the added statement is a call to a semantic variant, recurse
+    #         into that pair (the guard is one level deeper).
     if func_name_a != func_name_b:
+        diff = _find_assign_diff(src_a, func_name_a, src_b, func_name_b)
+        if diff:
+            # The first variable whose value differs is `diff['var']` (e.g.
+            # *count).  Its assignment in the TARGET version is the fork
+            # statement; the RHS member access (e.g. direntry->tdir_count) is
+            # what traces to the input bytes.
+            fork_statement = diff['statement_a']
+            fork_line = diff['line_a']
+            fork_variables = _extract_variables(fork_statement)
+            input_variables = [v for v in fork_variables if '->' in v or '.' in v]
+            print(f"{indent}  First differing variable: '{diff['var']}' "
+                  f"(A: '{diff['statement_a']}' vs B: '{diff['statement_b']}')")
+            print(f"{indent}  Fork statement (target {func_name_a}): "
+                  f"'{fork_statement}' (line {fork_line})")
+            print(f"{indent}  Input-derived variables: {input_variables}")
+            return {
+                'status': 'found',
+                'func': label,
+                'func_a': func_name_a,
+                'func_b': func_name_b,
+                'fork_statement': fork_statement,
+                'fork_line': fork_line,
+                'fork_variables': fork_variables,
+                'input_variables': input_variables,
+                'assign_diff': diff,
+                'return_diff': ret,
+            }
+
         guard = _find_added_guard(src_a, func_name_a, src_b, func_name_b)
         if guard:
             stmt = guard['statement']
@@ -1159,55 +1188,14 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                             )
             print(f"{indent}  Added guard in B: '{stmt}' "
                   f"(line {guard['line']})")
-            # The guard lives ONLY in the reference (new) version, so it is the
-            # *root cause*, NOT the fork statement.  The fork statement is the
-            # TARGET's (old) statement that computes the guard's variable — that
-            # statement exists in BOTH versions and is where the paths diverge.
-            # Map the guard variables to the target's statement and trace its
-            # variables backward to the input-derived sources.
-            target_sites = _map_fork_vars_to_target(
-                guard['variables'], func_name_a, src_a)
-            fork_statement = None
-            fork_line = None
-            fork_variables = []
-            input_reads = []
-            if target_sites:
-                site = target_sites[0]
-                fork_statement = site['statement']
-                fork_line = site['assignment_line']
-                fork_variables = _extract_variables(fork_statement)
-                # Follow the fork variable's data flow back to the statement
-                # that actually reads it from the input file.
-                input_reads = _trace_to_input_variables(
-                    src_a, func_name_a, site['assignment_line'],
-                    source_dirs=src_dir_a)
-                if input_reads:
-                    read = input_reads[0]
-                    # The real fork statement is the INPUT READ (present in both
-                    # versions); the derived computation is just a consequence.
-                    fork_statement = read['statement']
-                    fork_line = read['line']
-                    fork_variables = [read['variable']]
-                    print(f"{indent}  Fork statement (input read, target): "
-                          f"'{fork_statement}' "
-                          f"({os.path.basename(read['file'])}:{read['line']})")
-                else:
-                    print(f"{indent}  Fork statement (target {func_name_a}): "
-                          f"'{fork_statement}' (line {fork_line})")
-            else:
-                fork_statement = stmt
-                fork_line = guard['line']
-                fork_variables = guard['variables']
             return {
                 'status': 'found',
                 'func': label,
                 'func_a': func_name_a,
                 'func_b': func_name_b,
-                'fork_statement': fork_statement,
-                'fork_line': fork_line,
-                'fork_variables': fork_variables,
-                'input_reads': input_reads,
-                'target_sites': target_sites,
+                'fork_statement': stmt,
+                'fork_line': guard['line'],
+                'fork_variables': guard['variables'],
                 'guard': guard,
                 'return_diff': ret,
             }
