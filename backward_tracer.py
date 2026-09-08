@@ -430,53 +430,150 @@ def run_gdb_batch(binary, commands, env=None, timeout=120):
     return result.stdout + result.stderr
 
 
+def probe_returns(binary, func_name, input_file, run_args, lib_path=None,
+                  timeout=120, max_calls=30):
+    """Record every return of ``func_name`` during execution.
+
+    Uses a GDB Python script: break at function entry, disassemble to find all
+    ``ret`` instructions, break on each, and continue, recording ``(value, line)``
+    for every return hit.  Handles functions called multiple times.
+
+    Returns a list of ``{"value": int, "line": int, "file": str}`` dicts.
+    """
+    script = f'''set pagination off
+set confirm off
+set breakpoint pending on
+set env ASAN_OPTIONS=detect_leaks=0
+run {run_args}
+break {func_name}
+continue
+python
+import gdb
+import re
+out = gdb.execute("disassemble {func_name}", to_string=True)
+ret_addrs = []
+for line in out.split("\\n"):
+    m = re.search(r'(0x[0-9a-f]+)\\s*<[^>]*>:\\s*ret', line)
+    if m:
+        ret_addrs.append(m.group(1))
+if not ret_addrs:
+    print("NO_RET_FOUND")
+for addr in ret_addrs:
+    gdb.execute("break *" + addr)
+hits = []
+for i in range({max_calls}):
+    gdb.execute("continue")
+    try:
+        rax = int(gdb.parse_and_eval("$rax"))
+    except Exception:
+        break
+    sal = gdb.find_pc_line(gdb.selected_frame().pc())
+    fname = sal.symtab.filename if sal and sal.symtab else ''
+    ln = sal.line if sal else 0
+    print("RET_HIT:" + str(rax) + ":" + fname + ":" + str(ln))
+end
+quit
+'''
+
+    script_path = f"/tmp/ret_probe_{os.getpid()}.gdb"
+    with open(script_path, 'w') as f:
+        f.write(script)
+
+    env = _make_env(lib_path)
+    gdb_cmds = ["gdb", "-batch", "-x", script_path, str(binary)]
+    try:
+        result = subprocess.run(gdb_cmds, capture_output=True, text=True,
+                                timeout=timeout, env=env)
+        output = result.stdout + result.stderr
+    finally:
+        try:
+            os.unlink(script_path)
+        except Exception:
+            pass
+
+    returns = []
+    for line in output.split('\n'):
+        m = re.search(r'RET_HIT:(-?\d+):(.+):(\d+)', line)
+        if m:
+            returns.append({
+                'value': int(m.group(1)),
+                'file': m.group(2).strip(),
+                'line': int(m.group(3)),
+            })
+    return returns
+
+
 def compare_return_values(binary_a, binary_b, func_name,
                           source_a, source_b, input_file, run_args,
                           lib_path_a=None, lib_path_b=None,
                           timeout=120):
     """Compare return values of func_name between two versions.
 
-    Breaks at the function entry, runs to return with ``finish``, and reads
-    ``$rax`` (x86-64 return register).
+    Records every return (value + source line) of the function in each version,
+    then finds the first return whose value differs.  Returns a dict with the
+    differing return's value and line for each version, or None if equal.
 
-    Returns: dict with val_a/b and return-line info, or None if equal/not found.
+    This handles functions called multiple times (e.g. TIFFFetchStripThing is
+    called once per strip field) by comparing the return *sequences*.
     """
+    rets_a = probe_returns(binary_a, func_name, input_file, run_args,
+                           lib_path_a, timeout)
+    rets_b = probe_returns(binary_b, func_name, input_file, run_args,
+                           lib_path_b, timeout)
+
+    if not rets_a or not rets_b:
+        return None
+
+    # Compare the return sequences to find the first differing return.
+    n = min(len(rets_a), len(rets_b))
+    diff_a = diff_b = None
+    for i in range(n):
+        if rets_a[i]['value'] != rets_b[i]['value']:
+            diff_a, diff_b = rets_a[i], rets_b[i]
+            break
+    if diff_a is None:
+        # One version returned more times than the other.
+        if len(rets_a) != len(rets_b):
+            diff_a = rets_a[n] if len(rets_a) > n else rets_a[-1]
+            diff_b = rets_b[n] if len(rets_b) > n else rets_b[-1]
+        else:
+            return None
+
+    if diff_a['value'] == diff_b['value']:
+        return None
+
+    # Map the source line back to the local source file for condition lookup.
     returns_a = find_return_statements(source_a, func_name)
     returns_b = find_return_statements(source_b, func_name)
 
-    if not returns_a or not returns_b:
-        return None
-
-    env_a = _make_env(lib_path_a)
-    env_b = _make_env(lib_path_b)
-
-    cmds = [
-        f'break {func_name}',
-        f'run {run_args}',
-        'finish',
-        'print $rax',
-    ]
-    out_a = run_gdb_batch(binary_a, cmds, env=env_a, timeout=timeout)
-    val_a = _parse_rax(out_a)
-
-    out_b = run_gdb_batch(binary_b, cmds, env=env_b, timeout=timeout)
-    val_b = _parse_rax(out_b)
-
-    if val_a is None or val_b is None or val_a == val_b:
-        return None
-
-    ret_a = _find_main_return(returns_a, val_a)
-    ret_b = _find_main_return(returns_b, val_b)
+    line_a = diff_a['line']
+    line_b = diff_b['line']
     return {
-        'return_line_a': ret_a['line'] if ret_a else returns_a[-1]['line'],
-        'return_line_b': ret_b['line'] if ret_b else returns_b[-1]['line'],
-        'return_expr_a': ret_a['return_expr'] if ret_a else '?',
-        'return_expr_b': ret_b['return_expr'] if ret_b else '?',
-        'val_a': val_a,
-        'val_b': val_b,
-        'condition_a': ret_a['condition'] if ret_a else None,
-        'condition_b': ret_b['condition'] if ret_b else None,
+        'return_line_a': line_a,
+        'return_line_b': line_b,
+        'return_expr_a': _return_expr_at(returns_a, line_a),
+        'return_expr_b': _return_expr_at(returns_b, line_b),
+        'val_a': diff_a['value'],
+        'val_b': diff_b['value'],
+        'condition_a': _condition_at(returns_a, line_a),
+        'condition_b': _condition_at(returns_b, line_b),
     }
+
+
+def _return_expr_at(returns, line):
+    """Find the return expression for a given source line."""
+    for r in returns:
+        if r['line'] == line:
+            return r['return_expr']
+    return None
+
+
+def _condition_at(returns, line):
+    """Find the enclosing condition for a given source line."""
+    for r in returns:
+        if r['line'] == line:
+            return r['condition']
+    return None
 
 
 def _make_env(lib_path=None):
