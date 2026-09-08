@@ -678,6 +678,56 @@ def _find_added_guard(src_a, func_name_a, src_b, func_name_b):
     }
 
 
+def _find_assign_diff(src_a, func_name_a, src_b, func_name_b):
+    """Diff two function bodies and find the first variable whose value differs.
+
+    The "first variable whose value differs" is a variable assigned in BOTH
+    versions (same LHS) but from a different source (different RHS), e.g. 4.0.8
+    ``*count = (uint32)direntry->tdir_count`` vs 4.4.0
+    ``*count = (uint32_t)target_count64`` (clamped).  Its assignment in the
+    target (old) version is the fork statement.
+
+    Returns a dict ``{var, line_a, statement_a, line_b, statement_b}`` or None.
+    """
+    try:
+        code_a = open(src_a, encoding='utf-8', errors='replace').read()
+        code_b = open(src_b, encoding='utf-8', errors='replace').read()
+    except OSError:
+        return None
+    body_a = _extract_function_body(code_a, func_name_a)
+    body_b = _extract_function_body(code_b, func_name_b)
+    if not body_a or not body_b:
+        return None
+
+    head_a = code_a[:code_a.find(body_a)] if body_a in code_a else ''
+    head_b = code_b[:code_b.find(body_b)] if body_b in code_b else ''
+    offset_a = head_a.count('\n') + 1
+    offset_b = head_b.count('\n') + 1
+
+    assigns_a = {}
+    assigns_b = {}
+    for i, line in enumerate(body_a.splitlines()):
+        m = re.match(r'(\*?\w[\w.\[\]>-]*)\s*=\s*.+', line.strip())
+        if m:
+            assigns_a.setdefault(m.group(1), (offset_a + i, line.strip()))
+    for i, line in enumerate(body_b.splitlines()):
+        m = re.match(r'(\*?\w[\w.\[\]>-]*)\s*=\s*.+', line.strip())
+        if m:
+            assigns_b.setdefault(m.group(1), (offset_b + i, line.strip()))
+
+    # The first LHS (in the target's source order) whose RHS differs.
+    for lhs in assigns_a:
+        if lhs in assigns_b and assigns_a[lhs][1] != assigns_b[lhs][1]:
+            return {
+                'var': lhs,
+                'line_a': assigns_a[lhs][0],
+                'statement_a': assigns_a[lhs][1],
+                'line_b': assigns_b[lhs][0],
+                'statement_b': assigns_b[lhs][1],
+            }
+    return None
+
+
 def _probe_callee_pair(callee, binary_a, binary_b, src_dir_a, src_dir_b,
                        input_file, run_args, lib_path_a, lib_path_b, timeout):
     """Probe ``callee`` in A and its (possibly semantic-variant) counterpart in B.
