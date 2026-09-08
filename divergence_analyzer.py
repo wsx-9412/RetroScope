@@ -283,20 +283,43 @@ def _semantic_pair_added_guard(callee_a, callee_b, source_dirs_a, source_dirs_b)
         if fallback is None and ('=' in bs or 'if' in bs):
             fallback = (body_b_start + j, bs)
 
-    # Pick the best candidate: prefer assignments whose LHS variable matches a
-    # variable used in the guard's condition (e.g. `datasize = ...` when the
-    # guard checks `datasize > tif_size`).  This is the statement where the
-    # raw input value enters the computation that the guard checks.
+    # Find the input-reading statement: trace the guard's variable dependencies
+    # backward through assignments to find where the raw input value enters.
+    # E.g. guard checks `datasize > tif_size`; `datasize` is set by
+    # `datasize=(*count)*typesize;`; `*count` is set by
+    # `*count=(uint32)direntry->tdir_count;` — THAT is the input-reading stmt.
     guard_vars = set(_extract_variables_from_expression(s))
-    best = None
+    # Build a map: LHS -> (line, stmt, vars) for all assignments
+    lhs_map = {}
     for line_no, stmt, vars_in in candidates:
         eq_pos = stmt.find('=')
         if eq_pos > 0:
             lhs = stmt[:eq_pos].strip().lstrip('*').strip()
             lhs = re.sub(r'\([^)]*\)\s*$', '', lhs).strip()
-            if lhs in guard_vars:
+            lhs_map[lhs] = (line_no, stmt, vars_in)
+    # Trace backward: start from guard variables, find their assignments,
+    # then follow RHS variables to their assignments, until we find one
+    # that reads from a struct member (input-derived) or has no assignment.
+    visited = set()
+    best = None
+    queue = list(guard_vars)
+    while queue:
+        var = queue.pop(0)
+        if var in visited:
+            continue
+        visited.add(var)
+        if var in lhs_map:
+            line_no, stmt, vars_in = lhs_map[var]
+            # Check if RHS contains a struct member access (input-derived)
+            rhs = stmt[stmt.find('=') + 1:] if '=' in stmt else ''
+            has_struct = bool(re.search(r'\w+->\w+', rhs))
+            if has_struct:
                 best = (line_no, stmt, vars_in)
                 break
+            # Otherwise, follow RHS variables to their assignments
+            for rv in vars_in:
+                if rv != var and rv not in visited:
+                    queue.append(rv)
     if best:
         target_line, target_statement, target_vars = best
     elif candidates:
