@@ -5165,6 +5165,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 "poly_track_line": target_line,
                 "poly_track_statement": target_stmt,
                 "semantic_fork": True,
+                "variables": _extract_variables_from_expression(target_stmt),
                 "description": (
                     f"Divergence function: {func_name}\n"
                     f"Root cause function: {sem.get('caller') or sem['callee_a']}\n"
