@@ -249,94 +249,28 @@ def _semantic_pair_added_guard(callee_a, callee_b, source_dirs_a, source_dirs_b)
     candidates.sort(reverse=True)
     score, i, s = candidates[0]
 
-    # Locate the *target* (4.0.8) counterpart statement that reads the same
-    # input-derived value, so PolyTracker can instrument 4.0.8 (which has no
-    # such guard).  E.g. for the added `datasize > tif_size` guard, the target
-    # reads `*count=(uint32)direntry->tdir_count;` — the input byte that steers
-    # datasize.
+    # Locate the *target* (4.0.8) counterpart statement at the fork call site.
+    # The fork is in the *caller* (TIFFFetchStripThing), not inside the callee
+    # (TIFFReadDirEntryArray).  The caller calls different callees in the two
+    # versions.  We extract variables from the caller's call statement.
     #
-    # We collect ALL assignment statements in the target function body that
-    # contain variable-like expressions, because the input-derived value could
-    # come from any variable.  PolyTracker will later trace each variable back
-    # to its input file origin.
+    # E.g. for the added `datasize > tif_size` guard, the fork call site is:
+    #   4.4.0: err=TIFFReadDirEntryLong8ArrayWithLimit(tif,dir,&data,nstrips);
+    #   4.0.8: err=TIFFReadDirEntryLong8Array(tif,dir,&data);
+    # Variables to trace: dir, nstrips, tif, data.
     target_line = None
     target_statement = None
     target_vars = []
     head_b = code_b[:code_b.find(body_b)] if body_b in code_b else ''
     body_b_start = head_b.count('\n') + 1
-    # Collect all candidate assignments with extractable variables.
-    candidates = []
-    fallback = None
+    # Find the call to callee_b in the target function body.
     for j, bline in enumerate(body_b.splitlines()):
         bs = bline.strip()
-        if not bs or bs.startswith(('/*', '//', '{', '}')):
-            continue
-        # Skip block-comment continuation (`* foo`) but NOT deref assignments
-        # (`*count = ...` where `*` is immediately followed by a word char).
-        if bs.startswith('*') and (len(bs) == 1 or not bs[1].isalnum()):
-            continue
-        is_assign = ('=' in bs) and ('if' not in bs)
-        if is_assign:
-            vars_in_stmt = _extract_variables_from_expression(bs)
-            if vars_in_stmt:
-                candidates.append((body_b_start + j, bs, vars_in_stmt))
-        if fallback is None and ('=' in bs or 'if' in bs):
-            fallback = (body_b_start + j, bs)
-
-    # Find the input-reading statement: trace the guard's variable dependencies
-    # backward through assignments to find where the raw input value enters.
-    # E.g. guard checks `datasize > tif_size`; `datasize` is set by
-    # `datasize=(*count)*typesize;`; `*count` is set by
-    # `*count=(uint32)direntry->tdir_count;` — THAT is the input-reading stmt.
-    #
-    # We also collect ALL variables from every statement in the dependency
-    # chain, because the user wants to trace every variable at the fork point
-    # back to its input file origin — not just the final input-reading one.
-    guard_vars = set(_extract_variables_from_expression(s))
-    # Build a map: LHS -> (line, stmt, vars) for all assignments
-    lhs_map = {}
-    for line_no, stmt, vars_in in candidates:
-        eq_pos = stmt.find('=')
-        if eq_pos > 0:
-            lhs = stmt[:eq_pos].strip().lstrip('*').strip()
-            lhs = re.sub(r'\([^)]*\)\s*$', '', lhs).strip()
-            lhs_map[lhs] = (line_no, stmt, vars_in)
-    # Trace backward: start from guard variables, find their assignments,
-    # then follow RHS variables to their assignments, until we find one
-    # that reads from a struct member (input-derived) or has no assignment.
-    # Collect ALL variables from every statement along the chain.
-    visited = set()
-    all_chain_vars = set()
-    best = None
-    queue = list(guard_vars)
-    while queue:
-        var = queue.pop(0)
-        if var in visited:
-            continue
-        visited.add(var)
-        if var in lhs_map:
-            line_no, stmt, vars_in = lhs_map[var]
-            all_chain_vars.update(vars_in)
-            # Check if RHS contains a struct member access (input-derived)
-            rhs = stmt[stmt.find('=') + 1:] if '=' in stmt else ''
-            has_struct = bool(re.search(r'\w+->\w+', rhs))
-            if has_struct:
-                best = (line_no, stmt, vars_in)
-                break
-            # Otherwise, follow RHS variables to their assignments
-            for rv in vars_in:
-                if rv != var and rv not in visited:
-                    queue.append(rv)
-    if best:
-        target_line, target_statement, target_vars = best
-        # Merge all variables from the full dependency chain so PolyTracker
-        # traces every variable that feeds into the guard's computation.
-        target_vars = sorted(set(target_vars) | all_chain_vars)
-    elif candidates:
-        target_line, target_statement, target_vars = candidates[0]
-    elif fallback:
-        target_line, target_statement = fallback
-        target_vars = _extract_variables_from_expression(target_statement)
+        if callee_b and callee_b in bs and '(' in bs:
+            target_line = body_b_start + j
+            target_statement = bs
+            target_vars = _extract_variables_from_expression(bs)
+            break
 
     return {
         'file': file_a,
