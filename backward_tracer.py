@@ -444,6 +444,7 @@ def probe_returns(binary, func_name, input_file, run_args, lib_path=None,
 set confirm off
 set breakpoint pending on
 set env ASAN_OPTIONS=detect_leaks=0
+catch load libtiff
 run {run_args}
 break {func_name}
 continue
@@ -460,7 +461,6 @@ if not ret_addrs:
     print("NO_RET_FOUND")
 for addr in ret_addrs:
     gdb.execute("break *" + addr)
-hits = []
 for i in range({max_calls}):
     gdb.execute("continue")
     try:
