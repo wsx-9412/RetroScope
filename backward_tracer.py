@@ -399,6 +399,42 @@ _C_KEYWORDS = {
     'goto', 'break', 'continue', 'static', 'const', 'do',
 }
 
+_SEMANTIC_SUFFIXES = (
+    'WithLimit', 'Checked', 'Safe', 'Secure', 'Validated', 'Sanitized',
+    'Bounded', 'Limited', 'WithSize', 'WithCount',
+)
+
+
+def _resolve_callee_pair(callee, src_dir_a, src_dir_b):
+    """Resolve a callee name to its (possibly renamed) definitions in both versions.
+
+    Returns (callee_a, callee_b, src_a, src_b).  If ``callee`` exists directly in
+    both versions, returns it as-is.  If it exists only in A, looks for a
+    *semantic variant* in B (e.g. ``TIFFReadDirEntryLong8Array`` in A vs
+    ``TIFFReadDirEntryLong8ArrayWithLimit`` in B) and vice-versa.
+    """
+    src_a = _find_function_source(callee, src_dir_a)
+    src_b = _find_function_source(callee, src_dir_b)
+
+    if src_a and src_b:
+        return callee, callee, src_a, src_b
+
+    if src_a and not src_b:
+        for suf in _SEMANTIC_SUFFIXES:
+            variant = callee + suf
+            src_b2 = _find_function_source(variant, src_dir_b)
+            if src_b2:
+                return callee, variant, src_a, src_b2
+
+    if src_b and not src_a:
+        for suf in _SEMANTIC_SUFFIXES:
+            variant = callee + suf
+            src_a2 = _find_function_source(variant, src_dir_a)
+            if src_a2:
+                return variant, callee, src_a2, src_b
+
+    return callee, callee, src_a, src_b
+
 
 def _extract_calls_from_expression(expr):
     """Extract function-call names from a C expression string.
@@ -562,22 +598,21 @@ quit
     return returns
 
 
-def compare_return_values(binary_a, binary_b, func_name,
+def compare_return_values(binary_a, binary_b, func_name_a, func_name_b,
                           source_a, source_b, input_file, run_args,
                           lib_path_a=None, lib_path_b=None,
                           timeout=120):
-    """Compare return values of func_name between two versions.
+    """Compare return values of func_name_a (in A) vs func_name_b (in B).
 
-    Records every return (value + source line) of the function in each version,
-    then finds the first return whose value differs.  Returns a dict with the
-    differing return's value and line for each version, or None if equal.
+    Records every return (value + source line) of each function, then finds the
+    first return whose value differs.  Handles functions called multiple times
+    and semantic renames (e.g. ``...Array`` vs ``...ArrayWithLimit``).
 
-    This handles functions called multiple times (e.g. TIFFFetchStripThing is
-    called once per strip field) by comparing the return *sequences*.
+    Returns a dict with the differing return's value/line/kind, or None.
     """
-    rets_a = probe_returns(binary_a, func_name, input_file, run_args,
+    rets_a = probe_returns(binary_a, func_name_a, input_file, run_args,
                            lib_path_a, timeout)
-    rets_b = probe_returns(binary_b, func_name, input_file, run_args,
+    rets_b = probe_returns(binary_b, func_name_b, input_file, run_args,
                            lib_path_b, timeout)
 
     if not rets_a or not rets_b:
@@ -943,6 +978,9 @@ def _find_fork_recursive(func_name, binary_a, binary_b, src_dir_a, src_dir_b,
                 candidates.append(c)
 
     for callee, line, stmt in _extract_checked_calls(src_a, func_name):
+        candidates.append(callee)
+
+    for callee, line, stmt in _extract_assign_calls(src_a, func_name):
         candidates.append(callee)
 
     seen = set()
