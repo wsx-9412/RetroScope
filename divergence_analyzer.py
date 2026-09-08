@@ -5173,11 +5173,15 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
             fork_vars = _extract_variables_from_expression(call_stmt_b)
 
             # Map the guard's variables to the TARGET's read site.  The guard
-            # (e.g. "datasize > tif_size") lives in the reference (callee_a),
-            # but PolyTracker instruments the target (callee_b).  Find where the
-            # guard's local variable is assigned in the target and instrument
-            # there, so the taint traces to the exact input bytes.
+            # (e.g. "datasize > tif_size") lives ONLY in the reference, so it is
+            # the root cause, NOT the fork statement.  The fork statement is the
+            # TARGET's statement that computes the guard variable — it exists in
+            # both versions.  Trace its variables backward to the input-derived
+            # sources (e.g. direntry->tdir_count).
             target_sites = []
+            input_variables = []
+            fork_stmt = None
+            fork_stmt_line = None
             try:
                 import backward_tracer as _bt
                 guard_vars = _bt._extract_variables(sem.get("statement", ""))
@@ -5186,9 +5190,15 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                     sem.get("target_file") or call_file_b)
                 if target_sites:
                     site = target_sites[0]
-                    print(f"  [semantic-fork] target read site: "
-                          f"{site['variable']} @ "
-                          f"{os.path.basename(site['file'])}:{site['line']}")
+                    fork_stmt = site["statement"]
+                    fork_stmt_line = site["assignment_line"]
+                    input_variables = _bt._trace_to_input_variables(
+                        site["file"], sem["callee_b"], site["assignment_line"])
+                    print(f"  [semantic-fork] fork statement (target "
+                          f"{sem['callee_b']}): '{fork_stmt}' "
+                          f"({os.path.basename(site['file'])}:{fork_stmt_line})")
+                    print(f"  [semantic-fork] input-derived variables: "
+                          f"{input_variables}")
             except Exception as _e:
                 print(f"  [semantic-fork] target-site mapping failed: {_e}")
 
@@ -5220,6 +5230,10 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 "root_cause_line_b": call_line_b,
                 "root_cause_statement_a": call_stmt_a,
                 "root_cause_statement_b": call_stmt_b,
+                "fork_statement": fork_stmt or call_stmt_b,
+                "fork_statement_line": fork_stmt_line,
+                "fork_statement_file": pt_file if target_sites else call_file_b,
+                "input_variables": input_variables,
                 "poly_track_function": pt_func,
                 "poly_track_file": pt_file,
                 "poly_track_line": pt_line,
