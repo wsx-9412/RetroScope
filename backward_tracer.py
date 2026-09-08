@@ -618,6 +618,17 @@ def compare_return_values(binary_a, binary_b, func_name_a, func_name_b,
     if not rets_a or not rets_b:
         return None
 
+    return _diff_return_sequences(rets_a, rets_b, source_a, source_b,
+                                  func_name_a, func_name_b)
+
+
+def _diff_return_sequences(rets_a, rets_b, source_a, source_b,
+                           func_name_a, func_name_b):
+    """Compare two return-value sequences and return the first differing return.
+
+    Returns None if the sequences are identical (in value, position by position
+    up to the shorter length).
+    """
     n = len(rets_a)
     m = len(rets_b)
 
