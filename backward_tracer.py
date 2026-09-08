@@ -560,39 +560,53 @@ def compare_return_values(binary_a, binary_b, func_name,
     if not rets_a or not rets_b:
         return None
 
-    # Compare the return sequences to find the first differing return.
-    n = min(len(rets_a), len(rets_b))
-    diff_a = diff_b = None
-    for i in range(n):
-        if rets_a[i]['value'] != rets_b[i]['value']:
-            diff_a, diff_b = rets_a[i], rets_b[i]
-            break
-    if diff_a is None:
-        # One version returned more times than the other.
-        if len(rets_a) != len(rets_b):
-            diff_a = rets_a[n] if len(rets_a) > n else rets_a[-1]
-            diff_b = rets_b[n] if len(rets_b) > n else rets_b[-1]
-        else:
-            return None
+    n = len(rets_a)
+    m = len(rets_b)
 
-    if diff_a['value'] == diff_b['value']:
-        return None
+    # Classify the difference:
+    #  - same length, some value differs -> a genuine fork candidate
+    #  - different length              -> early-abort consequence (secondary)
+    if n == m:
+        diff_a = diff_b = None
+        for i in range(n):
+            if rets_a[i]['value'] != rets_b[i]['value']:
+                diff_a, diff_b = rets_a[i], rets_b[i]
+                break
+        if diff_a is None:
+            return None
+        diff_kind = 'same_len_diff_value'
+    else:
+        # Different lengths: report the first differing value (if any)
+        k = min(n, m)
+        diff_a = diff_b = None
+        for i in range(k):
+            if rets_a[i]['value'] != rets_b[i]['value']:
+                diff_a, diff_b = rets_a[i], rets_b[i]
+                break
+        if diff_a is None:
+            # The extra return(s) is the difference
+            if n > m:
+                diff_a, diff_b = rets_a[k], rets_b[-1]
+            else:
+                diff_a, diff_b = rets_a[-1], rets_b[k]
+        diff_kind = 'diff_len'
 
     # Map the source line back to the local source file for condition lookup.
     returns_a = find_return_statements(source_a, func_name)
     returns_b = find_return_statements(source_b, func_name)
 
-    line_a = diff_a['line']
-    line_b = diff_b['line']
     return {
-        'return_line_a': line_a,
-        'return_line_b': line_b,
-        'return_expr_a': _return_expr_at(returns_a, line_a),
-        'return_expr_b': _return_expr_at(returns_b, line_b),
+        'return_line_a': diff_a['line'],
+        'return_line_b': diff_b['line'],
+        'return_expr_a': _return_expr_at(returns_a, diff_a['line']),
+        'return_expr_b': _return_expr_at(returns_b, diff_b['line']),
         'val_a': diff_a['value'],
         'val_b': diff_b['value'],
-        'condition_a': _condition_at(returns_a, line_a),
-        'condition_b': _condition_at(returns_b, line_b),
+        'condition_a': _condition_at(returns_a, diff_a['line']),
+        'condition_b': _condition_at(returns_b, diff_b['line']),
+        'count_a': n,
+        'count_b': m,
+        'diff_kind': diff_kind,
     }
 
 
@@ -888,8 +902,10 @@ def _find_fork_recursive(func_name, binary_a, binary_b, src_dir_a, src_dir_b,
     })
 
     # 3. Collect candidate callees that may determine the return value:
-    #    (a) function calls inside return conditions, and
-    #    (b) function calls that assign to the returned variable.
+    #    (a) function calls inside return conditions,
+    #    (b) function calls that assign to the returned variable, and
+    #    (c) all *checked* function calls (if/while conditions) in the body,
+    #        which can divert control flow via goto/early-return.
     candidates = []
     returns_a = find_return_statements(src_a, func_name)
     for r in returns_a:
@@ -903,6 +919,9 @@ def _find_fork_recursive(func_name, binary_a, binary_b, src_dir_a, src_dir_b,
             if c:
                 candidates.append(c)
 
+    for callee, line, stmt in _extract_checked_calls(src_a, func_name):
+        candidates.append(callee)
+
     seen = set()
     unique_candidates = []
     for c in candidates:
@@ -910,7 +929,8 @@ def _find_fork_recursive(func_name, binary_a, binary_b, src_dir_a, src_dir_b,
             seen.add(c)
             unique_candidates.append(c)
 
-    print(f"{indent}  Candidate callees: {unique_candidates}")
+    print(f"{indent}  Candidate callees ({len(unique_candidates)}): "
+          f"{unique_candidates[:15]}{'...' if len(unique_candidates) > 15 else ''}")
 
     # 4. For each candidate, check if its return value also differs.
     if depth < max_depth:
