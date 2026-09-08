@@ -1088,16 +1088,33 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
         candidates.append(callee)
 
     # 3b. If this is a semantic pair (different names), diff the bodies to find
-    #     a guard added in B — that is the fork statement directly.
+    #     a guard added in B — that is the fork statement directly.  If the
+    #     added statement is instead a call to a semantic variant, recurse into
+    #     that variant pair (the guard is one level deeper).
     if func_name_a != func_name_b:
         guard = _find_added_guard(src_a, func_name_a, src_b, func_name_b)
         if guard:
-            print(f"{indent}  Added guard in B: '{guard['statement']}' "
+            stmt = guard['statement']
+            calls = _extract_calls_from_expression(stmt)
+            for c in calls:
+                # Is this call itself a semantic variant of a function in A?
+                for suf in _SEMANTIC_SUFFIXES:
+                    if c.endswith(suf):
+                        base = c[:-len(suf)]
+                        if _find_function_source(base, src_dir_a):
+                            print(f"{indent}  Added statement calls semantic "
+                                  f"variant {c}; recursing into pair")
+                            return _find_fork_recursive(
+                                base, c, binary_a, binary_b, src_dir_a, src_dir_b,
+                                input_file, run_args, lib_path_a, lib_path_b,
+                                timeout, depth + 1, max_depth, chain
+                            )
+            print(f"{indent}  Added guard in B: '{stmt}' "
                   f"(line {guard['line']})")
             return {
                 'status': 'found',
                 'func': label,
-                'fork_statement': guard['statement'],
+                'fork_statement': stmt,
                 'fork_line': guard['line'],
                 'fork_variables': guard['variables'],
                 'guard': guard,
