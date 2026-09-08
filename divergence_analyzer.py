@@ -4888,10 +4888,9 @@ def _target_reached_crash_point(crash_a, trace_a, trace_b, refactoring_map=None)
     return False
 
 
-def _run_backward_tracer(func_name, matches, gaps, trace_a, trace_b,
-                         binary_a, binary_b, source_dirs_a, source_dirs_b,
-                         lib_path_a, lib_path_b, input_file, args_b,
-                         gdb_timeout):
+def _run_backward_tracer(func_name, binary_a, binary_b, source_dirs_a,
+                         source_dirs_b, lib_path_a, lib_path_b, input_file,
+                         args_b, gdb_timeout):
     """Run the backward tracer from the divergence function (entry point).
 
     The backward tracer starts at the divergence function (the last common
