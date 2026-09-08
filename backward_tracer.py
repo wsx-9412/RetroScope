@@ -435,15 +435,38 @@ def _extract_checked_calls(source_file, func_name):
     results = []
     for i, line in enumerate(body.splitlines()):
         stripped = line.strip()
-        # Match a control-flow condition that contains a function call
         m = re.match(r'(?:if|while|for)\s*\((.+)', stripped)
         if not m:
-            # Also catch multi-line conditions (the condition may span lines)
             m = re.match(r'(?:if|while|for)\s*\(([^)]*)$', stripped)
         cond = m.group(1) if m else ''
         if not cond:
             continue
         for callee in _extract_calls_from_expression(cond):
+            results.append((callee, body_offset + i, stripped))
+    return results
+
+
+def _extract_assign_calls(source_file, func_name):
+    """Extract all assignment-of-function-call statements in func_name's body.
+
+    Covers ``x = Callee(...)`` and ``x = (Type)Callee(...)`` patterns.  Returns a
+    list of (callee, line, statement) tuples in source order.
+    """
+    try:
+        code = open(source_file, encoding='utf-8', errors='replace').read()
+    except OSError:
+        return []
+    body = _extract_function_body(code, func_name)
+    if not body:
+        return []
+    head = code[:code.find(body)] if body in code else ''
+    body_offset = head.count('\n') + 1
+
+    results = []
+    for i, line in enumerate(body.splitlines()):
+        stripped = line.strip()
+        callee = _extract_callee(stripped)
+        if callee:
             results.append((callee, body_offset + i, stripped))
     return results
 
@@ -933,7 +956,11 @@ def _find_fork_recursive(func_name, binary_a, binary_b, src_dir_a, src_dir_b,
           f"{unique_candidates[:15]}{'...' if len(unique_candidates) > 15 else ''}")
 
     # 4. For each candidate, check if its return value also differs.
+    #    Prefer "same length, different value" (a genuine fork) over
+    #    "different length" (an early-abort consequence of another fork).
     if depth < max_depth:
+        primary = []   # same-length value differences
+        secondary = []  # length differences
         for callee in unique_candidates:
             callee_src_a = _find_function_source(callee, src_dir_a)
             callee_src_b = _find_function_source(callee, src_dir_b)
@@ -944,12 +971,26 @@ def _find_fork_recursive(func_name, binary_a, binary_b, src_dir_a, src_dir_b,
                 input_file, run_args, lib_path_a, lib_path_b, timeout
             )
             if sub_ret:
-                print(f"{indent}  -> {callee} return value also differs; recursing")
-                return _find_fork_recursive(
-                    callee, binary_a, binary_b, src_dir_a, src_dir_b,
-                    input_file, run_args, lib_path_a, lib_path_b, timeout,
-                    depth + 1, max_depth, chain
-                )
+                if sub_ret.get('diff_kind') == 'same_len_diff_value':
+                    primary.append((callee, sub_ret))
+                else:
+                    secondary.append((callee, sub_ret))
+
+        chosen = None
+        if primary:
+            chosen = primary[0]
+        elif secondary:
+            chosen = secondary[0]
+
+        if chosen:
+            callee, sub_ret = chosen
+            print(f"{indent}  -> {callee} return differs ({sub_ret.get('diff_kind')}); "
+                  f"recursing")
+            return _find_fork_recursive(
+                callee, binary_a, binary_b, src_dir_a, src_dir_b,
+                input_file, run_args, lib_path_a, lib_path_b, timeout,
+                depth + 1, max_depth, chain
+            )
 
     # 5. No callee with a differing return value: the fork is a
     #    variable comparison/assignment in this function.
