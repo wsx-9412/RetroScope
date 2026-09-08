@@ -1087,6 +1087,23 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
     for callee, line, stmt in _extract_assign_calls(src_a, func_name_a):
         candidates.append(callee)
 
+    # 3b. If this is a semantic pair (different names), diff the bodies to find
+    #     a guard added in B — that is the fork statement directly.
+    if func_name_a != func_name_b:
+        guard = _find_added_guard(src_a, func_name_a, src_b, func_name_b)
+        if guard:
+            print(f"{indent}  Added guard in B: '{guard['statement']}' "
+                  f"(line {guard['line']})")
+            return {
+                'status': 'found',
+                'func': label,
+                'fork_statement': guard['statement'],
+                'fork_line': guard['line'],
+                'fork_variables': guard['variables'],
+                'guard': guard,
+                'return_diff': ret,
+            }
+
     seen = set()
     unique_candidates = []
     for c in candidates:
