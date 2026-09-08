@@ -1079,10 +1079,13 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                     source_dirs=src_dir_a)
                 if input_reads:
                     read = input_reads[0]
-                    print(f"{indent}  Fork statement (target {func_name_a}): "
-                          f"'{fork_statement}' (line {fork_line})")
-                    print(f"{indent}  Input-read statement: "
-                          f"'{read['statement']}' "
+                    # The real fork statement is the INPUT READ (present in both
+                    # versions); the derived computation is just a consequence.
+                    fork_statement = read['statement']
+                    fork_line = read['line']
+                    fork_variables = [read['variable']]
+                    print(f"{indent}  Fork statement (input read, target): "
+                          f"'{fork_statement}' "
                           f"({os.path.basename(read['file'])}:{read['line']})")
                 else:
                     print(f"{indent}  Fork statement (target {func_name_a}): "

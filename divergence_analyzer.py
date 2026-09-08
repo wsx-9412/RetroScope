@@ -5205,9 +5205,18 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
             except Exception as _e:
                 print(f"  [semantic-fork] target-site mapping failed: {_e}")
 
-            # Prefer the guard's target read site for PolyTracker; fall back to
-            # the fork call site if no local variable could be mapped.
-            if target_sites:
+            # Prefer the input-read site for PolyTracker instrumentation: it is
+            # the statement that reads the fork variable from the input, so its
+            # taint traces to the exact input bytes.  Fall back to the fork call
+            # site if no input read could be located.
+            if input_reads:
+                read = input_reads[0]
+                pt_file = read["file"]
+                pt_line = read["line"] + 1  # instrument AFTER the read
+                pt_stmt = read["statement"]
+                pt_vars = [read["variable"]]
+                pt_func = _find_function_source_for_line(read["file"], read["line"])
+            elif target_sites:
                 pt_file = target_sites[0]["file"]
                 pt_line = target_sites[0]["line"]
                 pt_stmt = target_sites[0]["statement"]
