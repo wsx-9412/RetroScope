@@ -347,6 +347,59 @@ def _trace_to_input_variables(src_a, func_name_a, fork_line, source_dirs=None):
     return results
 
 
+def _find_function_containing_line(source_file, line):
+    """Return the name of the function whose body contains ``line``.
+
+    Identifies function definitions by scanning for a signature line (return
+    type + name + ``(args)``) whose opening ``{`` is on the same or a following
+    line, and tracks brace depth to know each function's extent.
+    """
+    try:
+        code = open(source_file, encoding='utf-8', errors='replace').read()
+    except OSError:
+        return None
+    lines = code.split('\n')
+    n = len(lines)
+    # A function definition: a line that is NOT a call (no leading ';' and the
+    # previous char context) matching `name(...)`.  We locate the opening brace
+    # and track depth to find the closing brace.
+    func_ranges = []  # (start_line, end_line, name)
+    i = 0
+    while i < n:
+        # Skip preprocessor and blank lines
+        stripped = lines[i].strip()
+        # Look for a signature: optional return type, then `name(` — but not a
+        # control keyword or a call inside a body (those are indented).
+        m = re.match(r'^(?!if\b|while\b|for\b|switch\b|return\b)'
+                     r'(?:static\s+)?(?:extern\s+)?'
+                     r'(?:[\w\s*]+?)\s+(\w+)\s*\(', lines[i])
+        if not m:
+            i += 1
+            continue
+        name = m.group(1)
+        # Find the opening brace: on this line or a following line
+        j = i
+        while j < n and '{' not in lines[j]:
+            j += 1
+        if j >= n:
+            i += 1
+            continue
+        # Track brace depth from the opening brace
+        depth = 0
+        k = j
+        while k < n:
+            depth += _count_braces_in_segment(lines[k])
+            k += 1
+            if depth <= 0:
+                break
+        func_ranges.append((i + 1, k, name))
+        i = k  # skip past this function
+    for start, end, name in func_ranges:
+        if start <= line <= end:
+            return name
+    return None
+
+
 def _find_member_field_assignments(source_dirs, field_name):
     """Find statements that assign to ``->field_name`` (or ``.field_name``).
 

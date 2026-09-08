@@ -5215,7 +5215,8 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 pt_line = read["line"] + 1  # instrument AFTER the read
                 pt_stmt = read["statement"]
                 pt_vars = [read["variable"]]
-                pt_func = _find_function_source_for_line(read["file"], read["line"])
+                pt_func = _bt._find_function_containing_line(read["file"],
+                                                             read["line"])
             elif target_sites:
                 pt_file = target_sites[0]["file"]
                 pt_line = target_sites[0]["line"]
