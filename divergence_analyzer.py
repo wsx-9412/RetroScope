@@ -5120,6 +5120,11 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
             call_line_a = sem.get("call_line_a") or sem["line"]
             call_line_b = sem.get("call_line_b") or target_line
 
+            # The fork statement is the call site in the caller (e.g.
+            # TIFFFetchStripThing calling different callees).  Variables to
+            # trace are from this call statement, not from inside the callee.
+            fork_vars = _extract_variables_from_expression(call_stmt_b)
+
             result = {
                 "divergence_function": func_name,
                 "trace_a_index": a_idx,
@@ -5133,12 +5138,12 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 "root_cause_line_b": call_line_b,
                 "root_cause_statement_a": call_stmt_a,
                 "root_cause_statement_b": call_stmt_b,
-                "poly_track_function": target_func,
-                "poly_track_file": target_file,
-                "poly_track_line": target_line,
-                "poly_track_statement": target_stmt,
+                "poly_track_function": sem.get("caller") or sem["callee_a"],
+                "poly_track_file": call_file_b,
+                "poly_track_line": call_line_b,
+                "poly_track_statement": call_stmt_b,
                 "semantic_fork": True,
-                "variables": sem.get("target_vars") or _extract_variables_from_expression(target_stmt),
+                "variables": fork_vars,
                 "description": (
                     f"Divergence function: {func_name}\n"
                     f"Root cause function: {sem.get('caller') or sem['callee_a']}\n"
