@@ -443,6 +443,15 @@ def build_instrumented(source_dir, program_name, build_cmds=None,
     # label is logged at runtime (used for targeted provenance analysis).
     if instrument:
         _instrument_source(source_dir, instrument)
+        # Verify instrumentation survived before the build starts
+        _src_name = Path(instrument.get("source_file", "")).name
+        _line = instrument.get("line", 0)
+        for _p in source_dir.rglob(_src_name):
+            if _p.is_file():
+                _txt = _p.read_text(errors="replace")
+                _ok = "__polytracker_log_var_taint" in _txt
+                print(f"    [PolyTracker] pre-build check: {_p.name} has instrumentation: {_ok}")
+                break
 
     def _clean_flags(flags):
         if not flags:
