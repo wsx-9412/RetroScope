@@ -5091,6 +5091,44 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
         args_b = []
 
     # ========================================================
+    # UNIFIED: the backward tracer is the PRIMARY fork locator.
+    # Recursively follows the return-value dependency chain from the last
+    # common entry function (e.g. TIFFOpen) down to the fork statement (the
+    # input-read statement in the target version).  The crash-based / semantic
+    # / gap-based analyses below remain only as a fallback.
+    # ========================================================
+    last_common = _find_last_common_entry_function(matches)
+    if last_common:
+        print(f"\n=== Unified backward tracer from: {last_common} ===")
+        try:
+            bt_result = _run_backward_tracer(
+                last_common, binary_a, binary_b, source_dirs_a, source_dirs_b,
+                lib_path_a, lib_path_b, input_file, args_b, gdb_timeout)
+        except Exception as e:
+            print(f"  [Backward tracer] failed: {e}")
+            bt_result = {"status": "error", "error": str(e)}
+
+        if bt_result.get("status") == "found" and bt_result.get("fork_statement"):
+            print(f"\n  Backward tracer located the fork statement.")
+            result = _build_result_from_backward_tracer(
+                bt_result, last_common, a_idx, b_idx)
+            if input_file:
+                result["input_file"] = str(input_file)
+            if not skip_polytracker:
+                try:
+                    result = _polytracker_locate_input_offsets(
+                        result, config=config, binary_b=binary_b,
+                        binary_a=binary_a)
+                except Exception as e:
+                    print(f"  [PolyTracker] Analysis failed: {e}")
+                    result["polytracker_offsets"] = {
+                        "status": "error", "error": str(e)}
+            return result
+        else:
+            print(f"  [Backward tracer] no fork statement found — "
+                  f"falling back to the legacy analysis.")
+
+    # ========================================================
     # CRASH-BASED ANALYSIS: If both versions crash, the target's
     # crash point may BE the fork statement.
     # ========================================================
