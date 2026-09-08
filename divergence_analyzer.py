@@ -4888,6 +4888,55 @@ def _target_reached_crash_point(crash_a, trace_a, trace_b, refactoring_map=None)
     return False
 
 
+def _run_backward_tracer(matches, gaps, trace_a, trace_b,
+                         binary_a, binary_b, source_dirs_a, source_dirs_b,
+                         lib_path_a, lib_path_b, input_file, args_b,
+                         gdb_timeout):
+    """Run the backward tracer from the last common function to find the fork.
+
+    The backward tracer starts at the entry function (the last common function
+    in the LCS trace, e.g. ``TIFFOpen``) and recursively follows the return-value
+    dependency chain to the guard statement that actually causes the divergence.
+
+    Convention mapping: in this module ``binary_a``/``source_dirs_a`` are the
+    reference (4.4.0, NEW); ``binary_b``/``source_dirs_b`` are the target
+    (4.0.8, OLD).  ``backward_tracer`` uses the opposite (a=old, b=new), so the
+    arguments are swapped here.
+    """
+    try:
+        import backward_tracer as bt
+    except ImportError as e:
+        return {"status": "error", "error": f"import backward_tracer failed: {e}"}
+
+    last_common, _ = _find_last_common_function(matches, gaps, trace_a, trace_b)
+    if not last_common:
+        return {"status": "error", "error": "no last common function found"}
+
+    run_args = " ".join(str(a) for a in (args_b or []))
+    input_file = str(input_file) if input_file else None
+
+    print(f"\n=== Backward tracer from last common function: {last_common} ===")
+
+    try:
+        result = bt.find_fork_by_backward_tracing(
+            binary_a=str(binary_b),   # old (target, 4.0.8)
+            binary_b=str(binary_a),   # new (reference, 4.4.0)
+            source_dir_a=source_dirs_b,  # old source (4.0.8)
+            source_dir_b=source_dirs_a,  # new source (4.4.0)
+            func_name=last_common,
+            input_file=input_file,
+            run_args=run_args,
+            lib_path_a=lib_path_b,
+            lib_path_b=lib_path_a,
+            timeout=gdb_timeout,
+            max_depth=20,
+        )
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+    return result
+
+
 def analyze_lcs_result(result_json_path, binary_a, binary_b,
                         args_a=None, args_b=None, input_file=None,
                         gdb_timeout=120, refactoring_map=None,
