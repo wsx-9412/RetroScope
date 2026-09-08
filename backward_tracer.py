@@ -1143,10 +1143,34 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
     if func_name_a != func_name_b:
         diff = _find_assign_diff(src_a, func_name_a, src_b, func_name_b)
         if diff:
-            # The first variable whose value differs is `diff['var']` (e.g.
-            # *count).  Its assignment in the TARGET version is the fork
-            # statement; the RHS member access (e.g. direntry->tdir_count) is
-            # what traces to the input bytes.
+            # If the differing assignment is just a call to a *semantic variant*
+            # (X(...) vs XWithLimit(...)), the real fork is one level deeper —
+            # recurse into that pair instead of reporting the call itself.
+            callee_a = _extract_callee(diff['statement_a'])
+            callee_b = _extract_callee(diff['statement_b'])
+            recurse_pair = None
+            if callee_a and callee_b:
+                for suf in _SEMANTIC_SUFFIXES:
+                    if callee_b.endswith(suf) and callee_b[:-len(suf)] == callee_a:
+                        recurse_pair = (callee_a, callee_b)
+                        break
+                    if callee_a.endswith(suf) and callee_a[:-len(suf)] == callee_b:
+                        recurse_pair = (callee_b, callee_a)
+                        break
+            if recurse_pair:
+                base, variant = recurse_pair
+                if _find_function_source(variant, src_dir_b) or \
+                        _find_function_source(variant, src_dir_a):
+                    print(f"{indent}  Assignment differs by semantic variant "
+                          f"call {base} vs {variant}; recursing")
+                    return _find_fork_recursive(
+                        base, variant, binary_a, binary_b, src_dir_a, src_dir_b,
+                        input_file, run_args, lib_path_a, lib_path_b,
+                        timeout, depth + 1, max_depth, chain
+                    )
+
+            # Otherwise the differing variable IS the first differing variable;
+            # its assignment in the target is the fork statement.
             fork_statement = diff['statement_a']
             fork_line = diff['line_a']
             fork_variables = _extract_variables(fork_statement)
