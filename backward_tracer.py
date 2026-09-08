@@ -268,13 +268,13 @@ def run_gdb_batch(binary, commands, env=None, timeout=120):
 
 def compare_return_values(binary_a, binary_b, func_name,
                           source_a, source_b, input_file,
-                          lib_path=None, timeout=120):
+                          lib_path_a=None, lib_path_b=None,
+                          timeout=120):
     """Compare return values of func_name between two versions.
 
-    Sets a breakpoint at each return statement and compares the return value
-    (via $rax register for x86-64).
+    Uses 'finish' command to run to function return, then reads $rax.
 
-    Returns: (return_line_a, return_line_b, val_a, val_b) or None
+    Returns: dict with return_line_a/b, val_a/b, condition_a/b or None
     """
     returns_a = find_return_statements(source_a, func_name)
     returns_b = find_return_statements(source_b, func_name)
@@ -282,45 +282,65 @@ def compare_return_values(binary_a, binary_b, func_name,
     if not returns_a or not returns_b:
         return None
 
+    env_a = _make_env(lib_path_a)
+    env_b = _make_env(lib_path_b)
+
+    # Break at function entry, finish to get return value
+    cmds = [
+        f'break {func_name}',
+        f'run {_gdb_run_args(input_file)}',
+        'finish',
+        'print $rax',
+    ]
+
+    out_a = run_gdb_batch(binary_a, cmds, env=env_a, timeout=timeout)
+    val_a = _parse_rax(out_a)
+
+    out_b = run_gdb_batch(binary_b, cmds, env=env_b, timeout=timeout)
+    val_b = _parse_rax(out_b)
+
+    if val_a is not None and val_b is not None and val_a != val_b:
+        # Find which return statement matches each value
+        ret_a = _find_matching_return(returns_a, val_a)
+        ret_b = _find_matching_return(returns_b, val_b)
+        return {
+            'return_line_a': ret_a['line'] if ret_a else returns_a[-1]['line'],
+            'return_line_b': ret_b['line'] if ret_b else returns_b[-1]['line'],
+            'return_expr_a': ret_a['return_expr'] if ret_a else '?',
+            'return_expr_b': ret_b['return_expr'] if ret_b else '?',
+            'val_a': val_a,
+            'val_b': val_b,
+            'condition_a': ret_a['condition'] if ret_a else None,
+            'condition_b': ret_b['condition'] if ret_b else None,
+        }
+
+    return None
+
+
+def _make_env(lib_path=None):
+    """Create environment with ASAN_OPTIONS and optional LD_LIBRARY_PATH."""
     env = os.environ.copy()
     env["ASAN_OPTIONS"] = "detect_leaks=0"
     if lib_path:
         old_ld = env.get("LD_LIBRARY_PATH", "")
         env["LD_LIBRARY_PATH"] = f"{lib_path}:{old_ld}" if old_ld else lib_path
+    return env
 
-    # Try each return statement in version A
-    for ret_a in returns_a:
-        # GDB: break at return line, run, print $rax
-        cmds_a = [
-            f"break {source_a}:{ret_a['line']}",
-            f"run {input_file}",
-            "print $rax",
-        ]
-        out_a = run_gdb_batch(binary_a, cmds_a, env=env, timeout=timeout)
-        val_a = _parse_rax(out_a)
 
-        # Try matching return statements in version B
-        for ret_b in returns_b:
-            cmds_b = [
-                f"break {source_b}:{ret_b['line']}",
-                f"run {input_file}",
-                "print $rax",
-            ]
-            out_b = run_gdb_batch(binary_b, cmds_b, env=env, timeout=timeout)
-            val_b = _parse_rax(out_b)
+def _gdb_run_args(input_file):
+    """Format the run arguments for GDB."""
+    # Use the same command format as the config
+    return f"-Z 1:4,3:3 -R 90 -H 300 -S 2:2 -i {input_file} /tmp/foo"
 
-            if val_a is not None and val_b is not None and val_a != val_b:
-                return {
-                    'return_line_a': ret_a['line'],
-                    'return_line_b': ret_b['line'],
-                    'return_expr_a': ret_a['return_expr'],
-                    'return_expr_b': ret_b['return_expr'],
-                    'val_a': val_a,
-                    'val_b': val_b,
-                    'condition_a': ret_a['condition'],
-                    'condition_b': ret_b['condition'],
-                }
 
+def _find_matching_return(returns, value):
+    """Find the return statement whose expression matches the given value."""
+    for ret in returns:
+        expr = ret['return_expr']
+        if value == 0 and '0' in expr:
+            return ret
+        if value != 0 and expr == 'tif':
+            return ret
     return None
 
 
