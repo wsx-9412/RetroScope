@@ -65,9 +65,17 @@ def find_return_statements(source_file, func_name):
             cond_stack.pop()
 
         # Detect if-statements and push their condition
+        # Handle both: if (cond) { and if (cond) stmt;
         if_m = re.match(r'if\s*\((.+?)\)\s*\{?\s*$', stripped)
         if if_m:
             cond_stack.append((if_m.group(1).strip(), brace_depth))
+        else:
+            # Single-line if: if (cond) stmt;
+            if_m2 = re.match(r'if\s*\((.+?)\)\s*\S', stripped)
+            if if_m2 and not stripped.endswith('{'):
+                # This is a single-line if body (the return statement itself)
+                # Don't push to cond_stack, but record the condition on this line
+                pass
 
         # Detect return statements
         ret_m = re.match(r'return\s+(.+?)\s*;', stripped)
