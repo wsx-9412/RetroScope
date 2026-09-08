@@ -180,10 +180,15 @@ def _extract_gap_fork_pair(gap):
         p = tuple(x["path"][:-1])
         if p in b_by_parent:
             for b_name in b_by_parent[p]:
-                if b_name != x["name"]:
-                    depth = len(p)
-                    if best is None or depth > best[0]:
-                        best = (depth, x["name"], b_name, p[-1] if p else None)
+                if b_name == x["name"]:
+                    continue
+                depth = len(p)
+                # Prefer a *semantic* pair (XWithLimit vs X) over an unrelated
+                # callee that merely shares the caller (e.g. ...OutputErr).
+                sem = 1 if is_semantic_pair(x["name"], b_name) else 0
+                score = (depth, sem)
+                if best is None or score > best[0]:
+                    best = (score, x["name"], b_name, p[-1] if p else None)
     if best:
         return best[1], best[2], best[3]
     return None
