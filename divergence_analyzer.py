@@ -302,8 +302,18 @@ def _semantic_pair_added_guard(callee_a, callee_b, source_dirs_a, source_dirs_b)
 def _locate_fork_call_site(caller, callee_a, callee_b, source_dirs_a, source_dirs_b):
     """Locate the forking call site: the statement in ``caller`` that invokes
     ``callee_a`` in A vs ``callee_b`` in B — the *same* position, different callee."""
-    file_a = _find_function_source(caller, source_dirs_a)
-    file_b = _find_function_source(caller, source_dirs_b)
+    # Use the callee's file basename as a hint so a same-named function in an
+    # unrelated dir (e.g. contrib/pds/tif_pdsdirread.c's TIFFFetchStripThing)
+    # doesn't win the rglob search over libtiff/tif_dirread.c.
+    hint_a = hint_b = None
+    _cf_a = _find_function_source(callee_a, source_dirs_a)
+    _cf_b = _find_function_source(callee_b, source_dirs_b)
+    if _cf_a:
+        hint_a = os.path.basename(_cf_a)
+    if _cf_b:
+        hint_b = os.path.basename(_cf_b)
+    file_a = _find_function_source(caller, source_dirs_a, file_hint=hint_a)
+    file_b = _find_function_source(caller, source_dirs_b, file_hint=hint_b)
     if not file_a or not file_b:
         return None
     try:
