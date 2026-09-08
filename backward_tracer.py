@@ -388,11 +388,28 @@ def _extract_callee(statement):
     m = re.search(r'=\s*(?:\([^)]*\)\s*)?(\w+)\s*\(', statement)
     if m:
         name = m.group(1)
-        if name in ('sizeof', 'if', 'while', 'for', 'switch', 'return',
-                    'goto', 'case'):
+        if name in _C_KEYWORDS:
             return None
         return name
     return None
+
+
+_C_KEYWORDS = {
+    'sizeof', 'if', 'else', 'while', 'for', 'switch', 'case', 'return',
+    'goto', 'break', 'continue', 'static', 'const', 'do',
+}
+
+
+def _extract_calls_from_expression(expr):
+    """Extract function-call names from a C expression string.
+
+    Returns a list of callee names (in order of appearance), skipping keywords.
+    """
+    if not expr:
+        return []
+    # Find identifiers followed by '('
+    calls = re.findall(r'\b([A-Za-z_]\w*)\s*\(', expr)
+    return [c for c in calls if c not in _C_KEYWORDS]
 
 
 # ---------------------------------------------------------------------------
