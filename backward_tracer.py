@@ -818,5 +818,4 @@ def _find_fork_recursive(func_name, binary_a, binary_b, src_dir_a, src_dir_b,
         'fork_variables': fork_dep['variables'] if fork_dep else [],
         'return_diff': ret,
         'deps_a': deps_a,
-        'deps_b': deps_b,
     }
