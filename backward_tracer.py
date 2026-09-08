@@ -412,6 +412,42 @@ def _extract_calls_from_expression(expr):
     return [c for c in calls if c not in _C_KEYWORDS]
 
 
+def _extract_checked_calls(source_file, func_name):
+    """Extract all *checked* function calls in func_name's body.
+
+    A "checked" call is one whose return value is tested in an ``if``/``while``
+    condition (e.g. ``if (!TIFFFetchStripThing(...))``).  These calls can change
+    control flow and thus the function's return value, so they are fork
+    candidates even when far from the return statement (e.g. behind a ``goto``).
+
+    Returns a list of (callee, line, statement) tuples in source order.
+    """
+    try:
+        code = open(source_file, encoding='utf-8', errors='replace').read()
+    except OSError:
+        return []
+    body = _extract_function_body(code, func_name)
+    if not body:
+        return []
+    head = code[:code.find(body)] if body in code else ''
+    body_offset = head.count('\n') + 1
+
+    results = []
+    for i, line in enumerate(body.splitlines()):
+        stripped = line.strip()
+        # Match a control-flow condition that contains a function call
+        m = re.match(r'(?:if|while|for)\s*\((.+)', stripped)
+        if not m:
+            # Also catch multi-line conditions (the condition may span lines)
+            m = re.match(r'(?:if|while|for)\s*\(([^)]*)$', stripped)
+        cond = m.group(1) if m else ''
+        if not cond:
+            continue
+        for callee in _extract_calls_from_expression(cond):
+            results.append((callee, body_offset + i, stripped))
+    return results
+
+
 # ---------------------------------------------------------------------------
 # GDB-based comparison
 # ---------------------------------------------------------------------------
