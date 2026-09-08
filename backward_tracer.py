@@ -51,6 +51,8 @@ def find_return_statements(source_file, func_name):
     brace_depth = 0
     # Track the most recent enclosing if-condition
     cond_stack = []  # stack of (condition_text, brace_depth_at_if)
+    # For single-line ifs: the condition that applies to the NEXT statement
+    pending_single_line_cond = None
 
     for i, line in enumerate(lines):
         stripped = line.strip()
@@ -64,24 +66,30 @@ def find_return_statements(source_file, func_name):
         while cond_stack and brace_depth <= cond_stack[-1][1]:
             cond_stack.pop()
 
-        # Detect if-statements and push their condition
-        # Handle both: if (cond) { and if (cond) stmt;
+        # Detect if-statements
         if_m = re.match(r'if\s*\((.+?)\)\s*\{?\s*$', stripped)
         if if_m:
             cond_stack.append((if_m.group(1).strip(), brace_depth))
+            pending_single_line_cond = None
         else:
-            # Single-line if: if (cond) stmt;
-            if_m2 = re.match(r'if\s*\((.+?)\)\s*\S', stripped)
+            # Single-line if: if (cond) stmt; (no opening brace)
+            if_m2 = re.match(r'if\s*\((.+?)\)\s*(\S)', stripped)
             if if_m2 and not stripped.endswith('{'):
-                # This is a single-line if body (the return statement itself)
-                # Don't push to cond_stack, but record the condition on this line
-                pass
+                # The next statement is the body of this if
+                pending_single_line_cond = if_m2.group(1).strip()
+            elif pending_single_line_cond and not stripped.startswith(('if', 'else', 'while', 'for')):
+                # This line is the body of a single-line if
+                pass  # pending_single_line_cond will be used below
 
         # Detect return statements
         ret_m = re.match(r'return\s+(.+?)\s*;', stripped)
         if ret_m:
-            # The enclosing condition (if any)
-            cond = cond_stack[-1][0] if cond_stack else None
+            # The enclosing condition: either from brace-tracked stack or single-line
+            cond = None
+            if cond_stack:
+                cond = cond_stack[-1][0]
+            elif pending_single_line_cond:
+                cond = pending_single_line_cond
             results.append({
                 'line': body_offset + i,
                 'statement': stripped,
@@ -89,6 +97,11 @@ def find_return_statements(source_file, func_name):
                 'condition': cond,
                 'brace_depth': brace_depth,
             })
+            pending_single_line_cond = None
+        elif pending_single_line_cond and not stripped.startswith(('if', 'else')):
+            # Non-return statement after single-line if: clear pending
+            # (unless it's another control flow)
+            pass
 
     return results
 
