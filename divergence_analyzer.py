@@ -288,6 +288,10 @@ def _semantic_pair_added_guard(callee_a, callee_b, source_dirs_a, source_dirs_b)
     # E.g. guard checks `datasize > tif_size`; `datasize` is set by
     # `datasize=(*count)*typesize;`; `*count` is set by
     # `*count=(uint32)direntry->tdir_count;` — THAT is the input-reading stmt.
+    #
+    # We also collect ALL variables from every statement in the dependency
+    # chain, because the user wants to trace every variable at the fork point
+    # back to its input file origin — not just the final input-reading one.
     guard_vars = set(_extract_variables_from_expression(s))
     # Build a map: LHS -> (line, stmt, vars) for all assignments
     lhs_map = {}
@@ -300,7 +304,9 @@ def _semantic_pair_added_guard(callee_a, callee_b, source_dirs_a, source_dirs_b)
     # Trace backward: start from guard variables, find their assignments,
     # then follow RHS variables to their assignments, until we find one
     # that reads from a struct member (input-derived) or has no assignment.
+    # Collect ALL variables from every statement along the chain.
     visited = set()
+    all_chain_vars = set()
     best = None
     queue = list(guard_vars)
     while queue:
@@ -310,6 +316,7 @@ def _semantic_pair_added_guard(callee_a, callee_b, source_dirs_a, source_dirs_b)
         visited.add(var)
         if var in lhs_map:
             line_no, stmt, vars_in = lhs_map[var]
+            all_chain_vars.update(vars_in)
             # Check if RHS contains a struct member access (input-derived)
             rhs = stmt[stmt.find('=') + 1:] if '=' in stmt else ''
             has_struct = bool(re.search(r'\w+->\w+', rhs))
@@ -322,6 +329,9 @@ def _semantic_pair_added_guard(callee_a, callee_b, source_dirs_a, source_dirs_b)
                     queue.append(rv)
     if best:
         target_line, target_statement, target_vars = best
+        # Merge all variables from the full dependency chain so PolyTracker
+        # traces every variable that feeds into the guard's computation.
+        target_vars = sorted(set(target_vars) | all_chain_vars)
     elif candidates:
         target_line, target_statement, target_vars = candidates[0]
     elif fallback:
