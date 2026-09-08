@@ -249,6 +249,41 @@ def _extract_function_body(code, func_name):
     return code[start:i]
 
 
+def _find_function_source(func_name, source_dirs):
+    """Find the source file containing func_name's definition.
+
+    ``source_dirs`` is a single dir or a list of dirs to search (rglob .c/.cpp).
+    Returns the file path as a string, or None.
+    """
+    if isinstance(source_dirs, (str, os.PathLike)):
+        source_dirs = [source_dirs]
+    for d in source_dirs:
+        for ext in ('.c', '.cpp'):
+            for path in Path(d).rglob(f'*{ext}'):
+                try:
+                    content = path.read_text(encoding='utf-8', errors='replace')
+                except OSError:
+                    continue
+                pattern = rf'(?:static\s+)?(?:\w+\s+)*\b{re.escape(func_name)}\s*\([^)]*\)\s*\{{'
+                if re.search(pattern, content):
+                    return str(path)
+    return None
+
+
+def _extract_callee(statement):
+    """Extract the called function name from an assignment statement.
+
+    Handles ``var = Callee(...)``, ``var = Callee(...)`` with casts, and
+    multi-line calls. Returns the callee name or None.
+    """
+    if not statement:
+        return None
+    m = re.search(r'=\s*(?:\([^)]*\)\s*)?(\w+)\s*\(', statement)
+    if m:
+        return m.group(1)
+    return None
+
+
 # ---------------------------------------------------------------------------
 # GDB-based comparison
 # ---------------------------------------------------------------------------
