@@ -284,8 +284,27 @@ def _semantic_pair_added_guard(callee_a, callee_b, source_dirs_a, source_dirs_b)
                 candidates.append((body_b_start + j, bs, vars_in_stmt))
         if fallback is None and ('=' in bs or 'if' in bs):
             fallback = (body_b_start + j, bs)
-    if candidates:
-        # Use the first assignment with extractable variables.
+
+    # Pick the best candidate: prefer assignments whose LHS variable matches a
+    # variable used in the guard's condition (e.g. `datasize = ...` when the
+    # guard checks `datasize > tif_size`).  Fall back to the first assignment
+    # with extractable variables.
+    guard_vars = set(_extract_variables_from_expression(s))
+    best = None
+    for line_no, stmt, vars_in in candidates:
+        # Extract LHS of assignment
+        eq_pos = stmt.find('=')
+        if eq_pos > 0:
+            lhs = stmt[:eq_pos].strip().lstrip('*').strip()
+            # Strip casts like (uint32)
+            import re as _re
+            lhs = _re.sub(r'\([^)]*\)\s*$', '', lhs).strip()
+            if lhs in guard_vars:
+                best = (line_no, stmt, vars_in)
+                break
+    if best:
+        target_line, target_statement, target_vars = best
+    elif candidates:
         target_line, target_statement, target_vars = candidates[0]
     elif fallback:
         target_line, target_statement = fallback
