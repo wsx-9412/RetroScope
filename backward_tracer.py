@@ -298,6 +298,9 @@ def _map_fork_vars_to_target(fork_variables, func_name_a, src_a):
                 'statement': site['statement'],
             })
     return sites
+
+
+def _extract_function_body(code, func_name):
     """Extract the body of a function from source code.
 
     Brace-matching skips braces inside comments, strings, char literals, and
