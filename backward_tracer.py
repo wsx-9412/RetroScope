@@ -305,25 +305,79 @@ def _map_fork_vars_to_target(fork_variables, func_name_a, src_a):
     return sites
 
 
-def _trace_to_input_variables(src_a, func_name_a, fork_line):
+def _trace_to_input_variables(src_a, func_name_a, fork_line, source_dirs=None):
     """Trace the fork statement's variables backward to input-derived sources.
 
     Starting at the fork statement line in the target version, follow the
     dependency chain backward and collect the *member accesses* (``direntry->
-    tdir_count``, ``direntry->tdir_type``, ...) that are ultimately read from the
-    input file.  These are the variables whose input offsets we want.
+    tdir_count``, ``direntry->tdir_type``, ...).  Then, for each member field,
+    find the statement that actually READS it from the input file (across all
+    source files), so the reported fork statement is the input-read site, not a
+    derived local computation.
 
-    Returns a list of member-access variable names.
+    Returns a list of dicts ``{field, file, line, statement}``.
     """
+    if source_dirs is None:
+        source_dirs = [src_a]
+
     deps = trace_dependenciesbackward(src_a, func_name_a, fork_line)
-    input_vars = []
+    member_fields = []
     seen = set()
     for dep in deps:
         for v in dep['variables']:
             if ('->' in v or '.' in v) and v not in seen:
                 seen.add(v)
-                input_vars.append(v)
-    return input_vars
+                # Keep just the field name (direntry->tdir_count -> tdir_count)
+                field = re.split(r'->|\.', v)[-1]
+                member_fields.append(field)
+
+    results = []
+    for field in member_fields:
+        for file_path, line, stmt in _find_member_field_assignments(
+                source_dirs, field):
+            results.append({
+                'field': field,
+                'file': file_path,
+                'line': line,
+                'statement': stmt,
+            })
+            break  # first (or primary) assignment is the input read
+    return results
+
+
+def _find_member_field_assignments(source_dirs, field_name):
+    """Find statements that assign to ``->field_name`` (or ``.field_name``).
+
+    Searches all source files and returns a list of (file, line, statement).
+    The most likely *input read* is an assignment whose RHS dereferences a raw
+    byte pointer (e.g. ``*(uint32*)ma``, ``TIFFReadUInt64(ma)``); those are
+    ranked first.
+    """
+    if isinstance(source_dirs, (str, os.PathLike)):
+        source_dirs = [source_dirs]
+    pattern = re.compile(r'->\s*' + re.escape(field_name) + r'\s*=')
+
+    raw = []   # reads from a raw byte pointer (the input)
+    other = []  # other assignments (trimming, defaults, ...)
+    for d in source_dirs:
+        for ext in ('.c', '.cpp'):
+            for path in Path(d).rglob(f'*{ext}'):
+                try:
+                    code = path.read_text(encoding='utf-8', errors='replace')
+                except OSError:
+                    continue
+                for i, line in enumerate(code.splitlines(), 1):
+                    if pattern.search(line):
+                        s = line.strip()
+                        entry = (str(path), i, s)
+                        if re.search(r'\*\s*\(\s*\w+\s*\*\)\s*\w+|'
+                                     r'TIFFReadUInt\d+|Getc|ReadOK|'
+                                     r'\*\s*\w+\s*\+\+|TIFFReadShort|'
+                                     r'TIFFReadLong', s):
+                            raw.append(entry)
+                        else:
+                            other.append(entry)
+    return raw + other
 
 
 def _extract_function_body(code, func_name):
