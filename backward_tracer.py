@@ -489,6 +489,10 @@ def _find_added_guard(src_a, func_name_a, src_b, func_name_b):
         'variables': _extract_variables(stmt),
         'score': score,
     }
+
+
+def _probe_callee_pair(callee, binary_a, binary_b, src_dir_a, src_dir_b,
+                       input_file, run_args, lib_path_a, lib_path_b, timeout):
     """Probe ``callee`` in A and its (possibly semantic-variant) counterpart in B.
 
     Returns ``(callee_a, callee_b, sub_ret)`` if their return values differ, else
