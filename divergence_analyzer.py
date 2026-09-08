@@ -336,14 +336,13 @@ def _locate_fork_call_site(caller, callee_a, callee_b, source_dirs_a, source_dir
 def _locate_semantic_enhancement_divergence(gaps, source_dirs_a, source_dirs_b):
     """Walk all gap fork pairs and return the first added guard statement.
 
-    This is the direct answer to "what did 4.4.0 add that 4.0.8 lacks": for
-    each ``WithLimit``/``Checked``-style pair (e.g. ``TIFFReadDirEntryArrayWithLimit``
-    vs ``TIFFReadDirEntryArray``), diff the two function bodies and report the
-    guard that A gained.
+    Two things are located:
+      * the *guard* (root cause) — diff of the leaf ``...WithLimit``/``...``
+        pair, e.g. ``datasize > tif_size`` in ``TIFFReadDirEntryArrayWithLimit``;
+      * the *fork call site* — the same position where the common caller invokes
+        the strengthened vs original callee (``TIFFFetchStripThing`` calling
+        ``TIFFReadDirEntryLong8ArrayWithLimit`` vs ``TIFFReadDirEntryLong8Array``).
     """
-    # Prefer the *leaf* pair (the function that actually gained the guard, e.g.
-    # ...ArrayWithLimit vs ...Array) over the wrapper pair (Long8ArrayWithLimit
-    # vs Long8Array, whose only difference is the call it makes).
     seen = set()
     for gap in gaps:
         a_paths = {x["name"]: x["path"] for x in gap.get("a", [])
@@ -352,24 +351,13 @@ def _locate_semantic_enhancement_divergence(gaps, source_dirs_a, source_dirs_b):
                    if isinstance(x, dict) and x.get("path")}
         a_names = sorted(a_paths.keys())
         b_names = sorted(b_paths.keys())
-        # Sort pairs by the base-name length (shorter base => deeper/leaf-ish),
-        # so ArrayWithLimit/Array is tried before Long8ArrayWithLimit/Long8Array.
+        # Sort pairs by base-name length (shorter base => leaf-ish) so the
+        # pair that actually gained the guard is tried first.
         pairs = []
         for a_name in a_names:
             for b_name in b_names:
                 if not is_semantic_pair(a_name, b_name):
                     continue
-                # Forking caller: longest common prefix of the two paths (minus
-                # the callee itself).
-                pa = a_paths[a_name][:-1]
-                pb = b_paths[b_name][:-1]
-                common = []
-                for x, y in zip(pa, pb):
-                    if x == y:
-                        common.append(x)
-                    else:
-                        break
-                caller = common[-1] if common else None
                 base = a_name
                 for suf in ("WithLimit", "Checked", "Safe", "Secure",
                             "Validated", "Sanitized", "Bounded", "Limited",
@@ -377,8 +365,9 @@ def _locate_semantic_enhancement_divergence(gaps, source_dirs_a, source_dirs_b):
                     if a_name.endswith(suf):
                         base = a_name[:-len(suf)]
                         break
-                pairs.append((len(base), a_name, b_name, caller))
-        for _, a_name, b_name, caller in sorted(pairs):
+                pairs.append((len(base), a_name, b_name))
+        leaf_res = None
+        for _, a_name, b_name in sorted(pairs):
             key = (a_name, b_name)
             if key in seen:
                 continue
@@ -386,13 +375,21 @@ def _locate_semantic_enhancement_divergence(gaps, source_dirs_a, source_dirs_b):
             res = _semantic_pair_added_guard(
                 a_name, b_name, source_dirs_a, source_dirs_b)
             if res:
-                if caller:
-                    site = _locate_fork_call_site(
-                        caller, a_name, b_name, source_dirs_a, source_dirs_b)
-                    if site:
-                        res.update(site)
-                        res['caller'] = caller
-                return res
+                leaf_res = res
+                break
+        if not leaf_res:
+            continue
+        # Fork call site comes from the *wrapper* pair (common caller invoking
+        # different callees), which shares the same parent path.
+        pair = _extract_gap_fork_pair(gap)
+        if pair:
+            callee_a, callee_b, caller = pair
+            site = _locate_fork_call_site(
+                caller, callee_a, callee_b, source_dirs_a, source_dirs_b)
+            if site:
+                leaf_res.update(site)
+                leaf_res['caller'] = caller
+        return leaf_res
     return None
 
 
