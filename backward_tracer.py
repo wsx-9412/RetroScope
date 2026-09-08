@@ -327,21 +327,31 @@ def compare_return_values(binary_a, binary_b, func_name,
 def _parse_rax(gdb_output):
     """Parse $rax value from GDB output."""
     for line in gdb_output.splitlines():
-        # Look for "$1 = <value>" pattern (print $rax result)
+        # Look for "Value returned is $N = ..." pattern first
+        m = re.search(r'Value returned is \$\d+\s*=\s*(.+)', line)
+        if m:
+            val_str = m.group(1).strip()
+            return _parse_value(val_str)
+        # Look for "$N = <value>" pattern (print $rax result)
         m = re.search(r'\$\d+\s*=\s*(.+)', line)
         if m:
             val_str = m.group(1).strip()
-            # Parse hex or decimal
-            try:
-                if val_str.startswith('0x'):
-                    return int(val_str, 16)
-                elif val_str in ('0', 'NULL'):
-                    return 0
-                else:
-                    return int(val_str)
-            except ValueError:
-                return val_str
+            return _parse_value(val_str)
     return None
+
+
+def _parse_value(val_str):
+    """Parse a GDB value string to int."""
+    # Strip type casts like "(TIFF *) 0x0" -> "0x0"
+    m = re.search(r'0x[0-9a-fA-F]+', val_str)
+    if m:
+        return int(m.group(0), 16)
+    if val_str in ('0', 'NULL'):
+        return 0
+    try:
+        return int(val_str)
+    except ValueError:
+        return val_str
 
 
 def compare_variable_at_line(binary, source_file, line_no, variables,
