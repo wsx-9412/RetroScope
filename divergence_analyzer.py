@@ -5172,6 +5172,31 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
             # trace are from this call statement, not from inside the callee.
             fork_vars = _extract_variables_from_expression(call_stmt_b)
 
+            # Map the guard's variables to the TARGET's read site.  The guard
+            # (e.g. "datasize > tif_size") lives in the reference (callee_a),
+            # but PolyTracker instruments the target (callee_b).  Find where the
+            # guard's local variable is assigned in the target and instrument
+            # there, so the taint traces to the exact input bytes.
+            try:
+                import backward_tracer as _bt
+                guard_vars = _bt._extract_variables(sem.get("statement", ""))
+                target_sites = _bt._map_fork_vars_to_target(
+                    guard_vars, sem["callee_b"],
+                    sem.get("target_file") or call_file_b)
+                if target_sites:
+                    site = target_sites[0]
+                    print(f"  [semantic-fork] target read site: "
+                          f"{site['variable']} @ "
+                          f"{os.path.basename(site['file'])}:{site['line']}")
+                    result["poly_track_file"] = site["file"]
+                    result["poly_track_line"] = site["line"]
+                    result["poly_track_statement"] = site["statement"]
+                    result["poly_track_function"] = sem["callee_b"]
+                    result["variables"] = [s["variable"] for s in target_sites]
+                    result["target_sites"] = target_sites
+            except Exception as _e:
+                print(f"  [semantic-fork] target-site mapping failed: {_e}")
+
             result = {
                 "divergence_function": func_name,
                 "trace_a_index": a_idx,
