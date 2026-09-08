@@ -49,33 +49,35 @@ def find_return_statements(source_file, func_name):
     results = []
     lines = body.splitlines()
     brace_depth = 0
-    cond_stack = []  # stack of (condition_text, depth_of_opening_brace)
+    cond_stack = []  # stack of (condition_text, depth_of_body, is_braced)
+    pending_single_line = None  # condition text from single-line if
 
     for i, line in enumerate(lines):
         stripped = line.strip()
 
-        # --- Process this line's content at the CURRENT depth ---
-        # (before updating depth for braces on this line)
-
-        # Detect if-statements: push condition at the depth where the body executes
+        # Detect if-statements
         if_m = re.match(r'if\s*\((.+?)\)\s*\{?\s*$', stripped)
         if if_m:
             if stripped.endswith('{'):
-                # Braced if: body is inside the braces (depth + 1)
-                cond_stack.append((if_m.group(1).strip(), brace_depth + 1))
+                cond_stack.append((if_m.group(1).strip(), brace_depth + 1, True))
+                pending_single_line = None
             else:
-                # Single-line if: body is the NEXT statement at current depth
-                cond_stack.append((if_m.group(1).strip(), brace_depth))
+                # Single-line if: condition applies to the NEXT statement only
+                pending_single_line = if_m.group(1).strip()
 
         # Detect return statements
         ret_m = re.match(r'return\s+(.+?)\s*;', stripped)
         if ret_m:
-            # Find the condition whose scope contains current depth
             cond = None
-            for c, d in reversed(cond_stack):
-                if d <= brace_depth:
-                    cond = c
-                    break
+            if pending_single_line:
+                cond = pending_single_line
+                pending_single_line = None
+            elif cond_stack:
+                # Find the condition whose scope contains current depth
+                for c, d, braced in reversed(cond_stack):
+                    if d <= brace_depth:
+                        cond = c
+                        break
             results.append({
                 'line': body_offset + i,
                 'statement': stripped,
@@ -83,17 +85,23 @@ def find_return_statements(source_file, func_name):
                 'condition': cond,
                 'brace_depth': brace_depth,
             })
+        elif pending_single_line and not stripped.startswith(('if', 'else')):
+            # Non-return statement after single-line if: the single-line if body
+            # has been consumed, clear pending
+            pending_single_line = None
 
-        # --- Now update depth for braces on this line ---
+        # Update depth for braces on this line
         open_count = stripped.count('{')
         close_count = stripped.count('}')
         new_depth = brace_depth + open_count - close_count
 
-        # Pop conditions whose scope ended
-        # A condition at depth d is valid for depths d, d+1, d+2, ...
-        # When we close a brace to new_depth, conditions at depth > new_depth are out of scope
+        # Pop braced conditions whose scope ended
         while cond_stack and cond_stack[-1][1] > new_depth:
             cond_stack.pop()
+        # Also pop conditions whose opening brace depth matches the closing depth
+        while cond_stack and cond_stack[-1][2] and cond_stack[-1][1] == new_depth and close_count > 0:
+            cond_stack.pop()
+            close_count -= 1
 
         brace_depth = new_depth
 
