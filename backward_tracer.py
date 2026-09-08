@@ -206,6 +206,14 @@ def trace_dependenciesbackward(source_file, func_name, return_line):
 
 
 def _extract_variables(expr):
+    """Extract variable names from a C expression.
+
+    Returns member-access chains (``tif->tif_size``) and bare identifiers,
+    dropping keywords, type names, and function names (an identifier followed by
+    ``(`` such as ``isMapped`` or ``TIFFReadDirEntryArray``).
+    """
+    if not expr:
+        return []
     # Remove string/char literals and numbers
     expr = re.sub(r'"[^"]*"', '', expr)
     expr = re.sub(r"'[^']*'", '', expr)
