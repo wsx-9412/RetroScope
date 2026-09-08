@@ -155,6 +155,260 @@ def _extract_gap_fork(gap):
     return best[1] if best else None
 
 
+def _extract_gap_fork_pair(gap):
+    """Extract the forking callee pair and caller from a gap.
+
+    Returns ``(callee_a, callee_b, caller)`` where the same ``caller`` invoked
+    ``callee_a`` in A (e.g. ``TIFFReadDirEntryLong8ArrayWithLimit``) but
+    ``callee_b`` in B (e.g. ``TIFFReadDirEntryLong8Array``), or None.  The pair
+    is a *semantic-enhancement* rename: B's function was replaced by a
+    strengthened A variant (``...WithLimit``/``...Checked``), whose added guard
+    is the real fork statement.
+    """
+    a_items = [x for x in gap.get("a", [])
+               if isinstance(x, dict) and x.get("path")]
+    b_items = [x for x in gap.get("b", [])
+               if isinstance(x, dict) and x.get("path")]
+    if not a_items or not b_items:
+        return None
+    b_by_parent = {}
+    for x in b_items:
+        p = tuple(x["path"][:-1])
+        b_by_parent.setdefault(p, set()).add(x["name"])
+    best = None
+    for x in a_items:
+        p = tuple(x["path"][:-1])
+        if p in b_by_parent:
+            for b_name in b_by_parent[p]:
+                if b_name != x["name"]:
+                    depth = len(p)
+                    if best is None or depth > best[0]:
+                        best = (depth, x["name"], b_name, p[-1] if p else None)
+    if best:
+        return best[1], best[2], best[3]
+    return None
+
+
+def _semantic_pair_added_guard(callee_a, callee_b, source_dirs_a, source_dirs_b):
+    """Diff a semantic-enhancement pair and return A's added guard statement.
+
+    ``callee_a`` is the strengthened variant (e.g. ``TIFFReadDirEntryArrayWithLimit``)
+    and ``callee_b`` the original (``TIFFReadDirEntryArray``).  Find a statement
+    present in A's body but not B's that looks like a guard
+    (``if ... >/< ...`` or ``return ErrSizesan`` etc.) — that guard is the real
+    fork statement.
+    """
+    file_a = _find_function_source(callee_a, source_dirs_a)
+    file_b = _find_function_source(callee_b, source_dirs_b)
+    if not file_a or not file_b:
+        return None
+    try:
+        code_a = open(file_a, encoding='utf-8', errors='replace').read()
+        code_b = open(file_b, encoding='utf-8', errors='replace').read()
+    except OSError:
+        return None
+    body_a = _extract_function_body(code_a, callee_a)
+    body_b = _extract_function_body(code_b, callee_b)
+    if not body_a or not body_b:
+        return None
+
+    # Line number of the function body start within the file (for reporting).
+    head_a = code_a[:code_a.find(body_a)] if body_a in code_a else ''
+    body_start_line = head_a.count('\n') + 1
+
+    b_lines = {l.strip() for l in body_b.splitlines()}
+    # Collect candidate statements that are present in A but not B and look
+    # like a guard.  Score them so genuine size-limit checks (datasize >
+    # tif_size, maxcount, Sizesan) rank above cosmetic refactors (renamed
+    # locals such as `target_count64 == 0` vs `direntry->tdir_count == 0`).
+    candidates = []
+    for i, line in enumerate(body_a.splitlines()):
+        s = line.strip()
+        if not s or s.startswith(('/*', '//', '{', '}', '*')):
+            continue
+        if s in b_lines:
+            continue
+        if not ('if' in s or 'return' in s):
+            continue
+        if not ('>' in s or '<' in s or '==' in s or 'Sizesan' in s
+                or 'tif_size' in s):
+            continue
+        score = 0
+        for kw in ('tif_size', 'maxcount', 'Sizesan', 'limit', 'datasize',
+                   'filesize', 'tif->tif_size'):
+            if kw.lower() in s.lower():
+                score += 1
+        candidates.append((score, i, s))
+    if not candidates:
+        return None
+    candidates.sort(reverse=True)
+    score, i, s = candidates[0]
+
+    # Locate the *target* (4.0.8) counterpart statement that reads the same
+    # input-derived value, so PolyTracker can instrument 4.0.8 (which has no
+    # such guard).  E.g. for the added `datasize > tif_size` guard, the target
+    # reads `*count=(uint32)direntry->tdir_count;` — the input byte that steers
+    # datasize.
+    target_line = None
+    target_statement = None
+    target_vars = []
+    head_b = code_b[:code_b.find(body_b)] if body_b in code_b else ''
+    body_b_start = head_b.count('\n') + 1
+    # Prefer an *assignment* that reads the input-derived field (e.g.
+    # `*count=(uint32)direntry->tdir_count;`) over a guard (`if (tdir_count==0)`),
+    # since the assignment is where the raw input value enters the computation.
+    fallback = None
+    for j, bline in enumerate(body_b.splitlines()):
+        bs = bline.strip()
+        if not bs or bs.startswith(('/*', '//', '{', '}')):
+            continue
+        # Skip block-comment continuation (`* foo`) but NOT deref assignments
+        # (`*count = ...` where `*` is immediately followed by a word char).
+        if bs.startswith('*') and (len(bs) == 1 or not bs[1].isalnum()):
+            continue
+        if 'tdir_count' not in bs and not ('*count' in bs and '=' in bs):
+            continue
+        is_assign = ('=' in bs) and ('if' not in bs)
+        if is_assign:
+            target_line = body_b_start + j
+            target_statement = bs
+            target_vars = _extract_variables_from_expression(bs)
+            break
+        if fallback is None:
+            fallback = (body_b_start + j, bs)
+    if target_statement is None and fallback:
+        target_line, target_statement = fallback
+        target_vars = _extract_variables_from_expression(target_statement)
+
+    return {
+        'file': file_a,
+        'line': body_start_line + i,
+        'statement': s,
+        'callee_a': callee_a,
+        'callee_b': callee_b,
+        'target_file': file_b,
+        'target_line': target_line,
+        'target_statement': target_statement,
+        'target_func': callee_b,
+        'target_vars': target_vars,
+    }
+
+
+def _locate_fork_call_site(caller, callee_a, callee_b, source_dirs_a, source_dirs_b):
+    """Locate the forking call site: the statement in ``caller`` that invokes
+    ``callee_a`` in A vs ``callee_b`` in B — the *same* position, different callee."""
+    file_a = _find_function_source(caller, source_dirs_a)
+    file_b = _find_function_source(caller, source_dirs_b)
+    if not file_a or not file_b:
+        return None
+    try:
+        code_a = open(file_a, encoding='utf-8', errors='replace').read()
+        code_b = open(file_b, encoding='utf-8', errors='replace').read()
+    except OSError:
+        return None
+    body_a = _extract_function_body(code_a, caller)
+    body_b = _extract_function_body(code_b, caller)
+    if not body_a or not body_b:
+        return None
+
+    def find_call(body, callee):
+        for j, line in enumerate(body.splitlines()):
+            if re.search(r'\b' + re.escape(callee) + r'\s*\(', line):
+                return line.strip(), j
+        return None, None
+
+    stmt_a, j_a = find_call(body_a, callee_a)
+    stmt_b, j_b = find_call(body_b, callee_b)
+    if not stmt_a or not stmt_b:
+        return None
+    head_a = code_a[:code_a.find(body_a)]
+    head_b = code_b[:code_b.find(body_b)]
+    return {
+        'call_stmt_a': stmt_a,
+        'call_line_a': head_a.count('\n') + 1 + j_a,
+        'call_stmt_b': stmt_b,
+        'call_line_b': head_b.count('\n') + 1 + j_b,
+        'call_file_a': file_a,
+        'call_file_b': file_b,
+    }
+
+
+def _locate_semantic_enhancement_divergence(gaps, source_dirs_a, source_dirs_b):
+    """Walk all gap fork pairs and return the first added guard statement.
+
+    This is the direct answer to "what did 4.4.0 add that 4.0.8 lacks": for
+    each ``WithLimit``/``Checked``-style pair (e.g. ``TIFFReadDirEntryArrayWithLimit``
+    vs ``TIFFReadDirEntryArray``), diff the two function bodies and report the
+    guard that A gained.
+    """
+    # Prefer the *leaf* pair (the function that actually gained the guard, e.g.
+    # ...ArrayWithLimit vs ...Array) over the wrapper pair (Long8ArrayWithLimit
+    # vs Long8Array, whose only difference is the call it makes).
+    seen = set()
+    for gap in gaps:
+        a_paths = {x["name"]: x["path"] for x in gap.get("a", [])
+                   if isinstance(x, dict) and x.get("path")}
+        b_paths = {x["name"]: x["path"] for x in gap.get("b", [])
+                   if isinstance(x, dict) and x.get("path")}
+        a_names = sorted(a_paths.keys())
+        b_names = sorted(b_paths.keys())
+        # Sort pairs by the base-name length (shorter base => deeper/leaf-ish),
+        # so ArrayWithLimit/Array is tried before Long8ArrayWithLimit/Long8Array.
+        pairs = []
+        for a_name in a_names:
+            for b_name in b_names:
+                if not is_semantic_pair(a_name, b_name):
+                    continue
+                # Forking caller: longest common prefix of the two paths (minus
+                # the callee itself).
+                pa = a_paths[a_name][:-1]
+                pb = b_paths[b_name][:-1]
+                common = []
+                for x, y in zip(pa, pb):
+                    if x == y:
+                        common.append(x)
+                    else:
+                        break
+                caller = common[-1] if common else None
+                base = a_name
+                for suf in ("WithLimit", "Checked", "Safe", "Secure",
+                            "Validated", "Sanitized", "Bounded", "Limited",
+                            "WithSize", "WithCount"):
+                    if a_name.endswith(suf):
+                        base = a_name[:-len(suf)]
+                        break
+                pairs.append((len(base), a_name, b_name, caller))
+        for _, a_name, b_name, caller in sorted(pairs):
+            key = (a_name, b_name)
+            if key in seen:
+                continue
+            seen.add(key)
+            res = _semantic_pair_added_guard(
+                a_name, b_name, source_dirs_a, source_dirs_b)
+            if res:
+                if caller:
+                    site = _locate_fork_call_site(
+                        caller, a_name, b_name, source_dirs_a, source_dirs_b)
+                    if site:
+                        res.update(site)
+                        res['caller'] = caller
+                return res
+    return None
+
+
+def is_semantic_pair(name_a, name_b):
+    """True if name_a/name_b differ only by a semantic suffix (WithLimit/Checked...)."""
+    if name_a == name_b:
+        return False
+    for suffix in ("WithLimit", "Checked", "Safe", "Secure", "Validated",
+                   "Sanitized", "Bounded", "Limited", "WithSize", "WithCount"):
+        if name_a.endswith(suffix) and name_a[:-len(suffix)] == name_b:
+            return True
+        if name_b.endswith(suffix) and name_b[:-len(suffix)] == name_a:
+            return True
+    return False
+
+
 def identify_divergence_function(matches, gaps, trace_a, trace_b,
                                  hint_func=None, prefer_tail=False):
     """Identify the function where traces diverge.
@@ -4856,6 +5110,58 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
     # return-value differences) to locate the diverging statement.
     # ========================================================
     if reference_crashed:
+        # Prefer a semantic-enhancement fork (WithLimit/Checked): diff the two
+        # function bodies directly and report the guard 4.4.0 added.
+        sem = _locate_semantic_enhancement_divergence(
+            gaps, source_dirs_a, source_dirs_b)
+        if sem:
+            print(f"  [semantic-fork] {sem['callee_a']} vs {sem['callee_b']}: "
+                  f"added guard '{sem['statement']}' "
+                  f"({os.path.basename(sem['file'])}:{sem['line']})")
+            # PolyTracker instruments the *target* (4.0.8), which has no guard.
+            # Point the PolyTracker-facing fields (root_cause_*_b) at the target's
+            # equivalent statement that reads the same input-derived value
+            # (e.g. `*count=(uint32)direntry->tdir_count;`), and keep the 4.4.0
+            # guard in the *_a fields for display.
+            target_file = sem.get("target_file") or ""
+            target_line = sem.get("target_line") or 0
+            target_stmt = sem.get("target_statement") or ""
+            target_func = sem.get("target_func") or sem["callee_b"]
+            result = {
+                "divergence_function": func_name,
+                "trace_a_index": a_idx,
+                "trace_b_index": b_idx,
+                "root_cause_function": target_func,
+                "root_cause_file": target_file,
+                "root_cause_line": target_line,
+                "root_cause_file_a": sem["file"],
+                "root_cause_line_a": sem["line"],
+                "root_cause_file_b": target_file,
+                "root_cause_line_b": target_line,
+                "root_cause_statement_a": sem["statement"],
+                "root_cause_statement_b": target_stmt,
+                "semantic_fork": True,
+                "description": (
+                    f"Divergence function: {func_name}\n"
+                    f"Root cause function: {sem['callee_a']}\n"
+                    f"Root cause: {sem['callee_a']} adds a guard that "
+                    f"{sem['callee_b']} lacks\n"
+                    f"  v4.4.0: {sem['statement']}\n"
+                    f"  v4.0.8: {target_stmt or '(no equivalent guard)'}\n"
+                    f"Source: {sem['file']}:{sem['line']}"
+                ),
+            }
+            if input_file:
+                result["input_file"] = str(input_file)
+            if not skip_polytracker:
+                try:
+                    result = _polytracker_locate_input_offsets(
+                        result, config=config, binary_b=binary_b, binary_a=binary_a)
+                except Exception as e:
+                    print(f"  [PolyTracker] Analysis failed: {e}")
+                    result["polytracker_offsets"] = {"status": "error", "error": str(e)}
+            return result
+
         common_func, _ = _find_last_common_function(matches, gaps, trace_a, trace_b)
         if common_func:
             print(f"  [step-into] last common function: {common_func}()")
