@@ -357,9 +357,9 @@ def _find_function_containing_line(source_file, line):
     n = len(lines)
     _CTRL = {'if', 'while', 'for', 'switch', 'return', 'else', 'do', 'sizeof'}
 
-    # Find function definitions: a column-0 line matching a signature
-    # `[static] [type] name(...)` whose opening brace follows on this or a later
-    # line. Track brace depth to find each function's extent.
+    # Find function definitions: a column-0 line naming a function whose opening
+    # brace follows on this or a later line.  Track brace depth to find each
+    # function's extent.
     funcs = []
     i = 0
     while i < n:
@@ -367,7 +367,11 @@ def _find_function_containing_line(source_file, line):
         if not l or l[0] in ' \t':  # functions are declared at column 0
             i += 1
             continue
-        m = re.match(r'(?:static\s+)?(?:[\w\s*]+?)\s+(\w+)\s*\(', l)
+        if '#' in l or l.rstrip().endswith(';'):
+            i += 1
+            continue
+        # The function name is the last identifier before '(' on this line.
+        m = re.search(r'(\w+)\s*\(', l)
         if not m:
             i += 1
             continue
@@ -377,9 +381,9 @@ def _find_function_containing_line(source_file, line):
             continue
         # Find the opening brace
         j = i
-        while j < n and '{' not in lines[j]:
+        while j < n and '{' not in lines[j] and ';' not in lines[j]:
             j += 1
-        if j >= n:
+        if j >= n or '{' not in lines[j]:
             i += 1
             continue
         depth = 0
