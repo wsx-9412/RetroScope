@@ -267,14 +267,15 @@ def run_gdb_batch(binary, commands, env=None, timeout=120):
 
 
 def compare_return_values(binary_a, binary_b, func_name,
-                          source_a, source_b, input_file,
+                          source_a, source_b, input_file, run_args,
                           lib_path_a=None, lib_path_b=None,
                           timeout=120):
     """Compare return values of func_name between two versions.
 
-    Uses GDB Python scripting to run to function return and capture $rax.
+    Breaks at the function entry, runs to return with ``finish``, and reads
+    ``$rax`` (x86-64 return register).
 
-    Returns: dict with val_a/b, condition_a/b, return_line_a/b, etc. or None
+    Returns: dict with val_a/b and return-line info, or None if equal/not found.
     """
     returns_a = find_return_statements(source_a, func_name)
     returns_b = find_return_statements(source_b, func_name)
@@ -285,21 +286,6 @@ def compare_return_values(binary_a, binary_b, func_name,
     env_a = _make_env(lib_path_a)
     env_b = _make_env(lib_path_b)
 
-    run_args = _gdb_run_args(input_file)
-
-    # GDB Python script: break at func, run to return, capture $rax
-    script = f"""set pagination off
-set confirm off
-set env ASAN_OPTIONS=detect_leaks=0
-break {func_name}
-run {run_args}
-finish
-print $rax
-"""
-
-    out_a = run_gdb_batch(binary_a, ['-batch', '-ex', script.replace('\n', '\n-ex ')],
-                          env=env_a, timeout=timeout)
-    # Simpler: use sequential -ex commands
     cmds = [
         f'break {func_name}',
         f'run {run_args}',
@@ -312,21 +298,21 @@ print $rax
     out_b = run_gdb_batch(binary_b, cmds, env=env_b, timeout=timeout)
     val_b = _parse_rax(out_b)
 
-    if val_a is not None and val_b is not None and val_a != val_b:
-        ret_a = _find_matching_return(returns_a, val_a)
-        ret_b = _find_matching_return(returns_b, val_b)
-        return {
-            'return_line_a': ret_a['line'] if ret_a else returns_a[-1]['line'],
-            'return_line_b': ret_b['line'] if ret_b else returns_b[-1]['line'],
-            'return_expr_a': ret_a['return_expr'] if ret_a else '?',
-            'return_expr_b': ret_b['return_expr'] if ret_b else '?',
-            'val_a': val_a,
-            'val_b': val_b,
-            'condition_a': ret_a['condition'] if ret_a else None,
-            'condition_b': ret_b['condition'] if ret_b else None,
-        }
+    if val_a is None or val_b is None or val_a == val_b:
+        return None
 
-    return None
+    ret_a = _find_main_return(returns_a, val_a)
+    ret_b = _find_main_return(returns_b, val_b)
+    return {
+        'return_line_a': ret_a['line'] if ret_a else returns_a[-1]['line'],
+        'return_line_b': ret_b['line'] if ret_b else returns_b[-1]['line'],
+        'return_expr_a': ret_a['return_expr'] if ret_a else '?',
+        'return_expr_b': ret_b['return_expr'] if ret_b else '?',
+        'val_a': val_a,
+        'val_b': val_b,
+        'condition_a': ret_a['condition'] if ret_a else None,
+        'condition_b': ret_b['condition'] if ret_b else None,
+    }
 
 
 def _make_env(lib_path=None):
@@ -339,21 +325,26 @@ def _make_env(lib_path=None):
     return env
 
 
-def _gdb_run_args(input_file):
-    """Format the run arguments for GDB."""
-    # Use the same command format as the config
-    return f"-Z 1:4,3:3 -R 90 -H 300 -S 2:2 -i {input_file} /tmp/foo"
+def _find_main_return(returns, value):
+    """Find the return statement that produced ``value``.
 
-
-def _find_matching_return(returns, value):
-    """Find the return statement whose expression matches the given value."""
+    Prefer the return whose expression is a variable (the "real" result) over
+    early error returns that return a constant (0/NULL).  This matters because
+    a function may return NULL both via ``return NULL`` (early error) and via
+    ``return tif`` where ``tif`` happens to be NULL (the value we care about).
+    """
+    # First pass: return statements whose expression is a variable
     for ret in returns:
-        expr = ret['return_expr']
+        expr = ret['return_expr'].strip()
+        if re.match(r'^\w[\w.]*$', expr) and '0' not in expr:
+            return ret
+    # Second pass: match by value
+    for ret in returns:
+        expr = ret['return_expr'].strip()
         if value == 0 and '0' in expr:
             return ret
-        if value != 0 and expr == 'tif':
-            return ret
-    return None
+    # Fallback: last return
+    return returns[-1] if returns else None
 
 
 def _parse_rax(gdb_output):
