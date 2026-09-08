@@ -348,43 +348,40 @@ def _trace_to_input_variables(src_a, func_name_a, fork_line, source_dirs=None):
 
 
 def _find_function_containing_line(source_file, line):
-    """Return the name of the function whose body contains ``line``.
-
-    Identifies function definitions by scanning for a signature line (return
-    type + name + ``(args)``) whose opening ``{`` is on the same or a following
-    line, and tracks brace depth to know each function's extent.
-    """
+    """Return the name of the function whose body contains ``line``."""
     try:
         code = open(source_file, encoding='utf-8', errors='replace').read()
     except OSError:
         return None
     lines = code.split('\n')
     n = len(lines)
-    # A function definition: a line that is NOT a call (no leading ';' and the
-    # previous char context) matching `name(...)`.  We locate the opening brace
-    # and track depth to find the closing brace.
-    func_ranges = []  # (start_line, end_line, name)
+    _CTRL = {'if', 'while', 'for', 'switch', 'return', 'else', 'do', 'sizeof'}
+
+    # Find function definitions: a column-0 line matching a signature
+    # `[static] [type] name(...)` whose opening brace follows on this or a later
+    # line. Track brace depth to find each function's extent.
+    funcs = []
     i = 0
     while i < n:
-        # Skip preprocessor and blank lines
-        stripped = lines[i].strip()
-        # Look for a signature: optional return type, then `name(` — but not a
-        # control keyword or a call inside a body (those are indented).
-        m = re.match(r'^(?!if\b|while\b|for\b|switch\b|return\b)'
-                     r'(?:static\s+)?(?:extern\s+)?'
-                     r'(?:[\w\s*]+?)\s+(\w+)\s*\(', lines[i])
+        l = lines[i]
+        if not l or l[0] in ' \t':  # functions are declared at column 0
+            i += 1
+            continue
+        m = re.match(r'(?:static\s+)?(?:[\w\s*]+?)\s+(\w+)\s*\(', l)
         if not m:
             i += 1
             continue
         name = m.group(1)
-        # Find the opening brace: on this line or a following line
+        if name in _CTRL:
+            i += 1
+            continue
+        # Find the opening brace
         j = i
         while j < n and '{' not in lines[j]:
             j += 1
         if j >= n:
             i += 1
             continue
-        # Track brace depth from the opening brace
         depth = 0
         k = j
         while k < n:
@@ -392,9 +389,9 @@ def _find_function_containing_line(source_file, line):
             k += 1
             if depth <= 0:
                 break
-        func_ranges.append((i + 1, k, name))
-        i = k  # skip past this function
-    for start, end, name in func_ranges:
+        funcs.append((i + 1, k, name))
+        i = k
+    for start, end, name in funcs:
         if start <= line <= end:
             return name
     return None
