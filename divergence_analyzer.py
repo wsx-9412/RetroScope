@@ -5118,37 +5118,49 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
             print(f"  [semantic-fork] {sem['callee_a']} vs {sem['callee_b']}: "
                   f"added guard '{sem['statement']}' "
                   f"({os.path.basename(sem['file'])}:{sem['line']})")
-            # PolyTracker instruments the *target* (4.0.8), which has no guard.
-            # Point the PolyTracker-facing fields (root_cause_*_b) at the target's
-            # equivalent statement that reads the same input-derived value
-            # (e.g. `*count=(uint32)direntry->tdir_count;`), and keep the 4.4.0
-            # guard in the *_a fields for display.
+            # The *fork point* is the call site: the same position where 4.4.0
+            # calls the strengthened callee and 4.0.8 calls the original.  The
+            # added guard (datasize > tif_size) is the *root cause*, reported in
+            # the description.  PolyTracker still needs the target's equivalent
+            # value-read site, kept in poly_track_*.
             target_file = sem.get("target_file") or ""
             target_line = sem.get("target_line") or 0
             target_stmt = sem.get("target_statement") or ""
             target_func = sem.get("target_func") or sem["callee_b"]
+
+            call_stmt_a = sem.get("call_stmt_a") or sem["statement"]
+            call_stmt_b = sem.get("call_stmt_b") or ""
+            call_file_a = sem.get("call_file_a") or sem["file"]
+            call_file_b = sem.get("call_file_b") or target_file
+            call_line_a = sem.get("call_line_a") or sem["line"]
+            call_line_b = sem.get("call_line_b") or target_line
+
             result = {
                 "divergence_function": func_name,
                 "trace_a_index": a_idx,
                 "trace_b_index": b_idx,
-                "root_cause_function": target_func,
-                "root_cause_file": target_file,
-                "root_cause_line": target_line,
-                "root_cause_file_a": sem["file"],
-                "root_cause_line_a": sem["line"],
-                "root_cause_file_b": target_file,
-                "root_cause_line_b": target_line,
-                "root_cause_statement_a": sem["statement"],
-                "root_cause_statement_b": target_stmt,
+                "root_cause_function": sem.get("caller") or sem["callee_a"],
+                "root_cause_file": call_file_a,
+                "root_cause_line": call_line_a,
+                "root_cause_file_a": call_file_a,
+                "root_cause_line_a": call_line_a,
+                "root_cause_file_b": call_file_b,
+                "root_cause_line_b": call_line_b,
+                "root_cause_statement_a": call_stmt_a,
+                "root_cause_statement_b": call_stmt_b,
+                "poly_track_function": target_func,
+                "poly_track_file": target_file,
+                "poly_track_line": target_line,
+                "poly_track_statement": target_stmt,
                 "semantic_fork": True,
                 "description": (
                     f"Divergence function: {func_name}\n"
-                    f"Root cause function: {sem['callee_a']}\n"
+                    f"Root cause function: {sem.get('caller') or sem['callee_a']}\n"
                     f"Root cause: {sem['callee_a']} adds a guard that "
                     f"{sem['callee_b']} lacks\n"
-                    f"  v4.4.0: {sem['statement']}\n"
-                    f"  v4.0.8: {target_stmt or '(no equivalent guard)'}\n"
-                    f"Source: {sem['file']}:{sem['line']}"
+                    f"  4.4.0 calls {sem['callee_a']}: {call_stmt_a}\n"
+                    f"  4.0.8 calls {sem['callee_b']}: {call_stmt_b}\n"
+                    f"  Guard added (4.4.0 only): {sem['statement']}"
                 ),
             }
             if input_file:
