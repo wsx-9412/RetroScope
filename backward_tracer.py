@@ -300,8 +300,30 @@ def _map_fork_vars_to_target(fork_variables, func_name_a, src_a):
                 'file': src_a,
                 'line': site['line'] + 1,  # instrument AFTER the assignment
                 'statement': site['statement'],
+                'assignment_line': site['line'],
             })
     return sites
+
+
+def _trace_to_input_variables(src_a, func_name_a, fork_line):
+    """Trace the fork statement's variables backward to input-derived sources.
+
+    Starting at the fork statement line in the target version, follow the
+    dependency chain backward and collect the *member accesses* (``direntry->
+    tdir_count``, ``direntry->tdir_type``, ...) that are ultimately read from the
+    input file.  These are the variables whose input offsets we want.
+
+    Returns a list of member-access variable names.
+    """
+    deps = trace_dependenciesbackward(src_a, func_name_a, fork_line)
+    input_vars = []
+    seen = set()
+    for dep in deps:
+        for v in dep['variables']:
+            if ('->' in v or '.' in v) and v not in seen:
+                seen.add(v)
+                input_vars.append(v)
+    return input_vars
 
 
 def _extract_function_body(code, func_name):
