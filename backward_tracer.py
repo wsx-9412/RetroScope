@@ -49,10 +49,7 @@ def find_return_statements(source_file, func_name):
     results = []
     lines = body.splitlines()
     brace_depth = 0
-    # Track the most recent enclosing if-condition
     cond_stack = []  # stack of (condition_text, brace_depth_at_if)
-    # For single-line ifs: the condition that applies to the NEXT statement
-    pending_single_line_cond = None
 
     for i, line in enumerate(lines):
         stripped = line.strip()
@@ -60,24 +57,18 @@ def find_return_statements(source_file, func_name):
         open_count = stripped.count('{')
         close_count = stripped.count('}')
 
-        # Detect if-statements (BEFORE processing brace pops)
+        # Compute new depth AFTER this line's braces
+        new_depth = brace_depth + open_count - close_count
+
+        # Detect if-statements
         if_m = re.match(r'if\s*\((.+?)\)\s*\{?\s*$', stripped)
         if if_m:
-            cond_stack.append((if_m.group(1).strip(), brace_depth + open_count))
-            pending_single_line_cond = None
-        else:
-            if_m2 = re.match(r'if\s*\((.+?)\)\s*(\S)', stripped)
-            if if_m2 and not stripped.endswith('{'):
-                pending_single_line_cond = if_m2.group(1).strip()
+            cond_stack.append((if_m.group(1).strip(), new_depth))
 
-        # Detect return statements (BEFORE processing brace pops)
+        # Detect return statements
         ret_m = re.match(r'return\s+(.+?)\s*;', stripped)
         if ret_m:
-            cond = None
-            if cond_stack:
-                cond = cond_stack[-1][0]
-            elif pending_single_line_cond:
-                cond = pending_single_line_cond
+            cond = cond_stack[-1][0] if cond_stack else None
             results.append({
                 'line': body_offset + i,
                 'statement': stripped,
@@ -85,14 +76,17 @@ def find_return_statements(source_file, func_name):
                 'condition': cond,
                 'brace_depth': brace_depth,
             })
-            pending_single_line_cond = None
 
-        # NOW process brace depth changes
-        new_depth = brace_depth + open_count - close_count
-        # Pop conditions whose scope has ended
+        # Pop conditions whose scope ended ( AFTER processing returns on this line )
         if close_count > 0:
-            while cond_stack and cond_stack[-1][1] >= new_depth:
+            while cond_stack and cond_stack[-1][1] > new_depth:
                 cond_stack.pop()
+            # Also pop if condition is at the same depth as the closing brace
+            # (the condition's block is ending)
+            while cond_stack and cond_stack[-1][1] == new_depth and close_count > 0:
+                cond_stack.pop()
+                close_count -= 1
+
         brace_depth = new_depth
 
     return results
