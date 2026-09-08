@@ -278,7 +278,11 @@ def _map_fork_vars_to_target(fork_variables, func_name_a, src_a):
     The guard lives in the *reference* (new) version, but PolyTracker must
     instrument the *target* (old) version.  For each fork variable, find where it
     is assigned in the target function (``func_name_a``) and return the
-    instrumentation info: ``{file, line, variables, function}``.
+    instrumentation info.
+
+    ``line`` is the source line *after* the assignment (the instrumentation
+    helper inserts the taint-log call before that line, so the logged value is
+    the freshly-computed one, not a stale pre-assignment value).
 
     Returns a list of ``{variable, file, line, statement}`` dicts.
     """
@@ -294,7 +298,7 @@ def _map_fork_vars_to_target(fork_variables, func_name_a, src_a):
             sites.append({
                 'variable': var,
                 'file': src_a,
-                'line': site['line'],
+                'line': site['line'] + 1,  # instrument AFTER the assignment
                 'statement': site['statement'],
             })
     return sites
