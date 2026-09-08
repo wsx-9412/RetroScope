@@ -446,7 +446,7 @@ set breakpoint pending on
 set env ASAN_OPTIONS=detect_leaks=0
 catch load libtiff
 run {run_args}
-break {func_name}
+tbreak {func_name}
 continue
 python
 import gdb
