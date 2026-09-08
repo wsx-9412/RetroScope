@@ -62,7 +62,6 @@ def find_return_statements(source_file, func_name):
                 cond_stack.append((if_m.group(1).strip(), brace_depth + 1, True))
                 pending_single_line = None
             else:
-                # Single-line if: condition applies to the NEXT statement only
                 pending_single_line = if_m.group(1).strip()
 
         # Detect return statements
@@ -73,7 +72,6 @@ def find_return_statements(source_file, func_name):
                 cond = pending_single_line
                 pending_single_line = None
             elif cond_stack:
-                # Find the condition whose scope contains current depth
                 for c, d, braced in reversed(cond_stack):
                     if d <= brace_depth:
                         cond = c
@@ -86,22 +84,31 @@ def find_return_statements(source_file, func_name):
                 'brace_depth': brace_depth,
             })
         elif pending_single_line and not stripped.startswith(('if', 'else')):
-            # Non-return statement after single-line if: the single-line if body
-            # has been consumed, clear pending
             pending_single_line = None
 
         # Update depth for braces on this line
         open_count = stripped.count('{')
         close_count = stripped.count('}')
+
+        # Check for "} else {" pattern: the } closes one block but else { opens another
+        # In this case, only pop ONE level, not both
+        is_else_brace = re.match(r'\}\s*else\s*\{', stripped)
+
         new_depth = brace_depth + open_count - close_count
 
-        # Pop braced conditions whose scope ended
-        while cond_stack and cond_stack[-1][1] > new_depth:
-            cond_stack.pop()
-        # Also pop conditions whose opening brace depth matches the closing depth
-        while cond_stack and cond_stack[-1][2] and cond_stack[-1][1] == new_depth and close_count > 0:
-            cond_stack.pop()
-            close_count -= 1
+        if is_else_brace:
+            # } else { : close one block, open another at same depth
+            # Pop only the innermost condition (the one being closed)
+            if cond_stack and cond_stack[-1][2] and cond_stack[-1][1] == brace_depth:
+                cond_stack.pop()
+            # Don't pop anything else - the else block continues
+        else:
+            # Normal brace processing
+            while cond_stack and cond_stack[-1][1] > new_depth:
+                cond_stack.pop()
+            while cond_stack and cond_stack[-1][2] and cond_stack[-1][1] == new_depth and close_count > 0:
+                cond_stack.pop()
+                close_count -= 1
 
         brace_depth = new_depth
 
