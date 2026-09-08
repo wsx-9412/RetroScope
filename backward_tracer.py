@@ -254,9 +254,14 @@ def _find_function_source(func_name, source_dirs):
 
     ``source_dirs`` is a single dir or a list of dirs to search (rglob .c/.cpp).
     Returns the file path as a string, or None.
+
+    When a function is defined in both a platform-specific file (e.g.
+    ``tif_win32.c``) and a generic one (``tif_unix.c``), prefer the file that
+    matches the current OS (on Linux, avoid ``*win32*`` files).
     """
     if isinstance(source_dirs, (str, os.PathLike)):
         source_dirs = [source_dirs]
+    matches = []
     for d in source_dirs:
         for ext in ('.c', '.cpp'):
             for path in Path(d).rglob(f'*{ext}'):
@@ -266,8 +271,15 @@ def _find_function_source(func_name, source_dirs):
                     continue
                 pattern = rf'(?:static\s+)?(?:\w+\s+)*\b{re.escape(func_name)}\s*\([^)]*\)\s*\{{'
                 if re.search(pattern, content):
-                    return str(path)
-    return None
+                    matches.append(str(path))
+    if not matches:
+        return None
+    # Prefer non-win32 files on Linux (they are the compiled variant)
+    if os.name != 'nt':
+        preferred = [p for p in matches if 'win32' not in p.lower()]
+        if preferred:
+            return preferred[0]
+    return matches[0]
 
 
 def _extract_callee(statement):
