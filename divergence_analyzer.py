@@ -6564,6 +6564,13 @@ def _polytracker_locate_input_offsets(result, config=None, binary_b=None, binary
 
     try:
         import polytracker_offsets as po
+        # For semantic forks, use poly_track_* fields (pointing to the target's
+        # variable-read site) rather than root_cause_* (which may point to the
+        # guard or the caller's fork-call-site, neither of which is correct for
+        # instrumentation).
+        pt_file = result.get('poly_track_file') or result.get('root_cause_file')
+        pt_line = result.get('poly_track_line') or result.get('root_cause_line')
+        pt_stmt = result.get('poly_track_statement') or full_stmt
         pt = po.locate_offsets(
             source_dir=source_dir,
             program_name=program_name,
@@ -6572,10 +6579,10 @@ def _polytracker_locate_input_offsets(result, config=None, binary_b=None, binary
             build_cmds=build_cmds or None,
             full_args=full_args,
             compile_flags=compile_flags,
-            fork_source_file=result.get('root_cause_file'),
-            fork_line=result.get('root_cause_line'),
+            fork_source_file=pt_file,
+            fork_line=pt_line,
             variables=variables,
-            fork_statement=full_stmt,
+            fork_statement=pt_stmt,
         )
     except Exception as e:
         print(f"  [PolyTracker] Analysis error: {e}")
