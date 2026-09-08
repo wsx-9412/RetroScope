@@ -149,9 +149,9 @@ def trace_dependenciesbackward(source_file, func_name, return_line):
             variables = _extract_variables(stripped)
 
         # Assignment: var = expr  or  var op= expr
-        elif re.match(r'\w[\w->.\[\]]*\s*=\s*.+', stripped) and not stripped.startswith(('if', 'else', 'while', 'for')):
+        elif re.match(r'\w[\w.\[\]>-]*\s*=\s*.+', stripped) and not stripped.startswith(('if', 'else', 'while', 'for')):
             kind = 'assignment'
-            m = re.match(r'([\w->.\[\]]+)\s*=', stripped)
+            m = re.match(r'([\w.\[\]>-]+)\s*=', stripped)
             if m:
                 variables = [m.group(1)] + _extract_variables(stripped[m.end():])
 
