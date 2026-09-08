@@ -766,12 +766,12 @@ def locate_offsets(source_dir, program_name, input_file, fork_function,
 
     print("\n  PolyTracker results:")
     if result["variable_offsets"]:
-        print("    分叉语句变量 -> 输入文件偏移:")
+        print("    Fork statement variables -> input file offsets:")
         for name, offs in result["variable_offsets"].items():
             offs_str = ", ".join(f"0x{o:x}" for o, _ in offs)
             print(f"      {name}: {offs_str}")
     else:
-        print("    分叉语句变量 -> 输入文件偏移: (无)")
+        print("    Fork statement variables -> input file offsets: (none)")
     return result
 
 
