@@ -436,6 +436,92 @@ def _resolve_callee_pair(callee, src_dir_a, src_dir_b):
     return callee, callee, src_a, src_b
 
 
+def _find_added_guard(src_a, func_name_a, src_b, func_name_b):
+    """Diff two function bodies and find the guard statement added in B.
+
+    When ``func_name_a`` and ``func_name_b`` form a semantic-enhancement pair
+    (e.g. ``TIFFReadDirEntryArray`` vs ``TIFFReadDirEntryArrayWithLimit``), the
+    fork is the guard added in the strengthened variant.  Returns a dict with
+    ``statement``, ``line`` (in B), and ``variables``, or None.
+    """
+    try:
+        code_a = open(src_a, encoding='utf-8', errors='replace').read()
+        code_b = open(src_b, encoding='utf-8', errors='replace').read()
+    except OSError:
+        return None
+    body_a = _extract_function_body(code_a, func_name_a)
+    body_b = _extract_function_body(code_b, func_name_b)
+    if not body_a or not body_b:
+        return None
+
+    head_b = code_b[:code_b.find(body_b)] if body_b in code_b else ''
+    body_b_offset = head_b.count('\n') + 1
+
+    a_lines = {l.strip() for l in body_a.splitlines()}
+
+    candidates = []
+    for i, line in enumerate(body_b.splitlines()):
+        s = line.strip()
+        if not s or s.startswith(('/*', '//', '{', '}', '*')):
+            continue
+        if s in a_lines:
+            continue
+        if not ('if' in s or 'return' in s):
+            continue
+        if not ('>' in s or '<' in s or '==' in s or 'Sizesan' in s
+                or 'tif_size' in s or 'datasize' in s or 'maxcount' in s
+                or 'limit' in s):
+            continue
+        score = 0
+        for kw in ('tif_size', 'maxcount', 'Sizesan', 'limit', 'datasize',
+                   'filesize', 'tif->tif_size', 'nstrips'):
+            if kw.lower() in s.lower():
+                score += 1
+        candidates.append((score, body_b_offset + i, s))
+
+    if not candidates:
+        return None
+    candidates.sort(reverse=True)
+    score, line, stmt = candidates[0]
+    return {
+        'statement': stmt,
+        'line': line,
+        'variables': _extract_variables(stmt),
+        'score': score,
+    }
+    """Probe ``callee`` in A and its (possibly semantic-variant) counterpart in B.
+
+    Returns ``(callee_a, callee_b, sub_ret)`` if their return values differ, else
+    None.  Handles the case where ``callee`` is defined in both versions but only
+    *called* in one (a wrapper that is never invoked), by probing semantic
+    variants (``...WithLimit``, ``...Checked``) in B for one that is actually
+    called.
+    """
+    rets_a = probe_returns(binary_a, callee, input_file, run_args,
+                           lib_path_a, timeout)
+    if not rets_a:
+        return None
+
+    src_a = _find_function_source(callee, src_dir_a)
+
+    # Try the direct name first, then semantic variants, in B.
+    for cb in [callee] + [callee + s for s in _SEMANTIC_SUFFIXES]:
+        src_b = _find_function_source(cb, src_dir_b)
+        if not src_b:
+            continue
+        rets_b = probe_returns(binary_b, cb, input_file, run_args,
+                               lib_path_b, timeout)
+        if not rets_b:
+            continue
+        sub_ret = _diff_return_sequences(rets_a, rets_b, src_a, src_b,
+                                         callee, cb)
+        if sub_ret:
+            return callee, cb, sub_ret
+        # Return values identical — not a fork.
+        return None
+    return None
+
+
 def _extract_calls_from_expression(expr):
     """Extract function-call names from a C expression string.
 
@@ -1012,20 +1098,17 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
         primary = []    # same-length value differences (genuine fork)
         secondary = []  # length differences (early-abort consequence)
         for callee in unique_candidates:
-            ca, cb, callee_src_a, callee_src_b = _resolve_callee_pair(
-                callee, src_dir_a, src_dir_b)
-            if not callee_src_a or not callee_src_b:
-                continue
-            sub_ret = compare_return_values(
-                binary_a, binary_b, ca, cb, callee_src_a, callee_src_b,
+            probed = _probe_callee_pair(
+                callee, binary_a, binary_b, src_dir_a, src_dir_b,
                 input_file, run_args, lib_path_a, lib_path_b, timeout
             )
-            if sub_ret:
-                entry = (ca, cb, sub_ret)
-                if sub_ret.get('diff_kind') == 'same_len_diff_value':
-                    primary.append(entry)
-                else:
-                    secondary.append(entry)
+            if not probed:
+                continue
+            ca, cb, sub_ret = probed
+            if sub_ret.get('diff_kind') == 'same_len_diff_value':
+                primary.append((ca, cb, sub_ret))
+            else:
+                secondary.append((ca, cb, sub_ret))
 
         chosen = None
         if primary:
