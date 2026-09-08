@@ -57,11 +57,15 @@ def find_return_statements(source_file, func_name):
         # --- Process this line's content at the CURRENT depth ---
         # (before updating depth for braces on this line)
 
-        # Detect if-statements: push condition at the depth of the opening brace
+        # Detect if-statements: push condition at the depth where the body executes
         if_m = re.match(r'if\s*\((.+?)\)\s*\{?\s*$', stripped)
         if if_m:
-            # The condition applies inside the block (depth after the opening brace)
-            cond_stack.append((if_m.group(1).strip(), brace_depth + 1))
+            if stripped.endswith('{'):
+                # Braced if: body is inside the braces (depth + 1)
+                cond_stack.append((if_m.group(1).strip(), brace_depth + 1))
+            else:
+                # Single-line if: body is the NEXT statement at current depth
+                cond_stack.append((if_m.group(1).strip(), brace_depth))
 
         # Detect return statements
         ret_m = re.match(r'return\s+(.+?)\s*;', stripped)
