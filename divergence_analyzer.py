@@ -5745,6 +5745,22 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
             if bt_result.get("fork_statement"):
                 print(f"\n  Backward tracer fork statement: "
                       f"{bt_result.get('fork_statement')}")
+
+            # Wire the backward tracer's target read sites into the fields the
+            # PolyTracker step (run_analysis.sh Step 3) reads, so it instruments
+            # the fork variable in the *target* version rather than the old
+            # fork-call-site heuristic.
+            target_sites = bt_result.get("target_sites") or []
+            if target_sites:
+                site = target_sites[0]
+                result["poly_track_file"] = site.get("file")
+                result["poly_track_line"] = site.get("line")
+                result["poly_track_statement"] = site.get("statement")
+                result["poly_track_function"] = bt_result.get("func_a")
+                result["variables"] = [s["variable"] for s in target_sites]
+                print(f"  Backward tracer target site -> "
+                      f"{result['poly_track_file']}:{result['poly_track_line']} "
+                      f"vars={result['variables']}")
         except Exception as e:
             print(f"  [Backward tracer] failed: {e}")
             result["backward_trace"] = {"status": "error", "error": str(e)}
