@@ -57,14 +57,16 @@ def find_return_statements(source_file, func_name):
     for i, line in enumerate(lines):
         stripped = line.strip()
 
-        # Track brace depth for nested blocks
+        # Count braces on this line BEFORE processing conditions
         open_count = stripped.count('{')
         close_count = stripped.count('}')
-        brace_depth += open_count - close_count
 
-        # Pop condition stack when we leave a block
-        while cond_stack and brace_depth <= cond_stack[-1][1]:
-            cond_stack.pop()
+        # Pop condition stack when we leave a block (close braces reduce depth)
+        new_depth = brace_depth + open_count - close_count
+        if close_count > 0:
+            while cond_stack and cond_stack[-1][1] >= new_depth:
+                cond_stack.pop()
+        brace_depth = new_depth
 
         # Detect if-statements
         if_m = re.match(r'if\s*\((.+?)\)\s*\{?\s*$', stripped)
@@ -78,7 +80,6 @@ def find_return_statements(source_file, func_name):
                 # The next statement is the body of this if
                 pending_single_line_cond = if_m2.group(1).strip()
             elif pending_single_line_cond and not stripped.startswith(('if', 'else', 'while', 'for')):
-                # This line is the body of a single-line if
                 pass  # pending_single_line_cond will be used below
 
         # Detect return statements
@@ -98,10 +99,6 @@ def find_return_statements(source_file, func_name):
                 'brace_depth': brace_depth,
             })
             pending_single_line_cond = None
-        elif pending_single_line_cond and not stripped.startswith(('if', 'else')):
-            # Non-return statement after single-line if: clear pending
-            # (unless it's another control flow)
-            pass
 
     return results
 
