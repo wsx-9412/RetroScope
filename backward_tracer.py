@@ -650,8 +650,8 @@ def compare_return_values(binary_a, binary_b, func_name_a, func_name_b,
         diff_kind = 'diff_len'
 
     # Map the source line back to the local source file for condition lookup.
-    returns_a = find_return_statements(source_a, func_name)
-    returns_b = find_return_statements(source_b, func_name)
+    returns_a = find_return_statements(source_a, func_name_a)
+    returns_b = find_return_statements(source_b, func_name_b)
 
     return {
         'return_line_a': diff_a['line'],
@@ -916,7 +916,7 @@ def find_fork_by_backward_tracing(binary_a, binary_b, source_dir_a, source_dir_b
     """
     chain = []
     result = _find_fork_recursive(
-        func_name, binary_a, binary_b, source_dir_a, source_dir_b,
+        func_name, func_name, binary_a, binary_b, source_dir_a, source_dir_b,
         input_file, run_args, lib_path_a, lib_path_b, timeout,
         depth=0, max_depth=max_depth, chain=chain
     )
@@ -924,69 +924,72 @@ def find_fork_by_backward_tracing(binary_a, binary_b, source_dir_a, source_dir_b
     return result
 
 
-def _find_fork_recursive(func_name, binary_a, binary_b, src_dir_a, src_dir_b,
-                         input_file, run_args, lib_path_a, lib_path_b, timeout,
+def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
+                         src_dir_a, src_dir_b, input_file, run_args,
+                         lib_path_a, lib_path_b, timeout,
                          depth, max_depth, chain):
-    """One level of the backward tracing recursion."""
+    """One level of the backward tracing recursion.
+
+    ``func_name_a`` and ``func_name_b`` may differ (a semantic rename such as
+    ``TIFFReadDirEntryLong8Array`` vs ``TIFFReadDirEntryLong8ArrayWithLimit``).
+    """
     indent = "  " * depth
-    print(f"\n{indent}[depth {depth}] Analyzing function: {func_name}")
+    label = func_name_a if func_name_a == func_name_b else f"{func_name_a} vs {func_name_b}"
+    print(f"\n{indent}[depth {depth}] Analyzing function: {label}")
 
     # 1. Find source files
-    src_a = _find_function_source(func_name, src_dir_a)
-    src_b = _find_function_source(func_name, src_dir_b)
+    src_a = _find_function_source(func_name_a, src_dir_a)
+    src_b = _find_function_source(func_name_b, src_dir_b)
     if not src_a or not src_b:
-        print(f"{indent}  Source not found for {func_name}")
-        return {'status': 'source_not_found', 'func': func_name}
+        print(f"{indent}  Source not found for {label} "
+              f"(a={src_a}, b={src_b})")
+        return {'status': 'source_not_found', 'func': label}
 
     # 2. Compare return values
     ret = compare_return_values(
-        binary_a, binary_b, func_name, src_a, src_b,
+        binary_a, binary_b, func_name_a, func_name_b, src_a, src_b,
         input_file, run_args, lib_path_a, lib_path_b, timeout
     )
     if not ret:
         print(f"{indent}  Return values equal — not the fork")
-        return {'status': 'no_return_difference', 'func': func_name}
+        return {'status': 'no_return_difference', 'func': label}
 
     print(f"{indent}  Return values DIFFER:")
     print(f"{indent}    A (old): line {ret['return_line_a']}, val={ret['val_a']:#x}")
     print(f"{indent}    B (new): line {ret['return_line_b']}, val={ret['val_b']:#x}")
 
     chain.append({
-        'func': func_name,
+        'func': label,
         'val_a': ret['val_a'],
         'val_b': ret['val_b'],
         'return_line_a': ret['return_line_a'],
         'return_line_b': ret['return_line_b'],
     })
 
-    # 3. Collect candidate callees that may determine the return value:
-    #    (a) function calls inside return conditions,
-    #    (b) function calls that assign to the returned variable, and
-    #    (c) all *checked* function calls (if/while conditions) in the body,
-    #        which can divert control flow via goto/early-return.
+    # 3. Collect candidate callees that may determine the return value.
     candidates = []
-    returns_a = find_return_statements(src_a, func_name)
+    returns_a = find_return_statements(src_a, func_name_a)
     for r in returns_a:
         if r.get('condition'):
             candidates.extend(_extract_calls_from_expression(r['condition']))
 
-    deps_a = trace_dependenciesbackward(src_a, func_name, ret['return_line_a'])
+    deps_a = trace_dependenciesbackward(src_a, func_name_a, ret['return_line_a'])
     for dep in deps_a:
         if dep['kind'] in ('call', 'assignment'):
             c = _extract_callee(dep['statement'])
             if c:
                 candidates.append(c)
 
-    for callee, line, stmt in _extract_checked_calls(src_a, func_name):
+    for callee, line, stmt in _extract_checked_calls(src_a, func_name_a):
         candidates.append(callee)
 
-    for callee, line, stmt in _extract_assign_calls(src_a, func_name):
+    for callee, line, stmt in _extract_assign_calls(src_a, func_name_a):
         candidates.append(callee)
 
     seen = set()
     unique_candidates = []
     for c in candidates:
-        if c and c != func_name and c not in seen:
+        if c and c != func_name_a and c not in seen:
             seen.add(c)
             unique_candidates.append(c)
 
@@ -994,25 +997,24 @@ def _find_fork_recursive(func_name, binary_a, binary_b, src_dir_a, src_dir_b,
           f"{unique_candidates[:15]}{'...' if len(unique_candidates) > 15 else ''}")
 
     # 4. For each candidate, check if its return value also differs.
-    #    Prefer "same length, different value" (a genuine fork) over
-    #    "different length" (an early-abort consequence of another fork).
     if depth < max_depth:
-        primary = []   # same-length value differences
-        secondary = []  # length differences
+        primary = []    # same-length value differences (genuine fork)
+        secondary = []  # length differences (early-abort consequence)
         for callee in unique_candidates:
-            callee_src_a = _find_function_source(callee, src_dir_a)
-            callee_src_b = _find_function_source(callee, src_dir_b)
+            ca, cb, callee_src_a, callee_src_b = _resolve_callee_pair(
+                callee, src_dir_a, src_dir_b)
             if not callee_src_a or not callee_src_b:
                 continue
             sub_ret = compare_return_values(
-                binary_a, binary_b, callee, callee_src_a, callee_src_b,
+                binary_a, binary_b, ca, cb, callee_src_a, callee_src_b,
                 input_file, run_args, lib_path_a, lib_path_b, timeout
             )
             if sub_ret:
+                entry = (ca, cb, sub_ret)
                 if sub_ret.get('diff_kind') == 'same_len_diff_value':
-                    primary.append((callee, sub_ret))
+                    primary.append(entry)
                 else:
-                    secondary.append((callee, sub_ret))
+                    secondary.append(entry)
 
         chosen = None
         if primary:
@@ -1021,17 +1023,16 @@ def _find_fork_recursive(func_name, binary_a, binary_b, src_dir_a, src_dir_b,
             chosen = secondary[0]
 
         if chosen:
-            callee, sub_ret = chosen
-            print(f"{indent}  -> {callee} return differs ({sub_ret.get('diff_kind')}); "
+            ca, cb, sub_ret = chosen
+            print(f"{indent}  -> {ca} return differs ({sub_ret.get('diff_kind')}); "
                   f"recursing")
             return _find_fork_recursive(
-                callee, binary_a, binary_b, src_dir_a, src_dir_b,
+                ca, cb, binary_a, binary_b, src_dir_a, src_dir_b,
                 input_file, run_args, lib_path_a, lib_path_b, timeout,
                 depth + 1, max_depth, chain
             )
 
-    # 5. No callee with a differing return value: the fork is a
-    #    variable comparison/assignment in this function.
+    # 5. No callee with a differing return value: the fork is here.
     fork_dep = None
     for dep in deps_a:
         if dep['kind'] == 'condition':
@@ -1040,11 +1041,11 @@ def _find_fork_recursive(func_name, binary_a, binary_b, src_dir_a, src_dir_b,
     if not fork_dep and deps_a:
         fork_dep = deps_a[0]
 
-    print(f"{indent}  FORK at {func_name}: "
+    print(f"{indent}  FORK at {label}: "
           f"{fork_dep['statement'].strip() if fork_dep else '?'}")
     return {
         'status': 'found',
-        'func': func_name,
+        'func': label,
         'fork_statement': fork_dep['statement'] if fork_dep else None,
         'fork_line': fork_dep['line'] if fork_dep else None,
         'fork_variables': fork_dep['variables'] if fork_dep else [],
