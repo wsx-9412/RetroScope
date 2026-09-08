@@ -335,8 +335,10 @@ def _trace_to_input_variables(src_a, func_name_a, fork_line, source_dirs=None):
     for field in member_fields:
         for file_path, line, stmt in _find_member_field_assignments(
                 source_dirs, field):
+            lhs = re.split(r'\s*=', stmt)[0].strip()
             results.append({
                 'field': field,
+                'variable': lhs,
                 'file': file_path,
                 'line': line,
                 'statement': stmt,
