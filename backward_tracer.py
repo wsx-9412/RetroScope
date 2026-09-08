@@ -303,7 +303,8 @@ def _extract_callee(statement):
 def run_gdb_batch(binary, commands, env=None, timeout=120):
     """Run GDB in batch mode and return stdout."""
     gdb_cmds = ["gdb", "-batch", "-ex", "set pagination off",
-                "-ex", "set confirm off"]
+                "-ex", "set confirm off",
+                "-ex", "set breakpoint pending on"]
     for cmd in commands:
         gdb_cmds.extend(["-ex", cmd])
     gdb_cmds.append(binary)
