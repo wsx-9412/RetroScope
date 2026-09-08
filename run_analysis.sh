@@ -204,15 +204,22 @@ from pathlib import Path
 with open('$DIVERGE_JSON') as f:
     div = json.load(f)
 
+# For semantic forks, poly_track_* fields point to the target's variable-read
+# site (correct for PolyTracker instrumentation); root_cause_* may point to the
+# guard or fork-call-site instead.
+pt_file = div.get('poly_track_file') or div.get('root_cause_file_b', div.get('root_cause_file'))
+pt_line = div.get('poly_track_line') or div.get('root_cause_line_b', div.get('root_cause_line'))
+pt_stmt = div.get('poly_track_statement') or div.get('root_cause_statement_b', '')
+
 result = locate_offsets(
     source_dir=div.get('source_dir', '$TARGET_VERSION_PATH'),
     program_name=div.get('program_name', 'tiffcrop'),
     input_file=div.get('input_file', '$INPUT_FILE'),
     fork_function=div.get('root_cause_function', ''),
-    fork_source_file=div.get('root_cause_file_b', div.get('root_cause_file')),
-    fork_line=div.get('root_cause_line_b', div.get('root_cause_line')),
+    fork_source_file=pt_file,
+    fork_line=pt_line,
     variables=div.get('variables', []),
-    fork_statement=div.get('root_cause_statement_b', ''),
+    fork_statement=pt_stmt,
     full_args=div.get('args_b', div.get('args_a')),
 )
 

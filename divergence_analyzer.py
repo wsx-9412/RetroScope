@@ -254,14 +254,20 @@ def _semantic_pair_added_guard(callee_a, callee_b, source_dirs_a, source_dirs_b)
     # such guard).  E.g. for the added `datasize > tif_size` guard, the target
     # reads `*count=(uint32)direntry->tdir_count;` — the input byte that steers
     # datasize.
+    #
+    # We collect ALL assignment statements in the target function body that
+    # contain variable-like expressions (not just hardcoded names like
+    # `tdir_count`), because the input-derived value could come from any
+    # variable.  PolyTracker will later trace each variable back to its input
+    # file origin.
     target_line = None
     target_statement = None
     target_vars = []
     head_b = code_b[:code_b.find(body_b)] if body_b in code_b else ''
     body_b_start = head_b.count('\n') + 1
-    # Prefer an *assignment* that reads the input-derived field (e.g.
-    # `*count=(uint32)direntry->tdir_count;`) over a guard (`if (tdir_count==0)`),
-    # since the assignment is where the raw input value enters the computation.
+    # Collect all candidate assignments: prefer assignments (where the raw input
+    # value enters the computation) over guards (`if (...)`).
+    candidates = []
     fallback = None
     for j, bline in enumerate(body_b.splitlines()):
         bs = bline.strip()
@@ -271,17 +277,17 @@ def _semantic_pair_added_guard(callee_a, callee_b, source_dirs_a, source_dirs_b)
         # (`*count = ...` where `*` is immediately followed by a word char).
         if bs.startswith('*') and (len(bs) == 1 or not bs[1].isalnum()):
             continue
-        if 'tdir_count' not in bs and not ('*count' in bs and '=' in bs):
-            continue
         is_assign = ('=' in bs) and ('if' not in bs)
         if is_assign:
-            target_line = body_b_start + j
-            target_statement = bs
-            target_vars = _extract_variables_from_expression(bs)
-            break
-        if fallback is None:
+            vars_in_stmt = _extract_variables_from_expression(bs)
+            if vars_in_stmt:
+                candidates.append((body_b_start + j, bs, vars_in_stmt))
+        if fallback is None and ('=' in bs or 'if' in bs):
             fallback = (body_b_start + j, bs)
-    if target_statement is None and fallback:
+    if candidates:
+        # Use the first assignment with extractable variables.
+        target_line, target_statement, target_vars = candidates[0]
+    elif fallback:
         target_line, target_statement = fallback
         target_vars = _extract_variables_from_expression(target_statement)
 
