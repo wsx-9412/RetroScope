@@ -5220,12 +5220,13 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 "root_cause_line_b": call_line_b,
                 "root_cause_statement_a": call_stmt_a,
                 "root_cause_statement_b": call_stmt_b,
-                "poly_track_function": sem.get("caller") or sem["callee_a"],
-                "poly_track_file": call_file_b,
-                "poly_track_line": call_line_b,
-                "poly_track_statement": call_stmt_b,
+                "poly_track_function": pt_func,
+                "poly_track_file": pt_file,
+                "poly_track_line": pt_line,
+                "poly_track_statement": pt_stmt,
                 "semantic_fork": True,
-                "variables": fork_vars,
+                "variables": pt_vars,
+                "target_sites": target_sites,
                 "description": (
                     f"Divergence function: {func_name}\n"
                     f"Root cause function: {sem.get('caller') or sem['callee_a']}\n"
