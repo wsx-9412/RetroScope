@@ -241,7 +241,63 @@ def _extract_variables(expr):
     return result
 
 
-def _extract_function_body(code, func_name):
+def _find_variable_assignment(source_file, func_name, var_name):
+    """Find where ``var_name`` is assigned in ``func_name``'s body.
+
+    Returns a dict ``{line, statement}`` of the LAST assignment to the variable
+    (the site whose value is the one the guard reads), or None.  A bare variable
+    (``datasize``) is matched as a whole word; a member chain (``tif->tif_size``)
+    is matched literally.
+    """
+    try:
+        code = open(source_file, encoding='utf-8', errors='replace').read()
+    except OSError:
+        return None
+    body = _extract_function_body(code, func_name)
+    if not body:
+        return None
+    head = code[:code.find(body)] if body in code else ''
+    body_offset = head.count('\n') + 1
+
+    last = None
+    for i, line in enumerate(body.splitlines()):
+        stripped = line.strip()
+        if not stripped or stripped.startswith(('/*', '//', '*')):
+            continue
+        if re.search(r'\b' + re.escape(var_name) + r'\b\s*=', stripped):
+            last = {
+                'line': body_offset + i,
+                'statement': stripped,
+            }
+    return last
+
+
+def _map_fork_vars_to_target(fork_variables, func_name_a, src_a):
+    """Map the fork (guard) variables to the target version's read site.
+
+    The guard lives in the *reference* (new) version, but PolyTracker must
+    instrument the *target* (old) version.  For each fork variable, find where it
+    is assigned in the target function (``func_name_a``) and return the
+    instrumentation info: ``{file, line, variables, function}``.
+
+    Returns a list of ``{variable, file, line, statement}`` dicts.
+    """
+    sites = []
+    for var in fork_variables:
+        # A member chain like tif->tif_size is a struct field, not a local;
+        # its taint is fixed at open time and does not map to an input byte
+        # offset in a useful way, so only trace bare local variables.
+        if '->' in var or '.' in var:
+            continue
+        site = _find_variable_assignment(src_a, func_name_a, var)
+        if site:
+            sites.append({
+                'variable': var,
+                'file': src_a,
+                'line': site['line'],
+                'statement': site['statement'],
+            })
+    return sites
     """Extract the body of a function from source code.
 
     Brace-matching skips braces inside comments, strings, char literals, and
