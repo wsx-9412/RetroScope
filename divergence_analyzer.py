@@ -6391,10 +6391,18 @@ def _polytracker_locate_input_offsets(result, config=None, binary_b=None, binary
     Returns:
         Updated result dict with 'polytracker_offsets' key added.
     """
-    func_name = result.get('root_cause_function')
-    source_file = result.get('root_cause_file')
-    source_line = result.get('root_cause_line')
-    statement = result.get('root_cause_statement_b', '')
+    # For a semantic fork, PolyTracker must instrument the *target*'s equivalent
+    # value-read site (poly_track_*), not the 4.4.0 guard (which the target lacks).
+    if result.get('semantic_fork') and result.get('poly_track_file'):
+        func_name = result.get('poly_track_function') or result.get('root_cause_function')
+        source_file = result.get('poly_track_file')
+        source_line = result.get('poly_track_line')
+        statement = result.get('poly_track_statement', '')
+    else:
+        func_name = result.get('root_cause_function')
+        source_file = result.get('root_cause_file')
+        source_line = result.get('root_cause_line')
+        statement = result.get('root_cause_statement_b', '')
 
     if not func_name or not statement:
         print("  [PolyTracker] No fork statement to analyze")
