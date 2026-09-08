@@ -1,10 +1,10 @@
 {
-  "binary_target": "/home/ws/Desktop/RetroScope/tiff-versions/tiff-4.0.8/tools/tiffcrop",
-  "binary_ref": "/home/ws/Desktop/RetroScope/tiff-versions/tiff-4.4.0/tools/.libs/tiffcrop",
-  "fork_spec": "tiffcrop.c:7488",
+  "binary_target": "/tmp/fork_analysis_8n2ruu1_/target/tools/.libs/tiffcrop",
+  "binary_ref": "/tmp/fork_analysis_8n2ruu1_/ref/tools/.libs/tiffcrop",
+  "fork_spec": "/tmp/fork_analysis_8n2ruu1_/target/libtiff/tif_dirread.c:5432",
   "variables": [
-    "crop_buff",
-    "cropsize",
+    "tif",
+    "dir",
     "image.width",
     "image.length",
     "image.bps",
@@ -23,302 +23,26 @@
     "crop.crop_mode"
   ],
   "differing_variables": [
-    "cropsize",
+    "tif",
+    "dir",
+    "image.width",
+    "image.length",
+    "image.bps",
+    "image.spp",
+    "image.compression",
+    "image.photometric",
+    "image.orientation",
+    "image.planar",
+    "image.res_unit",
     "crop.combined_width",
-    "crop.bufftotal"
+    "crop.combined_length",
+    "crop.bufftotal",
+    "crop.zones",
+    "crop.selections",
+    "crop.edge_ref",
+    "crop.crop_mode"
   ],
-  "target_file_reads": [
-    {
-      "fd": 3,
-      "offset": 64,
-      "size": 784,
-      "buf_addr": 140721775005360
-    },
-    {
-      "fd": 3,
-      "offset": 848,
-      "size": 48,
-      "buf_addr": 140721775005296
-    },
-    {
-      "fd": 3,
-      "offset": 896,
-      "size": 68,
-      "buf_addr": 140721775005216
-    }
-  ],
-  "ref_file_reads": [
-    {
-      "fd": 3,
-      "offset": 64,
-      "size": 784,
-      "buf_addr": 140734997440832
-    },
-    {
-      "fd": 3,
-      "offset": 848,
-      "size": 48,
-      "buf_addr": 140734997440768
-    },
-    {
-      "fd": 3,
-      "offset": 896,
-      "size": 68,
-      "buf_addr": 140734997440688
-    }
-  ],
-  "variable_mapping": {
-    "crop_buff": {
-      "address": "0x7ffc57690010",
-      "value": 0,
-      "size": 8,
-      "source": "DYNAMIC: DYN: image.width=32 read from ImageWidth at file@0xaa ; DYN: crop.combined_length=2080 matches ImageLength at file@0xb6 ; DYN: image.length=2080 read from ImageLength at file@0xb6 ; DYN: image.spp=1 read from SamplesPerPixel at file@0x12e",
-      "source_chain": [
-        "DYNAMIC: DYN: image.width=32 read from ImageWidth at file@0xaa ; DYN: crop.combined_length=2080 matches ImageLength at file@0xb6 ; DYN: image.length=2080 read from ImageLength at file@0xb6 ; DYN: image.spp=1 read from SamplesPerPixel at file@0x12e"
-      ],
-      "direct_offsets": [
-        170,
-        182,
-        302
-      ],
-      "indirect_offsets": [],
-      "input_offsets": [
-        170,
-        182,
-        302
-      ]
-    },
-    "cropsize": {
-      "address": "0x7ffc5768ffe8",
-      "value": 0,
-      "size": 8,
-      "source": "DYNAMIC: DYN: image.width=32 read from ImageWidth at file@0xaa ; DYN: crop.combined_length=2080 matches ImageLength at file@0xb6 ; DYN: image.length=2080 read from ImageLength at file@0xb6 ; DYN: image.spp=1 read from SamplesPerPixel at file@0x12e",
-      "source_chain": [
-        "DYNAMIC: DYN: image.width=32 read from ImageWidth at file@0xaa ; DYN: crop.combined_length=2080 matches ImageLength at file@0xb6 ; DYN: image.length=2080 read from ImageLength at file@0xb6 ; DYN: image.spp=1 read from SamplesPerPixel at file@0x12e"
-      ],
-      "direct_offsets": [
-        170,
-        182,
-        302
-      ],
-      "indirect_offsets": [],
-      "input_offsets": [
-        170,
-        182,
-        302
-      ]
-    },
-    "image.width": {
-      "address": "0x7ffc57690208",
-      "value": 32,
-      "size": 4,
-      "source": "DYNAMIC: DYN: image.width=32 read from ImageWidth at file@0xaa",
-      "source_chain": [
-        "DYNAMIC: DYN: image.width=32 read from ImageWidth at file@0xaa"
-      ],
-      "direct_offsets": [
-        170
-      ],
-      "indirect_offsets": [],
-      "input_offsets": [
-        170
-      ]
-    },
-    "image.length": {
-      "address": "0x7ffc5769020c",
-      "value": 2080,
-      "size": 4,
-      "source": "DYNAMIC: DYN: image.length=2080 read from ImageLength at file@0xb6",
-      "source_chain": [
-        "DYNAMIC: DYN: image.length=2080 read from ImageLength at file@0xb6"
-      ],
-      "direct_offsets": [
-        182
-      ],
-      "indirect_offsets": [],
-      "input_offsets": [
-        182
-      ]
-    },
-    "image.bps": {
-      "address": "0x7ffc57690212",
-      "value": 1,
-      "size": 2,
-      "source": "not from input file",
-      "source_chain": [],
-      "direct_offsets": [],
-      "indirect_offsets": [],
-      "input_offsets": []
-    },
-    "image.spp": {
-      "address": "0x7ffc57690214",
-      "value": 1,
-      "size": 2,
-      "source": "DYNAMIC: DYN: image.spp=1 read from SamplesPerPixel at file@0x12e",
-      "source_chain": [
-        "DYNAMIC: DYN: image.spp=1 read from SamplesPerPixel at file@0x12e"
-      ],
-      "direct_offsets": [
-        302
-      ],
-      "indirect_offsets": [],
-      "input_offsets": [
-        302
-      ]
-    },
-    "image.compression": {
-      "address": "0x7ffc5769021c",
-      "value": 4,
-      "size": 2,
-      "source": "DYNAMIC: DYN: image.compression=4 read from Compression at file@0xc2",
-      "source_chain": [
-        "DYNAMIC: DYN: image.compression=4 read from Compression at file@0xc2"
-      ],
-      "direct_offsets": [
-        194
-      ],
-      "indirect_offsets": [],
-      "input_offsets": [
-        194
-      ]
-    },
-    "image.photometric": {
-      "address": "0x7ffc57690218",
-      "value": 1,
-      "size": 2,
-      "source": "image.photometric <- PhotometricInterpretation(262)",
-      "source_chain": [
-        "image.photometric <- PhotometricInterpretation(262)"
-      ],
-      "direct_offsets": [
-        338
-      ],
-      "indirect_offsets": [],
-      "input_offsets": [
-        338
-      ]
-    },
-    "image.orientation": {
-      "address": "0x7ffc5769021a",
-      "value": 1,
-      "size": 2,
-      "source": "not from input file",
-      "source_chain": [],
-      "direct_offsets": [],
-      "indirect_offsets": [],
-      "input_offsets": []
-    },
-    "image.planar": {
-      "address": "0x7ffc57690216",
-      "value": 1,
-      "size": 2,
-      "source": "not from input file",
-      "source_chain": [],
-      "direct_offsets": [],
-      "indirect_offsets": [],
-      "input_offsets": []
-    },
-    "image.res_unit": {
-      "address": "0x7ffc57690210",
-      "value": 2,
-      "size": 2,
-      "source": "not from input file",
-      "source_chain": [],
-      "direct_offsets": [],
-      "indirect_offsets": [],
-      "input_offsets": []
-    },
-    "crop.combined_width": {
-      "address": "0x7ffc57690538",
-      "value": 0,
-      "size": 4,
-      "source": "DYNAMIC: DYN: image.width=32 read from ImageWidth at file@0xaa",
-      "source_chain": [
-        "DYNAMIC: DYN: image.width=32 read from ImageWidth at file@0xaa"
-      ],
-      "direct_offsets": [
-        170
-      ],
-      "indirect_offsets": [],
-      "input_offsets": [
-        170
-      ]
-    },
-    "crop.combined_length": {
-      "address": "0x7ffc5769053c",
-      "value": 2080,
-      "size": 4,
-      "source": "DYNAMIC: DYN: crop.combined_length=2080 matches ImageLength at file@0xb6 ; DYN: image.length=2080 read from ImageLength at file@0xb6",
-      "source_chain": [
-        "DYNAMIC: DYN: crop.combined_length=2080 matches ImageLength at file@0xb6 ; DYN: image.length=2080 read from ImageLength at file@0xb6"
-      ],
-      "direct_offsets": [
-        182
-      ],
-      "indirect_offsets": [],
-      "input_offsets": [
-        182
-      ]
-    },
-    "crop.bufftotal": {
-      "address": "0x7ffc57690540",
-      "value": 0,
-      "size": 4,
-      "source": "DYNAMIC: DYN: image.width=32 read from ImageWidth at file@0xaa ; DYN: crop.combined_length=2080 matches ImageLength at file@0xb6 ; DYN: image.length=2080 read from ImageLength at file@0xb6 ; DYN: image.spp=1 read from SamplesPerPixel at file@0x12e",
-      "source_chain": [
-        "DYNAMIC: DYN: image.width=32 read from ImageWidth at file@0xaa ; DYN: crop.combined_length=2080 matches ImageLength at file@0xb6 ; DYN: image.length=2080 read from ImageLength at file@0xb6 ; DYN: image.spp=1 read from SamplesPerPixel at file@0x12e"
-      ],
-      "direct_offsets": [
-        170,
-        182,
-        302
-      ],
-      "indirect_offsets": [],
-      "input_offsets": [
-        170,
-        182,
-        302
-      ]
-    },
-    "crop.zones": {
-      "address": "0x7ffc576906a0",
-      "value": 2,
-      "size": 2,
-      "source": "not from input file",
-      "source_chain": [],
-      "direct_offsets": [],
-      "indirect_offsets": [],
-      "input_offsets": []
-    },
-    "crop.selections": {
-      "address": "0x7ffc57690556",
-      "value": 2,
-      "size": 2,
-      "source": "not from input file",
-      "source_chain": [],
-      "direct_offsets": [],
-      "indirect_offsets": [],
-      "input_offsets": []
-    },
-    "crop.edge_ref": {
-      "address": "0x7ffc5769054c",
-      "value": 2,
-      "size": 2,
-      "source": "not from input file",
-      "source_chain": [],
-      "direct_offsets": [],
-      "indirect_offsets": [],
-      "input_offsets": []
-    },
-    "crop.crop_mode": {
-      "address": "0x7ffc57690548",
-      "value": 40,
-      "size": 2,
-      "source": "not from input file",
-      "source_chain": [],
-      "direct_offsets": [],
-      "indirect_offsets": [],
-      "input_offsets": []
-    }
-  }
+  "target_file_reads": [],
+  "ref_file_reads": [],
+  "variable_mapping": {}
 }
