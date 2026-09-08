@@ -405,37 +405,6 @@ _SEMANTIC_SUFFIXES = (
 )
 
 
-def _resolve_callee_pair(callee, src_dir_a, src_dir_b):
-    """Resolve a callee name to its (possibly renamed) definitions in both versions.
-
-    Returns (callee_a, callee_b, src_a, src_b).  If ``callee`` exists directly in
-    both versions, returns it as-is.  If it exists only in A, looks for a
-    *semantic variant* in B (e.g. ``TIFFReadDirEntryLong8Array`` in A vs
-    ``TIFFReadDirEntryLong8ArrayWithLimit`` in B) and vice-versa.
-    """
-    src_a = _find_function_source(callee, src_dir_a)
-    src_b = _find_function_source(callee, src_dir_b)
-
-    if src_a and src_b:
-        return callee, callee, src_a, src_b
-
-    if src_a and not src_b:
-        for suf in _SEMANTIC_SUFFIXES:
-            variant = callee + suf
-            src_b2 = _find_function_source(variant, src_dir_b)
-            if src_b2:
-                return callee, variant, src_a, src_b2
-
-    if src_b and not src_a:
-        for suf in _SEMANTIC_SUFFIXES:
-            variant = callee + suf
-            src_a2 = _find_function_source(variant, src_dir_a)
-            if src_a2:
-                return variant, callee, src_a2, src_b
-
-    return callee, callee, src_a, src_b
-
-
 def _find_added_guard(src_a, func_name_a, src_b, func_name_b):
     """Diff two function bodies and find the guard statement added in B.
 
