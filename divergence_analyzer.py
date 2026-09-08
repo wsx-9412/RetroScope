@@ -6535,7 +6535,10 @@ def _polytracker_locate_input_offsets(result, config=None, binary_b=None, binary
             result['root_cause_line_end'] = end_line
 
     # Step 2: Extract variables from the statement
-    variables = _extract_variables_from_expression(full_stmt)
+    # Use the pre-collected variables from the dependency chain if available
+    # (which include all variables that feed into the guard's computation),
+    # otherwise extract from the statement directly.
+    variables = result.get('variables') or _extract_variables_from_expression(full_stmt)
     if variables:
         print(f"  Extracted variables: {variables}")
     else:
