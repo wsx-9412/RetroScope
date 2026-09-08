@@ -5179,7 +5179,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
             # both versions.  Trace its variables backward to the input-derived
             # sources (e.g. direntry->tdir_count).
             target_sites = []
-            input_variables = []
+            input_reads = []
             fork_stmt = None
             fork_stmt_line = None
             try:
@@ -5192,13 +5192,16 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                     site = target_sites[0]
                     fork_stmt = site["statement"]
                     fork_stmt_line = site["assignment_line"]
-                    input_variables = _bt._trace_to_input_variables(
-                        site["file"], sem["callee_b"], site["assignment_line"])
+                    input_reads = _bt._trace_to_input_variables(
+                        site["file"], sem["callee_b"], site["assignment_line"],
+                        source_dirs=source_dirs_b)
                     print(f"  [semantic-fork] fork statement (target "
                           f"{sem['callee_b']}): '{fork_stmt}' "
                           f"({os.path.basename(site['file'])}:{fork_stmt_line})")
-                    print(f"  [semantic-fork] input-derived variables: "
-                          f"{input_variables}")
+                    for read in input_reads:
+                        print(f"  [semantic-fork] input-read statement: "
+                              f"'{read['statement']}' "
+                              f"({os.path.basename(read['file'])}:{read['line']})")
             except Exception as _e:
                 print(f"  [semantic-fork] target-site mapping failed: {_e}")
 
