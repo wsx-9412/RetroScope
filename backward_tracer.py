@@ -1064,17 +1064,27 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
             fork_statement = None
             fork_line = None
             fork_variables = []
-            input_variables = []
+            input_reads = []
             if target_sites:
                 site = target_sites[0]
                 fork_statement = site['statement']
                 fork_line = site['assignment_line']
                 fork_variables = _extract_variables(fork_statement)
-                input_variables = _trace_to_input_variables(
-                    src_a, func_name_a, site['assignment_line'])
-                print(f"{indent}  Fork statement (target {func_name_a}): "
-                      f"'{fork_statement}' (line {fork_line})")
-                print(f"{indent}  Input-derived variables: {input_variables}")
+                # Follow the fork variable's data flow back to the statement
+                # that actually reads it from the input file.
+                input_reads = _trace_to_input_variables(
+                    src_a, func_name_a, site['assignment_line'],
+                    source_dirs=src_dir_a)
+                if input_reads:
+                    read = input_reads[0]
+                    print(f"{indent}  Fork statement (target {func_name_a}): "
+                          f"'{fork_statement}' (line {fork_line})")
+                    print(f"{indent}  Input-read statement: "
+                          f"'{read['statement']}' "
+                          f"({os.path.basename(read['file'])}:{read['line']})")
+                else:
+                    print(f"{indent}  Fork statement (target {func_name_a}): "
+                          f"'{fork_statement}' (line {fork_line})")
             else:
                 fork_statement = stmt
                 fork_line = guard['line']
@@ -1087,7 +1097,7 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                 'fork_statement': fork_statement,
                 'fork_line': fork_line,
                 'fork_variables': fork_variables,
-                'input_variables': input_variables,
+                'input_reads': input_reads,
                 'target_sites': target_sites,
                 'guard': guard,
                 'return_diff': ret,
