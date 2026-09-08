@@ -5731,6 +5731,27 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 print(f"  [PolyTracker] Analysis failed: {e}")
                 result["polytracker_offsets"] = {"status": "error", "error": str(e)}
 
+    # ============================================================
+    # Backward tracer: recursive fork-statement localization from the
+    # last common function (entry point). This is GDB-based, so it runs in
+    # GDB mode (the default) and full mode alike.
+    # ============================================================
+    if result and not result.get("error"):
+        try:
+            bt_result = _run_backward_tracer(
+                matches, gaps, trace_a, trace_b,
+                binary_a, binary_b, source_dirs_a, source_dirs_b,
+                lib_path_a, lib_path_b, input_file, args_b,
+                gdb_timeout,
+            )
+            result["backward_trace"] = bt_result
+            if bt_result.get("fork_statement"):
+                print(f"\n  Backward tracer fork statement: "
+                      f"{bt_result.get('fork_statement')}")
+        except Exception as e:
+            print(f"  [Backward tracer] failed: {e}")
+            result["backward_trace"] = {"status": "error", "error": str(e)}
+
     return result
 
 
