@@ -999,21 +999,41 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                             )
             print(f"{indent}  Added guard in B: '{stmt}' "
                   f"(line {guard['line']})")
-            # Map the guard's variables to the target (old) version's read site
-            # for PolyTracker instrumentation.
+            # The guard lives ONLY in the reference (new) version, so it is the
+            # *root cause*, NOT the fork statement.  The fork statement is the
+            # TARGET's (old) statement that computes the guard's variable — that
+            # statement exists in BOTH versions and is where the paths diverge.
+            # Map the guard variables to the target's statement and trace its
+            # variables backward to the input-derived sources.
             target_sites = _map_fork_vars_to_target(
                 guard['variables'], func_name_a, src_a)
+            fork_statement = None
+            fork_line = None
+            fork_variables = []
+            input_variables = []
             if target_sites:
-                print(f"{indent}  Target read sites: "
-                      f"{[(s['variable'], s['line']) for s in target_sites]}")
+                site = target_sites[0]
+                fork_statement = site['statement']
+                fork_line = site['assignment_line']
+                fork_variables = _extract_variables(fork_statement)
+                input_variables = _trace_to_input_variables(
+                    src_a, func_name_a, site['assignment_line'])
+                print(f"{indent}  Fork statement (target {func_name_a}): "
+                      f"'{fork_statement}' (line {fork_line})")
+                print(f"{indent}  Input-derived variables: {input_variables}")
+            else:
+                fork_statement = stmt
+                fork_line = guard['line']
+                fork_variables = guard['variables']
             return {
                 'status': 'found',
                 'func': label,
                 'func_a': func_name_a,
                 'func_b': func_name_b,
-                'fork_statement': stmt,
-                'fork_line': guard['line'],
-                'fork_variables': guard['variables'],
+                'fork_statement': fork_statement,
+                'fork_line': fork_line,
+                'fork_variables': fork_variables,
+                'input_variables': input_variables,
                 'target_sites': target_sites,
                 'guard': guard,
                 'return_diff': ret,
