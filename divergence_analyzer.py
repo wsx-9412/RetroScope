@@ -4888,14 +4888,14 @@ def _target_reached_crash_point(crash_a, trace_a, trace_b, refactoring_map=None)
     return False
 
 
-def _run_backward_tracer(matches, gaps, trace_a, trace_b,
+def _run_backward_tracer(func_name, matches, gaps, trace_a, trace_b,
                          binary_a, binary_b, source_dirs_a, source_dirs_b,
                          lib_path_a, lib_path_b, input_file, args_b,
                          gdb_timeout):
-    """Run the backward tracer from the last common function to find the fork.
+    """Run the backward tracer from the divergence function (entry point).
 
-    The backward tracer starts at the entry function (the last common function
-    in the LCS trace, e.g. ``TIFFOpen``) and recursively follows the return-value
+    The backward tracer starts at the divergence function (the last common
+    function, e.g. ``TIFFOpen``) and recursively follows the return-value
     dependency chain to the guard statement that actually causes the divergence.
 
     Convention mapping: in this module ``binary_a``/``source_dirs_a`` are the
@@ -4908,14 +4908,13 @@ def _run_backward_tracer(matches, gaps, trace_a, trace_b,
     except ImportError as e:
         return {"status": "error", "error": f"import backward_tracer failed: {e}"}
 
-    last_common, _ = _find_last_common_function(matches, gaps, trace_a, trace_b)
-    if not last_common:
-        return {"status": "error", "error": "no last common function found"}
+    if not func_name:
+        return {"status": "error", "error": "no divergence function"}
 
     run_args = " ".join(str(a) for a in (args_b or []))
     input_file = str(input_file) if input_file else None
 
-    print(f"\n=== Backward tracer from last common function: {last_common} ===")
+    print(f"\n=== Backward tracer from divergence function: {func_name} ===")
 
     try:
         result = bt.find_fork_by_backward_tracing(
@@ -4923,7 +4922,7 @@ def _run_backward_tracer(matches, gaps, trace_a, trace_b,
             binary_b=str(binary_a),   # new (reference, 4.4.0)
             source_dir_a=source_dirs_b,  # old source (4.0.8)
             source_dir_b=source_dirs_a,  # new source (4.4.0)
-            func_name=last_common,
+            func_name=func_name,
             input_file=input_file,
             run_args=run_args,
             lib_path_a=lib_path_b,
