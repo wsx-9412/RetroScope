@@ -206,27 +206,28 @@ def trace_dependenciesbackward(source_file, func_name, return_line):
 
 
 def _extract_variables(expr):
-    """Extract variable names from a C expression."""
+    """Extract variable names from a C expression.
+
+    Returns member-access chains (``tif->tif_size``) and bare identifiers,
+    dropping keywords, type names, and function names (an identifier followed by
+    ``(`` such as ``isMapped`` or ``TIFFReadDirEntryArray``).
+    """
     if not expr:
         return []
-    # Remove string literals
+    # Remove string/char literals and numbers
     expr = re.sub(r'"[^"]*"', '', expr)
-    # Remove character literals
     expr = re.sub(r"'[^']*'", '', expr)
-    # Remove numbers
     expr = re.sub(r'\b\d+\b', '', expr)
-    # Remove common keywords/operators
-    expr = re.sub(r'\b(sizeof|sizeof|NULL|TRUE|FALSE|true|false)\b', '', expr)
-    # Find identifiers (including a->b, a.b, a[i] patterns)
-    # First, find member access chains like direntry->tdir_count
-    chains = re.findall(r'[\w]+(?:->|\.|\[[\w]+\])[\w]+(?:->|\.|\[[\w]+\])*[\w]*', expr)
-    # Then find bare identifiers
-    bare = re.findall(r'\b([a-zA-Z_]\w*)\b', expr)
-    # Combine: chains first, then bare (minus keywords)
-    keywords = {'if', 'else', 'while', 'for', 'do', 'return', 'sizeof', 'NULL',
-                'TRUE', 'FALSE', 'true', 'false', 'static', 'const', 'void',
-                'int', 'uint8', 'uint16', 'uint32', 'uint64', 'char', 'unsigned',
-                'signed', 'long', 'short', 'float', 'double', 'struct', 'enum'}
+    # Remove function calls (identifiers followed by '(') so we keep variables
+    expr = re.sub(r'\b[A-Za-z_]\w*\s*\(', '', expr)
+    # Find member access chains like direntry->tdir_count / tif->tif_size
+    chains = re.findall(r'\b\w+(?:->|\.)\w+(?:->|\.)\w*\b', expr)
+    # Find bare identifiers
+    bare = re.findall(r'\b([a-z_]\w*)\b', expr)
+    keywords = {'if', 'else', 'while', 'for', 'do', 'return', 'sizeof', 'null',
+                'true', 'false', 'static', 'const', 'void', 'int', 'uint8',
+                'uint16', 'uint32', 'uint64', 'char', 'unsigned', 'signed',
+                'long', 'short', 'float', 'double', 'struct', 'enum'}
     result = list(chains) + [v for v in bare if v not in keywords]
     return result
 

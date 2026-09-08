@@ -5737,8 +5737,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
     if result and not result.get("error"):
         try:
             bt_result = _run_backward_tracer(
-                func_name, matches, gaps, trace_a, trace_b,
-                binary_a, binary_b, source_dirs_a, source_dirs_b,
+                func_name, binary_a, binary_b, source_dirs_a, source_dirs_b,
                 lib_path_a, lib_path_b, input_file, args_b,
                 gdb_timeout,
             )
