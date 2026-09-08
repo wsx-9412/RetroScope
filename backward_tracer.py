@@ -50,7 +50,7 @@ def find_return_statements(source_file, func_name):
     lines = body.splitlines()
     brace_depth = 0
     cond_stack = []  # stack of (condition_text, depth_of_body, is_braced)
-    pending_single_line = None  # condition text from single-line if
+    pending_single_line = None
 
     for i, line in enumerate(lines):
         stripped = line.strip()
@@ -86,31 +86,17 @@ def find_return_statements(source_file, func_name):
         elif pending_single_line and not stripped.startswith(('if', 'else')):
             pending_single_line = None
 
-        # Update depth for braces on this line
+        # Compute the FINAL depth after ALL braces on this line
         open_count = stripped.count('{')
         close_count = stripped.count('}')
+        final_depth = brace_depth + open_count - close_count
 
-        # Check for "} else {" pattern: the } closes one block but else { opens another
-        # In this case, only pop ONE level, not both
-        is_else_brace = re.match(r'\}\s*else\s*\{', stripped)
+        # Pop conditions whose body depth is above the final depth
+        # (their block has ended)
+        while cond_stack and cond_stack[-1][1] > final_depth:
+            cond_stack.pop()
 
-        new_depth = brace_depth + open_count - close_count
-
-        if is_else_brace:
-            # } else { : close one block, open another at same depth
-            # Pop only the innermost condition (the one being closed)
-            if cond_stack and cond_stack[-1][2] and cond_stack[-1][1] == brace_depth:
-                cond_stack.pop()
-            # Don't pop anything else - the else block continues
-        else:
-            # Normal brace processing
-            while cond_stack and cond_stack[-1][1] > new_depth:
-                cond_stack.pop()
-            while cond_stack and cond_stack[-1][2] and cond_stack[-1][1] == new_depth and close_count > 0:
-                cond_stack.pop()
-                close_count -= 1
-
-        brace_depth = new_depth
+        brace_depth = final_depth
 
     return results
 
