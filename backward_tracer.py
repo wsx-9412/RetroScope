@@ -1122,24 +1122,35 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
         # Skip pairs we've already visited to avoid infinite loops.
         _visited.add(func_name_a)
         _visited.add(func_name_b)
-        for name_b in sorted(all_defs_b):
+        # Collect ALL unvisited semantic pairs, sorted by name
+        pairs = []
+        for name_b in all_defs_b:
             for suf in _SEMANTIC_SUFFIXES:
                 if name_b.endswith(suf):
                     base = name_b[:-len(suf)]
                     if base in all_defs_a and base not in _visited and name_b not in _visited:
-                        src_base = _find_function_source(base, src_dir_a)
-                        src_variant = _find_function_source(name_b, src_dir_b)
-                        if src_base and src_variant:
-                            print(f"{indent}  Found semantic pair: "
-                                  f"{base} vs {name_b}; recursing")
-                            return _find_fork_recursive(
-                                base, name_b, binary_a, binary_b,
-                                src_dir_a, src_dir_b,
-                                input_file, run_args,
-                                lib_path_a, lib_path_b,
-                                timeout, depth + 1, max_depth, chain,
-                                _visited=_visited
-                            )
+                        pairs.append((base, name_b))
+        pairs.sort()
+        for base, name_b in pairs:
+            src_base = _find_function_source(base, src_dir_a)
+            src_variant = _find_function_source(name_b, src_dir_b)
+            if src_base and src_variant:
+                print(f"{indent}  Found semantic pair: "
+                      f"{base} vs {name_b}; recursing")
+                result = _find_fork_recursive(
+                    base, name_b, binary_a, binary_b,
+                    src_dir_a, src_dir_b,
+                    input_file, run_args,
+                    lib_path_a, lib_path_b,
+                    timeout, depth + 1, max_depth, chain,
+                    _visited=_visited
+                )
+                # If this pair found a fork, return it
+                if result.get('fork_statement'):
+                    return result
+                # Otherwise, mark this pair as visited and try the next
+                _visited.add(base)
+                _visited.add(name_b)
         print(f"{indent}  No divergence found at this level")
         return {'status': 'no_return_difference', 'func': label}
 
