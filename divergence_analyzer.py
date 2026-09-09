@@ -5498,9 +5498,34 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
             return result
         else:
             # Case B: the target did not reach the crash point (it diverged
-            # earlier).  Use the LCS: the last function of the last LCS match.
-            print("\n  >> Target did not reach the crash point — LCS-based fork.")
-            if matches:
+            # earlier).  Prefer the crash-anchored reverse fork chain: walk the
+            # reference trace backward from the crash and take the boundary
+            # where the target last followed the same path.  Fall back to the
+            # last LCS match when the anchor finds nothing.
+            print("\n  >> Target did not reach the crash point — "
+                  "crash-anchored fork selection.")
+            fork_meta = None
+            try:
+                from fork_chain import select_fork_anchor
+                anchor_func, anchor_a, anchor_b, fork_meta = \
+                    select_fork_anchor(trace_a, trace_b, matches, gaps,
+                                       crash_a, refactoring_map)
+            except Exception as e:
+                print(f"  [crash-anchor] failed: {e}")
+                anchor_func, anchor_a, anchor_b, fork_meta = \
+                    None, -1, -1, None
+            if anchor_func:
+                if fork_meta and isinstance(fork_meta, dict):
+                    try:
+                        from fork_chain import format_chain_report
+                        print(format_chain_report(fork_meta))
+                    except Exception:
+                        pass
+                func_name, a_idx, b_idx = anchor_func, anchor_a, anchor_b
+                print(f"  Crash-anchored divergence function: {func_name}")
+            elif matches:
+                print("  [crash-anchor] no trace-level boundary — "
+                      "falling back to the last LCS match.")
                 last_match = matches[-1]
                 funcs = last_match.get("functions", [])
                 if funcs:
