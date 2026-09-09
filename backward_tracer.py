@@ -1117,12 +1117,15 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                     except OSError:
                         continue
                     out_set.update(_re.findall(r'\b(\w+)\s*\(', txt))
-        # Find semantic pairs: functions in B that are A + suffix
-        for name_b in all_defs_b:
+        # Find semantic pairs: functions in B that are A + suffix.
+        # Skip pairs we've already visited (tracked in chain) to avoid loops.
+        visited = {(c['func'].split(' vs ')[0] if ' vs ' in c['func']
+                    else c['func']) for c in chain}
+        for name_b in sorted(all_defs_b):
             for suf in _SEMANTIC_SUFFIXES:
                 if name_b.endswith(suf):
                     base = name_b[:-len(suf)]
-                    if base in all_defs_a:
+                    if base in all_defs_a and base not in visited:
                         src_base = _find_function_source(base, src_dir_a)
                         src_variant = _find_function_source(name_b, src_dir_b)
                         if src_base and src_variant:
