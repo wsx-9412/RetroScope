@@ -234,32 +234,24 @@ for d in config["dirs"]:
     except Exception:
         pass
 
-order = [0]
-events = []
+MAX_STEPS = config.get("max_steps", 100000)
+MAX_EVENTS = config.get("max_events", 50000)
+decision_lines = set(d["line"] for d in config["decisions"])
+clauses_by_line = config["clauses_by_line"]
 
-class DecisionBP(gdb.Breakpoint):
-    def __init__(self, spec, line):
-        super(DecisionBP, self).__init__(spec, internal=False)
-        self.line = line
+class Recorder(object):
+    def __init__(self):
+        self.stepping = False
+        self.order = 0
+        self.events = []
 
-    def stop(self):
-        # Only record when the decision line executes in the target function
-        # (defensive: a source line can be shared through inlining/macros).
-        try:
-            frame = gdb.newest_frame()
-            fn = frame.name()
-        except Exception:
-            fn = None
-        if fn != config["func"]:
-            return False
-        order[0] += 1
-        ev = {"n": order[0], "line": self.line}
+    def eval_clauses(self, line):
         clauses = {}
-        for ci, cl in enumerate(config["clauses_by_line"].get(str(self.line), [])):
+        for ci, cl in enumerate(clauses_by_line.get(str(line), [])):
             vals = {}
             for side in ("lhs", "rhs"):
                 expr = cl.get(side, "")
-                if not expr or cl.get("op") is None or cl.get("skip"):
+                if not expr or cl.get("op") is None:
                     continue
                 try:
                     v = gdb.parse_and_eval(expr)
@@ -268,24 +260,59 @@ class DecisionBP(gdb.Breakpoint):
                     vals[side] = None
             if vals:
                 clauses[str(ci)] = vals
-        ev["clauses"] = clauses
-        events.append(ev)
-        gdb.write("##EVT %d %d %s\n" % (ev["n"], self.line,
-                                        json.dumps(clauses)))
-        return False  # continue automatically
+        return clauses
 
-bps = []
-for d in config["decisions"]:
-    spec = "%s:%d" % (config["file"], d["line"])
-    try:
-        bps.append(DecisionBP(spec, d["line"]))
-    except Exception as e:
-        gdb.write("##BPFAIL %d %s\n" % (d["line"], str(e)))
+    def on_stop(self, ev):
+        if self.stepping:
+            return
+        frame = gdb.newest_frame()
+        try:
+            fn = frame.name()
+        except Exception:
+            fn = None
+        if fn != config["func"]:
+            return  # not inside the target function
+        self.stepping = True
+        try:
+            steps = 0
+            while steps < MAX_STEPS:
+                try:
+                    frame = gdb.newest_frame()
+                    fn = frame.name()
+                except Exception:
+                    break
+                if fn != config["func"]:
+                    break  # function returned -> back in the caller
+                try:
+                    line = frame.find_sal().line
+                except Exception:
+                    line = 0
+                if line in decision_lines:
+                    if self.order >= MAX_EVENTS:
+                        break
+                    self.order += 1
+                    clauses = self.eval_clauses(line)
+                    self.events.append((self.order, line, clauses))
+                    gdb.write("##EVT %d %d %s\n"
+                              % (self.order, line, json.dumps(clauses)))
+                gdb.execute("next", to_string=True)
+                steps += 1
+            gdb.write("##STEPOUT %d %d\n" % (steps, self.order))
+        except gdb.error as e:
+            gdb.write("##STEPERR %s\n" % str(e))
+        finally:
+            self.stepping = False
+        # Resume execution until the next entry of the function (or crash/exit).
+        gdb.execute("continue")
 
+rec = Recorder()
+gdb.events.stop.connect(rec.on_stop)
+try:
+    gdb.Breakpoint(config["func"], internal=False)
+except Exception as e:
+    gdb.write("##BPFAIL %s\n" % str(e))
 gdb.execute("run " + config["runargs"])
-
-# Dump anything recorded after the run finished/stopped.
-gdb.write("##TOTAL %d\n" % order[0])
+gdb.write("##TOTAL %d\n" % rec.order)
 '''
 
 
