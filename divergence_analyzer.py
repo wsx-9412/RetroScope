@@ -2220,6 +2220,97 @@ def _compare_execution_traces(lines_a, lines_b):
     return None
 
 
+_BENIGN_ONE_SIDED_CALLS = {
+    'TIFFFileName', 'TIFFGetFileName', 'dump_data', 'dump_info',
+}
+
+
+def _first_real_call_divergence(lines_a, lines_b):
+    """Like _compare_execution_traces, but tolerant of benign one-sided calls.
+
+    The newer version often ADDS wrapper/logging calls (limitMalloc,
+    TIFFFileName, ...) that the older one lacks, so the FIRST positional
+    difference is a benign call asymmetry while the REAL fork — e.g. the
+    older version hitting an error path (TIFFError) and stopping early, or
+    calling a different function — comes later.  Align the two call
+    sequences and report the first non-benign divergence:
+      - 'replace' -> the versions call different functions at the same point
+      - 'insert'  -> 4.0.8 calls something 4.4.0 never does (error path)
+      - B stops   -> early-return/error path after the aligned prefix
+    'delete' blocks (4.4.0-only extra calls) are skipped as benign.
+    """
+    import difflib
+    calls_a = []
+    for ln in lines_a:
+        for c in ln.get("calls", []):
+            if not c.startswith("0x") and "asan" not in c.lower() and "cyg_profile" not in c:
+                calls_a.append((c, ln))
+    calls_b = []
+    for ln in lines_b:
+        for c in ln.get("calls", []):
+            if not c.startswith("0x") and "asan" not in c.lower() and "cyg_profile" not in c:
+                calls_b.append((c, ln))
+
+    names_a = [c for c, _ in calls_a]
+    names_b = [c for c, _ in calls_b]
+    if not names_a or not names_b:
+        return None
+
+    sm = difflib.SequenceMatcher(a=names_a, b=names_b, autojunk=False)
+    for tag, i1, i2, j1, j2 in sm.get_opcodes():
+        if tag == 'equal':
+            continue
+        if tag == 'replace':
+            name_a, ln_a = calls_a[i1]
+            name_b, ln_b = calls_b[j1]
+            return {
+                "file": ln_b["file"],
+                "line": ln_b["line"],
+                "line_text_a": f"v4.4.0 calls {name_a}() at line {ln_a['line']}",
+                "line_text_b": f"v4.0.8 calls {name_b}() at line {ln_b['line']}",
+                "note": f"Different functions at aligned position: {name_a} vs {name_b}",
+                "diverging_call_a": name_a,
+                "diverging_call_b": name_b,
+            }
+        if tag == 'insert':
+            # 4.0.8-only calls: an error-path call is the fork (the older
+            # version failed a check and took the error branch).
+            name_b, ln_b = calls_b[j1]
+            if name_b in _BENIGN_ONE_SIDED_CALLS:
+                continue
+            return {
+                "file": ln_b["file"],
+                "line": ln_b["line"],
+                "line_text_a": f"v4.4.0 never calls {name_b}() (no error path)",
+                "line_text_b": f"v4.0.8 calls {name_b}() at line {ln_b['line']}",
+                "note": "v4.0.8-only call — error/early-exit path",
+                "diverging_call_b": name_b,
+            }
+        # 'delete': 4.4.0-only extra calls (wrappers/logging) — benign, skip.
+
+    # Same aligned calls but different lengths — one version stops early
+    if len(calls_a) != len(calls_b):
+        if len(calls_a) > len(calls_b):
+            next_call, next_ln = calls_a[len(calls_b)]
+            return {
+                "file": calls_b[-1][1]["file"],
+                "line": calls_b[-1][1]["line"],
+                "line_text_a": f"v4.4.0 continues with {next_call}() at line {next_ln['line']}",
+                "line_text_b": f"v4.0.8 stops after {len(calls_b)} operations",
+                "note": f"v4.0.8 takes early-return/error path after {len(calls_b)} operations",
+            }
+        next_call, next_ln = calls_b[len(calls_a)]
+        return {
+            "file": calls_a[-1][1]["file"],
+            "line": calls_a[-1][1]["line"],
+            "line_text_a": f"v4.4.0 stops after {len(calls_a)} operations",
+            "line_text_b": f"v4.0.8 continues with {next_call}() at line {next_ln['line']}",
+            "note": f"v4.4.0 takes early-return path after {len(calls_a)} operations",
+        }
+
+    return None
+
+
 def _find_function_source(func_name, source_dirs, file_hint=None):
     """Find the source file containing func_name definition.
 
