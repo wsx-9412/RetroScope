@@ -3210,25 +3210,6 @@ def _find_last_common_function(matches, gaps, trace_a, trace_b, prefer_tail=Fals
 
     # Find what function is active at the divergence point by looking backwards
     # in the trace for the deepest function that's still entered
-    def find_enclosing_function(trace, div_idx):
-        """Find the deepest function still active at div_idx."""
-        # Track enter/exit to find active functions
-        active = []
-        for i in range(div_idx):
-            op = trace[i]
-            if op.get("is_enter"):
-                active.append(op)
-            else:
-                # Pop the last enter with matching name
-                for j in range(len(active) - 1, -1, -1):
-                    if active[j]["name"] == op["name"]:
-                        active.pop(j)
-                        break
-        # The deepest active function is the last one
-        if active:
-            return active[-1]
-        return None
-
     func_a = find_enclosing_function(trace_a, a_div_idx)
     func_b = find_enclosing_function(trace_b, b_div_idx)
 
