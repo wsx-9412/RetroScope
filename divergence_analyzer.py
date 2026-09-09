@@ -5000,7 +5000,7 @@ def _build_result_from_backward_tracer(bt_result, func_name, a_idx, b_idx):
         pt_stmt = read["statement"]
         pt_vars = [read["variable"]]
         pt_func = _bt._find_function_containing_line(read["file"],
-                                                     read["line"])
+                                                     read["line"]) if _bt else None
         input_variables = [read["variable"]]
     elif input_variables:
         pt_vars = input_variables[:1]
