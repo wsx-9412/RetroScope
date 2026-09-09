@@ -5322,8 +5322,11 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
         # COMMON function (from the LCS) in both versions and locate the
         # statement where execution actually diverges.  This follows the
         # user's algorithm: LCS -> last common function -> breakpoint ->
-        # step through -> fork statement.
-        common_func, _ = _find_last_common_function(matches, gaps, trace_a, trace_b)
+        # step through -> fork statement.  prefer_tail selects the tail gap
+        # (where the reference keeps running after the target stopped) instead
+        # of the deepest fork caller anywhere in the trace.
+        common_func, _ = _find_last_common_function(
+            matches, gaps, trace_a, trace_b, prefer_tail=True)
         if common_func:
             print(f"  [step-into] last common function: {common_func}()")
             cause_a = common_func
