@@ -4975,7 +4975,30 @@ def _build_result_from_backward_tracer(bt_result, func_name, a_idx, b_idx):
     pt_line = (fork_line + 1) if fork_line else None
     pt_stmt = fork_stmt
     pt_func = bt_result.get("func_a")
-    if input_variables:
+
+    # If input_variables is empty, trace backward from the fork statement to
+    # find member accesses (e.g. direntry->tdir_count) that ARE input-derived.
+    input_reads = []
+    if not input_variables and fork_line and pt_file:
+        func_a = bt_result.get("func_a")
+        src_dirs = bt_result.get("file_a")
+        if func_a and src_dirs:
+            try:
+                input_reads = _bt._trace_to_input_variables(
+                    src_dirs, func_a, fork_line,
+                    source_dirs=[os.path.dirname(src_dirs)])
+            except Exception:
+                pass
+    if input_reads:
+        read = input_reads[0]
+        pt_file = read["file"]
+        pt_line = read["line"] + 1  # instrument AFTER the read
+        pt_stmt = read["statement"]
+        pt_vars = [read["variable"]]
+        pt_func = _bt._find_function_containing_line(read["file"],
+                                                     read["line"])
+        input_variables = [read["variable"]]
+    elif input_variables:
         pt_vars = input_variables[:1]
     else:
         pt_vars = fork_variables[:1]
