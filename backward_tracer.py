@@ -1133,7 +1133,7 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                             timeout, depth + 1, max_depth, chain, _visited=_visited
                         )
                 print(f"{indent}  Body differs (assign_diff): "
-                      f"{diff['lhs']}: {diff['statement_a'][:60]} vs "
+                      f"{diff['var']}: {diff['statement_a'][:60]} vs "
                       f"{diff['statement_b'][:60]}")
                 chain.append({
                     'func': label,
