@@ -40,8 +40,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from trace_fork_offsets import (find_function_body_range, find_function_line,
-                                is_function_definition, locate_function_source,
-                                resolve_binary)
+                                is_function_definition, resolve_binary)
 
 # --------------------------------------------------------------------------
 # Condition parsing (static, generic)
@@ -150,8 +149,8 @@ def parse_condition_clauses(cond):
                 part = inner
         m = _SIMPLE_OPS.search(part)
         if m:
-            lhs = part[:m.start()].strip()
-            rhs = part[m.end():].strip()
+            lhs = _normalize_operand(part[:m.start()])
+            rhs = _normalize_operand(part[m.end():])
             if _RISKY_TOKENS.search(lhs) or _RISKY_TOKENS.search(rhs):
                 op = None
             else:
@@ -318,7 +317,8 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
     located in the sources.
     """
     real_bin = resolve_binary(binary)
-    fsrc = locate_function_source(func, src_path=source_root or str(Path(real_bin).parent))
+    fsrc = _locate_function_source(func, source_root or str(Path(real_bin).parent),
+                                   binary=real_bin)
     if not fsrc:
         print(f'  [!] source for {func} not found under {source_root or real_bin}')
         return None
