@@ -2167,15 +2167,13 @@ _ASAN_SUMMARY_RE = re.compile(
     r'SUMMARY:\s*AddressSanitizer:\s*\S+\s+(\S+?):(\d+)\s+in\s+(.+?)\s*$', re.M)
 _SANITIZER_FRAME_RE = re.compile(
     r'__interceptor_|__asan_|__sanitizer_|__ubsan_|__tsan_|^libc|sanitizer|/csu/')
-_WORD_RE = re.compile(r'\w+$')
 
 
 def _path_basename(p):
-    """Basename of a frame file path (or the raw string when it carries no
-    path, e.g. ``tiffcrop.c`` vs ``/build/tiffcrop.c``)."""
+    """Basename of a frame file path (``/build/tiffcrop.c`` -> ``tiffcrop.c``)."""
     if not p:
         return None
-    return _WORD_RE.sub('', p) and (os.path.basename(str(p)) or str(p)) or str(p)
+    return os.path.basename(str(p)) or str(p)
 
 
 def _is_sanitizer_frame(frame):
@@ -2345,15 +2343,26 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
 
     # Reference crash signature (original file through the reference binary).
     ref_out, ref_rc = _run(real_ref, original_data)
-    ref_type = _extract_crash_type(ref_out)
-    if ref_type is None:
+    ref_sig = extract_crash_signature(ref_out)
+    if ref_sig is None:
         print(f'  [!] Reference binary did not produce an ASan crash '
               f'(rc={ref_rc}); cannot compare.')
         return {}
-    print(f'  Reference crash type: {ref_type[0]} in {ref_type[1]} '
-          f'(rc={ref_rc})')
+    ref_crash = ref_sig["crash_frames"][0] if ref_sig["crash_frames"] else {}
+    print(f'  Reference crash: {ref_sig["type"]} in '
+          f'{ref_crash.get("function")} '
+          f'({_path_basename(ref_crash.get("file"))}:'
+          f'{ref_crash.get("line")}, rc={ref_rc})')
 
-    results = {}
+    results = {
+        'ref_signature': {
+            'type': ref_sig['type'],
+            'crash_frame': {k: ref_crash.get(k)
+                            for k in ('function', 'file', 'line')},
+            'summary': ref_sig['summary'],
+        },
+    }
+    observed = {}      # verdict -> count across all mutations
     total_tests = 0
     for offset in sorted(offsets):
         if offset >= len(original_data):
@@ -2370,15 +2379,54 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
             modified[offset] = byte_val
             out, rc = _run(real_target, modified)
             total_tests += 1
-            t = _extract_crash_type(out)
-            if t is not None and t[0] == ref_type[0] and t[1] == ref_type[1]:
-                results[offset]['matches'][byte_val] = f'{t[0]} in {t[1]}'
-                print(f'    0x{byte_val:02x} -> MATCHES ref crash ({t[0]} in {t[1]})')
+            sig = extract_crash_signature(out)
+            if sig is None:
+                continue
+            verdict, diff = compare_crash_signatures(ref_sig, sig)
+            crash = sig["crash_frames"][0] if sig["crash_frames"] else {}
+            # ``same_func`` or better = the target reproduces the reference
+            # crash; ``same_type`` only = a same-kind crash at another site.
+            if verdict in ('same_func', 'same_site'):
+                results[offset]['matches'][byte_val] = {
+                    'verdict': verdict,
+                    'type': sig['type'],
+                    'function': crash.get('function'),
+                    'file': _path_basename(crash.get('file')),
+                    'line': crash.get('line'),
+                    'rc': rc,
+                }
+                print(f'    0x{byte_val:02x} -> MATCHES ref crash '
+                      f'({verdict}: {diff})')
+            else:
+                observed.setdefault(verdict or 'no_crash', 0)
+                observed[verdict or 'no_crash'] += 1
+                if verdict == 'same_type':
+                    # Near-miss: same ASan kind but a different crash site —
+                    # valuable signal that the mutation steers the path but
+                    # not (yet) to the reference's site.
+                    observed.setdefault('same_type_sites', {})
+                    sites = observed['same_type_sites']
+                    key = f"{crash.get('function')}:{_path_basename(crash.get('file'))}:{crash.get('line')}"
+                    sites.setdefault(key, 0)
+                    sites[key] += 1
 
         n = len(results[offset]['matches'])
-        print(f'    => {n} matching value(s) (target reproduces ref crash)')
+        verdicts = {}
+        for v in results[offset]['matches'].values():
+            verdicts[v['verdict']] = verdicts.get(v['verdict'], 0) + 1
+        print(f'    => {n} matching value(s) (target reproduces ref crash) '
+              f'{verdicts}')
 
+    results['target_crash_summary'] = observed
     print(f'\n  [*] Total mutations tested: {total_tests}')
+    if observed:
+        near = observed.get('same_type_sites', {})
+        other = {k: v for k, v in observed.items() if k != 'same_type_sites'}
+        if other:
+            print(f'  [*] Target crashed differently {sum(other.values())} '
+                  f'time(s): {other}')
+        if near:
+            print(f'  [*] Same ASan type at OTHER sites: {near}')
     return results
 
 
