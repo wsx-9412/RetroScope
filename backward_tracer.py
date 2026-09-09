@@ -1312,7 +1312,6 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
             stmt = guard['statement']
             calls = _extract_calls_from_expression(stmt)
             for c in calls:
-                # Is this call itself a semantic variant of a function in A?
                 for suf in _SEMANTIC_SUFFIXES:
                     if c.endswith(suf):
                         base = c[:-len(suf)]
@@ -1327,20 +1326,6 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                             )
             print(f"{indent}  Added guard in B: '{stmt}' "
                   f"(line {guard['line']})")
-
-        # The fork statement is the one that exists in BOTH versions but
-        # produces different values (the assign_diff).  The guard is the
-        # *consequence* of that difference, not the root cause.
-        if diff:
-            fork_statement = diff['statement_a']
-            fork_line = diff['line_a']
-            fork_variables = _extract_variables(fork_statement)
-            input_variables = [v for v in fork_variables if '->' in v or '.' in v]
-            print(f"{indent}  First differing variable: '{diff['var']}' "
-                  f"(A: '{diff['statement_a']}' vs B: '{diff['statement_b']}')")
-            print(f"{indent}  Fork statement (target {func_name_a}): "
-                  f"'{fork_statement}' (line {fork_line})")
-            print(f"{indent}  Input-derived variables: {input_variables}")
             return {
                 'status': 'found',
                 'func': label,
@@ -1348,21 +1333,15 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                 'func_b': func_name_b,
                 'file_a': src_a,
                 'file_b': src_b,
-                'fork_statement': fork_statement,
-                'fork_line': fork_line,
-                'fork_variables': fork_variables,
-                'input_variables': input_variables,
-                'assign_diff': diff,
+                'fork_statement': None,
+                'fork_line': guard['line'],
+                'fork_variables': _extract_variables(stmt),
+                'input_variables': [v for v in _extract_variables(stmt)
+                                    if '->' in v or '.' in v],
+                'assign_diff': None,
                 'guard': guard,
-                'return_diff': ret,
+                'chain': list(chain),
             }
-
-        # No assign_diff found but guard exists — the guard itself is the
-        # only source-level difference; report it as fork statement.
-        if guard:
-            return {
-                'status': 'found',
-                'func': label,
                 'func_a': func_name_a,
                 'func_b': func_name_b,
                 'file_a': src_a,
