@@ -1132,6 +1132,9 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                         pairs.append((base, name_b))
         pairs.sort()
         for base, name_b in pairs:
+            # Skip if already visited (may have been added by a deeper recursion)
+            if base in _visited or name_b in _visited:
+                continue
             src_base = _find_function_source(base, src_dir_a)
             src_variant = _find_function_source(name_b, src_dir_b)
             if src_base and src_variant:
