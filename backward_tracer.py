@@ -1098,38 +1098,38 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
         input_file, run_args, lib_path_a, lib_path_b, timeout
     )
     if not ret:
-        print(f"{indent}  Return values equal — scanning call chain for divergence")
-        # Entry function returns the same value, but it may transitively call
-        # a function that was renamed (semantic pair) with different behavior.
-        # Walk the call graph breadth-first to find such pairs.
-        try:
-            all_code_a = open(src_a, encoding='utf-8', errors='replace').read()
-            all_code_b = open(src_b, encoding='utf-8', errors='replace').read()
-        except OSError:
-            all_code_a = all_code_b = None
-        if all_code_a and all_code_b:
-            # Collect all function calls from both versions
-            calls_a = set()
-            for fn_name in [func_name_a]:
-                body = _extract_function_body(all_code_a, fn_name)
-                if body:
-                    calls_a.update(_extract_calls_from_expression(body))
-            # Also scan for all function definitions to find semantic pairs
-            import re as _re
-            defs_a = set(_re.findall(
-                r'\b(\w+)\s*\(', all_code_a))
-            defs_b = set(_re.findall(
-                r'\b(\w+)\s*\(', all_code_b))
-            # Find semantic pairs: functions in B that are A + suffix
-            for name_b in defs_b:
-                for suf in _SEMANTIC_SUFFIXES:
-                    if name_b.endswith(suf):
-                        base = name_b[:-len(suf)]
-                        if base in defs_a:
-                            # Found a semantic pair — check if it's reachable
-                            # from the entry function by checking if it appears
-                            # in any function body reachable from entry.
-                            print(f"{indent}  Found semantic pair in codebase: "
+        print(f"{indent}  Return values equal — scanning all source files for divergence")
+        # Entry function returns the same value, but a deeper function may
+        # have been renamed (semantic pair) with different behavior.
+        # Scan ALL source files in both source directories for such pairs.
+        import re as _re
+        all_defs_a = set()
+        all_defs_b = set()
+        for d in [src_dir_a, src_dir_b]:
+            if not d:
+                continue
+            for p in Path(d).rglob('*.c'):
+                try:
+                    txt = p.read_text(encoding='utf-8', errors='replace')
+                except OSError:
+                    continue
+                if d == src_dir_a:
+                    all_defs_a.update(_re.findall(r'\b(\w+)\s*\(', txt))
+                else:
+                    all_defs_b.update(_re.findall(r'\b(\w+)\s*\(', txt))
+        # Find semantic pairs: functions in B that are A + suffix
+        for name_b in all_defs_b:
+            for suf in _SEMANTIC_SUFFIXES:
+                if name_b.endswith(suf):
+                    base = name_b[:-len(suf)]
+                    if base in all_defs_a:
+                        # Check if the base has a semantic-pair suffix variant
+                        # in A as well (to avoid false positives like "init"
+                        # matching "WithLimit" if some random function has it).
+                        src_base = _find_function_source(base, src_dir_a)
+                        src_variant = _find_function_source(name_b, src_dir_b)
+                        if src_base and src_variant:
+                            print(f"{indent}  Found semantic pair: "
                                   f"{base} vs {name_b}; recursing")
                             return _find_fork_recursive(
                                 base, name_b, binary_a, binary_b,
