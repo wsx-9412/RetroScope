@@ -1200,6 +1200,7 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                 'fork_statement': stmt,
                 'fork_line': guard['line'],
                 'fork_variables': guard['variables'],
+                'assign_diff': diff if diff else {},
                 'guard': guard,
                 'return_diff': ret,
             }
