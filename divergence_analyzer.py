@@ -5295,8 +5295,71 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
     # return-value differences) to locate the diverging statement.
     # ========================================================
     if reference_crashed:
-        # Prefer a semantic-enhancement fork (WithLimit/Checked): diff the two
-        # function bodies directly and report the guard 4.4.0 added.
+        # PREFERRED (dynamic, execution-path based): step through the LAST
+        # COMMON function (from the LCS) in both versions and locate the
+        # statement where execution actually diverges.  This follows the
+        # user's algorithm: LCS -> last common function -> breakpoint ->
+        # step through -> fork statement.
+        common_func, _ = _find_last_common_function(matches, gaps, trace_a, trace_b)
+        if common_func:
+            print(f"  [step-into] last common function: {common_func}()")
+            cause_a = common_func
+            cause_b = common_func
+            if refactoring_map:
+                for old_name, new_name in refactoring_map.items():
+                    if old_name == common_func:
+                        cause_b = new_name
+                        break
+                    elif new_name == common_func:
+                        cause_a = new_name
+                        break
+            div_loc = _find_diverging_source_line(
+                binary_a, binary_b, cause_a, cause_b,
+                args_a, args_b, lib_path_a, lib_path_b,
+                source_dirs_a, source_dirs_b, gdb_timeout,
+                refactoring_map=refactoring_map, gaps=gaps,
+            )
+            bogus = _is_spurious_step_divergence(div_loc)
+            if not bogus:
+                result = {
+                    "divergence_function": func_name,
+                    "trace_a_index": a_idx,
+                    "trace_b_index": b_idx,
+                    "root_cause_function": div_loc.get("root_cause_function", common_func),
+                    "root_cause_file": div_loc["file"],
+                    "root_cause_line": div_loc["line"],
+                    "root_cause_statement_a": div_loc.get("line_text_a", ""),
+                    "root_cause_statement_b": div_loc.get("line_text_b", ""),
+                    "description": (
+                        f"Divergence function: {func_name}\n"
+                        f"Root cause function: {div_loc.get('root_cause_function', common_func)}\n"
+                        f"Root cause: {div_loc.get('note', '')}\n"
+                        f"  v4.4.0: {div_loc.get('line_text_a', '')}\n"
+                        f"  v4.0.8: {div_loc.get('line_text_b', '')}\n"
+                        f"Source: {div_loc['file']}:{div_loc['line']}"
+                    ),
+                }
+                if div_loc.get("diverging_call_a") or div_loc.get("diverging_call_b"):
+                    result["diverging_call_a"] = div_loc.get("diverging_call_a")
+                    result["diverging_call_b"] = div_loc.get("diverging_call_b")
+                if input_file:
+                    result["input_file"] = str(input_file)
+                if not skip_polytracker:
+                    try:
+                        result = _polytracker_locate_input_offsets(
+                            result, config=config, binary_b=binary_b, binary_a=binary_a)
+                    except Exception as e:
+                        print(f"  [PolyTracker] Analysis failed: {e}")
+                        result["polytracker_offsets"] = {"status": "error", "error": str(e)}
+                return result
+            else:
+                print("  [step-into] no divergence pinpointed — falling back.")
+
+        # LAST RESORT (static): semantic-enhancement fork (WithLimit/Checked):
+        # diff the two function bodies directly and report the guard 4.4.0
+        # added.  Only used when dynamic stepping found nothing — this search
+        # is NOT execution-path aware, so it can report a guard the input
+        # never reaches.
         sem = _locate_semantic_enhancement_divergence(
             gaps, source_dirs_a, source_dirs_b)
         if sem:
