@@ -4770,11 +4770,11 @@ def _find_error_return_condition(func_name, source_dirs):
         return None
 
     # Locate the function definition (skip forward declarations: a prototype
-    # is terminated by ';' before any '{').  The name may start the line when
-    # the return type sits on the previous line, so the qualifier part is
-    # optional.
+    # is terminated by ';' before any '{'; skip call sites, where the name is
+    # preceded by '(' — e.g. `if (processCropSelections(...))` — by anchoring
+    # the name at line start, allowing only type/qualifier text before it).
     start = None
-    pat = re.compile(rf'(?:static\s+)?[\w\s\*]*\b{re.escape(func_name)}\s*\(')
+    pat = re.compile(rf'^\s*[\w\*\s]*\b{re.escape(func_name)}\s*\(')
     i = 0
     while i < len(lines):
         if pat.search(lines[i]):
