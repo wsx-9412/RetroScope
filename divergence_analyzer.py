@@ -5615,20 +5615,22 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                         cond_vars = _extract_variables_from_expression(cond_text)
                         # Add the input-derived value feeding the checked
                         # variable (e.g. cropsize from
-                        # `crop_buff = _TIFFmalloc(cropsize)`).
+                        # `crop_buff = (unsigned char *)_TIFFmalloc(cropsize)`).
                         extra_vars = []
                         for cv in cond_vars:
                             loc = _trace_assignment_location(
                                 os.path.basename(cond_file or div_loc["file"]),
                                 cond_line, cv, source_dirs_b)
                             if loc:
-                                rhs = loc.get('rhs', '')
-                                if _classify_rhs(rhs)['rhs_type'] == 'function_call':
-                                    m_arg = re.search(r'\(([^()]*)\)', rhs)
-                                    if m_arg:
-                                        extra_vars.extend(
-                                            _extract_variables_from_expression(
-                                                m_arg.group(1)))
+                                rhs = loc.get('rhs', '') or ''
+                                # Strip pointer casts so the malloc-size
+                                # argument is extracted, not the cast type.
+                                rhs_nc = re.sub(r'\([^()]*\*\s*\)', '', rhs)
+                                arg_groups = re.findall(r'\(([^()]*)\)', rhs_nc)
+                                if arg_groups:
+                                    extra_vars.extend(
+                                        _extract_variables_from_expression(
+                                            arg_groups[-1]))
                         result["variables"] = cond_vars + [v for v in extra_vars
                                                            if v not in cond_vars]
                     else:
