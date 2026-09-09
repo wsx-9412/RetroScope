@@ -1909,9 +1909,13 @@ def _find_diverging_source_line(binary_a, binary_b, func_name_a, func_name_b,
         return None
 
     result = _compare_execution_traces(lines_a, lines_b)
-
-    if _depth >= 3:
-        return result
+    if _is_spurious_step_divergence(result):
+        # The first positional difference is a benign call asymmetry (e.g. a
+        # wrapper/logging call added in the newer version).  Re-compare with
+        # benign-call tolerance to find the REAL divergence further along.
+        tolerant = _first_real_call_divergence(lines_a, lines_b)
+        if tolerant and not _is_spurious_step_divergence(tolerant):
+            result = tolerant
 
     # Check sub-functions FIRST for deeper divergence
     # Only report current function's divergence if no deeper one is found
