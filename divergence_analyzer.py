@@ -3110,14 +3110,56 @@ def _find_caller_statement(binary, func_name, args, lib_path, source_dirs,
     }
 
 
-def _find_last_common_function(matches, gaps, trace_a, trace_b):
+def _find_last_common_function(matches, gaps, trace_a, trace_b, prefer_tail=False):
     """Find the function that CONTAINS the last divergence point.
 
     The divergence happens inside some function. We find it by looking at what
     function is active at the divergence point in both traces.
     Returns (func_name, match_info) or (None, None).
+
+    When ``prefer_tail`` is set (reference crashed but the target stopped
+    before it), only the LAST gap is considered — the divergence that matters
+    is where the reference keeps running after the target has stopped, not an
+    earlier gap whose fork caller is merely deeper.
     """
     if not gaps:
+        return None, None
+
+    def find_enclosing_function(trace, div_idx):
+        """Find the deepest function still active at div_idx."""
+        # Track enter/exit to find active functions
+        active = []
+        for i in range(div_idx):
+            op = trace[i]
+            if op.get("is_enter"):
+                active.append(op)
+            else:
+                # Pop the last enter with matching name
+                for j in range(len(active) - 1, -1, -1):
+                    if active[j]["name"] == op["name"]:
+                        active.pop(j)
+                        break
+        # The deepest active function is the last one
+        if active:
+            return active[-1]
+        return None
+
+    if prefer_tail:
+        tail_gap = gaps[-1]
+        fc = _extract_gap_fork(tail_gap)
+        if fc:
+            return fc, tail_gap
+        # No forking caller in the tail gap (e.g. the target stopped there):
+        # the last common function is the deepest function still active at
+        # the end of the target trace.
+        b_end = tail_gap.get("b_range", [0, len(trace_b)])[0]
+        enc = find_enclosing_function(trace_b, b_end) if trace_b else None
+        if enc:
+            return enc["name"], tail_gap
+        a_start = tail_gap.get("a_range", [0, 0])[0]
+        enc = find_enclosing_function(trace_a, a_start) if trace_a else None
+        if enc:
+            return enc["name"], tail_gap
         return None, None
 
     # Prefer the forking caller inside a gap: the same caller invoked
