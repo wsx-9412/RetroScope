@@ -866,10 +866,8 @@ def probe_returns(binary, func_name, input_file, run_args, lib_path=None,
 set confirm off
 set breakpoint pending on
 set env ASAN_OPTIONS=detect_leaks=0
-catch load libtiff
+break {func_name}
 run {run_args}
-tbreak {func_name}
-continue
 python
 import gdb
 import re
