@@ -1098,7 +1098,28 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
         input_file, run_args, lib_path_a, lib_path_b, timeout
     )
     if not ret:
-        print(f"{indent}  Return values equal — not the fork")
+        print(f"{indent}  Return values equal — checking for semantic-pair callees")
+        # Entry function returns the same value, but it may call a function
+        # that was renamed (semantic pair) and has different behavior.
+        calls_a = set(_extract_calls_from_expression(
+            _extract_function_body(open(src_a, encoding='utf-8',
+                                       errors='replace').read(),
+                                   func_name_a) or ''))
+        for c in calls_a:
+            for suf in _SEMANTIC_SUFFIXES:
+                if c.endswith(suf):
+                    base = c[:-len(suf)]
+                    if _find_function_source(base, src_dir_a):
+                        print(f"{indent}  Found semantic pair: "
+                              f"{base} vs {c}; recursing")
+                        return _find_fork_recursive(
+                            base, c, binary_a, binary_b,
+                            src_dir_a, src_dir_b,
+                            input_file, run_args,
+                            lib_path_a, lib_path_b,
+                            timeout, depth + 1, max_depth, chain
+                        )
+        print(f"{indent}  No divergence found at this level")
         return {'status': 'no_return_difference', 'func': label}
 
     print(f"{indent}  Return values DIFFER:")
