@@ -2004,13 +2004,6 @@ def _find_diverging_source_line(binary_a, binary_b, func_name_a, func_name_b,
             if sub_result:
                 return sub_result
 
-    # A real divergence in THIS function's control flow takes priority over
-    # sub-function recursion: the fork is the statement where the caller's
-    # own execution path splits (e.g. a failed check -> error path), not a
-    # return-value difference captured from an unrelated sub-function call.
-    if result and not _is_spurious_step_divergence(result):
-        return result
-
     # No deeper divergence found — report this function's divergence
     if result:
         return result
@@ -4755,17 +4748,21 @@ def _is_spurious_step_divergence(div_loc):
     return False
 
 
-def _find_error_return_condition(func_name, source_dirs):
+def _find_error_return_condition(func_name, source_dirs, after_line=None):
     """Find the first error-return condition in func_name's body.
 
     Scans the target's source for TIFFError/TIFFWarning calls that are
     followed by a ``return`` (an error path) and returns the enclosing
     ``if`` condition as ``(line, condition_text)``, or None.
 
+    When ``after_line`` is given, only error paths BELOW that line are
+    considered — used when the divergence is a call-site difference (e.g.
+    ``_TIFFmalloc`` vs ``limitMalloc``): the paths split at the failure check
+    following that call (e.g. ``if (!crop_buff)``).
+
     Used when the target took an error path the reference never reaches:
     the condition guarding that path exists in BOTH versions but evaluates
-    differently — that condition is the fork statement (e.g. the
-    ``if (!crop_buff)`` check after a failed malloc).
+    differently — that condition is the fork statement.
     """
     src = _find_function_source(func_name, source_dirs)
     if not src:
