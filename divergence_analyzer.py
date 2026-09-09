@@ -4814,6 +4814,8 @@ def _find_error_return_condition(func_name, source_dirs, after_line=None):
             break
 
     for i in range(start, end):
+        if after_line is not None and (i + 1) <= after_line:
+            continue
         if not re.search(r'\bTIFF(Error|Warning)\s*\(', lines[i]):
             continue
         # Require an error RETURN nearby (the error path exits the function)
