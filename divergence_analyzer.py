@@ -4976,9 +4976,14 @@ def _build_result_from_backward_tracer(bt_result, func_name, a_idx, b_idx):
     # after the fork statement (the first differing variable's assignment) in
     # the TARGET version, so its taint traces to the exact input bytes.
     pt_file = bt_result.get("file_a")
-    pt_line = (fork_line + 1) if fork_line else None
-    pt_stmt = fork_stmt
     pt_func = bt_result.get("func_a")
+
+    # When the backward tracer found a guard (4.4.0-only), fork_line points
+    # to the guard in the reference.  Use the assign_diff's target line for
+    # tracing, since that's the statement that actually exists in the target.
+    target_fork_line = assign_diff.get("line_a") or fork_line
+    pt_line = (target_fork_line + 1) if target_fork_line else None
+    pt_stmt = assign_diff.get("statement_a") or fork_stmt
 
     # If input_variables is empty, trace backward from the fork statement to
     # find member accesses (e.g. direntry->tdir_count) that ARE input-derived.
