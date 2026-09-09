@@ -335,7 +335,9 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
 
     config = {
         "func": func,
-        "file": os.path.basename(fsrc),
+        "file": str(fsrc),  # absolute path: gdb resolves file:line against
+                            # the debug info's full path; basename-only specs
+                            # stay pending forever when sources are relocated.
         "dirs": [str(Path(fsrc).parent), source_root or ""],
         "runargs": " ".join(str(a) for a in args),
         "decisions": decisions,
