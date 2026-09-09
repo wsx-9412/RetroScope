@@ -46,7 +46,7 @@ from trace_fork_offsets import (find_function_body_range, find_function_line,
 # Condition parsing (static, generic)
 # --------------------------------------------------------------------------
 
-_SIMPLE_OPS = re.compile(r'\s*(==|!=|<=|>=|<|>)\s*')
+_SIMPLE_OPS = re.compile(r'(?<![=!<>-])\s*(==|!=|<=|>=|<|>)\s*(?!=)')
 _RISKY_TOKENS = re.compile(r'[+]{2}|--|(?<![=!<>])=[^=]|\?|\(\)|\([^)]*\)')
 _DECISION_START = re.compile(
     r'^\s*(?:}\s*else\s+if|else\s+if|if|else\s+while|while|for|switch|do)\s*\(')
