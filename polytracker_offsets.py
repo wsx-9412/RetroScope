@@ -328,24 +328,34 @@ def _instrument_source(source_dir, instrument):
 
     pointer_vars = _resolve_pointer_vars(source_dir, vars_)
 
-    calls = []
-    for v in vars_:
-        if v in pointer_vars:
-            # Pointer: the address is untainted (from malloc); trace the taint of
-            # the memory it points to (read from the input).  Guard with a NULL
-            # check so a NULL pointer (e.g. before the first allocation) is safe.
-            calls.append(
-                f'if ({v}) __polytracker_log_var_taint("{v}", '
-                f'dfsan_read_label({v}, sizeof(*({v}))));')
-        else:
-            calls.append(
-                f'__polytracker_log_var_taint("{v}", '
-                f'dfsan_read_label(&({v}), sizeof({v})));')
+    def _log_calls(candidate_vars):
+        """Build the taint-log statements for a variable subset."""
+        calls = []
+        for v in candidate_vars:
+            if v in pointer_vars:
+                # Pointer: the address is untainted (from malloc); trace the
+                # taint of the memory it points to (read from the input).
+                # Guard with a NULL check so a NULL pointer (e.g. before the
+                # first allocation) is safe.
+                calls.append(
+                    f'if ({v}) __polytracker_log_var_taint("{v}", '
+                    f'dfsan_read_label({v}, sizeof(*({v}))));')
+            else:
+                calls.append(
+                    f'__polytracker_log_var_taint("{v}", '
+                    f'dfsan_read_label(&({v}), sizeof({v})));')
+        return calls
 
-    idx = line - 1  # fork statement is now `line`
-    fork_line = lines[idx]
-    indent = fork_line[:len(fork_line) - len(fork_line.lstrip())]
-    stripped = fork_line.strip()
+    # Variables *assigned* by the fork statement must be logged AFTER the
+    # statement: a log inserted before the assignment reads the variable's
+    # stale pre-statement value (its taint belongs to an earlier assignment),
+    # so the reported input offsets do not steer the fork at all.
+    before_vars, after_vars = _partition_vars(stripped, vars_)
+    before_calls = _log_calls(before_vars)
+    after_calls = _log_calls(after_vars)
+
+    def _shifted(calls, extra):
+        return [f'{indent}{extra}{c}' for c in calls]
 
     # For `if` forks, instrument *inside* the body so the taint is logged only
     # on the diverging iteration (condition true), not every loop iteration.
@@ -360,12 +370,14 @@ def _instrument_source(source_dir, instrument):
                 # Early-exit body (error handling): instrument BEFORE the `if`
                 # so the taint is logged regardless of whether the error path
                 # is taken (e.g. `if (!load(...)) goto bad;`).
-                indented_calls = [f'{indent}  {c}' for c in calls]
+                indented_calls = [f'{indent}  {c}' for c in before_calls]
                 lines = lines[:idx] + indented_calls + lines[idx:]
             else:
                 new_lines = [f'{indent}if ({cond}) {{']
-                new_lines += [f'{indent}  {c}' for c in calls]
+                new_lines += [f'{indent}  {c}' for c in before_calls]
                 new_lines += [f'{indent}  {body}']
+                # After-log an assignment that lives inside the `if` body.
+                new_lines += [f'{indent}  {c}' for c in after_calls]
                 new_lines.append(f'{indent}}}')
                 lines = lines[:idx] + new_lines + lines[idx + 1:]
         elif not rest and idx + 1 < len(lines):
@@ -373,19 +385,23 @@ def _instrument_source(source_dir, instrument):
             body = lines[idx + 1].strip()
             if body and not body.startswith('{'):
                 if re.match(r'(goto|return|break|continue)\b', body):
-                    indented_calls = [f'{indent}  {c}' for c in calls]
+                    indented_calls = [f'{indent}  {c}' for c in before_calls]
                     lines = lines[:idx] + indented_calls + lines[idx:]
                 else:
                     new_lines = [f'{indent}if ({cond}) {{']
-                    new_lines += [f'{indent}  {c}' for c in calls]
+                    new_lines += [f'{indent}  {c}' for c in before_calls]
                     new_lines += [f'{indent}  {body}']
+                    new_lines += [f'{indent}  {c}' for c in after_calls]
                     new_lines.append(f'{indent}}}')
                     lines = lines[:idx] + new_lines + lines[idx + 2:]
             else:
-                indented_calls = [f'{indent}  {c}' for c in calls]
+                # Block body on the following lines: keep the current
+                # before-`if` placement (after-logs would need brace
+                # matching, and a block body is rarely a single assignment).
+                indented_calls = [f'{indent}  {c}' for c in before_calls]
                 lines = lines[:idx] + indented_calls + lines[idx:]
         else:
-            indented_calls = [f'{indent}  {c}' for c in calls]
+            indented_calls = [f'{indent}  {c}' for c in before_calls]
             lines = lines[:idx] + indented_calls + lines[idx:]
     else:
         # The fork is not an `if` itself.  It may be a single-statement body of
@@ -401,14 +417,24 @@ def _instrument_source(source_dir, instrument):
         is_ctrl_body = (bool(re.match(r'^(if|else|for|while|do)\b', prev))
                         and not prev.endswith('{'))
         if is_ctrl_body:
+            # Wrap `{ before-logs; stmt; after-logs }`: the before-logs run in
+            # the same execution context the original single statement had,
+            # and the after-logs run right after the assignment.  Wrapping a
+            # single-statement body of if/else/for/while/do in a block does
+            # not change the semantics.
             new_lines = [f'{indent}{{']
-            new_lines += [f'{indent}  {c}' for c in calls]
+            new_lines += [f'{indent}  {c}' for c in before_calls]
             new_lines += [f'{indent}  {stripped}']
+            new_lines += [f'{indent}  {c}' for c in after_calls]
             new_lines.append(f'{indent}}}')
             lines = lines[:idx] + new_lines + lines[idx + 1:]
         else:
-            indented_calls = [f'{indent}  {c}' for c in calls]
-            lines = lines[:idx] + indented_calls + lines[idx:]
+            # Plain statement: logs that read pre-statement state go before,
+            # logs of variables assigned by the statement go after it.
+            new_lines = _shifted(before_calls, '')
+            new_lines += [fork_line]
+            new_lines += _shifted(after_calls, '')
+            lines = lines[:idx] + new_lines + lines[idx + 1:]
 
     target.write_text("\n".join(lines) + "\n")
     print(f"    [PolyTracker] instrumented {target.name}:{line} "

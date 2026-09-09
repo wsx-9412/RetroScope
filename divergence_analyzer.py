@@ -5981,6 +5981,8 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
             except Exception as e:
                 print(f"  [PolyTracker] Analysis failed: {e}")
                 result["polytracker_offsets"] = {"status": "error", "error": str(e)}
+        if fork_meta:
+            result["fork_chain"] = fork_meta
         return result
 
     # ========================================================
