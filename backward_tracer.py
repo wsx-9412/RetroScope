@@ -1302,8 +1302,28 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                         return True
             return False
 
+        def _calls_semantic_variant(callee_name):
+            """Check if callee transitively calls a function with a semantic variant."""
+            callee_src = _find_function_source(callee_name, src_dir_a)
+            if not callee_src:
+                return False
+            try:
+                code = open(callee_src, encoding='utf-8', errors='replace').read()
+            except OSError:
+                return False
+            body = _extract_function_body(code, callee_name)
+            if not body:
+                return False
+            for c in _extract_calls_from_expression(body):
+                if _has_semantic_variant(c):
+                    return True
+            return False
+
         if primary and len(primary) > 1:
-            primary.sort(key=lambda x: (0 if _has_semantic_variant(x[0]) else 1))
+            primary.sort(key=lambda x: (
+                0 if _has_semantic_variant(x[0]) else
+                1 if _calls_semantic_variant(x[0]) else 2
+            ))
 
         chosen = None
         if primary:
