@@ -417,10 +417,9 @@ def _instrument_source(source_dir, instrument):
 
     # For `if` forks, instrument *inside* the body so the taint is logged only
     # on the diverging iteration (condition true), not every loop iteration.
-    m = re.match(r'if\s*\((.+)\)\s*(.*)$', stripped)
-    if m:
-        cond = m.group(1).strip()
-        rest = m.group(2).strip()
+    if_parts = _parse_if_line(stripped)
+    if if_parts:
+        cond, rest = if_parts
         if rest and not rest.startswith('{'):
             # Single-line: `if (cond) stmt;`
             body = rest
