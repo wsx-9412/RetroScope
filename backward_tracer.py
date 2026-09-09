@@ -1062,10 +1062,11 @@ def find_fork_by_backward_tracing(binary_a, binary_b, source_dir_a, source_dir_b
         dict with fork_statement, fork_variable, values, chain, etc.
     """
     chain = []
+    _visited = set()
     result = _find_fork_recursive(
         func_name, func_name, binary_a, binary_b, source_dir_a, source_dir_b,
         input_file, run_args, lib_path_a, lib_path_b, timeout,
-        depth=0, max_depth=max_depth, chain=chain
+        depth=0, max_depth=max_depth, chain=chain, _visited=_visited
     )
     result['chain'] = chain
     return result
