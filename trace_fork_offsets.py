@@ -2167,6 +2167,15 @@ _ASAN_SUMMARY_RE = re.compile(
     r'SUMMARY:\s*AddressSanitizer:\s*\S+\s+(\S+?):(\d+)\s+in\s+(.+?)\s*$', re.M)
 _SANITIZER_FRAME_RE = re.compile(
     r'__interceptor_|__asan_|__sanitizer_|__ubsan_|__tsan_|^libc|sanitizer|/csu/')
+_WORD_RE = re.compile(r'\w+$')
+
+
+def _path_basename(p):
+    """Basename of a frame file path (or the raw string when it carries no
+    path, e.g. ``tiffcrop.c`` vs ``/build/tiffcrop.c``)."""
+    if not p:
+        return None
+    return _WORD_RE.sub('', p) and (os.path.basename(str(p)) or str(p)) or str(p)
 
 
 def _is_sanitizer_frame(frame):
