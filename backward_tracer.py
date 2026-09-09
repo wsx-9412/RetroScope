@@ -1085,9 +1085,17 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
     label = func_name_a if func_name_a == func_name_b else f"{func_name_a} vs {func_name_b}"
     print(f"\n{indent}[depth {depth}] Analyzing function: {label}")
 
-    # 1. Find source files
-    src_a = _find_function_source(func_name_a, src_dir_a)
-    src_b = _find_function_source(func_name_b, src_dir_b)
+    # 1. Find source files.
+    # NOTE: src_dir_a = reference (4.4.0/new), src_dir_b = target (4.0.8/old).
+    # For semantic pairs, func_name_a = old name (in 4.0.8), func_name_b = new
+    # name (in 4.4.0).  So search the OLD function in src_dir_b and the NEW
+    # function in src_dir_a.
+    if func_name_a != func_name_b:
+        src_a = _find_function_source(func_name_a, src_dir_b)
+        src_b = _find_function_source(func_name_b, src_dir_a)
+    else:
+        src_a = _find_function_source(func_name_a, src_dir_a)
+        src_b = _find_function_source(func_name_b, src_dir_b)
     if not src_a or not src_b:
         print(f"{indent}  Source not found for {label} "
               f"(a={src_a}, b={src_b})")
