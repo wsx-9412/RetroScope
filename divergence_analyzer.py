@@ -4795,12 +4795,17 @@ def _find_error_return_condition(func_name, source_dirs):
     if start is None:
         return None
 
-    # Find the end of the function body (matching closing brace)
+    # Find the end of the function body (matching closing brace).  The body
+    # may start a few lines below the definition (argument list continuation),
+    # so the end is only valid after the opening brace was seen.
     depth = 0
+    seen_open = False
     end = len(lines)
     for i in range(start, len(lines)):
         depth += lines[i].count('{') - lines[i].count('}')
-        if i > start and depth <= 0:
+        if depth > 0:
+            seen_open = True
+        elif seen_open:
             end = i
             break
 
