@@ -9,11 +9,11 @@
 # =====================================================
 # CVE configuration: change this section for each CVE
 # =====================================================
-CVE_ID = "CVE-2022-3627"          # CVE number
-INPUT_FILE = "in/CVE-2022-3627"   # input file path (relative to RetroScope/)
+CVE_ID = "CVE-2023-25435"          # CVE number
+INPUT_FILE = "in/CVE-2023-25435"   # input file path (relative to RetroScope/)
 OUTPUT_FILE = "/tmp/foo"          # program output file
 # Program arguments template: {program_path}, {input_file}, {output_file}
-COMMAND_FORMAT = "{program_path} -Z 1:4,3:3 -R 90 -H 300 -i {input_file} {output_file}"
+COMMAND_FORMAT = "{program_path} -E l -Z 12:50,12:99 -e divided  -R 270 {input_file} {output_file}"
 
 # =====================================================
 # Compilation configuration (usually no need to change)
