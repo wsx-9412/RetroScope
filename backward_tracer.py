@@ -1107,7 +1107,49 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
         input_file, run_args, lib_path_a, lib_path_b, timeout
     )
     if not ret:
-        print(f"{indent}  Return values equal — scanning libtiff sources for divergence")
+        # Return values are equal, but for semantic pairs the body may still
+        # contain a different assignment that affects behavior (e.g. the
+        # *count assignment in TIFFReadDirEntryArray).  Check for that first.
+        if func_name_a != func_name_b:
+            diff = _find_assign_diff(src_a, func_name_a, src_b, func_name_b)
+            if diff:
+                callee_a = _extract_callee(diff['statement_a'])
+                callee_b = _extract_callee(diff['statement_b'])
+                recurse_pair = None
+                if callee_a and callee_b:
+                    for suf in _SEMANTIC_SUFFIXES:
+                        if callee_b.endswith(suf) and callee_b[:-len(suf)] == callee_a:
+                            recurse_pair = (callee_a, callee_b)
+                            break
+                if recurse_pair:
+                    ca, cb = recurse_pair
+                    if _find_function_source(ca, src_dir_b) or \
+                            _find_function_source(ca, src_dir_a):
+                        print(f"{indent}  Assignment differs by semantic variant "
+                              f"call {ca} vs {cb}; recursing")
+                        return _find_fork_recursive(
+                            ca, cb, binary_a, binary_b, src_dir_a, src_dir_b,
+                            input_file, run_args, lib_path_a, lib_path_b,
+                            timeout, depth + 1, max_depth, chain, _visited=_visited
+                        )
+                print(f"{indent}  Body differs (assign_diff): "
+                      f"{diff['lhs']}: {diff['statement_a'][:60]} vs "
+                      f"{diff['statement_b'][:60]}")
+                chain.append({
+                    'func': label,
+                    'val_a': 0, 'val_b': 0,
+                    'return_line_a': diff['line_a'],
+                    'return_line_b': diff['line_b'],
+                })
+                return {
+                    'status': 'found',
+                    'fork_statement': diff['statement_b'],
+                    'fork_line': diff['line_b'],
+                    'fork_variables': _extract_vars(diff['statement_b']),
+                    'assign_diff': diff,
+                    'guard': None,
+                    'chain': list(chain),
+                }
         # Entry function returns the same value, but a deeper function may
         # have been renamed (semantic pair) with different behavior.
         import re as _re
