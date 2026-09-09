@@ -352,7 +352,8 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
     if libs:
         env['LD_LIBRARY_PATH'] = ':'.join(libs + [env.get('LD_LIBRARY_PATH', '')])
 
-    cmd = ['gdb', '-batch', '-q', '-ex', f'python {script}',
+    cmd = ['gdb', '-batch', '-q',
+           '-ex', f"python exec(open({script!r}).read())",
            str(real_bin)]
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
@@ -459,7 +460,8 @@ def main():
     ap.add_argument('--source-root', help='version source root (searched for the function)')
     ap.add_argument('--out', help='output JSON path')
     ap.add_argument('--timeout', type=int, default=180)
-    ap.add_argument('--args', nargs=argparse.REMAINDER, default=[])
+    ap.add_argument('--args', nargs=argparse.REMAINDER, default=[],
+                    help='program args; use -- before them')
     a = ap.parse_args()
 
     r = record_decisions(a.binary, a.func, a.args, source_root=a.source_root,
