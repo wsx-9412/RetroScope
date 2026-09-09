@@ -730,7 +730,6 @@ def main():
         if isinstance(div_result, dict) and 'error' not in div_result:
             div_result.setdefault('binary_a', str(real_a))
             div_result.setdefault('binary_b', str(real_b))
-            div_result.setdefault('args_a', diverge_args_a)
             div_result.setdefault('args_b', diverge_args_b)
             div_result.setdefault('input_file', str(input_a) if input_a else None)
 
