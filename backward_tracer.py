@@ -1158,8 +1158,8 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                       f"(A={callee_ret['val_a']:#x}, B={callee_ret['val_b']:#x}); recursing")
                 chain.append({
                     'func': label,
-                    'val_a': ret_a if ret else 0,
-                    'val_b': ret_b if ret else 0,
+                    'val_a': 0,
+                    'val_b': 0,
                     'return_line_a': 0,
                     'return_line_b': 0,
                 })
