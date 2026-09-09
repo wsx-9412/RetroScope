@@ -1107,9 +1107,54 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
         input_file, run_args, lib_path_a, lib_path_b, timeout
     )
     if not ret:
-        # Return values are equal, but for semantic pairs the body may still
-        # contain a different assignment that affects behavior (e.g. the
-        # *count assignment in TIFFReadDirEntryArray).  Check for that first.
+        # Entry function returns the same value.  The fork is caused by a
+        # CALLEE whose return value differs.  Find it by checking each
+        # function called from this function.
+        callees = []
+        if src_a:
+            try:
+                code_a = open(src_a, encoding='utf-8', errors='replace').read()
+                callees = _extract_calls_from_function(code_a, func_name_a)
+            except OSError:
+                pass
+        if not callees and src_b:
+            try:
+                code_b = open(src_b, encoding='utf-8', errors='replace').read()
+                callees = _extract_calls_from_function(code_b, func_name_b)
+            except OSError:
+                pass
+
+        for callee in callees:
+            # Check if this callee exists in both versions and returns
+            # different values.
+            callee_src_a = _find_function_source(callee, src_dir_a if func_name_a == func_name_b else src_dir_b)
+            callee_src_b = _find_function_source(callee, src_dir_b if func_name_a == func_name_b else src_dir_a)
+            if not callee_src_a or not callee_src_b:
+                continue
+            callee_ret = compare_return_values(
+                binary_a, binary_b, callee, callee,
+                callee_src_a, callee_src_b,
+                input_file, run_args, lib_path_a, lib_path_b, timeout
+            )
+            if callee_ret:
+                print(f"{indent}  Callee '{callee}' returns DIFFERENTLY "
+                      f"(A={callee_ret['val_a']:#x}, B={callee_ret['val_b']:#x}); recursing")
+                chain.append({
+                    'func': label,
+                    'val_a': ret_a if ret else 0,
+                    'val_b': ret_b if ret else 0,
+                    'return_line_a': 0,
+                    'return_line_b': 0,
+                })
+                return _find_fork_recursive(
+                    callee, callee, binary_a, binary_b,
+                    src_dir_a, src_dir_b,
+                    input_file, run_args, lib_path_a, lib_path_b,
+                    timeout, depth + 1, max_depth, chain, _visited=_visited
+                )
+
+        # No differing callee found.  For semantic pairs, the body may
+        # still differ.
         if func_name_a != func_name_b:
             diff = _find_assign_diff(src_a, func_name_a, src_b, func_name_b)
             if diff:
@@ -1150,58 +1195,7 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                     'guard': None,
                     'chain': list(chain),
                 }
-        # Entry function returns the same value, but a deeper function may
-        # have been renamed (semantic pair) with different behavior.
-        import re as _re
-        all_defs_a = set()
-        all_defs_b = set()
-        for sub in ['libtiff', '']:
-            for d, out_set in [(src_dir_a, all_defs_a), (src_dir_b, all_defs_b)]:
-                if not d:
-                    continue
-                search_dir = Path(d) / sub if sub else Path(d)
-                if not search_dir.is_dir():
-                    continue
-                for p in search_dir.glob('*.c'):
-                    try:
-                        txt = p.read_text(encoding='utf-8', errors='replace')
-                    except OSError:
-                        continue
-                    out_set.update(_re.findall(r'\b(\w+)\s*\(', txt))
-        # Find semantic pairs: functions in A (new/4.4.0) that have a suffix
-        # variant, and the base name exists in B (old/4.0.8).
-        _visited.add(func_name_a)
-        _visited.add(func_name_b)
-        pairs = []
-        for name_a in all_defs_a:
-            for suf in _SEMANTIC_SUFFIXES:
-                if name_a.endswith(suf):
-                    base = name_a[:-len(suf)]
-                    if base in all_defs_b and base not in _visited and name_a not in _visited:
-                        pairs.append((base, name_a))
-        pairs.sort()
-        # Use a local set to track which pairs we've tried at THIS depth,
-        # so recursive calls don't interfere with our iteration.
-        tried = set()
-        for base, name_b in pairs:
-            if (base, name_b) in tried:
-                continue
-            tried.add((base, name_b))
-            src_base = _find_function_source(base, src_dir_b)
-            src_variant = _find_function_source(name_b, src_dir_a)
-            if src_base and src_variant:
-                print(f"{indent}  Found semantic pair: "
-                      f"{base} vs {name_b}; recursing")
-                result = _find_fork_recursive(
-                    base, name_b, binary_a, binary_b,
-                    src_dir_a, src_dir_b,
-                    input_file, run_args,
-                    lib_path_a, lib_path_b,
-                    timeout, depth + 1, max_depth, chain,
-                    _visited=_visited
-                )
-                if result.get('fork_statement'):
-                    return result
+
         print(f"{indent}  No divergence found at this level")
         return {'status': 'no_return_difference', 'func': label}
 
