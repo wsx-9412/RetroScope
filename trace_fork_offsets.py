@@ -2158,25 +2158,118 @@ def analyze_offsets(parsed, input_file, variables, tiff_tags, tiff_tags_all=None
 # Byte mutation crash testing
 # ---------------------------------------------------------------------------
 
-def _extract_crash_type(output):
-    """Extract a crash signature from an ASan report.
+_ASAN_ERR_RE = re.compile(r'ERROR:\s*AddressSanitizer:\s*([a-z-]+)')
+# ASan backtrace frames: "#N 0x... in <func> <file>:<line>"
+_ASAN_FRAME_RE = re.compile(
+    r'#(\d+)\s+0x[0-9a-fA-F]+\s+in\s+(.+?)\s+(\S+?):(\d+)\s*$')
+# ASan SUMMARY: "SUMMARY: AddressSanitizer: <kind> <file>:<line> in <func>"
+_ASAN_SUMMARY_RE = re.compile(
+    r'SUMMARY:\s*AddressSanitizer:\s*\S+\s+(\S+?):(\d+)\s+in\s+(.+?)\s*$', re.M)
+_SANITIZER_FRAME_RE = re.compile(
+    r'__interceptor_|__asan_|__sanitizer_|__ubsan_|__tsan_|^libc|sanitizer|/csu/')
 
-    Returns a tuple ``(asan_type, crash_func)`` — e.g. ``('heap-buffer-overflow',
-    'extractImageSection')`` — or None if the output has no ASan error.
-    The crash function is taken from stack frame #1 (frame #0 is the ASan
-    interceptor such as ``__interceptor_memcpy``).
+
+def _is_sanitizer_frame(frame):
+    fn = (frame.get("function") or "")
+    fl = (frame.get("file") or "")
+    return bool(_SANITIZER_FRAME_RE.search(fn)) or \
+        bool(_SANITIZER_FRAME_RE.search(fl))
+
+
+def extract_crash_signature(output):
+    """Parse a full crash signature out of an ASan report.
+
+    Returns a dict with the ASan error type, the parsed backtrace frames
+    (sanitizer/libc interceptors kept, but flagged) and the SUMMARY location,
+    or None when the output contains no ASan error.
+
+    ``crash_frames`` lists the project frames (interceptors removed) in stack
+    order, so ``crash_frames[0]`` is the innermost user frame that actually
+    faulted — not the ``memcpy``/``free`` interceptor.
     """
-    m = re.search(r'ERROR:\s*AddressSanitizer:\s*([a-z-]+)', output)
+    if not output:
+        return None
+    m = _ASAN_ERR_RE.search(output)
     if not m:
         return None
     asan_type = m.group(1)
-    func = None
-    for line in output.split('\n'):
-        m2 = re.search(r'#1\s+0x[0-9a-f]+\s+in\s+(\w+)', line)
+
+    frames = []
+    for ln in output.split('\n'):
+        m2 = _ASAN_FRAME_RE.search(ln)
         if m2:
-            func = m2.group(1)
-            break
-    return (asan_type, func)
+            frames.append({
+                "no": int(m2.group(1)),
+                "function": m2.group(2).strip(),
+                "file": m2.group(3),
+                "line": int(m2.group(4)),
+            })
+
+    summary = None
+    m3 = _ASAN_SUMMARY_RE.search(output)
+    if m3:
+        summary = {
+            "file": m3.group(1),
+            "line": int(m3.group(2)),
+            "function": m3.group(3).strip(),
+        }
+
+    crash_frames = [f for f in frames if not _is_sanitizer_frame(f)]
+    return {
+        "type": asan_type,
+        "frames": frames,
+        "crash_frames": crash_frames or frames,
+        "summary": summary,
+    }
+
+
+def _extract_crash_type(output):
+    """Legacy tuple signature ``(asan_type, crash_func)``; kept for callers
+    that only need the coarse (type, top-frame-function) comparison.
+
+    The crash function is the innermost *user* frame (interceptors skipped) —
+    e.g. ``('heap-buffer-overflow', '_TIFFmemcpy')``.
+    """
+    sig = extract_crash_signature(output)
+    if sig is None:
+        return None
+    crash = sig["crash_frames"][0] if sig["crash_frames"] else {}
+    return (sig["type"], crash.get("function"))
+
+
+def compare_crash_signatures(ref_sig, tgt_sig):
+    """Classify how close a target crash is to the reference crash.
+
+    Returns one of:
+      * 'same_site' — type, function, file AND line all match (identical
+                      crash point; requires identical/mapped code lines),
+      * 'same_func' — type + crash function match (line/file may differ
+                      between versions), this is the level used as "success",
+      * 'same_type' — only the ASan error type matches,
+      * None        — different types (a genuinely different crash).
+    Also returns a human-readable diff line for reporting.
+    """
+    if ref_sig is None or tgt_sig is None:
+        return None, "no crash signature to compare"
+    if ref_sig["type"] != tgt_sig["type"]:
+        return None, (f"type differs: ref={ref_sig['type']} "
+                      f"target={tgt_sig['type']}")
+    rf = ref_sig["crash_frames"][0] if ref_sig["crash_frames"] else {}
+    tf = tgt_sig["crash_frames"][0] if tgt_sig["crash_frames"] else {}
+    rfunc, tfunc = rf.get("function"), tf.get("function")
+    if not rfunc or not tfunc:
+        return "same_type", "type matches; no function info to compare"
+    if rfunc != tfunc:
+        return "same_type", (f"type matches but crash function differs: "
+                             f"ref={rfunc} target={tfunc}")
+    rfile = _path_basename(rf.get("file"))
+    tfile = _path_basename(tf.get("file"))
+    if rfile == tfile and rf.get("line") == tf.get("line"):
+        return "same_site", (f"identical crash site: {rfunc} at "
+                             f"{rfile}:{rf.get('line')}")
+    return "same_func", (f"same crash function {rfunc} "
+                         f"(ref {rfile}:{rf.get('line')} vs "
+                         f"target {tfile}:{tf.get('line')})")
 
 
 def test_byte_mutations_compare(binary_target, binary_ref, input_file,

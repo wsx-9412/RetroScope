@@ -256,6 +256,33 @@ def _resolve_pointer_vars(source_dir, variables):
     return pointers
 
 
+def _partition_vars(stripped_stmt, vars_):
+    """Split fork variables into read-only (log BEFORE the statement) and
+    assigned (log AFTER the statement) ones.
+
+    A variable whose value is produced by the fork statement itself
+    (e.g. ``err = TIFFReadDirEntryLong8Array(...)``) must be read after the
+    statement executes — reading it beforehand yields the stale value of a
+    previous assignment, whose taint points at unrelated input bytes.
+    """
+    before, after = [], []
+    for v in vars_:
+        assigned = False
+        # Whole-expression LHS: `err = ...` at a statement boundary.
+        if re.search(r'(?:^|[;{}])\s*' + re.escape(v) + r'\s*=(?!=)',
+                     stripped_stmt):
+            assigned = True
+        else:
+            # Member LHS: `tif->tif_dir.td_nstrips = ...` — the variable name
+            # is the trailing field of the assignment target.
+            base = re.split(r'->|\.', v)[-1]
+            if base != v and re.search(r'[.>]\s*' + re.escape(base) + r'\s*=(?!=)',
+                                       stripped_stmt):
+                assigned = True
+        (after if assigned else before).append(v)
+    return before, after
+
+
 def _instrument_source(source_dir, instrument):
     """Insert taint-logging calls for each fork-statement variable.
 
