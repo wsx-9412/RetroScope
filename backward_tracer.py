@@ -1224,10 +1224,16 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                 'return_diff': ret,
             }
 
+    _UTILITY_CALLEES = {
+        '_TIFFmalloc', '_TIFFrealloc', '_TIFFfree', '_TIFFmemcpy',
+        '_TIFFmemset', '_TIFFCheckMalloc', '_TIFFCheckRealloc',
+        'malloc', 'realloc', 'free', 'memcpy', 'memset', 'memmove',
+        'strerror', 'strlcpy', 'strncpy', 'strlen',
+    }
     seen = set()
     unique_candidates = []
     for c in candidates:
-        if c and c != func_name_a and c not in seen:
+        if c and c != func_name_a and c not in seen and c not in _UTILITY_CALLEES:
             seen.add(c)
             unique_candidates.append(c)
 
