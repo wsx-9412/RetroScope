@@ -4988,13 +4988,13 @@ def _build_result_from_backward_tracer(bt_result, func_name, a_idx, b_idx):
     # If input_variables is empty, trace backward from the fork statement to
     # find member accesses (e.g. direntry->tdir_count) that ARE input-derived.
     input_reads = []
-    if not input_variables and fork_line and pt_file:
+    if not input_variables and target_fork_line and pt_file:
         func_a = bt_result.get("func_a")
         src_dirs = bt_result.get("file_a")
         if func_a and src_dirs:
             try:
                 input_reads = _bt._trace_to_input_variables(
-                    src_dirs, func_a, fork_line,
+                    src_dirs, func_a, target_fork_line,
                     source_dirs=[os.path.dirname(src_dirs)])
             except Exception:
                 pass
@@ -5021,8 +5021,9 @@ def _build_result_from_backward_tracer(bt_result, func_name, a_idx, b_idx):
         "trace_a_index": a_idx,
         "trace_b_index": b_idx,
         "root_cause_function": bt_result.get("func_b") or func_name,
-        "root_cause_file": assign_diff.get("line_a"),
+        "root_cause_file": bt_result.get("file_a"),
         "root_cause_line": fork_line,
+        "root_cause_statement_b": guard_stmt,
         "fork_statement": fork_stmt,
         "fork_statement_line": fork_line,
         "fork_variables": fork_variables,
