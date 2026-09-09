@@ -1288,6 +1288,23 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
             else:
                 secondary.append((ca, cb, sub_ret))
 
+        # Among primaries, prefer callees that have a semantic variant in the
+        # other version (e.g. TIFFReadDirEntryArray vs WithLimit) — these are
+        # more likely to contain the actual guard.
+        def _has_semantic_variant(callee_name):
+            for suf in _SEMANTIC_SUFFIXES:
+                variant = callee_name + suf
+                if _find_function_source(variant, src_dir_b):
+                    return True
+                if callee_name.endswith(suf):
+                    base = callee_name[:-len(suf)]
+                    if _find_function_source(base, src_dir_b):
+                        return True
+            return False
+
+        if primary and len(primary) > 1:
+            primary.sort(key=lambda x: (0 if _has_semantic_variant(x[0]) else 1))
+
         chosen = None
         if primary:
             chosen = primary[0]
