@@ -744,18 +744,16 @@ def locate_offsets(source_dir, program_name, input_file, fork_function,
     shutil.copytree(source_dir, work, dirs_exist_ok=True,
                     ignore=shutil.ignore_patterns(".git", "*.o", "*.so"))
 
-    # Remove any stale build artifacts that survived the copy (Makefiles,
-    # libtool scripts, .deps, .lo, .o, .a from a previous build).  These can
-    # cause `make` to skip recompilation of source files we later instrument.
+    # Remove any stale build artifacts that survived the copy (object files,
+    # libtool archives, .deps, .libs from a previous build).  These can cause
+    # `make` to skip recompilation of source files we later instrument.
+    # NOTE: Do NOT delete Makefiles — ./configure needs them or will regenerate.
     for pattern in ("*.o", "*.lo", "*.la", "*.a", "*.Plo"):
         for p in work.rglob(pattern):
             p.unlink(missing_ok=True)
     for d in list(work.rglob(".deps")) + list(work.rglob(".libs")):
         if d.is_dir():
             shutil.rmtree(d, ignore_errors=True)
-    # Remove stale Makefiles so ./configure regenerates them.
-    for mk in work.rglob("Makefile"):
-        mk.unlink(missing_ok=True)
 
     instrument = None
     if fork_source_file and fork_line and variables:
