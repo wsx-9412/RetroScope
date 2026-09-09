@@ -249,7 +249,7 @@ gdb.write("##TOTAL %d\n" % order[0])
 
 
 def _build_gdb_script(config):
-    return _GDB_TEMPLATE.format()  # config injected via argv
+    return _GDB_TEMPLATE  # config is injected via the script's argv
 
 
 # --------------------------------------------------------------------------
