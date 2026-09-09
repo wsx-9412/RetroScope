@@ -1119,10 +1119,9 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                         continue
                     out_set.update(_re.findall(r'\b(\w+)\s*\(', txt))
         # Find semantic pairs: functions in B that are A + suffix.
-        # Skip pairs we've already visited to avoid infinite loops.
         _visited.add(func_name_a)
         _visited.add(func_name_b)
-        # Collect ALL unvisited semantic pairs, sorted by name
+        # Collect ALL unvisited semantic pairs
         pairs = []
         for name_b in all_defs_b:
             for suf in _SEMANTIC_SUFFIXES:
@@ -1131,10 +1130,13 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                     if base in all_defs_a and base not in _visited and name_b not in _visited:
                         pairs.append((base, name_b))
         pairs.sort()
+        # Use a local set to track which pairs we've tried at THIS depth,
+        # so recursive calls don't interfere with our iteration.
+        tried = set()
         for base, name_b in pairs:
-            # Skip if already visited (may have been added by a deeper recursion)
-            if base in _visited or name_b in _visited:
+            if (base, name_b) in tried:
                 continue
+            tried.add((base, name_b))
             src_base = _find_function_source(base, src_dir_a)
             src_variant = _find_function_source(name_b, src_dir_b)
             if src_base and src_variant:
@@ -1148,12 +1150,8 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                     timeout, depth + 1, max_depth, chain,
                     _visited=_visited
                 )
-                # If this pair found a fork, return it
                 if result.get('fork_statement'):
                     return result
-                # Otherwise, mark this pair as visited and try the next
-                _visited.add(base)
-                _visited.add(name_b)
         print(f"{indent}  No divergence found at this level")
         return {'status': 'no_return_difference', 'func': label}
 
