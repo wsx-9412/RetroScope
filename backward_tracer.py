@@ -1238,18 +1238,15 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
         candidates.append(callee)
 
     # 3b. If this is a semantic pair (different names), diff the bodies:
-    #     (a) if the added statement is a call to a semantic variant, recurse
-    #         into that pair (the guard is one level deeper);
-    #     (b) find an added guard — the statement that directly causes the
-    #         behavioral divergence (prioritized over upstream variable diffs);
-    #     (c) find the FIRST variable whose value differs (same LHS, different
+    #     (a) find the FIRST variable whose value differs (same LHS, different
     #         RHS) — its assignment in the target is the fork statement.
+    #     (b) if the differing assignment is just a call to a *semantic variant*
+    #         (X(...) vs XWithLimit(...)), recurse into that pair;
+    #     (c) find an added guard — the guard is a CONSEQUENCE of the assign
+    #         diff, not the root cause (used only for context).
     if func_name_a != func_name_b:
         diff = _find_assign_diff(src_a, func_name_a, src_b, func_name_b)
         if diff:
-            # If the differing assignment is just a call to a *semantic variant*
-            # (X(...) vs XWithLimit(...)), the real fork is one level deeper —
-            # recurse into that pair instead of reporting the call itself.
             callee_a = _extract_callee(diff['statement_a'])
             callee_b = _extract_callee(diff['statement_b'])
             recurse_pair = None
@@ -1272,8 +1269,44 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                         input_file, run_args, lib_path_a, lib_path_b,
                         timeout, depth + 1, max_depth, chain, _visited=_visited
                     )
+            # Non-call assignment diff: this IS the fork statement.
+            # The guard (if any) is a consequence — record it as context.
+            guard = _find_added_guard(src_a, func_name_a, src_b, func_name_b)
+            fork_statement = diff['statement_a']
+            fork_line = diff['line_a']
+            fork_variables = _extract_variables(fork_statement)
+            input_variables = [v for v in fork_variables if '->' in v or '.' in v]
+            print(f"{indent}  First differing variable: '{diff['var']}' "
+                  f"(A: '{diff['statement_a']}' vs B: '{diff['statement_b']}')")
+            print(f"{indent}  Fork statement (target {func_name_a}): "
+                  f"'{fork_statement}' (line {fork_line})")
+            print(f"{indent}  Input-derived variables: {input_variables}")
+            if guard:
+                print(f"{indent}  Guard (consequence, not root cause): "
+                      f"'{guard['statement']}' (line {guard['line']})")
+            chain.append({
+                'func': label,
+                'val_a': 0, 'val_b': 0,
+                'return_line_a': fork_line,
+                'return_line_b': diff['line_b'],
+            })
+            return {
+                'status': 'found',
+                'func': label,
+                'func_a': func_name_a,
+                'func_b': func_name_b,
+                'file_a': src_a,
+                'file_b': src_b,
+                'fork_statement': fork_statement,
+                'fork_line': fork_line,
+                'fork_variables': fork_variables,
+                'input_variables': input_variables,
+                'assign_diff': diff,
+                'guard': guard,
+                'chain': list(chain),
+            }
 
-        # Check for added guard — it indicates behavioral divergence.
+        # No assign_diff — check for added guard (guard-only divergence).
         guard = _find_added_guard(src_a, func_name_a, src_b, func_name_b)
         if guard:
             stmt = guard['statement']
