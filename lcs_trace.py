@@ -40,6 +40,7 @@ import argparse
 import bisect
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -730,8 +731,10 @@ def main():
         if isinstance(div_result, dict) and 'error' not in div_result:
             div_result.setdefault('binary_a', str(real_a))
             div_result.setdefault('binary_b', str(real_b))
+            div_result.setdefault('args_a', diverge_args_a)
             div_result.setdefault('args_b', diverge_args_b)
             div_result.setdefault('input_file', str(input_a) if input_a else None)
+            _annotate_divergence_confidence(div_result)
 
         print(f"\n  Divergence function: {div_result.get('divergence_function', 'N/A')}")
         print(f"  Root cause function: {div_result.get('root_cause_function', 'N/A')}")
