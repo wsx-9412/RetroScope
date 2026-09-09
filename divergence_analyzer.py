@@ -1920,6 +1920,13 @@ def _find_diverging_source_line(binary_a, binary_b, func_name_a, func_name_b,
     if _depth >= 3:
         return result
 
+    # A real divergence in THIS function's control flow takes priority over
+    # sub-function recursion: the fork is the statement where the caller's
+    # own execution path splits (e.g. a failed check -> error path), not a
+    # return-value difference captured from an unrelated sub-function call.
+    if result and not _is_spurious_step_divergence(result):
+        return result
+
     # Check sub-functions FIRST for deeper divergence
     # Only report current function's divergence if no deeper one is found
 
