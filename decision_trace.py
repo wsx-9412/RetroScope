@@ -239,71 +239,83 @@ MAX_EVENTS = config.get("max_events", 50000)
 decision_lines = set(d["line"] for d in config["decisions"])
 clauses_by_line = config["clauses_by_line"]
 
-class RecorderBP(gdb.Breakpoint):
-    def __init__(self, spec):
-        super(RecorderBP, self).__init__(spec, internal=False)
-        self.stepping = False
-        self.order = 0
+# NOTE: stepping happens at TOP-LEVEL python (run -> continue -> next loop).
+# Running gdb.execute("next") inside a Breakpoint.stop() callback raises
+# "Cannot execute this command while the selected thread is running" on
+# gdb 12, so no stop() callback is used here.
 
-    def eval_clauses(self, line):
-        clauses = {}
-        for ci, cl in enumerate(clauses_by_line.get(str(line), [])):
-            vals = {}
-            for side in ("lhs", "rhs"):
-                expr = cl.get(side, "")
-                if not expr or cl.get("op") is None:
-                    continue
-                try:
-                    v = gdb.parse_and_eval(expr)
-                    vals[side] = int(v)
-                except Exception:
-                    vals[side] = None
-            if vals:
-                clauses[str(ci)] = vals
-        return clauses
-
-    def stop(self):
-        if self.stepping:
-            return False
-        self.stepping = True
-        try:
-            steps = 0
-            while steps < MAX_STEPS:
-                frame = gdb.newest_frame()
-                try:
-                    fn = frame.name()
-                except Exception:
-                    break
-                if fn != config["func"]:
-                    break  # function returned -> back in the caller
-                try:
-                    line = frame.find_sal().line
-                except Exception:
-                    line = 0
-                if line in decision_lines:
-                    if self.order >= MAX_EVENTS:
-                        break
-                    self.order += 1
-                    clauses = self.eval_clauses(line)
-                    gdb.write("##EVT %d %d %s\n"
-                              % (self.order, line, json.dumps(clauses)))
-                gdb.execute("next", to_string=True)
-                steps += 1
-            gdb.write("##STEPOUT %d %d\n" % (steps, self.order))
-        except gdb.error as e:
-            gdb.write("##STEPERR %s\n" % str(e))
-        finally:
-            self.stepping = False
-        return False  # continue to the next entry of the function
+def eval_clauses(line):
+    clauses = {}
+    for ci, cl in enumerate(clauses_by_line.get(str(line), [])):
+        vals = {}
+        for side in ("lhs", "rhs"):
+            expr = cl.get(side, "")
+            if not expr or cl.get("op") is None:
+                continue
+            try:
+                v = gdb.parse_and_eval(expr)
+                vals[side] = int(v)
+            except Exception:
+                vals[side] = None
+        if vals:
+            clauses[str(ci)] = vals
+    return clauses
 
 gdb.write("##READY\n")
-rec = None
 try:
-    rec = RecorderBP(config["func"])
+    gdb.Breakpoint(config["func"], internal=False)
 except Exception as e:
     gdb.write("##BPFAIL %s\n" % str(e))
-gdb.execute("run " + config["runargs"])
-gdb.write("##TOTAL %d\n" % (rec.order if rec else 0))
+
+order = 0
+first = True
+steps_total = 0
+while True:
+    try:
+        if first:
+            gdb.execute("run " + config["runargs"])
+            first = False
+        else:
+            gdb.execute("continue")
+    except gdb.error as e:
+        gdb.write("##END %s\n" % str(e))
+        break
+    try:
+        frame = gdb.newest_frame()
+        fn = frame.name()
+    except gdb.error:
+        gdb.write("##END noframe\n")
+        break
+    if fn != config["func"]:
+        # Stopped somewhere else (signal/crash/exit); if the process is still
+        # alive, try again — otherwise the next continue raises and ends.
+        gdb.write("##STOPOTHER %s\n" % str(fn))
+        continue
+    steps = 0
+    while steps < MAX_STEPS:
+        try:
+            frame = gdb.newest_frame()
+            fn = frame.name()
+        except gdb.error:
+            break
+        if fn != config["func"]:
+            break  # function returned -> back in the caller
+        try:
+            line = frame.find_sal().line
+        except Exception:
+            line = 0
+        if line in decision_lines and order < MAX_EVENTS:
+            order += 1
+            clauses = eval_clauses(line)
+            gdb.write("##EVT %d %d %s\n" % (order, line, json.dumps(clauses)))
+        try:
+            gdb.execute("next", to_string=True)
+        except gdb.error:
+            break
+        steps += 1
+    steps_total += steps
+    gdb.write("##STEPOUT %d %d\n" % (steps, order))
+gdb.write("##TOTAL %d\n" % order)
 '''
 
 
