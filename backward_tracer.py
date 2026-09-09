@@ -622,6 +622,21 @@ _SEMANTIC_SUFFIXES = (
     'Bounded', 'Limited', 'WithSize', 'WithCount',
 )
 
+_UTILITY_CALLEES = {
+    '_TIFFmalloc', '_TIFFrealloc', '_TIFFfree', '_TIFFmemcpy',
+    '_TIFFmemset', '_TIFFCheckMalloc', '_TIFFCheckRealloc',
+    'malloc', 'realloc', 'free', 'memcpy', 'memset', 'memmove',
+    'strerror', 'strlcpy', 'strncpy', 'strlen',
+    'TIFFError', 'TIFFErrorExt', 'TIFFWarning', 'TIFFWarningExt',
+    'TIFFGetTagName', 'TIFFGetFieldDefaulted', 'TIFFIsTiled',
+    'TIFFIsByteSwapped', 'TIFFIsMSB2LSB', 'TIFFFileno',
+    'TIFFGetMode', 'TIFFNumberOfStrips', 'TIFFNumberOfTiles',
+    'TIFFComputeStrip', 'TIFFComputeTile', 'TIFFReadEncodedStrip',
+    'TIFFReadEncodedTile', 'TIFFReadTile', 'TIFFWriteEncodedStrip',
+    'TIFFWriteEncodedTile', 'TIFFWriteRawStrip', 'TIFFWriteRawTile',
+    'TIFFFlush', 'TIFFFlushData', 'TIFFSetupStrips',
+}
+
 
 def _find_added_guard(src_a, func_name_a, src_b, func_name_b):
     """Diff two function bodies and find the guard statement added in B.
