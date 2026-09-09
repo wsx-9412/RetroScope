@@ -4748,6 +4748,70 @@ def _is_spurious_step_divergence(div_loc):
     return False
 
 
+def _find_error_return_condition(func_name, source_dirs):
+    """Find the first error-return condition in func_name's body.
+
+    Scans the target's source for TIFFError/TIFFWarning calls that are
+    followed by a ``return`` (an error path) and returns the enclosing
+    ``if`` condition as ``(line, condition_text)``, or None.
+
+    Used when the target took an error path the reference never reaches:
+    the condition guarding that path exists in BOTH versions but evaluates
+    differently — that condition is the fork statement (e.g. the
+    ``if (!crop_buff)`` check after a failed malloc).
+    """
+    src = _find_function_source(func_name, source_dirs)
+    if not src:
+        return None
+    try:
+        with open(src, encoding='utf-8', errors='replace') as f:
+            lines = f.readlines()
+    except OSError:
+        return None
+
+    # Locate the function definition
+    start = None
+    pat = re.compile(rf'(?:static\s+)?\w[\w\s\*]*\b{re.escape(func_name)}\s*\(')
+    for i, ln in enumerate(lines):
+        if pat.search(ln):
+            start = i
+            break
+    if start is None:
+        return None
+
+    # Find the end of the function body (matching closing brace)
+    depth = 0
+    end = len(lines)
+    for i in range(start, len(lines)):
+        depth += lines[i].count('{') - lines[i].count('}')
+        if i > start and depth <= 0:
+            end = i
+            break
+
+    for i in range(start, end):
+        if not re.search(r'\bTIFF(Error|Warning)\s*\(', lines[i]):
+            continue
+        # Require an error RETURN nearby (the error path exits the function)
+        is_error_path = False
+        for k in range(i, min(i + 5, end)):
+            if re.search(r'\breturn\b', lines[k]):
+                is_error_path = True
+                break
+        if not is_error_path:
+            continue
+        # Walk up to the enclosing condition
+        for j in range(i, max(start, i - 15), -1):
+            stripped = lines[j].strip()
+            if stripped == '}':
+                break
+            m = re.match(r'\}\s*else\s+if\s*\((.+)\)', stripped)
+            if not m:
+                m = re.match(r'if\s*\((.+?)\)\s*\{?\s*$', stripped)
+            if m:
+                return (j + 1, m.group(1).strip())
+    return None
+
+
 def _find_matching_line(source_file, statement_text, source_dirs):
     """Find the line in source_file whose text matches statement_text.
 
