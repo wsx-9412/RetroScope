@@ -239,11 +239,11 @@ MAX_EVENTS = config.get("max_events", 50000)
 decision_lines = set(d["line"] for d in config["decisions"])
 clauses_by_line = config["clauses_by_line"]
 
-class Recorder(object):
-    def __init__(self):
+class RecorderBP(gdb.Breakpoint):
+    def __init__(self, spec):
+        super(RecorderBP, self).__init__(spec, internal=False)
         self.stepping = False
         self.order = 0
-        self.events = []
 
     def eval_clauses(self, line):
         clauses = {}
@@ -262,22 +262,15 @@ class Recorder(object):
                 clauses[str(ci)] = vals
         return clauses
 
-    def on_stop(self, ev):
+    def stop(self):
         if self.stepping:
-            return
-        frame = gdb.newest_frame()
-        try:
-            fn = frame.name()
-        except Exception:
-            fn = None
-        if fn != config["func"]:
-            return  # not inside the target function
+            return False
         self.stepping = True
         try:
             steps = 0
             while steps < MAX_STEPS:
+                frame = gdb.newest_frame()
                 try:
-                    frame = gdb.newest_frame()
                     fn = frame.name()
                 except Exception:
                     break
@@ -292,7 +285,6 @@ class Recorder(object):
                         break
                     self.order += 1
                     clauses = self.eval_clauses(line)
-                    self.events.append((self.order, line, clauses))
                     gdb.write("##EVT %d %d %s\n"
                               % (self.order, line, json.dumps(clauses)))
                 gdb.execute("next", to_string=True)
@@ -302,17 +294,15 @@ class Recorder(object):
             gdb.write("##STEPERR %s\n" % str(e))
         finally:
             self.stepping = False
-        # Resume execution until the next entry of the function (or crash/exit).
-        gdb.execute("continue")
+        return False  # continue to the next entry of the function
 
-rec = Recorder()
-gdb.events.stop.connect(rec.on_stop)
+gdb.write("##READY\n")
 try:
-    gdb.Breakpoint(config["func"], internal=False)
+    RecorderBP(config["func"])
 except Exception as e:
     gdb.write("##BPFAIL %s\n" % str(e))
 gdb.execute("run " + config["runargs"])
-gdb.write("##TOTAL %d\n" % rec.order)
+gdb.write("##TOTAL %d\n" % RecorderBP.order if False else 0)
 '''
 
 
