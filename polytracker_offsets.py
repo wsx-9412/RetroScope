@@ -283,6 +283,32 @@ def _partition_vars(stripped_stmt, vars_):
     return before, after
 
 
+def _parse_if_line(stripped):
+    """Split a one-line ``if (...)`` header into ``(condition, rest)``.
+
+    ``rest`` is everything after the condition's closing parenthesis (the
+    inline body, if any).  A naive greedy regex ``if\s*\((.+)\)`` swallows
+    every ``)`` up to the last one, so ``if (cond) x = f(1, 2);`` would be
+    mis-split with ``f(1, 2`` inside the condition.  Scanning with a paren
+    balance instead stops exactly at the condition's closing parenthesis.
+    Returns None when the line does not start an ``if``.
+    """
+    m = re.match(r'if\s*\(', stripped)
+    if not m:
+        return None
+    depth = 0
+    for i in range(m.end() - 1, len(stripped)):
+        ch = stripped[i]
+        if ch == '(':
+            depth += 1
+        elif ch == ')':
+            depth -= 1
+            if depth == 0:
+                cond = stripped[m.end():i].strip()
+                return cond, stripped[i + 1:].strip()
+    return None
+
+
 def _instrument_source(source_dir, instrument):
     """Insert taint-logging calls for each fork-statement variable.
 
