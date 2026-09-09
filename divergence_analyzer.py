@@ -5616,21 +5616,29 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                         # Add the input-derived value feeding the checked
                         # variable (e.g. cropsize from
                         # `crop_buff = (unsigned char *)_TIFFmalloc(cropsize)`).
+                        # Look up the assignment from the diverging call site
+                        # FIRST — the textually nearest assignment above the
+                        # condition may be on an unexecuted branch (e.g.
+                        # `crop_buff = next_buff`).
                         extra_vars = []
                         for cv in cond_vars:
-                            loc = _trace_assignment_location(
-                                os.path.basename(cond_file or div_loc["file"]),
-                                cond_line, cv, source_dirs_b)
-                            if loc:
-                                rhs = loc.get('rhs', '') or ''
-                                # Strip pointer casts so the malloc-size
-                                # argument is extracted, not the cast type.
-                                rhs_nc = re.sub(r'\([^()]*\*\s*\)', '', rhs)
-                                arg_groups = re.findall(r'\(([^()]*)\)', rhs_nc)
-                                if arg_groups:
-                                    extra_vars.extend(
-                                        _extract_variables_from_expression(
-                                            arg_groups[-1]))
+                            for hint_line in (div_loc.get("line"), cond_line):
+                                if hint_line is None:
+                                    continue
+                                loc = _trace_assignment_location(
+                                    os.path.basename(cond_file or div_loc["file"]),
+                                    hint_line, cv, source_dirs_b)
+                                if loc:
+                                    rhs = loc.get('rhs', '') or ''
+                                    # Strip pointer casts so the malloc-size
+                                    # argument is extracted, not the cast type.
+                                    rhs_nc = re.sub(r'\([^()]*\*\s*\)', '', rhs)
+                                    arg_groups = re.findall(r'\(([^()]*)\)', rhs_nc)
+                                    if arg_groups:
+                                        extra_vars.extend(
+                                            _extract_variables_from_expression(
+                                                arg_groups[-1]))
+                                        break
                         result["variables"] = cond_vars + [v for v in extra_vars
                                                            if v not in cond_vars]
                     else:
