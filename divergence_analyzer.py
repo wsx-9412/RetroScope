@@ -4729,18 +4729,21 @@ def _is_spurious_step_divergence(div_loc):
     difference, not the vulnerability fork, so it must fall back to the
     gap-based analysis (which locates the actual code-change / control-flow
     divergence).
+
+    Direction matters for the length-based reports: "v4.4.0 stops after N
+    operations" is the reference's crash point (not the fork), but
+    "v4.0.8 stops after N operations" means the target took an
+    early-return/error path — which IS the fork when the reference crashed.
     """
     if not div_loc:
         return True
     a = (div_loc.get("line_text_a") or "")
     b = (div_loc.get("line_text_b") or "")
-    if "stops after" in a or "stops after" in b:
+    if "stops after" in a:
         return True
     if "does not call" in a or "does not call" in b:
         return True
     if not b:
-        return True
-    if b.startswith("v4.0.8 stops"):
         return True
     return False
 
