@@ -5403,6 +5403,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
         print("  Target:    no crash")
 
     reference_crashed = bool(crash_a and not crash_b)
+    fork_meta = None
 
     # Case C: target crashes BEFORE the reference's vulnerability crash point.
     # The target's crash point (triggered by the PoC) is the fork.
