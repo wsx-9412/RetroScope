@@ -775,6 +775,23 @@ def _extract_calls_from_expression(expr):
     return [c for c in calls if c not in _C_KEYWORDS]
 
 
+def _extract_calls_from_function(source, func_name):
+    """Extract all function calls made from func_name's body.
+
+    Returns a deduplicated list of callee names in source order.
+    """
+    body = _extract_function_body(source, func_name)
+    if not body:
+        return []
+    seen = set()
+    result = []
+    for c in _extract_calls_from_expression(body):
+        if c not in seen:
+            seen.add(c)
+            result.append(c)
+    return result
+
+
 def _extract_checked_calls(source_file, func_name):
     """Extract all *checked* function calls in func_name's body.
 
