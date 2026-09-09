@@ -4961,6 +4961,10 @@ def _build_result_from_backward_tracer(bt_result, func_name, a_idx, b_idx):
     (root cause, reference-only).  This assembles them into the fields the
     downstream steps (trace_fork_offsets.py, polytracker_offsets.py) expect.
     """
+    try:
+        import backward_tracer as _bt
+    except ImportError:
+        _bt = None
     guard = bt_result.get("guard") or {}
     assign_diff = bt_result.get("assign_diff") or {}
     input_variables = bt_result.get("input_variables") or []
