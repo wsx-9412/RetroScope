@@ -76,6 +76,48 @@ def _extract_condition(text, start):
     return text[start + 1:end - 1].strip()
 
 
+def _locate_function_source(func, source_root, binary=None):
+    """Find the source file defining ``func`` under ``source_root``.
+
+    When several files define the same name (e.g. libtiff's TIFFFetchStripThing
+    and contrib/pds' copy), prefer the file under the project's main library
+    directory (heuristically: a path containing ``libtiff``/``lib``), then the
+    shortest path.
+    """
+    if not source_root:
+        return None
+    candidates = []
+    for f in Path(source_root).rglob('*.c'):
+        if is_function_definition(str(f), func):
+            candidates.append(f)
+    if not candidates:
+        return None
+    if len(candidates) == 1:
+        return str(candidates[0])
+    lib = [c for c in candidates if '/libtiff/' in c.as_posix()]
+    if lib:
+        return str(lib[0])
+    return str(min(candidates, key=lambda c: len(c.parts)))
+
+
+def _normalize_operand(expr):
+    """Strip leading type casts / outer parens so an operand can be evaluated.
+
+    ``(uint64_t)tif->tif_size`` -> ``tif->tif_size``; ``(x)`` -> ``x``.
+    """
+    e = (expr or '').strip()
+    while True:
+        m = re.match(r'^\(\s*(?:const\s+)?(?:unsigned\s+|signed\s+|long\s+|short\s+|int\s+|char\s+|float\s+|double\s+|size_t\s+|int64_t\s+|uint64_t\s+|int32_t\s+|uint32_t\s+|int16_t\s+|uint16_t\s+|int8_t\s+|uint8_t\s+|void\s+)*[\w\s_*]*\)\s*(.*)$', e, re.S)
+        if m and m.group(1) != e:
+            e = m.group(1).strip()
+            continue
+        if e.startswith('(') and e.endswith(')') and '(' not in e[1:-1]:
+            e = e[1:-1].strip()
+            continue
+        break
+    return e
+
+
 def parse_condition_clauses(cond):
     """Split a C condition into top-level comparison clauses.
 
@@ -302,13 +344,16 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         tf.write(_build_gdb_script(config))
         script = tf.name
 
+    import shlex
+    config_json = shlex.quote(json.dumps(config))
+
     env = os.environ.copy()
     env.setdefault('ASAN_OPTIONS', 'detect_leaks=0')
     libs = _collect_lib_paths(real_bin)
     if libs:
         env['LD_LIBRARY_PATH'] = ':'.join(libs + [env.get('LD_LIBRARY_PATH', '')])
 
-    cmd = ['gdb', '-batch', '-q', '-ex', f'python {script} {json.dumps(config)}',
+    cmd = ['gdb', '-batch', '-q', '-ex', f'python {script} {config_json}',
            str(real_bin)]
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
