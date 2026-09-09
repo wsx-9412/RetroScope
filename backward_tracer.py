@@ -1119,13 +1119,9 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                         continue
                     out_set.update(_re.findall(r'\b(\w+)\s*\(', txt))
         # Find semantic pairs: functions in B that are A + suffix.
-        # Skip pairs we've already visited (tracked in chain) to avoid loops.
-        visited = set()
-        for c in chain:
-            parts = c['func'].split(' vs ')
-            visited.add(parts[0])
-            if len(parts) > 1:
-                visited.add(parts[1])
+        # Skip pairs we've already visited to avoid infinite loops.
+        _visited.add(func_name_a)
+        _visited.add(func_name_b)
         for name_b in sorted(all_defs_b):
             for suf in _SEMANTIC_SUFFIXES:
                 if name_b.endswith(suf):
