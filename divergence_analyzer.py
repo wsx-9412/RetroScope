@@ -5643,8 +5643,29 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                         result["variables"] = cond_vars + [v for v in extra_vars
                                                            if v not in cond_vars]
                     else:
-                        result["variables"] = _extract_variables_from_expression(
-                            div_loc.get("line_text_b", ""))
+                        # line_text_b is a synthetic trace description
+                        # ("v4.0.8 calls X() at line N"), not C source:
+                        # extracting variables from it yields English words
+                        # (v4/calls/at/line) that break the PolyTracker source
+                        # instrumentation.  Read the real statement at the
+                        # diverging source location instead.
+                        real_stmt, _, _ = _get_complete_fork_statement(
+                            div_loc.get("file"), div_loc.get("line"),
+                            source_dirs_b)
+                        if real_stmt:
+                            result["root_cause_statement_b"] = real_stmt
+                            vars_ = _extract_variables_from_expression(real_stmt)
+                            # Drop address-of out-parameters (`&data`): they
+                            # are uninitialized at the fork line, so reading
+                            # or dereferencing their taint is unsafe.
+                            out_vars = set(
+                                re.findall(r'&\s*([a-zA-Z_]\w*)', real_stmt))
+                            result["variables"] = [
+                                v for v in vars_
+                                if re.split(r'->|\[|\.', v)[0] not in out_vars
+                            ]
+                        else:
+                            result["variables"] = []
 
                 if not skip_polytracker:
                     try:
