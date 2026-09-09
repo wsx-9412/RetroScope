@@ -297,12 +297,13 @@ class RecorderBP(gdb.Breakpoint):
         return False  # continue to the next entry of the function
 
 gdb.write("##READY\n")
+rec = None
 try:
-    RecorderBP(config["func"])
+    rec = RecorderBP(config["func"])
 except Exception as e:
     gdb.write("##BPFAIL %s\n" % str(e))
 gdb.execute("run " + config["runargs"])
-gdb.write("##TOTAL %d\n" % RecorderBP.order if False else 0)
+gdb.write("##TOTAL %d\n" % (rec.order if rec else 0))
 '''
 
 
@@ -317,13 +318,25 @@ def _build_gdb_script(config):
 # --------------------------------------------------------------------------
 
 def _collect_lib_paths(binary):
-    """Collect .libs dirs around the binary for LD_LIBRARY_PATH (generic)."""
+    """Collect every ``.libs`` directory near the version root so the run
+    resolves the *version's own* shared libraries (a naive parent-only walk
+    silently falls back to system libraries — with completely different
+    behavior)."""
     dirs = []
+    seen = set()
     bin_path = Path(binary).resolve()
     for parent in [bin_path.parent] + list(bin_path.parents[:6]):
         libs = parent / ".libs"
-        if libs.is_dir() and str(libs) not in dirs:
+        if libs.is_dir() and str(libs) not in seen:
+            seen.add(str(libs))
             dirs.append(str(libs))
+        # Found the version root: sweep all of its .libs dirs.
+        if (parent / "configure").exists() or (parent / "Makefile").exists():
+            for d in parent.rglob(".libs"):
+                if d.is_dir() and str(d) not in seen:
+                    seen.add(str(d))
+                    dirs.append(str(d))
+            break
     return dirs
 
 
