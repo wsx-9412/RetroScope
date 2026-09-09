@@ -6579,6 +6579,15 @@ def _extract_variables_from_expression(expr):
     if not expr:
         return []
 
+    # Reject synthetic trace descriptions ("v4.0.8 calls X() at line N",
+    # "v4.4.0 stops after N operations") — English prose produced by the
+    # execution-trace comparison, not C source.  Extracting identifiers from
+    # them yields words like v4/calls/at/line that break source
+    # instrumentation downstream.
+    if re.match(r'^\s*v[\d.]+\s+(calls|does not call|never calls|continues '
+                r'with|stops after)\b', expr):
+        return []
+
     # Strip C/C++ comments so comment text is not mistaken for variables.
     expr = re.sub(r'/\*.*?\*/', '', expr, flags=re.DOTALL)
     expr = re.sub(r'//[^\n]*', '', expr)
