@@ -1074,7 +1074,7 @@ def find_fork_by_backward_tracing(binary_a, binary_b, source_dir_a, source_dir_b
 def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                          src_dir_a, src_dir_b, input_file, run_args,
                          lib_path_a, lib_path_b, timeout,
-                         depth, max_depth, chain):
+                         depth, max_depth, chain, _visited=None):
     """One level of the backward tracing recursion.
 
     ``func_name_a`` and ``func_name_b`` may differ (a semantic rename such as
