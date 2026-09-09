@@ -1227,7 +1227,8 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                             return _find_fork_recursive(
                                 base, c, binary_a, binary_b, src_dir_a, src_dir_b,
                                 input_file, run_args, lib_path_a, lib_path_b,
-                                timeout, depth + 1, max_depth, chain
+                                timeout, depth + 1, max_depth, chain,
+                                _visited=_visited
                             )
             print(f"{indent}  Added guard in B: '{stmt}' "
                   f"(line {guard['line']})")
