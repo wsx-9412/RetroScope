@@ -1137,7 +1137,8 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                                 src_dir_a, src_dir_b,
                                 input_file, run_args,
                                 lib_path_a, lib_path_b,
-                                timeout, depth + 1, max_depth, chain
+                                timeout, depth + 1, max_depth, chain,
+                                _visited=_visited
                             )
         print(f"{indent}  No divergence found at this level")
         return {'status': 'no_return_difference', 'func': label}
