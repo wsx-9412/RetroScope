@@ -2179,6 +2179,8 @@ def _compare_execution_traces(lines_a, lines_b):
                     "line_text_a": f"v4.4.0 calls {name_a}() at line {ln_a['line']}",
                     "line_text_b": f"v4.0.8 calls {name_b}() at line {ln_b['line']}",
                     "note": f"First divergence: different functions at position {i}",
+                    "diverging_call_a": name_a,
+                    "diverging_call_b": name_b,
                 }
             elif name_a in only_a:
                 # Only A has this function — B doesn't call it
@@ -2207,6 +2209,8 @@ def _compare_execution_traces(lines_a, lines_b):
                     "line_text_a": f"v4.4.0 calls {name_a}() at line {ln_a['line']}",
                     "line_text_b": f"v4.0.8 calls {name_b}() at line {ln_b['line']}",
                     "note": f"Different functions at position {i}: {name_a} vs {name_b}",
+                    "diverging_call_a": name_a,
+                    "diverging_call_b": name_b,
                 }
 
     # Same calls so far but different lengths — one version stops early
