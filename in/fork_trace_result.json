@@ -1,10 +1,9 @@
 {
-  "binary_target": "/tmp/fork_analysis_e3nj2f6d/target/tools/.libs/tiffcrop",
-  "binary_ref": "/tmp/fork_analysis_e3nj2f6d/ref/tools/.libs/tiffcrop",
-  "fork_spec": "/tmp/fork_analysis_e3nj2f6d/target/libtiff/tif_dirread.c:5432",
+  "binary_target": "/tmp/fork_analysis_ygr_df5z/target/tools/.libs/tiffcrop",
+  "binary_ref": "/tmp/fork_analysis_ygr_df5z/ref/tools/.libs/tiffcrop",
+  "fork_spec": "/tmp/fork_analysis_ygr_df5z/target/libtiff/tif_dirread.c:1202",
   "variables": [
-    "tif",
-    "dir",
+    "uint16",
     "image.width",
     "image.length",
     "image.bps",
@@ -23,8 +22,7 @@
     "crop.crop_mode"
   ],
   "differing_variables": [
-    "tif",
-    "dir",
+    "uint16",
     "image.width",
     "image.length",
     "image.bps",
