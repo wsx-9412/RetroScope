@@ -328,6 +328,11 @@ def _instrument_source(source_dir, instrument):
 
     pointer_vars = _resolve_pointer_vars(source_dir, vars_)
 
+    idx = line - 1  # fork statement is now `line`
+    fork_line = lines[idx]
+    indent = fork_line[:len(fork_line) - len(fork_line.lstrip())]
+    stripped = fork_line.strip()
+
     def _log_calls(candidate_vars):
         """Build the taint-log statements for a variable subset."""
         calls = []
