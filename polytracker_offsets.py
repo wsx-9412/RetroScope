@@ -545,7 +545,22 @@ def build_instrumented(source_dir, program_name, build_cmds=None,
         cmd = cmd.replace("-finstrument-functions", "")
         if "distclean" in cmd or "make clean" in cmd:
             if not run(cmd, plain_env):
-                return None
+                # make clean failed — likely stale artifacts blocking it.
+                # Force-remove common stale files, then retry.
+                import shutil
+                for pat in ['*.o', '*.lo', '*.la', '*.a', '*.Plo']:
+                    for f in source_dir.rglob(pat):
+                        try: f.unlink()
+                        except OSError: pass
+                for d in source_dir.rglob('.deps'):
+                    try: shutil.rmtree(d)
+                    except OSError: pass
+                for d in source_dir.rglob('.libs'):
+                    try: shutil.rmtree(d)
+                    except OSError: pass
+                # Retry make clean
+                run(cmd, plain_env)
+                # Don't fail — continue with configure/build
         elif "configure" in cmd:
             cfg = _strip_configure(cmd)
             if cfg and not configured:

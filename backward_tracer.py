@@ -1342,16 +1342,6 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                 'guard': guard,
                 'chain': list(chain),
             }
-                'func_a': func_name_a,
-                'func_b': func_name_b,
-                'file_a': src_a,
-                'file_b': src_b,
-                'fork_statement': guard['statement'],
-                'fork_line': guard['line'],
-                'fork_variables': guard['variables'],
-                'guard': guard,
-                'return_diff': ret,
-            }
 
     # 3c. Same-name functions: check if B is a wrapper calling a semantic
     #     variant of A (e.g. TIFFReadDirEntryArray -> TIFFReadDirEntryArrayWithLimit).
