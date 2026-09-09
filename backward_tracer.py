@@ -1126,7 +1126,7 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
             for suf in _SEMANTIC_SUFFIXES:
                 if name_b.endswith(suf):
                     base = name_b[:-len(suf)]
-                    if base in all_defs_a and base not in visited:
+                    if base in all_defs_a and base not in _visited and name_b not in _visited:
                         src_base = _find_function_source(base, src_dir_a)
                         src_variant = _find_function_source(name_b, src_dir_b)
                         if src_base and src_variant:
