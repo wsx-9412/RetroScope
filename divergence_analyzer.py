@@ -5613,32 +5613,33 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                         result["root_cause_statement_a"] = cond_text
                         result["_fork_is_condition"] = True
                         cond_vars = _extract_variables_from_expression(cond_text)
-                        # Add the input-derived value feeding the checked
-                        # variable (e.g. cropsize from
-                        # `crop_buff = (unsigned char *)_TIFFmalloc(cropsize)`).
-                        # Look up the assignment from the diverging call site
-                        # FIRST — the textually nearest assignment above the
-                        # condition may be on an unexecuted branch (e.g.
-                        # `crop_buff = next_buff`).
+                        # The diverging call's arguments are the values that
+                        # decide the divergence (e.g. cropsize passed to
+                        # _TIFFmalloc).  GDB may attribute the call to the
+                        # preceding `if` line, so scan a few lines around the
+                        # reported call site for the actual call text.
                         extra_vars = []
-                        for cv in cond_vars:
-                            for hint_line in (div_loc.get("line"), cond_line):
-                                if hint_line is None:
-                                    continue
-                                loc = _trace_assignment_location(
-                                    os.path.basename(cond_file or div_loc["file"]),
-                                    hint_line, cv, source_dirs_b)
-                                if loc:
-                                    rhs = loc.get('rhs', '') or ''
-                                    # Strip pointer casts so the malloc-size
-                                    # argument is extracted, not the cast type.
-                                    rhs_nc = re.sub(r'\([^()]*\*\s*\)', '', rhs)
-                                    arg_groups = re.findall(r'\(([^()]*)\)', rhs_nc)
-                                    if arg_groups:
-                                        extra_vars.extend(
-                                            _extract_variables_from_expression(
-                                                arg_groups[-1]))
-                                        break
+                        full_tf = _locate_source_file(
+                            os.path.basename(cond_file or div_loc["file"]),
+                            source_dirs_b)
+                        if full_tf and div_loc.get("line"):
+                            try:
+                                with open(full_tf, encoding='utf-8',
+                                          errors='replace') as _f:
+                                    _lines = _f.read().splitlines()
+                            except OSError:
+                                _lines = []
+                            dl = div_loc["line"]
+                            for k in range(max(0, dl - 2),
+                                           min(len(_lines), dl + 3)):
+                                m_call = re.search(
+                                    r'\b' + re.escape(div_call_b) +
+                                    r'\s*\(([^()]*)\)', _lines[k])
+                                if m_call:
+                                    extra_vars.extend(
+                                        _extract_variables_from_expression(
+                                            m_call.group(1)))
+                                    break
                         result["variables"] = cond_vars + [v for v in extra_vars
                                                            if v not in cond_vars]
                     else:
