@@ -5579,10 +5579,22 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 # decides the check (the malloc size argument) so PolyTracker
                 # instruments an input-derived variable.
                 div_call_b = div_loc.get("diverging_call_b")
-                if div_call_b and (div_call_b.startswith('TIFFError')
-                                   or div_call_b.startswith('TIFFWarning')):
-                    inner = _find_error_return_condition(common_func,
-                                                         source_dirs_b)
+                is_err_call = bool(div_call_b and (
+                    div_call_b.startswith('TIFFError')
+                    or div_call_b.startswith('TIFFWarning')))
+                if div_call_b:
+                    if is_err_call:
+                        inner = _find_error_return_condition(common_func,
+                                                             source_dirs_b)
+                    else:
+                        # B calls a different function at this point (e.g.
+                        # _TIFFmalloc vs limitMalloc): the paths split at the
+                        # failure check on that call's result, so scan below
+                        # the call site for the enclosing error-return
+                        # condition.
+                        inner = _find_error_return_condition(
+                            common_func, source_dirs_b,
+                            after_line=div_loc.get("line"))
                     if inner:
                         cond_line, cond_text = inner
                         cond_file = _find_function_source(common_func,
