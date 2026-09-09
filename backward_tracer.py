@@ -1134,10 +1134,12 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
         candidates.append(callee)
 
     # 3b. If this is a semantic pair (different names), diff the bodies:
-    #     (a) find the FIRST variable whose value differs (same LHS, different
-    #         RHS) — its assignment in the target is the fork statement; or
-    #     (b) if the added statement is a call to a semantic variant, recurse
-    #         into that pair (the guard is one level deeper).
+    #     (a) if the added statement is a call to a semantic variant, recurse
+    #         into that pair (the guard is one level deeper);
+    #     (b) find an added guard — the statement that directly causes the
+    #         behavioral divergence (prioritized over upstream variable diffs);
+    #     (c) find the FIRST variable whose value differs (same LHS, different
+    #         RHS) — its assignment in the target is the fork statement.
     if func_name_a != func_name_b:
         diff = _find_assign_diff(src_a, func_name_a, src_b, func_name_b)
         if diff:
@@ -1167,32 +1169,8 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                         timeout, depth + 1, max_depth, chain
                     )
 
-            # Otherwise the differing variable IS the first differing variable;
-            # its assignment in the target is the fork statement.
-            fork_statement = diff['statement_a']
-            fork_line = diff['line_a']
-            fork_variables = _extract_variables(fork_statement)
-            input_variables = [v for v in fork_variables if '->' in v or '.' in v]
-            print(f"{indent}  First differing variable: '{diff['var']}' "
-                  f"(A: '{diff['statement_a']}' vs B: '{diff['statement_b']}')")
-            print(f"{indent}  Fork statement (target {func_name_a}): "
-                  f"'{fork_statement}' (line {fork_line})")
-            print(f"{indent}  Input-derived variables: {input_variables}")
-            return {
-                'status': 'found',
-                'func': label,
-                'func_a': func_name_a,
-                'func_b': func_name_b,
-                'file_a': src_a,
-                'file_b': src_b,
-                'fork_statement': fork_statement,
-                'fork_line': fork_line,
-                'fork_variables': fork_variables,
-                'input_variables': input_variables,
-                'assign_diff': diff,
-                'return_diff': ret,
-            }
-
+        # Check for added guard FIRST — it directly causes the behavioral
+        # divergence (e.g. an overflow check present only in the new version).
         guard = _find_added_guard(src_a, func_name_a, src_b, func_name_b)
         if guard:
             stmt = guard['statement']
