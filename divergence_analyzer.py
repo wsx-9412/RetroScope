@@ -4769,13 +4769,27 @@ def _find_error_return_condition(func_name, source_dirs):
     except OSError:
         return None
 
-    # Locate the function definition
+    # Locate the function definition (skip forward declarations: a prototype
+    # is terminated by ';' before any '{').
     start = None
     pat = re.compile(rf'(?:static\s+)?\w[\w\s\*]*\b{re.escape(func_name)}\s*\(')
-    for i, ln in enumerate(lines):
-        if pat.search(ln):
-            start = i
-            break
+    i = 0
+    while i < len(lines):
+        if pat.search(lines[i]):
+            # Scan ahead: '{' before ';' means this is the definition.
+            j = i
+            depth0 = 0
+            while j < min(i + 20, len(lines)):
+                depth0 += lines[j].count('{') - lines[j].count('}')
+                if depth0 > 0:
+                    start = i
+                    break
+                if ';' in lines[j] and depth0 == 0:
+                    break
+                j += 1
+            if start is not None:
+                break
+        i += 1
     if start is None:
         return None
 
