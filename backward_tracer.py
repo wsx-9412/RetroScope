@@ -1137,13 +1137,13 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
             if (base, name_b) in tried:
                 continue
             tried.add((base, name_b))
-            src_base = _find_function_source(base, src_dir_a)
-            src_variant = _find_function_source(name_b, src_dir_b)
+            src_base = _find_function_source(base, src_dir_b)
+            src_variant = _find_function_source(name_a, src_dir_a)
             if src_base and src_variant:
                 print(f"{indent}  Found semantic pair: "
-                      f"{base} vs {name_b}; recursing")
+                      f"{base} vs {name_a}; recursing")
                 result = _find_fork_recursive(
-                    base, name_b, binary_a, binary_b,
+                    base, name_a, binary_a, binary_b,
                     src_dir_a, src_dir_b,
                     input_file, run_args,
                     lib_path_a, lib_path_b,
