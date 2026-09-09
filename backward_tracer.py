@@ -1157,6 +1157,10 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                 pass
 
         for callee in callees:
+            # Skip utility callees whose return values differ only due to
+            # ASLR (function pointers) or are not behavioral (error handlers).
+            if callee in _UTILITY_CALLEES:
+                continue
             # Check if this callee exists in both versions and returns
             # different values.
             callee_src_a = _find_function_source(callee, src_dir_a if func_name_a == func_name_b else src_dir_b)
