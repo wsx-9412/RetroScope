@@ -1169,8 +1169,7 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                         timeout, depth + 1, max_depth, chain
                     )
 
-        # Check for added guard FIRST — it directly causes the behavioral
-        # divergence (e.g. an overflow check present only in the new version).
+        # Check for added guard — it indicates behavioral divergence.
         guard = _find_added_guard(src_a, func_name_a, src_b, func_name_b)
         if guard:
             stmt = guard['statement']
@@ -1190,23 +1189,10 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                             )
             print(f"{indent}  Added guard in B: '{stmt}' "
                   f"(line {guard['line']})")
-            return {
-                'status': 'found',
-                'func': label,
-                'func_a': func_name_a,
-                'func_b': func_name_b,
-                'file_a': src_a,
-                'file_b': src_b,
-                'fork_statement': stmt,
-                'fork_line': guard['line'],
-                'fork_variables': guard['variables'],
-                'assign_diff': diff if diff else {},
-                'guard': guard,
-                'return_diff': ret,
-            }
 
-        # Fallback: no guard found, but the assign_diff is still meaningful —
-        # report it as the fork statement.
+        # The fork statement is the one that exists in BOTH versions but
+        # produces different values (the assign_diff).  The guard is the
+        # *consequence* of that difference, not the root cause.
         if diff:
             fork_statement = diff['statement_a']
             fork_line = diff['line_a']
@@ -1229,6 +1215,24 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                 'fork_variables': fork_variables,
                 'input_variables': input_variables,
                 'assign_diff': diff,
+                'guard': guard,
+                'return_diff': ret,
+            }
+
+        # No assign_diff found but guard exists — the guard itself is the
+        # only source-level difference; report it as fork statement.
+        if guard:
+            return {
+                'status': 'found',
+                'func': label,
+                'func_a': func_name_a,
+                'func_b': func_name_b,
+                'file_a': src_a,
+                'file_b': src_b,
+                'fork_statement': guard['statement'],
+                'fork_line': guard['line'],
+                'fork_variables': guard['variables'],
+                'guard': guard,
                 'return_diff': ret,
             }
 
