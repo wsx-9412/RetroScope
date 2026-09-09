@@ -800,11 +800,14 @@ def _annotate_divergence_confidence(div):
 
     if div.get('crash_based'):
         path = 'crash_based'
-        if div.get('root_cause_function') == div.get('crash_signal_b') and \
-                div.get('crash_signal_b'):
-            notes.append('target crash site used as fork; mutating it must '
-                         'also keep the target from re-triggering its own '
-                         'crash while walking toward the reference crash')
+        if div.get('crash_signal_b'):
+            # Case C: the target crashes on its own (different site) — its
+            # crash point is treated as the fork.  Mutating it must also keep
+            # the target from re-triggering its own crash while it walks
+            # toward the reference's crash.
+            notes.append('target crashed on its own at the fork site; the '
+                         'mutation must BOTH dodge the target crash AND reach '
+                         'the reference crash point')
     elif div.get('semantic_fork'):
         path = 'semantic_static_diff'
         notes.append('fork located by static source diff (guard added in one '

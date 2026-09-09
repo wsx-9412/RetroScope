@@ -5316,6 +5316,10 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
     if not gaps:
         return {"error": "No gaps found in LCS result; traces are identical."}
 
+    # Crash-anchored fork-chain metadata (populated in the Case-B branch below
+    # and attached to whichever result dict this analysis finally returns).
+    fork_meta = None
+
     # Identify the divergence function
     func_name, a_idx, b_idx = identify_divergence_function(
         matches, gaps, trace_a, trace_b
