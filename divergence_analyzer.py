@@ -5542,6 +5542,56 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                     result["diverging_call_b"] = div_loc.get("diverging_call_b")
                 if input_file:
                     result["input_file"] = str(input_file)
+
+                # If the target took an ERROR PATH the reference never
+                # reaches (e.g. TIFFError after a failed malloc), the fork
+                # statement is the failing check inside the last common
+                # function — the condition exists in BOTH versions but
+                # evaluates differently.  Refine the reported location from
+                # the error call to that condition, and add the value that
+                # decides the check (the malloc size argument) so PolyTracker
+                # instruments an input-derived variable.
+                div_call_b = div_loc.get("diverging_call_b")
+                if div_call_b and (div_call_b.startswith('TIFFError')
+                                   or div_call_b.startswith('TIFFWarning')):
+                    inner = _find_error_return_condition(common_func,
+                                                         source_dirs_b)
+                    if inner:
+                        cond_line, cond_text = inner
+                        cond_file = _find_function_source(common_func,
+                                                          source_dirs_b)
+                        print(f"  Fork condition: {cond_text} "
+                              f"({os.path.basename(cond_file or '')}:{cond_line})")
+                        result["root_cause_function"] = common_func
+                        if cond_file:
+                            result["root_cause_file"] = cond_file
+                        result["root_cause_line"] = cond_line
+                        result["root_cause_statement_b"] = cond_text
+                        result["root_cause_statement_a"] = cond_text
+                        result["_fork_is_condition"] = True
+                        cond_vars = _extract_variables_from_expression(cond_text)
+                        # Add the input-derived value feeding the checked
+                        # variable (e.g. cropsize from
+                        # `crop_buff = _TIFFmalloc(cropsize)`).
+                        extra_vars = []
+                        for cv in cond_vars:
+                            loc = _trace_assignment_location(
+                                os.path.basename(cond_file or div_loc["file"]),
+                                cond_line, cv, source_dirs_b)
+                            if loc:
+                                rhs = loc.get('rhs', '')
+                                if _classify_rhs(rhs)['rhs_type'] == 'function_call':
+                                    m_arg = re.search(r'\(([^()]*)\)', rhs)
+                                    if m_arg:
+                                        extra_vars.extend(
+                                            _extract_variables_from_expression(
+                                                m_arg.group(1)))
+                        result["variables"] = cond_vars + [v for v in extra_vars
+                                                           if v not in cond_vars]
+                    else:
+                        result["variables"] = _extract_variables_from_expression(
+                            div_loc.get("line_text_b", ""))
+
                 if not skip_polytracker:
                     try:
                         result = _polytracker_locate_input_offsets(
