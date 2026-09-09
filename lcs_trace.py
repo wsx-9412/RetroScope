@@ -767,5 +767,93 @@ def main():
     print(f"\ntime: {elapsed:.3f}s")
 
 
+_SYNTHETIC_STMT_RE = re.compile(r'^v?\d+(\.\d+)*\s+calls\s+', re.I)
+
+
+def _annotate_divergence_confidence(div):
+    """Attach analysis-path / confidence / degradation markers to a divergence
+    result (best-effort, generic — no project-specific keywords).
+
+    The divergence JSON is produced by a chain of increasingly heuristic
+    analyses (backward tracer -> crash cases -> step-into -> semantic diff ->
+    gap walk).  Downstream consumers (PolyTracker/GDB offset localization,
+    mutation testing) treat every location as equally trustworthy, which is
+    why a "synthetic" reference statement or a failed step silently yields
+    plausible-looking but wrong offsets.  These markers make the reliability
+    of each claim explicit.
+    """
+    if not isinstance(div, dict):
+        return
+    notes = []
+    stmt_a = str(div.get('root_cause_statement_a') or '').strip()
+    stmt_b = str(div.get('root_cause_statement_b') or '').strip()
+    a_synth = bool(_SYNTHETIC_STMT_RE.match(stmt_a)) or (
+        div.get('crash_based') and not stmt_a)
+    b_synth = bool(_SYNTHETIC_STMT_RE.match(stmt_b))
+    if a_synth:
+        notes.append('reference-side statement is a synthetic call '
+                     'description, not real C source — variable extraction '
+                     'and line mapping on the reference side are unreliable')
+    if b_synth:
+        notes.append('target-side statement is a synthetic call description, '
+                     'not real C source')
+
+    if div.get('crash_based'):
+        path = 'crash_based'
+        if div.get('root_cause_function') == div.get('crash_signal_b') and \
+                div.get('crash_signal_b'):
+            notes.append('target crash site used as fork; mutating it must '
+                         'also keep the target from re-triggering its own '
+                         'crash while walking toward the reference crash')
+    elif div.get('semantic_fork'):
+        path = 'semantic_static_diff'
+        notes.append('fork located by static source diff (guard added in one '
+                     'version); NOT execution-path aware — verify the guard '
+                     'is actually reached by the input')
+    elif div.get('backward_chain') or div.get('assign_diff'):
+        path = 'backward_tracer_gdb'
+        notes.append('fork located by GDB return-value probing; chain is '
+                     'reconstructed heuristically (rename/assign matching)')
+    elif div.get('_fork_is_condition'):
+        path = 'gap_condition'
+    elif div.get('fork_chain'):
+        path = 'crash_anchor'
+    else:
+        path = 'gap_or_step'
+
+    level = 'high'
+    if a_synth or b_synth or not div.get('root_cause_line'):
+        level = 'low'
+    elif path == 'semantic_static_diff':
+        level = 'medium'
+    elif path == 'backward_tracer_gdb':
+        level = 'medium'
+    elif path == 'crash_based':
+        level = 'medium'
+
+    if not div.get('variables'):
+        notes.append('no fork variables reported — offset localization has '
+                     'nothing to trace')
+    if not div.get('root_cause_line'):
+        notes.append('no root-cause source line was located')
+
+    po = div.get('polytracker_offsets') or {}
+    if isinstance(po, dict) and po.get('status') == 'error':
+        notes.append('polyTracker offset localization failed inside the '
+                     'divergence analysis (offset stage must be re-run '
+                     'separately)')
+
+    div['analysis_path'] = path
+    div['statement_a_synthetic'] = a_synth
+    div['statement_b_synthetic'] = b_synth
+    div['analysis_confidence'] = level
+    if notes:
+        div['analysis_notes'] = notes
+    else:
+        div.pop('analysis_notes', None)
+    print(f"  [confidence] path={path} level={level}"
+          + (f" — {'; '.join(notes)}" if notes else ""))
+
+
 if __name__ == "__main__":
     main()
