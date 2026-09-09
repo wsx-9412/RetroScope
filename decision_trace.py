@@ -222,9 +222,9 @@ def find_function_decisions(source_file, func_name):
 # --------------------------------------------------------------------------
 
 _GDB_TEMPLATE = r'''
-import json, sys
+import json
 
-config = json.loads(sys.argv[1])
+config = json.loads("""__CONFIG__""")
 gdb.execute("set pagination off")
 gdb.execute("set confirm off")
 gdb.execute("set breakpoint pending on")
@@ -290,7 +290,9 @@ gdb.write("##TOTAL %d\n" % order[0])
 
 
 def _build_gdb_script(config):
-    return _GDB_TEMPLATE  # config is injected via the script's argv
+    # The JSON is a valid Python literal; splice it directly into the template
+    # (avoids argv quoting problems — gdb does not shell-parse -ex arguments).
+    return _GDB_TEMPLATE.replace('__CONFIG__', json.dumps(config))
 
 
 # --------------------------------------------------------------------------
@@ -344,16 +346,13 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         tf.write(_build_gdb_script(config))
         script = tf.name
 
-    import shlex
-    config_json = shlex.quote(json.dumps(config))
-
     env = os.environ.copy()
     env.setdefault('ASAN_OPTIONS', 'detect_leaks=0')
     libs = _collect_lib_paths(real_bin)
     if libs:
         env['LD_LIBRARY_PATH'] = ':'.join(libs + [env.get('LD_LIBRARY_PATH', '')])
 
-    cmd = ['gdb', '-batch', '-q', '-ex', f'python {script} {config_json}',
+    cmd = ['gdb', '-batch', '-q', '-ex', f'python {script}',
            str(real_bin)]
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
