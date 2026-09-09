@@ -1296,6 +1296,41 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
 
         if chosen:
             ca, cb, sub_ret = chosen
+            # Before recursing into a callee, check if there's an added guard
+            # between this function pair — the guard is the direct cause of
+            # behavioral divergence and should be reported even when a callee
+            # has a differing return value (which may be a secondary effect).
+            if func_name_a != func_name_b:
+                guard_here = _find_added_guard(
+                    src_a, func_name_a, src_b, func_name_b)
+                if guard_here:
+                    stmt = guard_here['statement']
+                    calls_in_guard = _extract_calls_from_expression(stmt)
+                    for gc in calls_in_guard:
+                        for suf in _SEMANTIC_SUFFIXES:
+                            if gc.endswith(suf):
+                                gbase = gc[:-len(suf)]
+                                if _find_function_source(gbase, src_dir_a):
+                                    return _find_fork_recursive(
+                                        gbase, gc, binary_a, binary_b,
+                                        src_dir_a, src_dir_b,
+                                        input_file, run_args,
+                                        lib_path_a, lib_path_b,
+                                        timeout, depth + 1, max_depth, chain
+                                    )
+                    print(f"{indent}  Added guard (before callee recurse): "
+                          f"'{stmt}' (line {guard_here['line']})")
+                    return {
+                        'status': 'found',
+                        'func': label,
+                        'func_a': func_name_a,
+                        'func_b': func_name_b,
+                        'fork_statement': stmt,
+                        'fork_line': guard_here['line'],
+                        'fork_variables': guard_here['variables'],
+                        'guard': guard_here,
+                        'return_diff': ret,
+                    }
             print(f"{indent}  -> {ca} return differs ({sub_ret.get('diff_kind')}); "
                   f"recursing")
             return _find_fork_recursive(
