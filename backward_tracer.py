@@ -1202,6 +1202,33 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                 'return_diff': ret,
             }
 
+        # Fallback: no guard found, but the assign_diff is still meaningful —
+        # report it as the fork statement.
+        if diff:
+            fork_statement = diff['statement_a']
+            fork_line = diff['line_a']
+            fork_variables = _extract_variables(fork_statement)
+            input_variables = [v for v in fork_variables if '->' in v or '.' in v]
+            print(f"{indent}  First differing variable: '{diff['var']}' "
+                  f"(A: '{diff['statement_a']}' vs B: '{diff['statement_b']}')")
+            print(f"{indent}  Fork statement (target {func_name_a}): "
+                  f"'{fork_statement}' (line {fork_line})")
+            print(f"{indent}  Input-derived variables: {input_variables}")
+            return {
+                'status': 'found',
+                'func': label,
+                'func_a': func_name_a,
+                'func_b': func_name_b,
+                'file_a': src_a,
+                'file_b': src_b,
+                'fork_statement': fork_statement,
+                'fork_line': fork_line,
+                'fork_variables': fork_variables,
+                'input_variables': input_variables,
+                'assign_diff': diff,
+                'return_diff': ret,
+            }
+
     # 3c. Same-name functions: check if B is a wrapper calling a semantic
     #     variant of A (e.g. TIFFReadDirEntryArray -> TIFFReadDirEntryArrayWithLimit).
     if func_name_a == func_name_b and src_b:
