@@ -1224,6 +1224,27 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                 'return_diff': ret,
             }
 
+    # 3c. Same-name functions: check if B is a wrapper calling a semantic
+    #     variant of A (e.g. TIFFReadDirEntryArray -> TIFFReadDirEntryArrayWithLimit).
+    if func_name_a == func_name_b and src_b:
+        body_b = _extract_function_body(src_b, func_name_b)
+        if body_b:
+            for c in _extract_calls_from_expression(body_b):
+                for suf in _SEMANTIC_SUFFIXES:
+                    if c.endswith(suf):
+                        base = c[:-len(suf)]
+                        if base == func_name_a:
+                            variant_src = _find_function_source(c, src_dir_b)
+                            if variant_src:
+                                print(f"{indent}  Same-name wrapper: B calls "
+                                      f"semantic variant {c}; recursing")
+                                return _find_fork_recursive(
+                                    func_name_a, c, binary_a, binary_b,
+                                    src_dir_a, src_dir_b,
+                                    input_file, run_args, lib_path_a, lib_path_b,
+                                    timeout, depth + 1, max_depth, chain
+                                )
+
     _UTILITY_CALLEES = {
         '_TIFFmalloc', '_TIFFrealloc', '_TIFFfree', '_TIFFmemcpy',
         '_TIFFmemset', '_TIFFCheckMalloc', '_TIFFCheckRealloc',
