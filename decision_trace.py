@@ -330,8 +330,9 @@ def _collect_lib_paths(binary):
         if libs.is_dir() and str(libs) not in seen:
             seen.add(str(libs))
             dirs.append(str(libs))
-        # Found the version root: sweep all of its .libs dirs.
-        if (parent / "configure").exists() or (parent / "Makefile").exists():
+        # Found the version root: sweep ALL of its .libs dirs (a library may
+        # live in libtiff/.libs, src/.libs, ... — not just the binary's own).
+        if (parent / "configure").exists():
             for d in parent.rglob(".libs"):
                 if d.is_dir() and str(d) not in seen:
                     seen.add(str(d))
