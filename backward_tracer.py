@@ -1341,11 +1341,13 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
         if chosen:
             ca, cb, sub_ret = chosen
             # Before recursing into a callee, check if there's an added guard
-            # between this function pair — the guard is the direct cause of
-            # behavioral divergence and should be reported even when a callee
-            # has a differing return value (which may be a secondary effect).
+            # between this function pair.  If both a guard and an assign_diff
+            # exist, the assign_diff (the common statement that differs) is
+            # the fork statement; the guard is the consequence.
             if func_name_a != func_name_b:
                 guard_here = _find_added_guard(
+                    src_a, func_name_a, src_b, func_name_b)
+                diff_here = _find_assign_diff(
                     src_a, func_name_a, src_b, func_name_b)
                 if guard_here:
                     stmt = guard_here['statement']
@@ -1364,6 +1366,32 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                                     )
                     print(f"{indent}  Added guard (before callee recurse): "
                           f"'{stmt}' (line {guard_here['line']})")
+                    if diff_here:
+                        # Report the assign_diff as fork (exists in both
+                        # versions); keep the guard as context.
+                        fork_statement = diff_here['statement_a']
+                        fork_line = diff_here['line_a']
+                        fork_variables = _extract_variables(fork_statement)
+                        input_variables = [
+                            v for v in fork_variables
+                            if '->' in v or '.' in v]
+                        print(f"{indent}  Fork statement (assign_diff): "
+                              f"'{fork_statement}' (line {fork_line})")
+                        return {
+                            'status': 'found',
+                            'func': label,
+                            'func_a': func_name_a,
+                            'func_b': func_name_b,
+                            'file_a': src_a,
+                            'file_b': src_b,
+                            'fork_statement': fork_statement,
+                            'fork_line': fork_line,
+                            'fork_variables': fork_variables,
+                            'input_variables': input_variables,
+                            'assign_diff': diff_here,
+                            'guard': guard_here,
+                            'return_diff': ret,
+                        }
                     return {
                         'status': 'found',
                         'func': label,
