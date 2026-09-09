@@ -573,7 +573,15 @@ def build_instrumented(source_dir, program_name, build_cmds=None,
         # .lo files as up-to-date and skip recompiling, then fail to link the
         # missing .o files (e.g. `ar: tif_aux.o: No such file or directory`).
         if (source_dir / "Makefile").exists():
-            run("make clean", plain_env)
+            r = run("make clean", plain_env)
+            if not r:
+                # make clean may fail on a dirty copy; force-remove artifacts.
+                for pattern in ("*.o", "*.lo", "*.la", "*.a", "*.Plo"):
+                    for p in source_dir.rglob(pattern):
+                        p.unlink(missing_ok=True)
+                for d in list(source_dir.rglob(".deps")) + list(source_dir.rglob(".libs")):
+                    if d.is_dir():
+                        shutil.rmtree(d, ignore_errors=True)
         if (source_dir / "configure").exists():
             if not run("./configure --disable-shared --enable-static", plain_env):
                 return None
