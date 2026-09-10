@@ -315,6 +315,8 @@ def build_dynamic_result(res, boundary_func, source_root_a, source_root_b,
                         variables.append(v)
         out['variables'] = variables
         verdict = 'weak' if res.get('weak') else 'strong'
+        if res.get('absorbed'):
+            verdict += ', ABSORBED (may not be causal — reported as fallback)'
         out['description'] = (
             f"Unified dynamic fork locator ({verdict}):\n"
             f"Divergence function: {boundary_func}\n"
@@ -519,7 +521,7 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                 return i, diff
         return None, None
 
-    def _is_absorbed(sub, ia, ib, refactoring_map):
+def _is_absorbed(sub, ia, ib, refactoring_map):
     """DDA-style causality check: is the callee-level fork F absorbed?
 
     F (found in callee C, invocation k) is ABSORBED when the parent's own
@@ -561,9 +563,7 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
         if da != db and da is not None and db is not None:
             return False  # later parent decision differs — NOT absorbed
     return True
-
-
-def _try_candidates(null_diff=None):
+    def _try_candidates(null_diff=None):
         """Descend into callees; ``null_diff`` (a wrapper-level NULL fork)
         prioritizes the operand producers (e.g. TIFFOpen for ``in == NULL``).
         Returns the strongest fork found below, or None."""
