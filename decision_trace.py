@@ -348,8 +348,8 @@ class LineBP(gdb.Breakpoint):
         if self.line in decision_lines:
             S["order"] += 1
             clauses = eval_clauses(self.line)
-            gdb.write("##EVT %d %d %s\n"
-                      % (S["order"], self.line, json.dumps(clauses)))
+            gdb.write("##EVT %d %d %d %s\n"
+                      % (S["order"], S["inv"], self.line, json.dumps(clauses)))
         callees = call_lines.get(str(self.line))
         if callees:
             gdb.write("##CALL %d %d %s\n"
@@ -483,7 +483,7 @@ while True:
         if line in decision_lines and order < MAX_EVENTS:
             order += 1
             clauses = eval_clauses(line)
-            gdb.write("##EVT %d %d %s\n" % (order, line, json.dumps(clauses)))
+            gdb.write("##EVT %d %d %d %s\n" % (order, inv, line, json.dumps(clauses)))
         callees = call_lines.get(str(line))
         if callees:
             gdb.write("##CALL %d %d %s\n"
@@ -617,13 +617,13 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
 
     # Parse events.
     events = {}
-    for m in re.finditer(r'##EVT (\d+) (\d+) (\{.*\})', out):
-        n, line, j = int(m.group(1)), int(m.group(2)), m.group(3)
+    for m in re.finditer(r'##EVT (\d+) (\d+) (\d+) (\{.*\})', out):
+        n, inv, line, j = int(m.group(1)), int(m.group(2)), int(m.group(3)), m.group(4)
         try:
             clauses = json.loads(j)
         except Exception:
             clauses = {}
-        events[n] = {'n': n, 'line': line, 'clauses': clauses}
+        events[n] = {'n': n, 'inv': inv, 'line': line, 'clauses': clauses}
     totals = re.findall(r'##TOTAL (\d+)', out)
     total = int(totals[-1]) if totals else len(events)
     inv_total = int((re.findall(r'##INVTOTAL (\d+)', out) or [0])[-1])
@@ -644,13 +644,7 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
 
     # Attach the invocation index and the executed source-line text to events.
     src_lines = Path(fsrc).read_text(errors='replace').splitlines()
-    inv_index = [0] * (max(enters) + 1 if enters else 1)
-    cur = 0
-    for i, n in enumerate(sorted(events)):
-        while cur < len(enters) - 1 and events[n]['n'] > enters[cur + 1]:
-            cur += 1
-        inv_index[events[n]['n']] = cur + 1 if enters else 0
-        events[n]['inv'] = cur + 1 if enters else 0
+    for n in events:
         ln = events[n]['line']
         events[n]['text'] = src_lines[ln - 1].strip() if 0 < ln <= len(src_lines) else ''
 
