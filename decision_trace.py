@@ -599,6 +599,17 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         ev['outcome'] = None if unknown else (all(results) if results else None)
 
     event_list = [events[n] for n in sorted(events)]
+
+    # Group events/calls/returns per invocation (in execution order).
+    invocations = []
+    for i in range(1, inv_total + 1):
+        invocations.append({
+            'inv': i,
+            'events': [e for e in event_list if e.get('inv') == i],
+            'calls': [c for c in calls if c['inv'] == i],
+            'return': rets.get(i),
+        })
+
     result = {
         'func': func,
         'file': str(fsrc),
@@ -606,10 +617,15 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         'run_args': args,
         'decision_lines': decisions,
         'events': event_list,
+        'invocations': invocations,
+        'invocations_total': inv_total,
+        'bp_fail': bp_fail,
+        'returns': rets,
         'total_events': total,
         'stats': {
             'decision_lines': len(decisions),
             'events': len(event_list),
+            'invocations': inv_total,
             'lines_hit': len({e['line'] for e in event_list}),
             'outcome_known': sum(1 for e in event_list if e.get('outcome') is not None),
         },
@@ -642,12 +658,15 @@ def main():
     if r is None or 'error' in r:
         sys.exit(1)
     print(json.dumps(r['stats'], indent=2))
-    print(f'\nDecision events for {a.func} ({r["total_events"]} total):')
-    for e in r['events'][:60]:
-        print(f'  [{e["n"]}] line {e["line"]}: outcome={e.get("outcome")} '
-              f'clauses={e["clauses"]}')
-    if r['total_events'] > 60:
-        print(f'  ... ({r["total_events"] - 60} more)')
+    print(f'\nDecision events for {a.func} '
+          f'({r["total_events"]} events in {r["invocations_total"]} invocation(s)):')
+    for inv in r['invocations']:
+        print(f'  [inv #{inv["inv"]}] return={inv["return"]}')
+        for e in inv['events'][:40]:
+            print(f'    L{e["line"]}: outcome={e.get("outcome")} '
+                  f'clauses={e["clauses"]}')
+        if len(inv['events']) > 40:
+            print(f'    ... ({len(inv["events"]) - 40} more)')
 
 
 if __name__ == '__main__':
