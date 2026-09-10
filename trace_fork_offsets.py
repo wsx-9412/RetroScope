@@ -3971,7 +3971,7 @@ def main():
         # Only the diverging invocation's actual argument matters; the rest
         # are other calls in the run and are unrelated to the fork.
         if fork_tagid is not None:
-            key = str(fork_tagid)
+            key = fork_tagid
             selected = {key: all_mappings[key]} if key in all_mappings else {}
         else:
             selected = dict(all_mappings)
