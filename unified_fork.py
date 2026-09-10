@@ -472,6 +472,48 @@ def _producer_candidates(diff, source_file_a, source_file_b,
     return out
 
 
+def _is_absorbed(sub, ia, ib, refactoring_map):
+    """DDA-style causality check: is the callee-level fork F absorbed?
+
+    F (found in callee C, invocation k) is ABSORBED when the parent's own
+    decisions AFTER the k-th call to C are still identical on both sides —
+    i.e. the callee's divergence did not change the caller's later behavior.
+    Absorbed forks are not causal: the descent must continue.
+    """
+    if sub.get('status') != 'decision_fork':
+        return False
+    fa = sub.get('function_a')
+    k = sub.get('invocation') or 1
+
+    def _call_events(inv, name):
+        return [c for c in inv.get('calls') or []
+                if any(_name_pair(n, name, refactoring_map)
+                       for n in c.get('callees') or [])]
+
+    ca = _call_events(ia, fa)
+    cb = _call_events(ib, fa)
+    if not ca and not cb:
+        return False  # no call visible on either side — cannot judge
+    if ca and cb:
+        o = max(ca[min(k - 1, len(ca) - 1)].get('order', 0),
+                cb[min(k - 1, len(cb) - 1)].get('order', 0))
+    else:
+        side = ca or cb
+        o = side[min(k - 1, len(side) - 1)].get('order', 0)
+
+    later_a = [ev for ev in ia.get('events') or []
+               if ev.get('n', 0) > o]
+    later_b = [ev for ev in ib.get('events') or []
+               if ev.get('n', 0) > o]
+    if not later_a and not later_b:
+        return False  # no later parent decisions — treat as NOT absorbed
+    if len(later_a) != len(later_b):
+        return False  # path lengths differ afterwards — divergence propagates
+    for ea, eb in zip(later_a, later_b):
+        da, db = ea.get('outcome'), eb.get('outcome')
+        if da != db and da is not None and db is not None:
+            return False  # later parent decision differs — NOT absorbed
+    return True
 def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                             func_a, args, refactoring_map=None, timeout=300,
                             max_depth=6, _depth=0, _visited=None,
@@ -521,48 +563,6 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                 return i, diff
         return None, None
 
-def _is_absorbed(sub, ia, ib, refactoring_map):
-    """DDA-style causality check: is the callee-level fork F absorbed?
-
-    F (found in callee C, invocation k) is ABSORBED when the parent's own
-    decisions AFTER the k-th call to C are still identical on both sides —
-    i.e. the callee's divergence did not change the caller's later behavior.
-    Absorbed forks are not causal: the descent must continue.
-    """
-    if sub.get('status') != 'decision_fork':
-        return False
-    fa = sub.get('function_a')
-    k = sub.get('invocation') or 1
-
-    def _call_events(inv, name):
-        return [c for c in inv.get('calls') or []
-                if any(_name_pair(n, name, refactoring_map)
-                       for n in c.get('callees') or [])]
-
-    ca = _call_events(ia, fa)
-    cb = _call_events(ib, fa)
-    if not ca and not cb:
-        return False  # no call visible on either side — cannot judge
-    if ca and cb:
-        o = max(ca[min(k - 1, len(ca) - 1)].get('order', 0),
-                cb[min(k - 1, len(cb) - 1)].get('order', 0))
-    else:
-        side = ca or cb
-        o = side[min(k - 1, len(side) - 1)].get('order', 0)
-
-    later_a = [ev for ev in ia.get('events') or []
-               if ev.get('n', 0) > o]
-    later_b = [ev for ev in ib.get('events') or []
-               if ev.get('n', 0) > o]
-    if not later_a and not later_b:
-        return False  # no later parent decisions — treat as NOT absorbed
-    if len(later_a) != len(later_b):
-        return False  # path lengths differ afterwards — divergence propagates
-    for ea, eb in zip(later_a, later_b):
-        da, db = ea.get('outcome'), eb.get('outcome')
-        if da != db and da is not None and db is not None:
-            return False  # later parent decision differs — NOT absorbed
-    return True
     def _try_candidates(null_diff=None):
         """Descend into callees; ``null_diff`` (a wrapper-level NULL fork)
         prioritizes the operand producers (e.g. TIFFOpen for ``in == NULL``).
@@ -712,8 +712,6 @@ def _is_absorbed(sub, ia, ib, refactoring_map):
         }
     return {'status': 'no_divergence',
             'reason': f'no divergence in {used_a} nor its common callees'}
-
-
 def _visited_copy(visited):
     return list(visited)
 
