@@ -4005,9 +4005,6 @@ def main():
     print(f'{"="*60}')
 
     fork_stmt_text = config.get('fork_stmt', fork_spec)
-    in_val_target = result.get('variables', {}).get('in', {}).get('value', None)
-    in_val_ref = deep_results.get('variables', {}).get('in', {}).get('value', None) if deep_results else None
-    target_returns_null = (in_val_target == 0)
 
     # 1. Fork point
     # Truncate multi-line fork statement to the key line (e.g., "if (in == NULL)")
@@ -4018,15 +4015,7 @@ def main():
             short_fork = stripped
             break
 
-    if target_returns_null:
-        print(f'  1. Fork point: {short_fork} — where execution diverges')
-        print(f'  2. in = TIFFOpen(argv[optind], "r") — returns NULL in target, valid ptr in reference')
-    else:
-        print(f'  1. Fork point: {short_fork}')
-        if in_val_target is not None and in_val_ref is not None:
-            print(f'  2. in: target=0x{in_val_target:x} ref=0x{in_val_ref:x}')
-        elif in_val_target is not None:
-            print(f'  2. in: target=0x{in_val_target:x} ref=N/A')
+    print(f'  1. Fork point: {short_fork}')
 
     # 3. Deep trace comparison (errors and function calls)
     if deep_results:
@@ -4062,19 +4051,19 @@ def main():
     else:
         print(f'  3. Root cause: see detailed analysis above')
 
-    # 5. Input file offsets to modify
-    in_offsets = result.get('variables', {}).get('in', {}).get('direct_offsets', [])
-    if in_offsets and target_returns_null:
-        offset_strs = [f'0x{o:x}' for o in in_offsets]
-        print(f'  5. To eliminate the fork, modify bytes at input file offsets: {", ".join(offset_strs)}')
-        print(f'     These offsets determine the return value of TIFFOpen()')
+    # 5. Input file offsets to modify (from the dynamic call-site trace)
+    mapped_offsets = set()
+    if chain_trace_results and chain_trace_results.get('tag_mappings'):
+        for _tagid, _info in chain_trace_results['tag_mappings'].items():
+            if _info.get('file_offset') is not None:
+                mapped_offsets.add(_info['file_offset'])
+    if mapped_offsets:
+        offset_strs = ', '.join(f'0x{o:x}' for o in sorted(mapped_offsets))
+        print(f'  5. Divergence-determining bytes at input file offsets: {offset_strs}')
 
     # 6. Byte mutation crash testing
-    # Collect offsets from variable mapping
-    all_offsets = set()
-    for vname, vinfo in result.get('variables', {}).items():
-        for off in vinfo.get('direct_offsets', []):
-            all_offsets.add(off)
+    # Collect offsets from the dynamic call-site trace
+    all_offsets = set(mapped_offsets)
 
     # Also include user-specified offsets
     if a.test_offsets:
