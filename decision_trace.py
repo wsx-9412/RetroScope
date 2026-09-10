@@ -721,7 +721,7 @@ def _gdb_effective_lines(binary, func, source_root, args, fsrc, role_lines):
     except Exception:
         return None, {}
     out = r.stdout + r.stderr
-    m = re.search(r'in \S+ at \S+:?(\d+)', out)
+    m = re.search(rf'in {re.escape(func)} at \S+?:(\d+)', out)
     entry = int(m.group(1)) if m else None
     lines_out = re.findall(r'Line (\d+) of "[^"]+"', out)
     if len(lines_out) != len(role_lines):
