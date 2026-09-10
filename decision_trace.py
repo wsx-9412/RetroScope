@@ -277,14 +277,10 @@ def find_function_decisions(source_file, func_name):
     Returns a list of ``{line, text, clauses}``.  Conditions spanning several
     lines are folded into the start line's text via paren balancing.
     """
-    fn_line = find_function_line(source_file, func_name)
-    if not fn_line:
+    fb = _function_body(source_file, func_name)
+    if not fb:
         return []
-    body = find_function_body_range(source_file, fn_line)
-    if not body:
-        return []
-    start, end = body
-    lines = Path(source_file).read_text(errors='replace').splitlines()
+    start, end, lines = fb
     decisions = []
     seen = set()
     for i in range(start - 1, end):
@@ -553,8 +549,11 @@ gdb.write("##INVTOTAL %d\n" % inv)
 def _build_gdb_script(config):
     # The JSON is a valid Python literal; splice it directly into the template
     # (avoids argv quoting problems — gdb does not shell-parse -ex arguments).
+    # Backslashes must be doubled: inside the triple-quoted python literal the
+    # string parser consumes one level of escaping, which would corrupt the
+    # JSON (e.g. \" inside condition texts).
     template = _STEP_TEMPLATE if config.get("mode") == "step" else _GDB_TEMPLATE
-    return template.replace('__CONFIG__', json.dumps(config))
+    return template.replace('__CONFIG__', json.dumps(config).replace('\\', '\\\\'))
 
 
 # --------------------------------------------------------------------------
