@@ -400,9 +400,18 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
         return None, None
 
     # 1) STRONG decision-level fork (outcome / count): the path itself
-    #    diverges here — report immediately (closest to crash first).
+    #    diverges here — report immediately (closest to crash first),
+    #    unless it is a wrapper-level NULL/pointer fork whose real guard
+    #    lives deeper inside the pointer's producer.
     i, diff = _find_diff(strong_only=True)
     if diff:
+        if _null_compare_fork(diff):
+            print(f'{indent}[unified] wrapper-level NULL fork at '
+                  f'{used_a}:{diff["a"].get("line")} — descending into '
+                  f'the pointer producer')
+            sub = _try_candidates()
+            if sub:
+                return sub
         return {
             'status': 'decision_fork',
             'function_a': used_a, 'function_b': used_b,
@@ -416,30 +425,9 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
 
     # 2) No strong divergence: descend into callees first — a weak diff at
     #    this level may merely reflect deeper callee state.
-    if n == 0:
-        return {'status': 'no_divergence',
-                'reason': 'no invocations recorded at this level'}
-    cand = _recurse_candidates(inv_a[-1], inv_b[-1], refactoring_map,
-                               source_root_a, source_root_b)
-    print(f'{indent}[unified] candidates: '
-          + ', '.join(f'{a}|{b}' for a, b in cand[:6]))
-    weak_best = None
-    for callee_a, callee_b in cand[:6]:
-        sub = locate_fork_dynamically(
-            binary_a, binary_b, source_root_a, source_root_b, callee_a,
-            args, refactoring_map=refactoring_map, timeout=timeout,
-            max_depth=max_depth, _depth=_depth + 1, _visited=_visited,
-            _hint_a=ra.get('file'), _hint_b=rb.get('file'))
-        print(f'{indent}[unified]   -> {callee_a}: {sub.get("status")} '
-              f'{sub.get("reason", "")}')
-        if sub.get('status') == 'decision_fork' and not sub.get('weak'):
-            return sub
-        if sub.get('status') == 'value_fork':
-            return sub
-        if sub.get('status') == 'decision_fork' and weak_best is None:
-            weak_best = sub
-    if weak_best:
-        return weak_best
+    sub = _try_candidates()
+    if sub:
+        return sub
 
     # 3) Weak decision-level fork (text rewrite / operand-value difference).
     i, diff = _find_diff(strong_only=False)
