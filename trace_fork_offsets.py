@@ -4024,8 +4024,8 @@ def main():
                 print(f'      ← dp->tdir_tag (IFD entry '
                       f'#{info["entry_index"]}) at file offset '
                       f'0x{info["file_offset"]:x}')
-                print(f'      ← IFD buffer read by pread64 at '
-                      f'0x{info["ifd_offset"]:x} (buf={info["dir"]})')
+                print(f'      ← IFD at file offset '
+                      f'0x{info["ifd_offset"]:x} (tif->tif_diroff)')
             else:
                 print(f'    tagid={tagid} ({name}): no file mapping')
 
