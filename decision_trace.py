@@ -691,6 +691,8 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
                 results.append(None)
         ev['clause_results'] = results
         ev['outcome'] = None if unknown else (all(results) if results else None)
+        ev['exprs'] = [[cl.get('lhs', ''), cl.get('rhs', '')]
+                       for cl in d['clauses']]
 
     event_list = [events[n] for n in sorted(events)]
 

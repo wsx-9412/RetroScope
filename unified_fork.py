@@ -104,24 +104,30 @@ def compare_invocations(inv_a, inv_b):
         if da != db and da is not None and db is not None:
             return {'kind': 'outcome', 'strong': True, 'index': k,
                     'a': {'line': ea['line'], 'text': ea.get('text', ''),
-                          'clauses': ea.get('clauses', {}), 'outcome': da},
+                          'clauses': ea.get('clauses', {}), 'outcome': da,
+                          'exprs': ea.get('exprs', [])},
                     'b': {'line': eb['line'], 'text': eb.get('text', ''),
-                          'clauses': eb.get('clauses', {}), 'outcome': db}}
+                          'clauses': eb.get('clauses', {}), 'outcome': db,
+                          'exprs': eb.get('exprs', [])}}
         ta, tb = _norm(ea.get('text', '')), _norm(eb.get('text', ''))
         if ta and tb and ta != tb:
             return {'kind': 'text', 'strong': False, 'index': k,
                     'a': {'line': ea['line'], 'text': ea.get('text', ''),
-                          'clauses': ea.get('clauses', {}), 'outcome': da},
+                          'clauses': ea.get('clauses', {}), 'outcome': da,
+                          'exprs': ea.get('exprs', [])},
                     'b': {'line': eb['line'], 'text': eb.get('text', ''),
-                          'clauses': eb.get('clauses', {}), 'outcome': db}}
+                          'clauses': eb.get('clauses', {}), 'outcome': db,
+                          'exprs': eb.get('exprs', [])}}
         va, vb = _value_tuple(ea.get('clauses') or {}), \
             _value_tuple(eb.get('clauses') or {})
         if va and vb and va != vb:
             return {'kind': 'value', 'strong': False, 'index': k,
                     'a': {'line': ea['line'], 'text': ea.get('text', ''),
-                          'clauses': ea.get('clauses', {}), 'outcome': da},
+                          'clauses': ea.get('clauses', {}), 'outcome': da,
+                          'exprs': ea.get('exprs', [])},
                     'b': {'line': eb['line'], 'text': eb.get('text', ''),
-                          'clauses': eb.get('clauses', {}), 'outcome': db}}
+                          'clauses': eb.get('clauses', {}), 'outcome': db,
+                          'exprs': eb.get('exprs', [])}}
     if len(ev_a) != len(ev_b):
         side = 'a' if len(ev_a) > len(ev_b) else 'b'
         return {'kind': 'count', 'strong': True, 'index': n,
@@ -266,16 +272,30 @@ def build_dynamic_result(res, boundary_func, source_root_a, source_root_b,
         out['root_cause_line_b'] = b['line']
         out['root_cause_statement_a'] = a.get('text', '')
         out['root_cause_statement_b'] = b.get('text', '')
-        _CKEYWORDS = {'if', 'else', 'for', 'while', 'do', 'switch', 'case',
-                      'return', 'sizeof', 'goto', 'break', 'continue',
-                      'typedef', 'struct', 'union', 'enum', 'const', 'static'}
         variables = []
+        exprs = a.get('exprs') or b.get('exprs') or []
+        ca = a.get('clauses') or {}
+        cb = b.get('clauses') or {}
+        for i, (lhs_e, rhs_e) in enumerate(exprs):
+            key = str(i)
+            va, vb = ca.get(key, {}), cb.get(key, {})
+            for side, expr in (('lhs', lhs_e), ('rhs', rhs_e)):
+                if not expr:
+                    continue
+                if re.fullmatch(r'[0-9xXa-fA-F_]+', expr):
+                    continue
+                if re.fullmatch(r'[A-Z_][A-Z0-9_]*', expr):
+                    continue  # macro constant
+                # Prefer the side whose runtime value differs between the
+                # two versions (the mutation-relevant operand).
+                if va.get(side) != vb.get(side) and expr not in variables:
+                    variables.append(expr)
         for text in (a.get('text', ''), b.get('text', '')):
             for v in re.findall(r'[A-Za-z_]\w*', text):
-                if v in _CKEYWORDS:
+                if re.fullmatch(r'[0-9xXa-fA-F_]+', v):
                     continue
                 if re.fullmatch(r'[A-Z_][A-Z0-9_]*', v):
-                    continue  # macro / enum constant (not a mutation target)
+                    continue
                 if v not in variables:
                     variables.append(v)
         out['variables'] = variables
