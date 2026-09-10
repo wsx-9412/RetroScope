@@ -483,7 +483,8 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                 return sub
             if sub.get('status') == 'value_fork':
                 return sub
-            if sub.get('status') == 'decision_fork' and weak_best is None:
+            if sub.get('status') == 'decision_fork' and sub.get('weak') \
+                    and weak_best is None:
                 weak_best = sub
         return weak_best
 
