@@ -229,8 +229,10 @@ def _fork_summary(res, func_a, func_b):
         return (f'decision fork in {fa}/{fb} (inv {res["invocation"]}, '
                 f'decision #{d["index"]}, kind={d["kind"]}'
                 f'{", weak" if res.get("weak") else ""}): '
-                f'A[L{a["line"]}] outcome={a["outcome"]} clauses={a["clauses"]} '
-                f'| B[L{b["line"]}] outcome={b["outcome"]} clauses={b["clauses"]}')
+                f'A[L{a.get("line")}] outcome={a.get("outcome")} '
+                f'clauses={a.get("clauses")} '
+                f'| B[L{b.get("line")}] outcome={b.get("outcome")} '
+                f'clauses={b.get("clauses")}')
     return (f'value fork in {fa}/{fb} (inv {res["invocation"]}): '
             f'A return={res.get("ret_a")} | B return={res.get("ret_b")}')
 
@@ -267,9 +269,9 @@ def build_dynamic_result(res, boundary_func, source_root_a, source_root_b,
     if res['status'] == 'decision_fork':
         d = res['diff']
         a, b = d['a'], d['b']
-        out['root_cause_line'] = b['line']
-        out['root_cause_line_a'] = a['line']
-        out['root_cause_line_b'] = b['line']
+        out['root_cause_line'] = b.get('line')
+        out['root_cause_line_a'] = a.get('line')
+        out['root_cause_line_b'] = b.get('line')
         out['root_cause_statement_a'] = a.get('text', '')
         out['root_cause_statement_b'] = b.get('text', '')
         variables = []
@@ -315,10 +317,10 @@ def build_dynamic_result(res, boundary_func, source_root_a, source_root_b,
             f"{res['b_invocations']}), decision #{d['index']} "
             f"(kind={d['kind']})\n"
             f"  Reference: {a.get('text', '')}  "
-            f"({os.path.basename(file_a or '')}:{a['line']}) "
+            f"({os.path.basename(file_a or '')}:{a.get('line')}) "
             f"outcome={a.get('outcome')} clauses={a.get('clauses')}\n"
             f"  Target:    {b.get('text', '')}  "
-            f"({os.path.basename(file_b or '')}:{b['line']}) "
+            f"({os.path.basename(file_b or '')}:{b.get('line')}) "
             f"outcome={b.get('outcome')} clauses={b.get('clauses')}")
     else:
         out['root_cause_line'] = None
@@ -391,7 +393,7 @@ def _producer_candidates(diff, source_file_a, source_file_b,
 
 def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                             func_a, args, refactoring_map=None, timeout=300,
-                            max_depth=4, _depth=0, _visited=None,
+                            max_depth=6, _depth=0, _visited=None,
                             _hint_a=None, _hint_b=None):
     """Unified dynamic fork locator (see module docstring).
 
@@ -438,17 +440,32 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                 return i, diff
         return None, None
 
-    def _try_candidates():
-        """Descend into equal-count callees (decision-dense first); return
-        the strongest fork found below, or None."""
+    def _try_candidates(null_diff=None):
+        """Descend into callees; ``null_diff`` (a wrapper-level NULL fork)
+        prioritizes the operand producers (e.g. TIFFOpen for ``in == NULL``).
+        Returns the strongest fork found below, or None."""
         if n == 0:
             return None
         cand = _recurse_candidates(inv_a[-1], inv_b[-1], refactoring_map,
                                    source_root_a, source_root_b)
+        cnt_a = {}
+        for c in inv_a[-1].get('calls') or []:
+            for name in c.get('callees') or []:
+                cnt_a[name] = cnt_a.get(name, 0) + 1
+        cnt_b = {}
+        for c in inv_b[-1].get('calls') or []:
+            for name in c.get('callees') or []:
+                cnt_b[name] = cnt_b.get(name, 0) + 1
+        priority = []
+        if null_diff:
+            priority = _producer_candidates(null_diff, ra.get('file'),
+                                            rb.get('file'), cnt_a, cnt_b,
+                                            refactoring_map)
+        order = priority + [c for c in cand if c not in priority]
         print(f'{indent}[unified] candidates: '
-              + ', '.join(f'{a}|{b}' for a, b in cand[:6]))
+              + ', '.join(f'{a}|{b}' for a, b in order[:8]))
         weak_best = None
-        for callee_a, callee_b in cand[:6]:
+        for callee_a, callee_b in order[:8]:
             sub = locate_fork_dynamically(
                 binary_a, binary_b, source_root_a, source_root_b, callee_a,
                 args, refactoring_map=refactoring_map, timeout=timeout,
@@ -474,7 +491,7 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
             print(f'{indent}[unified] wrapper-level NULL fork at '
                   f'{used_a}:{diff["a"].get("line")} — descending into '
                   f'the pointer producer')
-            sub = _try_candidates()
+            sub = _try_candidates(null_diff=diff)
             if sub:
                 return sub
         return {
@@ -551,7 +568,7 @@ def main():
     ap.add_argument('--source-b', required=True, help='version B source root')
     ap.add_argument('--func', required=True, help='boundary (innermost common) function')
     ap.add_argument('--timeout', type=int, default=300)
-    ap.add_argument('--depth', type=int, default=4)
+    ap.add_argument('--depth', type=int, default=6)
     ap.add_argument('--out', help='save the locator JSON result')
     ap.add_argument('--args', nargs=argparse.REMAINDER, default=[])
     a = ap.parse_args()
