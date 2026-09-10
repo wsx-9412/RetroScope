@@ -259,8 +259,8 @@ def build_dynamic_result(res, boundary_func, source_root_a, source_root_b,
         except Exception:
             return None
 
-    file_a = _loc(fa, source_root_a)
-    file_b = _loc(fb, source_root_b) or file_a
+    file_a = res.get('file_a') or _loc(fa, source_root_a)
+    file_b = res.get('file_b') or _loc(fb, source_root_b) or file_a
     out['divergence_function'] = boundary_func
     out['root_cause_function'] = fb
     out['root_cause_file'] = os.path.basename(file_b or '') or fa
@@ -506,6 +506,7 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
         return {
             'status': 'decision_fork',
             'function_a': used_a, 'function_b': used_b,
+            'file_a': ra.get('file'), 'file_b': rb.get('file'),
             'invocation': i + 1,
             'a_invocations': len(inv_a), 'b_invocations': len(inv_b),
             'diff': diff,
@@ -526,6 +527,7 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
         return {
             'status': 'decision_fork',
             'function_a': used_a, 'function_b': used_b,
+            'file_a': ra.get('file'), 'file_b': rb.get('file'),
             'invocation': i + 1,
             'a_invocations': len(inv_a), 'b_invocations': len(inv_b),
             'diff': diff,
@@ -544,6 +546,7 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
             return {
                 'status': 'value_fork',
                 'function_a': used_a, 'function_b': used_b,
+                'file_a': ra.get('file'), 'file_b': rb.get('file'),
                 'invocation': i + 1,
                 'ret_a': ra_r, 'ret_b': rb_r,
                 'a_invocations': len(inv_a), 'b_invocations': len(inv_b),
