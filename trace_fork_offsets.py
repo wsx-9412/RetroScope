@@ -1523,6 +1523,15 @@ while f is not None:
     except Exception:
         break
 end
+try:
+    print("DIROFF %d" % int(gdb.parse_and_eval('tif->tif_diroff')))
+except Exception:
+    pass
+try:
+    print("ENTSIZE %d" % int(gdb.parse_and_eval('sizeof(TIFFDirEntry)')))
+except Exception:
+    pass
+end
   quit
 end
 
