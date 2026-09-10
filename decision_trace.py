@@ -245,18 +245,19 @@ def _gdb_function_range(binary, func, source_root, args):
 def _function_body(source_file, func_name, body=None):
     """Return (start, end, lines) of func_name's body, or None.
 
-    Robust variant of find_function_body_range: ALL definition-like lines are
-    brace-matched (after stripping comments/strings so '{' inside literals
-    cannot corrupt the depth count), and the LONGEST valid span is chosen.
-    The backward signature scan fails for ``main`` (the previous function's
-    signature is found instead) and multi-line signatures (TIFFClientOpen),
-    which the longest-span rule fixes without any project-specific knowledge.
+    ``body`` (1-based inclusive) comes from the binary's debug line table
+    (authoritative, via ``disassemble /m``).  Without it, definition-like
+    lines are brace-matched (after stripping comments/strings) and the
+    LONGEST valid span is chosen — a fallback that fixes ``main`` (backward
+    signature scan misfires) and multi-line signatures (TIFFClientOpen).
     """
     try:
         raw_lines = Path(source_file).read_text(errors='replace').splitlines()
     except Exception:
         return None
     lines = _strip_c_comments_strings(raw_lines)
+    if body:
+        return body[0], body[1], lines
     n = len(lines)
     pat = re.compile(
         r'^(?:(?:static|inline|extern)\s+)?(?:[\w\s\*]+?\s+)?'
