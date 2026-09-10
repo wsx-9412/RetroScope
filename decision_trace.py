@@ -292,6 +292,7 @@ def find_function_decisions(source_file, func_name):
 
 _GDB_TEMPLATE = r'''
 import json
+import re
 
 config = json.loads("""__CONFIG__""")
 gdb.execute("set pagination off")
