@@ -525,14 +525,19 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
         Returns the strongest fork found below, or None."""
         if n == 0:
             return None
-        cand = _recurse_candidates(inv_a[-1], inv_b[-1], refactoring_map,
+        # Use the LAST ALIGNED invocation pair: when the sides' call counts
+        # differ (the target bailed out), each side's last invocation is NOT
+        # the same logical call (e.g. A's 2nd TIFFOpen = the OUTPUT file).
+        ia_last = inv_a[n - 1]
+        ib_last = inv_b[n - 1]
+        cand = _recurse_candidates(ia_last, ib_last, refactoring_map,
                                    source_root_a, source_root_b)
         cnt_a = {}
-        for c in inv_a[-1].get('calls') or []:
+        for c in ia_last.get('calls') or []:
             for name in c.get('callees') or []:
                 cnt_a[name] = cnt_a.get(name, 0) + 1
         cnt_b = {}
-        for c in inv_b[-1].get('calls') or []:
+        for c in ib_last.get('calls') or []:
             for name in c.get('callees') or []:
                 cnt_b[name] = cnt_b.get(name, 0) + 1
         priority = []

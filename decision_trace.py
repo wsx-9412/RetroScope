@@ -217,7 +217,32 @@ def _strip_c_comments_strings(lines):
     return out
 
 
-def _function_body(source_file, func_name):
+def _gdb_function_range(binary, func, source_root, args):
+    """Return the (start_line, end_line) of ``func`` from the binary's debug
+    info (``disassemble /m`` lists the source lines interleaved with code).
+    Brace-counting source scans are fragile for big functions; the debug
+    line table is authoritative.  Returns None when unresolvable.
+    """
+    try:
+        libs = _collect_lib_paths(binary)
+        env = os.environ.copy()
+        env['ASAN_OPTIONS'] = 'detect_leaks=0'
+        if libs:
+            env['LD_LIBRARY_PATH'] = ':'.join(libs + [env.get('LD_LIBRARY_PATH', '')])
+        cmd = ['gdb', '-batch', '-q', '-ex', 'start', '-ex',
+               f'disassemble /m {func}', '--args', str(resolve_binary(binary))] \
+            + [str(a) for a in args]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=90,
+                           env=env)
+    except Exception:
+        return None
+    nums = [int(m) for m in re.findall(r'^\s*(\d+)\s+', r.stdout + r.stderr, re.M)]
+    if not nums:
+        return None
+    return min(nums), max(nums)
+
+
+def _function_body(source_file, func_name, body=None):
     """Return (start, end, lines) of func_name's body, or None.
 
     Robust variant of find_function_body_range: ALL definition-like lines are
