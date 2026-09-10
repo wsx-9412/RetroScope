@@ -697,7 +697,8 @@ def _build_bp_script(config):
 
     max_events = config.get('max_events', 100000)
 
-    # Decision lines: record operands, step once, report the reached line.
+    # Decision lines: record operands only (no stepping — stepping commands
+    # inside ``commands`` blocks kill the inferior in gdb 12.1 batch mode).
     for dl in config['decisions']:
         line = dl['line']
         # repr() yields a valid Python literal (True/None) unlike json.dumps
@@ -727,12 +728,25 @@ def _build_bp_script(config):
         L.append('    gdb.write("##EVT %d %d %d %s\\n" % '
                  '(__o, S["inv"], __EVTLINE__, json.dumps(__vals)))'
                  .replace('__EVTLINE__', str(line)))
-        L.append('    try:')
-        L.append('        gdb.execute("next", to_string=True)')
-        L.append('        __ln = gdb.newest_frame().find_sal().line')
-        L.append('    except Exception:')
-        L.append('        __ln = 0')
-        L.append('    gdb.write("##NEXTLN %d %d\\n" % (__o, __ln))')
+        L.append('end')
+        L.append('continue')
+        L.append('end')
+
+    # Then-branch breakpoints: one per decision with a static then-region.
+    # A hit at the body's first line (in the unified order stream) tells the
+    # client the decision was really TAKEN — no stepping required.
+    for dl in config['decisions']:
+        ts = (config.get('then_lines') or {}).get(dl['line'])
+        if not ts:
+            continue
+        L.append(f'break {config["file"]}:{ts}')
+        L.append('commands')
+        L.append('silent')
+        L.append('python')
+        L.append('if S["order"] < MAX_EVENTS:')
+        L.append('    S["order"] += 1')
+        L.append('    gdb.write("##THEN %d %d\\n" % (S["order"], %d))'
+                 % dl['line'])
         L.append('end')
         L.append('continue')
         L.append('end')
