@@ -672,6 +672,25 @@ def _branch_then_region(lines, line_no, max_scan=80):
 
 
 
+
+def _compute_entry_line(fsrc, gbody):
+    """First EXECUTABLE source line of the function (per its debug body
+    range), skipping brace-only/blank lines.  The entry role is merged into
+    that line's breakpoint."""
+    if not gbody:
+        return None
+    try:
+        lines = _strip_c_comments_strings(
+            Path(fsrc).read_text(errors='replace').splitlines())
+    except Exception:
+        return gbody[0]
+    for j in range(gbody[0] - 1, min(gbody[1], len(lines))):
+        s = lines[j].strip()
+        if s and s not in ('{', '}', 'else', 'else {', '} else', '} else {',
+                           'do'):
+            return j + 1
+    return gbody[0]
+
 def _compute_then_lines(fsrc, decisions):
     """Decision line -> first EXECUTABLE line of its then-region.
 
@@ -726,18 +745,29 @@ def _build_bp_script(config):
 
     max_events = config.get('max_events', 100000)
 
-    # Merge roles per line: decisions / calls / then-starts.
+    # Merge roles per line: decisions / calls / then-starts / function entry.
+    # A separate ``break <func>`` resolves to the function's FIRST INSTRUCTION
+    # line, which is usually also a call line — two breakpoints at the same
+    # address swallow each other (gdb fires only one per stop), so the entry
+    # role must share the breakpoint of that line.
     roles = {}
+    entry_line = config.get('entry_line')
+    if entry_line:
+        roles.setdefault(entry_line,
+                         {'dec': None, 'calls': [], 'thens': [], 'entry': True})
     for dl in config['decisions']:
-        roles.setdefault(dl['line'], {'dec': None, 'calls': [], 'thens': []})
+        roles.setdefault(dl['line'],
+                         {'dec': None, 'calls': [], 'thens': [], 'entry': False})
         roles[dl['line']]['dec'] = dl
     for ln, callees in (config.get('call_lines') or {}).items():
-        roles.setdefault(int(ln), {'dec': None, 'calls': [], 'thens': []})
+        roles.setdefault(int(ln),
+                         {'dec': None, 'calls': [], 'thens': [], 'entry': False})
         roles[int(ln)]['calls'].extend(callees)
     for dl in config['decisions']:
         ts = (config.get('then_lines') or {}).get(dl['line'])
         if ts:
-            roles.setdefault(ts, {'dec': None, 'calls': [], 'thens': []})
+            roles.setdefault(ts,
+                             {'dec': None, 'calls': [], 'thens': [], 'entry': False})
             roles[ts]['thens'].append(dl['line'])
 
     for line in sorted(roles):
@@ -749,6 +779,9 @@ def _build_bp_script(config):
         L.append('if S["order"] < MAX_EVENTS:')
         L.append('    S["order"] += 1')
         L.append('    __o = S["order"]')
+        if role.get('entry'):
+            L.append('    S["inv"] += 1')
+            L.append('    gdb.write("##ENTER %d\\n" % S["inv"])')
         if role['dec'] is not None:
             # repr() yields a valid Python literal (True/None) unlike
             # json.dumps (true/null are invalid Python).
@@ -784,17 +817,6 @@ def _build_bp_script(config):
         L.append('end')
         L.append('continue')
         L.append('end')
-
-    # Entry breakpoint: counts invocations.
-    L.append(f'break {config["func"]}')
-    L.append('commands')
-    L.append('silent')
-    L.append('python')
-    L.append('S["inv"] += 1')
-    L.append('gdb.write("##ENTER %d\\n" % S["inv"])')
-    L.append('end')
-    L.append('continue')
-    L.append('end')
 
     L.append('run ' + config['runargs'])
     L.append('python')
@@ -925,6 +947,7 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
                         in find_call_sites(fsrc, func, body=gbody).items()},
         "return_lines": sorted(find_return_lines(fsrc, func, body=gbody)),
         "then_lines": _compute_then_lines(fsrc, decisions),
+        "entry_line": _compute_entry_line(fsrc, gbody),
         "mode": mode,
         "max_steps": 200000,
         "max_events": 100000,
