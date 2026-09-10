@@ -139,27 +139,44 @@ def _ret_equal(ra, rb):
     return str(ra).strip() == str(rb).strip()
 
 
-def _recurse_candidates(inv_a, inv_b, refactoring_map):
-    """Callees invoked the same number of times on both sides, ordered by
-    their last call position (closest to the function exit) first."""
+def _recurse_candidates(inv_a, inv_b, refactoring_map, source_a=None,
+                        source_b=None):
+    """Callees invoked the same number of times on both sides, ranked by
+    static decision density (most decision-dense first: the divergence is
+    likeliest inside functions with their own guards), then by their last
+    call position (closest to the function exit) as a tiebreak."""
     cnt_a, last_a = {}, {}
     for c in inv_a.get('calls') or []:
         for name in c.get('callees') or []:
             cnt_a[name] = cnt_a.get(name, 0) + 1
-            last_a[name] = max(last_a.get(name, 0), c['line'])
+            last_a[name] = max(last_a.get(name, 0), c.get('order', 0))
     cnt_b, last_b = {}, {}
     for c in inv_b.get('calls') or []:
         for name in c.get('callees') or []:
             cnt_b[name] = cnt_b.get(name, 0) + 1
-            last_b[name] = max(last_b.get(name, 0), c['line'])
+            last_b[name] = max(last_b.get(name, 0), c.get('order', 0))
+
+    def _static_decisions(name, source_root):
+        if not source_root:
+            return 0
+        try:
+            fsrc = _locate_function_source(name, source_root)
+            if not fsrc:
+                return 0
+            return len(find_function_decisions(fsrc, name))
+        except Exception:
+            return 0
+
     pairs = []
     for name_a, ca in cnt_a.items():
         for name_b, cb in cnt_b.items():
             if ca == cb and _name_pair(name_a, name_b, refactoring_map):
                 pos = max(last_a.get(name_a, 0), last_b.get(name_b, 0))
-                pairs.append((pos, name_a, name_b))
-    pairs.sort(reverse=True)
-    return [(na, nb) for _, na, nb in pairs]
+                nd = (_static_decisions(name_a, source_a)
+                      + _static_decisions(name_b, source_b)) // 2
+                pairs.append((nd, pos, name_a, name_b))
+    pairs.sort(key=lambda t: (-t[0], -t[1]))
+    return [(na, nb) for _, _, na, nb in pairs]
 
 
 def _record_side(binary, func_names, source_root, args, timeout):
