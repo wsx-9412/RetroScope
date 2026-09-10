@@ -1563,6 +1563,7 @@ run {run_args}
         dir_addr = None
         diroff = None
         entry_size = None
+        tif_flags = None
         for line in out_b.splitlines():
             line = line.strip()
             m = re.match(r'PREAD64 fd=(\d+) offset=(-?\d+) size=(-?\d+) buf=(0x[0-9a-f]+)', line)
@@ -1589,13 +1590,16 @@ run {run_args}
             m = re.match(r'ENTSIZE (\d+)', line)
             if m:
                 entry_size = int(m.group(1))
+                continue
+            m = re.match(r'FLAGS (\d+)', line)
+            if m:
+                tif_flags = int(m.group(1))
 
         # File offset of the IFD entry.  tif->tif_diroff points at the
-        # directory count (2 bytes for classic TIFF); the entry array starts
-        # 2 bytes later.  dp - dir is the entry's offset in the *in-memory*
-        # buffer, where each TIFFDirEntry is 24 bytes (uint64 tdir_count);
-        # on disk each classic-TIFF entry is 12 bytes, so the file offset
-        # uses 12 bytes per entry.
+        # directory count (2 bytes for classic TIFF, 8 for BigTIFF); the
+        # entry array starts right after it.  dp - dir is the entry's offset
+        # in the *in-memory* buffer (TIFFDirEntry is 24 bytes), while the
+        # on-disk entry is 12 bytes (classic) or 20 bytes (BigTIFF).
         entry_off = None
         entry_index = None
         if (diroff is not None and dp_addr is not None and dir_addr is not None
@@ -1603,7 +1607,9 @@ run {run_args}
             delta = dp_addr - dir_addr
             esz = entry_size if entry_size else 12
             entry_index = delta // esz
-            entry_off = diroff + 2 + entry_index * 12
+            disk_esz = 20 if (tif_flags is not None and tif_flags & 0x80000) else 12  # TIFF_BIGTIFF
+            count_size = 8 if (tif_flags is not None and tif_flags & 0x80000) else 2
+            entry_off = diroff + count_size + entry_index * disk_esz
 
         tag_mappings[tagid] = {
             'file_offset': entry_off,
