@@ -627,12 +627,14 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
     totals = re.findall(r'##TOTAL (\d+)', out)
     total = int(totals[-1]) if totals else len(events)
     inv_total = int((re.findall(r'##INVTOTAL (\d+)', out) or [0])[-1])
+    if inv_total < len(enters):
+        inv_total = len(enters)
     bp_fail = bool(re.search(r'##BPFAIL', out))
 
     # Invocation markers: ENTER <inv> / CALL <inv> <line> <json> / RET <inv> <val>
     enters = [int(m) for m in re.findall(r'##ENTER (\d+)', out)]
     calls = []
-    for m in re.finditer(r'##CALL (\d+) (\d+) (\{.*\})', out):
+    for m in re.finditer(r'##CALL (\d+) (\d+) (\[.*\])', out):
         try:
             calls.append({'inv': int(m.group(1)), 'line': int(m.group(2)),
                           'callees': json.loads(m.group(3))})

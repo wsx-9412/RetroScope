@@ -35,6 +35,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from decision_trace import record_decisions
+from decision_trace import _locate_function_source, find_function_decisions
 
 _SEMANTIC_SUFFIXES = ('WithLimit', 'Checked', 'Safe', 'Ex', 'NoSSE', 'Array')
 
@@ -270,7 +271,8 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
     if n == 0:
         return {'status': 'no_divergence',
                 'reason': 'no invocations recorded at this level'}
-    cand = _recurse_candidates(inv_a[-1], inv_b[-1], refactoring_map)
+    cand = _recurse_candidates(inv_a[-1], inv_b[-1], refactoring_map,
+                               source_root_a, source_root_b)
     for callee_a, callee_b in cand[:6]:
         sub = locate_fork_dynamically(
             binary_a, binary_b, source_root_a, source_root_b, callee_a,
