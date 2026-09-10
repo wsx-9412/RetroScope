@@ -476,42 +476,35 @@ def _instrument_source(source_dir, instrument):
     def _shifted(calls, extra):
         return [f'{indent}{extra}{c}' for c in calls]
 
-    # For `if` forks, instrument *inside* the body so the taint is logged only
-    # on the diverging iteration (condition true), not every loop iteration.
+    # For `if` forks, log the READ operands BEFORE the `if`: the fork can
+    # diverge on either outcome (e.g. ``if (a < b)`` diverging when the
+    # comparison is false), and the operand values/taints are identical
+    # whichever branch is taken.  Logging only inside the body would miss
+    # condition-false divergences entirely.  After-logs (variables assigned
+    # by the statement) still go inside the body, after the assignment.
     if_parts = _parse_if_line(stripped)
     if if_parts:
         cond, rest = if_parts
         if rest and not rest.startswith('{'):
             # Single-line: `if (cond) stmt;`
             body = rest
-            if re.match(r'(goto|return|break|continue)\b', body):
-                # Early-exit body (error handling): instrument BEFORE the `if`
-                # so the taint is logged regardless of whether the error path
-                # is taken (e.g. `if (!load(...)) goto bad;`).
-                indented_calls = [f'{indent}  {c}' for c in before_calls]
-                lines = lines[:idx] + indented_calls + lines[idx:]
-            else:
-                new_lines = [f'{indent}if ({cond}) {{']
-                new_lines += [f'{indent}  {c}' for c in before_calls]
-                new_lines += [f'{indent}  {body}']
-                # After-log an assignment that lives inside the `if` body.
-                new_lines += [f'{indent}  {c}' for c in after_calls]
-                new_lines.append(f'{indent}}}')
-                lines = lines[:idx] + new_lines + lines[idx + 1:]
+            new_lines = [f'{indent}{c}' for c in before_calls]
+            new_lines.append(f'{indent}if ({cond}) {{')
+            new_lines += [f'{indent}  {body}']
+            # After-log an assignment that lives inside the `if` body.
+            new_lines += [f'{indent}  {c}' for c in after_calls]
+            new_lines.append(f'{indent}}}')
+            lines = lines[:idx] + new_lines + lines[idx + 1:]
         elif not rest and idx + 1 < len(lines):
             # Body on the next line: `if (cond)\n    stmt;`
             body = lines[idx + 1].strip()
             if body and not body.startswith('{'):
-                if re.match(r'(goto|return|break|continue)\b', body):
-                    indented_calls = [f'{indent}  {c}' for c in before_calls]
-                    lines = lines[:idx] + indented_calls + lines[idx:]
-                else:
-                    new_lines = [f'{indent}if ({cond}) {{']
-                    new_lines += [f'{indent}  {c}' for c in before_calls]
-                    new_lines += [f'{indent}  {body}']
-                    new_lines += [f'{indent}  {c}' for c in after_calls]
-                    new_lines.append(f'{indent}}}')
-                    lines = lines[:idx] + new_lines + lines[idx + 2:]
+                new_lines = [f'{indent}{c}' for c in before_calls]
+                new_lines.append(f'{indent}if ({cond}) {{')
+                new_lines += [f'{indent}  {body}']
+                new_lines += [f'{indent}  {c}' for c in after_calls]
+                new_lines.append(f'{indent}}}')
+                lines = lines[:idx] + new_lines + lines[idx + 2:]
             else:
                 # Block body on the following lines: keep the current
                 # before-`if` placement (after-logs would need brace
