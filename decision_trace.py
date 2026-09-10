@@ -519,7 +519,6 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
 
     # Parse events.
     events = {}
-    order_meta = {}
     for m in re.finditer(r'##EVT (\d+) (\d+) (\{.*\})', out):
         n, line, j = int(m.group(1)), int(m.group(2)), m.group(3)
         try:
@@ -529,6 +528,33 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         events[n] = {'n': n, 'line': line, 'clauses': clauses}
     totals = re.findall(r'##TOTAL (\d+)', out)
     total = int(totals[-1]) if totals else len(events)
+    inv_total = int((re.findall(r'##INVTOTAL (\d+)', out) or [0])[-1])
+    bp_fail = bool(re.search(r'##BPFAIL', out))
+
+    # Invocation markers: ENTER <inv> / CALL <inv> <line> <json> / RET <inv> <val>
+    enters = [int(m) for m in re.findall(r'##ENTER (\d+)', out)]
+    calls = []
+    for m in re.finditer(r'##CALL (\d+) (\d+) (\{.*\})', out):
+        try:
+            calls.append({'inv': int(m.group(1)), 'line': int(m.group(2)),
+                          'callees': json.loads(m.group(3))})
+        except Exception:
+            pass
+    rets = {}
+    for m in re.finditer(r'##RET (\d+) (.+)', out):
+        rets[int(m.group(1))] = m.group(2).strip()
+
+    # Attach the invocation index and the executed source-line text to events.
+    src_lines = Path(fsrc).read_text(errors='replace').splitlines()
+    inv_index = [0] * (max(enters) + 1 if enters else 1)
+    cur = 0
+    for i, n in enumerate(sorted(events)):
+        while cur < len(enters) - 1 and events[n]['n'] > enters[cur + 1]:
+            cur += 1
+        inv_index[events[n]['n']] = cur + 1 if enters else 0
+        events[n]['inv'] = cur + 1 if enters else 0
+        ln = events[n]['line']
+        events[n]['text'] = src_lines[ln - 1].strip() if 0 < ln <= len(src_lines) else ''
 
     # Compute outcomes client-side from the numeric clause values.
     dline_map = {d['line']: d for d in decisions}
