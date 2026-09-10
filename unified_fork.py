@@ -299,27 +299,12 @@ def build_dynamic_result(res, boundary_func, source_root_a, source_root_b,
                 if va.get(side) != vb.get(side) and expr not in variables:
                     variables.append(expr)
         if not exprs:
-            _CKEYWORDS = {'if', 'else', 'for', 'while', 'do', 'switch',
-                          'case', 'return', 'sizeof', 'goto', 'break',
-                          'continue', 'typedef', 'struct', 'union', 'enum',
-                          'const', 'static',
-                          # C type names (not variables)
-                          'int', 'char', 'short', 'long', 'float', 'double', 'void',
-                          'signed', 'unsigned', 'bool',
-                          'int8_t', 'int16_t', 'int32_t', 'int64_t',
-                          'uint8_t', 'uint16_t', 'uint32_t', 'uint64_t',
-                          'int8', 'int16', 'int32', 'int64',
-                          'uint8', 'uint16', 'uint32', 'uint64',
-                          'size_t', 'ssize_t', 'ptrdiff_t', 'off_t',
-                          'TIFF', 'TIFFField', 'TIFFDirEntry'}
+            # Extract full member-access chains (e.g.
+            # ``tif->tif_fields[mb]->field_tag``) rather than splitting them
+            # into individual identifiers: struct members like ``field_tag``
+            # are not standalone lvalues and cannot be instrumented.
             for text in (a.get('text', ''), b.get('text', '')):
-                for v in re.findall(r'[A-Za-z_]\w*', text):
-                    if v in _CKEYWORDS:
-                        continue
-                    if re.fullmatch(r'[0-9xXa-fA-F_]+', v):
-                        continue
-                    if re.fullmatch(r'[A-Z_][A-Z0-9_]*', v):
-                        continue
+                for v in extract_variables_from_statement(text):
                     if v not in variables:
                         variables.append(v)
         out['variables'] = variables
