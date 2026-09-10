@@ -745,8 +745,9 @@ def _build_bp_script(config):
         L.append('python')
         L.append('if S["order"] < MAX_EVENTS:')
         L.append('    S["order"] += 1')
-        L.append('    gdb.write("##THEN %d %d\\n" % (S["order"], %d))'
-                 % dl['line'])
+        L.append('    gdb.write("##THEN %d %d\\\\n" % '
+                 '(S["order"], __THENLINE__))'
+                 .replace('__THENLINE__', str(dl['line'])))
         L.append('end')
         L.append('continue')
         L.append('end')
@@ -906,6 +907,14 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         "call_lines": {str(k): v for k, v
                         in find_call_sites(fsrc, func, body=gbody).items()},
         "return_lines": sorted(find_return_lines(fsrc, func, body=gbody)),
+        "then_lines": {d['line']: _branch_then_region(
+            _strip_c_comments_strings(
+                Path(fsrc).read_text(errors='replace').splitlines()),
+            d['line'])[0] for d in decisions
+            if _branch_then_region(
+                _strip_c_comments_strings(
+                    Path(fsrc).read_text(errors='replace').splitlines()),
+                d['line']) is not None},
         "mode": mode,
         "max_steps": 200000,
         "max_events": 100000,
@@ -957,6 +966,9 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
     next_lines = {}
     for m in re.finditer(r'##NEXTLN (\d+) (\d+)', out):
         next_lines[int(m.group(1))] = int(m.group(2))
+    then_hits = {}
+    for m in re.finditer(r'##THEN (\d+) (\d+)', out):
+        then_hits[int(m.group(1))] = int(m.group(2))
     totals = re.findall(r'##TOTAL (\d+)', out)
     total = int(totals[-1]) if totals else len(events)
     inv_total = int((re.findall(r'##INVTOTAL (\d+)', out) or [0])[-1])
@@ -965,11 +977,13 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
     bp_fail = bool(re.search(r'##BPFAIL', out))
 
     calls = []
+    calls_orders = {}
     for m in re.finditer(r'##CALL (\d+) (\d+) (\d+) (\[.*\])', out):
         try:
             calls.append({'order': int(m.group(1)), 'inv': int(m.group(2)),
                           'line': int(m.group(3)),
                           'callees': json.loads(m.group(4))})
+            calls_orders[int(m.group(1))] = int(m.group(3))
         except Exception:
             pass
     rets = {}
@@ -984,21 +998,35 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         if n in next_lines:
             events[n]['next_line'] = next_lines[n]
 
-    # Compute outcomes: REAL branch taken (##NEXTLN inside the then-region)
-    # takes precedence over clause-value arithmetic — the former works for
-    # conditions gdb cannot evaluate (calls, macros, enum constants).
+    # Compute outcomes from the REAL branch taken: the unified order stream
+    # (decisions, calls, then-branch hits) tells which line executed after
+    # each decision; membership in the decision's then-region = outcome.
+    # This works even for conditions gdb cannot evaluate (calls, macros).
     dline_map = {d['line']: d for d in decisions}
     regions = {}
     for d in decisions:
         regions[d['line']] = _branch_then_region(src_lines, d['line'])
+    stream = []
+    for n, ev in events.items():
+        stream.append((n, 'dec', ev['line']))
+    for n, line in calls_orders.items():
+        stream.append((n, 'call', line))
+    for n, dline in then_hits.items():
+        stream.append((n, 'then', dline))
+    stream.sort()
+    next_hit = {}
+    for i, (n, kind, line) in enumerate(stream):
+        if i + 1 < len(stream):
+            next_hit[n] = stream[i + 1]
     for n, ev in events.items():
         d = dline_map.get(ev['line'])
         if not d:
             continue
-        nl = ev.get('next_line')
-        if nl and regions.get(ev['line']):
-            ts, te = regions[ev['line']]
-            ev['outcome'] = (ts <= nl <= te)
+        region = regions.get(ev['line'])
+        nh = next_hit.get(n)
+        if region and nh and nh[1] != 'enter':
+            ts, te = region
+            ev['outcome'] = (ts <= nh[2] <= te)
             ev['outcome_from_flow'] = True
             continue
         results = []
