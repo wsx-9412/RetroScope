@@ -691,6 +691,42 @@ def _compute_entry_line(fsrc, gbody):
             return j + 1
     return gbody[0]
 
+
+def _gdb_effective_lines(binary, func, source_root, args, fsrc, role_lines):
+    """Map every role source line to its EFFECTIVE line (the line gdb
+    attributes to the first instruction at/after it).
+
+    Declaration/brace-only lines have no code: breakpoints on them are
+    silently relocated by gdb to the next instruction's line, creating
+    duplicate breakpoints at the same address that swallow each other.
+    Grouping roles by effective line guarantees ONE breakpoint per address.
+    Returns (entry_line, {role_line: effective_line}).
+    """
+    try:
+        libs = _collect_lib_paths(binary)
+        env = os.environ.copy()
+        env['ASAN_OPTIONS'] = 'detect_leaks=0'
+        if libs:
+            env['LD_LIBRARY_PATH'] = ':'.join(libs + [env.get('LD_LIBRARY_PATH', '')])
+        cmds = ['gdb', '-batch', '-q', '-ex', 'start']
+        cmds += ['-ex', f'info line {func}']
+        for ln in sorted(set(role_lines)):
+            cmds += ['-ex', f'info line {fsrc}:{ln}']
+        cmds += ['--args', str(resolve_binary(binary))] + [str(a) for a in args]
+        r = subprocess.run(cmds, capture_output=True, text=True, timeout=120,
+                           env=env)
+    except Exception:
+        return None, {}
+    out = r.stdout + r.stderr
+    lines_out = re.findall(r'Line (\d+) of "[^"]+"', out)
+    if len(lines_out) != 1 + len(role_lines):
+        return None, {}
+    entry = int(lines_out[0])
+    eff = {}
+    for ln in sorted(set(role_lines)):
+        eff[ln] = int(lines_out[1 + sorted(set(role_lines)).index(ln)])
+    return entry, eff
+
 def _compute_then_lines(fsrc, decisions):
     """Decision line -> first EXECUTABLE line of its then-region.
 
@@ -745,30 +781,31 @@ def _build_bp_script(config):
 
     max_events = config.get('max_events', 100000)
 
-    # Merge roles per line: decisions / calls / then-starts / function entry.
-    # A separate ``break <func>`` resolves to the function's FIRST INSTRUCTION
-    # line, which is usually also a call line — two breakpoints at the same
-    # address swallow each other (gdb fires only one per stop), so the entry
-    # role must share the breakpoint of that line.
+    # Merge roles by EFFECTIVE line: one breakpoint per instruction address
+    # (declaration/brace-only lines have no code and would duplicate a
+    # neighbour's breakpoint; gdb fires only one bp per stop at the same
+    # address, silently swallowing the rest).
+    eff = config.get('effective_lines') or {}
     roles = {}
-    entry_line = config.get('entry_line')
-    if entry_line:
-        roles.setdefault(entry_line,
-                         {'dec': None, 'calls': [], 'thens': [], 'entry': True})
+
+    def _role(line):
+        key = eff.get(line, line)
+        roles.setdefault(key,
+                         {'dec': None, 'calls': [], 'thens': [], 'entry': False})
+        return roles[key]
+
     for dl in config['decisions']:
-        roles.setdefault(dl['line'],
-                         {'dec': None, 'calls': [], 'thens': [], 'entry': False})
-        roles[dl['line']]['dec'] = dl
+        _role(dl['line'])['dec'] = dl
     for ln, callees in (config.get('call_lines') or {}).items():
-        roles.setdefault(int(ln),
-                         {'dec': None, 'calls': [], 'thens': [], 'entry': False})
-        roles[int(ln)]['calls'].extend(callees)
+        _role(int(ln))['calls'].extend(callees)
     for dl in config['decisions']:
         ts = (config.get('then_lines') or {}).get(dl['line'])
         if ts:
-            roles.setdefault(ts,
-                             {'dec': None, 'calls': [], 'thens': [], 'entry': False})
-            roles[ts]['thens'].append(dl['line'])
+            _role(ts)['thens'].append(dl['line'])
+    entry_line = config.get('entry_line')
+    if entry_line:
+        r = _role(entry_line)
+        r['entry'] = True
 
     for line in sorted(roles):
         role = roles[line]
@@ -930,6 +967,20 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         print(f'  [!] no decision lines found for {func} in {fsrc}')
         return None
 
+    # Effective-line mapping: one breakpoint per instruction address.
+    call_lines_src = find_call_sites(fsrc, func, body=gbody)
+    then_lines_src = _compute_then_lines(fsrc, decisions)
+    role_lines = set(d['line'] for d in decisions) \
+        | set(int(k) for k in call_lines_src) \
+        | set(then_lines_src.values())
+    g_entry, eff_lines = _gdb_effective_lines(
+        real_bin, func, source_root, args, fsrc, role_lines)
+    if eff_lines:
+        entry_line = g_entry or _compute_entry_line(fsrc, gbody)
+    else:
+        entry_line = _compute_entry_line(fsrc, gbody)
+        eff_lines = {ln: ln for ln in role_lines}
+
     clauses_by_line = {}
     for d in decisions:
         clauses_by_line[str(d["line"])] = d["clauses"]
@@ -943,11 +994,11 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         "runargs": " ".join(str(a) for a in args),
         "decisions": decisions,
         "clauses_by_line": clauses_by_line,
-        "call_lines": {str(k): v for k, v
-                        in find_call_sites(fsrc, func, body=gbody).items()},
+        "call_lines": {str(k): v for k, v in call_lines_src.items()},
         "return_lines": sorted(find_return_lines(fsrc, func, body=gbody)),
-        "then_lines": _compute_then_lines(fsrc, decisions),
-        "entry_line": _compute_entry_line(fsrc, gbody),
+        "then_lines": then_lines_src,
+        "entry_line": entry_line,
+        "effective_lines": eff_lines,
         "mode": mode,
         "max_steps": 200000,
         "max_events": 100000,
