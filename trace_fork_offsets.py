@@ -3817,40 +3817,6 @@ def main():
                     print(f'    pread64 offset=0x{off:x} size={sz} => BEYOND file (size={file_size})')
                     print(f'      ^^^ This read accesses invalid data beyond file boundary')
 
-            # Parse the IFD to find the corrupted tag that causes the divergence
-            if input_file and os.path.isfile(input_file):
-                with open(input_file, 'rb') as f:
-                    file_data = f.read()
-                # TIFF header: bytes 4-7 = IFD offset
-                if len(file_data) >= 8:
-                    ifd_off = int.from_bytes(file_data[4:8], 'little')
-                    if ifd_off + 2 <= len(file_data):
-                        n_entries = int.from_bytes(file_data[ifd_off:ifd_off+2], 'little')
-                        pos = ifd_off + 2
-                        tag_names = {279: 'StripByteCounts', 273: 'StripOffsets',
-                                     256: 'ImageWidth', 257: 'ImageLength',
-                                     258: 'BitsPerSample', 262: 'PhotometricInterpretation'}
-                        for i in range(n_entries):
-                            if pos + 12 > len(file_data):
-                                break
-                            tag = int.from_bytes(file_data[pos:pos+2], 'little')
-                            typ = int.from_bytes(file_data[pos+2:pos+4], 'little')
-                            cnt = int.from_bytes(file_data[pos+4:pos+8], 'little')
-                            val = int.from_bytes(file_data[pos+8:pos+12], 'little')
-                            tname = tag_names.get(tag, f'Tag_{tag}')
-
-                            # Check if this tag has suspicious values
-                            if tag == 279:  # StripByteCounts
-                                print(f'\n  [*] Divergence-causing IFD entry at file offset 0x{pos:x}:')
-                                print(f'      tag=279 ({tname}) type={typ} count={cnt} value/offset={val}')
-                                print(f'      bytes: {file_data[pos:pos+12].hex()}')
-                                if cnt > 100:
-                                    print(f'      ^^^ count={cnt} is suspiciously large for a single-strip image')
-                                    print(f'      This causes tiff-4.0.8 to attempt reading {cnt}*{4}={cnt*4} bytes')
-                                    print(f'      resulting in IO error → TIFFOpen returns NULL')
-                                    print(f'      tiff-4.4.0 detects bogus count, ignores it → TIFFOpen returns valid pointer')
-                            pos += 12
-
     # ================================================================
     # Step 4: Trace file I/O and map to input file
     # ================================================================
