@@ -343,14 +343,47 @@ def build_dynamic_result(res, boundary_func, source_root_a, source_root_b,
 
 def _null_compare_fork(diff):
     """True when the strong fork compares a pointer/return value to NULL —
-    a wrapper-level fork (e.g. ``if (in == NULL)`` after TIFFOpen).  The
-    mutation-relevant guard lives inside the function that produced the
-    pointer, so we must keep descending instead of stopping here."""
+    a wrapper-level fork (e.g. ``if (in == NULL)`` after TIFFOpen)."""
     if not diff:
         return False
     a, b = diff.get('a') or {}, diff.get('b') or {}
     text = (a.get('text') or '') + ' ' + (b.get('text') or '')
     return 'NULL' in text or 'null' in text
+
+
+def _operands_pointer(diff, source_root):
+    """True when the fork's differing operand is a POINTER-typed variable.
+
+    Pointer variables (e.g. ``in``, ``tif``) are taint-dead: their value is
+    an address / NULL, not an input byte, so value-level taint analysis
+    cannot localize them — the fork must descend into the producer chain
+    until a scalar guard is found.  Scalar operands are taint-friendly and
+    the fork is reported directly.
+    """
+    operands = set()
+    for side in (diff.get('a') or {}, diff.get('b') or {}):
+        for expr_a, expr_b in side.get('exprs') or []:
+            for expr in (expr_a, expr_b):
+                if not expr:
+                    continue
+                base = re.split(r'->|\.|\[', expr)[0].strip()
+                if re.fullmatch(r'[A-Za-z_]\w*', base):
+                    operands.add(base)
+    if not operands or not source_root:
+        return False
+    try:
+        from polytracker_offsets import _resolve_pointer_vars
+        ptrs = _resolve_pointer_vars(str(source_root), sorted(operands))
+    except Exception:
+        return False
+    return bool(set(ptrs or []) & operands)
+
+
+def _needs_descent(diff, source_root):
+    """Descent is needed only when the fork's differing operands are
+    taint-dead: pointer variables or NULL comparisons.  Scalar guards are
+    reported directly (their operands can be tainted)."""
+    return _null_compare_fork(diff) or _operands_pointer(diff, source_root)
 
 
 def _producer_candidates(diff, source_file_a, source_file_b,

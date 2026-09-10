@@ -2548,7 +2548,8 @@ def main():
 
     # Find the correct fork line for each version
     fork_spec_b = fork_spec  # Target version (tiff-4.0.8) - uses line from read_source_fork_statement
-    fork_spec_a = f'{fork_file}:{original_fork_line}'  # Reference version (tiff-4.4.0) - uses original line from divergence JSON
+    ref_fork_file = config.get('ref_fork_file') or fork_file
+    fork_spec_a = f'{ref_fork_file}:{original_fork_line}'  # Reference version - its own file & line
 
     print(f'[*] Target fork spec: {fork_spec_b}')
     if binary_ref:
