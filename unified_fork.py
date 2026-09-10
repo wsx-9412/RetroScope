@@ -302,7 +302,16 @@ def build_dynamic_result(res, boundary_func, source_root_a, source_root_b,
             _CKEYWORDS = {'if', 'else', 'for', 'while', 'do', 'switch',
                           'case', 'return', 'sizeof', 'goto', 'break',
                           'continue', 'typedef', 'struct', 'union', 'enum',
-                          'const', 'static'}
+                          'const', 'static',
+                          # C type names (not variables)
+                          'int', 'char', 'short', 'long', 'float', 'double', 'void',
+                          'signed', 'unsigned', 'bool',
+                          'int8_t', 'int16_t', 'int32_t', 'int64_t',
+                          'uint8_t', 'uint16_t', 'uint32_t', 'uint64_t',
+                          'int8', 'int16', 'int32', 'int64',
+                          'uint8', 'uint16', 'uint32', 'uint64',
+                          'size_t', 'ssize_t', 'ptrdiff_t', 'off_t',
+                          'TIFF', 'TIFFField', 'TIFFDirEntry'}
             for text in (a.get('text', ''), b.get('text', '')):
                 for v in re.findall(r'[A-Za-z_]\w*', text):
                     if v in _CKEYWORDS:
