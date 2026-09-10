@@ -527,15 +527,19 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
     #    lives deeper inside the pointer's producer.
     i, diff = _find_diff(strong_only=True)
     if diff:
-        if _null_compare_fork(diff):
-            print(f'{indent}[unified] wrapper-level NULL fork at '
-                  f'{used_a}:{diff["a"].get("line")} — descending into '
-                  f'the pointer producer')
+        if _needs_descent(diff, source_root_a):
+            print(f'{indent}[unified] wrapper/pointer-level fork at '
+                  f'{used_a}:{diff["a"].get("line")} (taint-dead operands) '
+                  f'— descending into the producer chain')
             sub = _try_candidates(null_diff=diff)
             if sub:
                 return sub
             print(f'{indent}[unified]   no deeper strong fork — '
-                  f'reporting the wrapper NULL fork itself')
+                  f'reporting the wrapper fork itself')
+        else:
+            print(f'{indent}[unified] scalar-operand fork at '
+                  f'{used_a}:{diff["a"].get("line")} — reporting directly '
+                  f'(operands are taintable)')
         return {
             'status': 'decision_fork',
             'function_a': used_a, 'function_b': used_b,
