@@ -920,7 +920,8 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         "max_events": 100000,
     }
 
-    with tempfile.NamedTemporaryFile('w', suffix='.py', delete=False) as tf:
+    suffix = '.gdb' if mode == 'bp' else '.py'
+    with tempfile.NamedTemporaryFile('w', suffix=suffix, delete=False) as tf:
         tf.write(_build_gdb_script(config))
         script = tf.name
 
