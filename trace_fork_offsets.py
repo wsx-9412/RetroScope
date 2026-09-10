@@ -1218,6 +1218,178 @@ run {' '.join(run_parts)}
     return result
 
 
+def run_gdb_function_chain_trace(binary, fork_spec, input_file, program_args, timeout=120):
+    """Function-based chain trace: track data flow through libtiff functions.
+
+    Algorithm:
+    1. Set breakpoints on key libtiff functions that read/process file data
+    2. At each breakpoint, capture arguments and relevant state
+    3. Build a call chain showing how data flows from file to fork variables
+    
+    This is more practical than watchpoint tracing for library code because:
+    - Data is often written before the fork point
+    - Library functions have well-defined interfaces
+    - We can correlate function arguments with file offsets
+    """
+    real_binary = resolve_binary(binary)
+    run_parts = [a.replace('{input_file}', input_file).replace('{input}', input_file)
+                 for a in program_args]
+    env = build_run_env(real_binary)
+
+    # Key libtiff functions to trace, in order of data flow
+    script = f"""set pagination off
+set confirm off
+set breakpoint pending on
+set print pretty on
+
+# Break on fork point to get context
+break {fork_spec}
+commands
+  silent
+  printf "FORK_CONTEXT\\n"
+  python
+import gdb
+# Capture the state at fork point
+try:
+    mb = int(gdb.parse_and_eval('mb'))
+    tagid = int(gdb.parse_and_eval('tagid'))
+    field_tag = int(gdb.parse_and_eval('tif->tif_fields[mb]->field_tag'))
+    nfields = int(gdb.parse_and_eval('tif->tif_nfields'))
+    tif_ptr = int(gdb.parse_and_eval('tif'))
+    
+    # Enumerate tif_fields to find which index has tagid
+    for i in range(min(nfields, 200)):
+        try:
+            t = int(gdb.parse_and_eval(f'tif->tif_fields[{{i}}]->field_tag'))
+            if t == tagid:
+                print(f"TAGID_INDEX {{i}}")
+                break
+        except:
+            pass
+    
+    print(f"FORK_MB {{mb}}")
+    print(f"FORK_TAGID {{tagid}}")
+    print(f"FORK_FIELD_TAG {{field_tag}}")
+    print(f"FORK_NFIELDS {{nfields}}")
+    print(f"FORK_TIF_PTR 0x{{tif_ptr:x}}")
+except Exception as e:
+    print(f"FORK_ERR {{e}}")
+end
+  continue
+end
+
+# Break on TIFFReadDirectory - where IFD is parsed
+break TIFFReadDirectory
+commands
+  silent
+  printf "FUNC_TIFFReadDirectory\\n"
+  info args
+  continue
+end
+
+# Break on TIFFFetchNormalTag - where individual tags are fetched
+break TIFFFetchNormalTag
+commands
+  silent
+  printf "FUNC_TIFFFetchNormalTag\\n"
+  python
+import gdb
+try:
+    tag = int(gdb.parse_and_eval('tag'))
+    print(f"FETCH_TAG {{tag}}")
+except:
+    pass
+end
+  continue
+end
+
+# Break on _TIFFReadDirEntryArray - where IFD entries are read from file
+break _TIFFReadDirEntryArray
+commands
+  silent
+  printf "FUNC_TIFFReadDirEntryArray\\n"
+  info args
+  continue
+end
+
+# Catch pread64 to see actual file reads
+catch syscall pread64
+commands
+  silent
+  if $rdi >= 3 && $rdx > 0 && $rdx < 100000
+    printf "PREAD64 fd=%d offset=%ld size=%ld\\n", $rdi, $r10, $rdx
+  end
+  continue
+end
+
+run {' '.join(run_parts)}
+"""
+
+    fd, script_file = tempfile.mkstemp(suffix='.gdb', prefix='gdb_func_chain_')
+    os.close(fd)
+    with open(script_file, 'w') as f:
+        f.write(script)
+
+    try:
+        proc = subprocess.run(
+            ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
+            capture_output=True, text=True, timeout=timeout, env=env)
+    except subprocess.TimeoutExpired:
+        return None, 'timeout'
+    finally:
+        try: os.unlink(script_file)
+        except: pass
+
+    output = proc.stdout + proc.stderr
+    if 'FORK_CONTEXT' not in output:
+        return None, 'fork_not_reached'
+
+    # Parse results
+    result = {
+        'fork_context': {},
+        'functions_called': [],
+        'pread64_calls': [],
+        'tag_fetches': [],
+    }
+
+    for line in output.splitlines():
+        line = line.strip()
+        
+        # Fork context
+        m = re.match(r'FORK_MB (\d+)', line)
+        if m: result['fork_context']['mb'] = int(m.group(1))
+        m = re.match(r'FORK_TAGID (\d+)', line)
+        if m: result['fork_context']['tagid'] = int(m.group(1))
+        m = re.match(r'FORK_FIELD_TAG (\d+)', line)
+        if m: result['fork_context']['field_tag'] = int(m.group(1))
+        m = re.match(r'FORK_NFIELDS (\d+)', line)
+        if m: result['fork_context']['nfields'] = int(m.group(1))
+        m = re.match(r'TAGID_INDEX (\d+)', line)
+        if m: result['fork_context']['tagid_index'] = int(m.group(1))
+        
+        # Function calls
+        if line.startswith('FUNC_'):
+            func_name = line[5:]
+            if func_name not in result['functions_called']:
+                result['functions_called'].append(func_name)
+        
+        # Tag fetches
+        m = re.match(r'FETCH_TAG (\d+)', line)
+        if m:
+            result['tag_fetches'].append(int(m.group(1)))
+        
+        # pread64 calls
+        m = re.match(r'PREAD64 fd=(\d+) offset=(\d+) size=(\d+)', line)
+        if m:
+            result['pread64_calls'].append({
+                'fd': int(m.group(1)),
+                'offset': int(m.group(2)),
+                'size': int(m.group(3)),
+            })
+
+    return result, None
+
+
 def run_gdb_watchpoint_chain_trace(binary, fork_spec, var_expr, input_file, program_args,
                                     max_depth=5, timeout=300):
     """True GDB watchpoint-based chain tracing.
@@ -3533,61 +3705,53 @@ def main():
                 print(f'    offset=0x{offset:04x} size={size} -- within file boundary')
 
     # ================================================================
-    # Step 4.5: GDB watchpoint chain trace (true data flow tracing)
+    # Step 4.5: GDB function chain trace (data flow through libtiff)
     # ================================================================
     chain_trace_results = {}
     if binary and fork_spec and input_file:
         print(f'\n{"="*60}')
-        print(f'  Step 4.5: GDB watchpoint chain trace (data flow → file offset)')
+        print(f'  Step 4.5: GDB function chain trace (data flow → file offset)')
         print(f'{"="*60}')
 
-        # Trace each differing variable using watchpoint chain
-        for var_name in differing_vars[:3]:  # Limit to 3 variables to avoid timeout
-            print(f'\n  [*] Tracing variable: {var_name}')
-            chain_result, err = run_gdb_watchpoint_chain_trace(
-                binary, fork_spec, var_name, input_file, program_args,
-                max_depth=5, timeout=a.timeout * 2)
+        # Function-based chain trace
+        chain_result, err = run_gdb_function_chain_trace(
+            binary, fork_spec, input_file, program_args, timeout=a.timeout * 2)
+        
+        if err:
+            print(f'  [!] Chain trace failed: {err}')
+        elif chain_result:
+            chain_trace_results = chain_result
+            ctx = chain_result.get('fork_context', {})
+            funcs = chain_result.get('functions_called', [])
+            preads = chain_result.get('pread64_calls', [])
+            tag_fetches = chain_result.get('tag_fetches', [])
             
-            if err:
-                print(f'      [!] Chain trace failed: {err}')
-                continue
+            print(f'  [*] Fork point context:')
+            print(f'      mb = {ctx.get("mb", "?")}')
+            print(f'      tagid = {ctx.get("tagid", "?")}')
+            print(f'      tif->tif_fields[mb]->field_tag = {ctx.get("field_tag", "?")}')
+            print(f'      tif->tif_nfields = {ctx.get("nfields", "?")}')
+            tagid_idx = ctx.get('tagid_index')
+            if tagid_idx is not None:
+                print(f'      tagid found at tif_fields[{tagid_idx}]')
             
-            if chain_result:
-                chain_trace_results[var_name] = chain_result
-                depth = chain_result.get('depth_reached', 0)
-                file_offsets = chain_result.get('file_offsets', [])
-                writers = chain_result.get('chain', [])
-                
-                print(f'      Traced {depth} levels deep')
-                
-                if writers:
-                    print(f'      Write chain:')
-                    for i, w in enumerate(writers):
-                        func = w.get('function', '?')
-                        file = w.get('file', '?')
-                        line = w.get('line', '?')
-                        print(f'        [{i}] {func}() at {file}:{line}')
-                
-                if file_offsets:
-                    print(f'      File offsets: {[f"0x{o:x}" for o in file_offsets]}')
-                else:
-                    print(f'      No direct file offset found (value may be computed)')
-
-        # Also do the static tag mapping as fallback
-        print(f'\n  [*] Static tag mapping (fallback):')
-        trace_result, err = run_gdb_libtiff_tag_trace(
-            binary, fork_spec, input_file, program_args, timeout=a.timeout)
-        if trace_result:
-            mb = trace_result.get('mb')
-            tagid = trace_result.get('tagid')
-            field_tag = trace_result.get('field_tag')
+            print(f'\n  [*] Function call chain (data flow):')
+            for func in funcs:
+                print(f'      {func}()')
             
-            print(f'      mb={mb}, tagid={tagid}, field_tag={field_tag}')
+            if tag_fetches:
+                print(f'\n  [*] Tags fetched from file:')
+                for tag in tag_fetches[:10]:  # Show first 10
+                    entry_off, val_off, tag_name = map_libtiff_tag_to_file_offset(tag, input_file)
+                    if entry_off is not None:
+                        print(f'      tag {tag} ({tag_name}) → IFD entry at 0x{entry_off:x}')
+                    else:
+                        print(f'      tag {tag} (internal/built-in)')
             
-            if tagid is not None:
-                entry_off, val_off, tag_name = map_libtiff_tag_to_file_offset(tagid, input_file)
-                if entry_off is not None:
-                    print(f'      tagid={tagid} ({tag_name}) → IFD entry at 0x{entry_off:x}')
+            if preads:
+                print(f'\n  [*] File reads (pread64 calls):')
+                for p in preads[:10]:  # Show first 10
+                    print(f'      offset=0x{p["offset"]:x} size={p["size"]}')
 
     # ================================================================
     # Step 5: Variable → file offset mapping
