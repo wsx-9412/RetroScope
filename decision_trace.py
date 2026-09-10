@@ -162,6 +162,75 @@ def parse_condition_clauses(cond):
     return clauses
 
 
+def _function_body(source_file, func_name):
+    """Return (start, end, lines) of func_name's body, or None."""
+    fn_line = find_function_line(source_file, func_name)
+    if not fn_line:
+        return None
+    body = find_function_body_range(source_file, fn_line)
+    if not body:
+        return None
+    lines = Path(source_file).read_text(errors='replace').splitlines()
+    return body[0], body[1], lines
+
+
+_SKIP_CALL_TOKENS = {
+    'if', 'for', 'while', 'switch', 'sizeof', 'return', 'goto', 'do',
+    'assert', 'min', 'max', 'abs', 'static_cast', 'reinterpret_cast',
+    'dynamic_cast', 'const_cast', 'defined', 'typeof', '__typeof__',
+    'NULL', 'true', 'false', 'malloc', 'free', 'realloc', 'calloc',
+    'memset', 'memcpy', 'memmove', 'strlen', 'strcmp', 'printf',
+    'fprintf', 'sprintf', 'snprintf', 'exit', 'abort',
+}
+
+
+def find_call_sites(source_file, func_name):
+    """Map function-body lines to the callee names they call (static, best-effort).
+
+    Returns ``{line: [callee, ...]}``.  Used to (a) confirm which callees a
+    divergent invocation actually executed and (b) drive the recursive descent
+    into callees whose behavior diverges.
+    """
+    fb = _function_body(source_file, func_name)
+    if not fb:
+        return {}
+    start, end, lines = fb
+    call_lines = {}
+    for i in range(start - 1, end):
+        raw = lines[i]
+        stripped = raw.strip()
+        if not stripped or stripped.startswith(('#', '//', '/*', '*')):
+            continue
+        names = []
+        for m in re.finditer(r'\b([A-Za-z_]\w*)\s*\(', stripped):
+            name = m.group(1)
+            if name in _SKIP_CALL_TOKENS:
+                continue
+            # Skip obvious macros / type names used in casts: the token must
+            # be followed by something that is not a type keyword pattern.
+            prev = stripped[max(0, m.start() - 8):m.start()]
+            if re.search(r'(typedef|#define|\b(?:int|char|void|long|short|float|double|unsigned|signed|struct|union|enum|const|static|inline|uint\d+_t|int\d+_t|size_t)\s*$)', prev):
+                continue
+            names.append(name)
+        if names:
+            call_lines[i + 1] = list(dict.fromkeys(names))
+    return call_lines
+
+
+def find_return_lines(source_file, func_name):
+    """Lines of func_name's body containing a return statement."""
+    fb = _function_body(source_file, func_name)
+    if not fb:
+        return set()
+    start, end, lines = fb
+    ret = set()
+    for i in range(start - 1, end):
+        stripped = lines[i].strip()
+        if stripped.startswith('return') or re.search(r'\breturn\s*;', stripped):
+            ret.add(i + 1)
+    return ret
+
+
 def find_function_decisions(source_file, func_name):
     """Locate all decision lines inside ``func_name`` in ``source_file``.
 
