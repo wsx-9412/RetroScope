@@ -356,7 +356,37 @@ def _null_compare_fork(diff):
     return 'NULL' in text or 'null' in text
 
 
-def _operands_pointer(diff, source_root):
+def _is_pointer_identifier(name, file_path):
+    """True when ``name`` is declared as a pointer in ``file_path``.
+
+    Handles single- and multi-declarator lines (``TIFF *in = NULL, *out;``,
+    ``char *buf;``, ``const uint32_t *p = ...``)."""
+    if not name or not file_path:
+        return False
+    try:
+        lines = Path(file_path).read_text(errors='replace').splitlines()
+    except Exception:
+        return False
+    # An identifier directly preceded by a '*' declarator.
+    pat = re.compile(
+        r'\*\s*(?:const\s+)?' + re.escape(name) + r'\b')
+    for line in lines:
+        if ';' not in line and '=' not in line:
+            continue
+        if pat.search(line):
+            # Exclude arithmetic uses like `*in = ...` (deref) and
+            # `x * in` (multiplication) — require a type token before the '*'
+            # or a declarator context.
+            for m in pat.finditer(line):
+                before = line[max(0, m.start() - 30):m.start()]
+                if re.search(r'[\w_]\s*\*$', before) or \
+                        re.search(r'(?:^|[;,{])\s*(?:const\s+)?'
+                                  r'[\w_]+\s*\*$', before):
+                    return True
+    return False
+
+
+def _operands_pointer(diff, source_root, file_path=None):
     """True when the fork's differing operand is a POINTER-typed variable.
 
     Pointer variables (e.g. ``in``, ``tif``) are taint-dead: their value is
@@ -374,14 +404,22 @@ def _operands_pointer(diff, source_root):
                 base = re.split(r'->|\.|\[', expr)[0].strip()
                 if re.fullmatch(r'[A-Za-z_]\w*', base):
                     operands.add(base)
-    if not operands or not source_root:
+    if not operands:
         return False
-    try:
-        from polytracker_offsets import _resolve_pointer_vars
-        ptrs = _resolve_pointer_vars(str(source_root), sorted(operands))
-    except Exception:
-        return False
-    return bool(set(ptrs or []) & operands)
+    for name in operands:
+        if _is_pointer_identifier(name, file_path):
+            return True
+    # Fallback: the polytracker decl resolver (may miss multi-declarator
+    # lines, but covers header-declared variables).
+    if source_root:
+        try:
+            from polytracker_offsets import _resolve_pointer_vars
+            ptrs = _resolve_pointer_vars(str(source_root), sorted(operands))
+            if set(ptrs or []) & operands:
+                return True
+        except Exception:
+            pass
+    return False
 
 
 def _needs_descent(diff, source_root):
@@ -419,12 +457,13 @@ def _producer_candidates(diff, source_file_a, source_file_b,
                 prod = m.group(1)
                 if prod not in producers:
                     producers.append(prod)
-    # Pair with matching counts on the other side.
+    # Pair with matching counts on the other side (min-count rule: the
+    # target may have bailed out and stopped calling it).
     out = []
     for prod_a in producers:
         for prod_b, cb in cnt_b.items():
-            if cnt_a.get(prod_a) == cb and _name_pair(prod_a, prod_b,
-                                                      refactoring_map):
+            if min(cnt_a.get(prod_a, 0), cb) >= 1 and _name_pair(
+                    prod_a, prod_b, refactoring_map):
                 out.append((prod_a, prod_b))
                 break
     return out
