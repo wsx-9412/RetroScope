@@ -1218,6 +1218,190 @@ run {' '.join(run_parts)}
     return result
 
 
+def run_gdb_libtiff_tag_trace(binary, fork_spec, input_file, program_args, timeout=60):
+    """Trace libtiff tag accesses at the fork point to file offsets.
+
+    For variables like `tif->tif_fields[mb]->field_tag`:
+    1. At fork point, get mb (index) and field_tag (tag ID)
+    2. Get tif->tif_fields[mb] pointer (TIFFField*)
+    3. Parse IFD to find which entry has this tag ID
+    4. Return the file offset of that IFD entry
+
+    Returns dict with variable -> file_offset mapping.
+    """
+    real_binary = resolve_binary(binary)
+    run_parts = [a.replace('{input_file}', input_file).replace('{input}', input_file)
+                 for a in program_args]
+    env = build_run_env(real_binary)
+
+    script = f"""set pagination off
+set confirm off
+set breakpoint pending on
+
+break {fork_spec}
+commands
+  silent
+  printf "FORK_HIT\\n"
+  python
+import gdb
+
+result = {{}}
+
+# Get mb index
+try:
+    mb = int(gdb.parse_and_eval('mb'))
+    result['mb'] = mb
+    print(f"MB {{mb}}")
+except Exception as e:
+    print(f"MB_ERR {{e}}")
+
+# Get tagid (function parameter)
+try:
+    tagid = int(gdb.parse_and_eval('tagid'))
+    result['tagid'] = tagid
+    print(f"TAGID {{tagid}}")
+except Exception as e:
+    print(f"TAGID_ERR {{e}}")
+
+# Get tif->tif_fields[mb]->field_tag
+try:
+    field_tag = int(gdb.parse_and_eval('tif->tif_fields[mb]->field_tag'))
+    result['field_tag'] = field_tag
+    print(f"FIELD_TAG {{field_tag}}")
+except Exception as e:
+    print(f"FIELD_TAG_ERR {{e}}")
+
+# Get tif->tif_fields[mb] pointer
+try:
+    field_ptr = int(gdb.parse_and_eval('tif->tif_fields[mb]'))
+    result['field_ptr'] = field_ptr
+    print(f"FIELD_PTR 0x{{field_ptr:x}}")
+except Exception as e:
+    print(f"FIELD_PTR_ERR {{e}}")
+
+# Get tif->tif_fields array base
+try:
+    fields_base = int(gdb.parse_and_eval('tif->tif_fields'))
+    result['fields_base'] = fields_base
+    print(f"FIELDS_BASE 0x{{fields_base:x}}")
+except Exception as e:
+    print(f"FIELDS_BASE_ERR {{e}}")
+
+# Get tif->tif_nfields
+try:
+    nfields = int(gdb.parse_and_eval('tif->tif_nfields'))
+    result['nfields'] = nfields
+    print(f"NFIELDS {{nfields}}")
+except Exception as e:
+    print(f"NFIELDS_ERR {{e}}")
+
+# Enumerate all tif_fields to find tag IDs
+try:
+    nfields = int(gdb.parse_and_eval('tif->tif_nfields'))
+    print("FIELDS_ENUM_START")
+    for i in range(min(nfields, 200)):  # Limit to 200 entries
+        try:
+            tag = int(gdb.parse_and_eval(f'tif->tif_fields[{{i}}]->field_tag'))
+            print(f"FIELD_{{i}} tag={{tag}}")
+        except:
+            pass
+    print("FIELDS_ENUM_END")
+except Exception as e:
+    print(f"FIELDS_ENUM_ERR {{e}}")
+
+print("TRACE_END")
+end
+  quit
+end
+
+run {' '.join(run_parts)}
+"""
+
+    fd, script_file = tempfile.mkstemp(suffix='.gdb', prefix='gdb_tag_')
+    os.close(fd)
+    with open(script_file, 'w') as f:
+        f.write(script)
+
+    try:
+        proc = subprocess.run(
+            ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
+            capture_output=True, text=True, timeout=timeout, env=env)
+    except subprocess.TimeoutExpired:
+        return None, 'timeout'
+    finally:
+        try: os.unlink(script_file)
+        except: pass
+
+    output = proc.stdout + proc.stderr
+    if 'FORK_HIT' not in output:
+        return None, 'fork_not_reached'
+
+    # Parse results
+    result = {
+        'mb': None,
+        'tagid': None,
+        'field_tag': None,
+        'field_ptr': None,
+        'fields_base': None,
+        'nfields': None,
+        'all_tags': {},  # index -> tag_id
+    }
+
+    in_enum = False
+    for line in output.splitlines():
+        line = line.strip()
+        m = re.match(r'MB (\d+)', line)
+        if m: result['mb'] = int(m.group(1))
+        m = re.match(r'TAGID (\d+)', line)
+        if m: result['tagid'] = int(m.group(1))
+        m = re.match(r'FIELD_TAG (\d+)', line)
+        if m: result['field_tag'] = int(m.group(1))
+        m = re.match(r'FIELD_PTR (0x[0-9a-f]+)', line)
+        if m: result['field_ptr'] = int(m.group(1), 16)
+        m = re.match(r'FIELDS_BASE (0x[0-9a-f]+)', line)
+        if m: result['fields_base'] = int(m.group(1), 16)
+        m = re.match(r'NFIELDS (\d+)', line)
+        if m: result['nfields'] = int(m.group(1))
+        if line == 'FIELDS_ENUM_START':
+            in_enum = True
+            continue
+        if line == 'FIELDS_ENUM_END':
+            in_enum = False
+            continue
+        if in_enum:
+            m = re.match(r'FIELD_(\d+) tag=(\d+)', line)
+            if m:
+                result['all_tags'][int(m.group(1))] = int(m.group(2))
+
+    return result, None
+
+
+def map_libtiff_tag_to_file_offset(tag_id, input_file):
+    """Map a libtiff tag ID to its IFD entry file offset.
+
+    Parses the TIFF IFD and returns the file offset of the entry with the given tag ID.
+    Returns (entry_offset, value_offset, tag_name) or (None, None, None).
+    """
+    if not input_file or not os.path.isfile(input_file):
+        return None, None, None
+
+    try:
+        tags = parse_tiff_ifd(input_file)
+        if not tags:
+            return None, None, None
+
+        for tid, tinfo in tags.items():
+            if tid == tag_id:
+                entry_off = tinfo.get('entry_offset', 0)
+                val_off = tinfo.get('value_offset_in_file', entry_off + 8)
+                name = tinfo.get('name', f'tag_{tid}')
+                return entry_off, val_off, name
+    except Exception:
+        pass
+
+    return None, None, None
+
+
 def parse_deep_trace(output):
     """Parse raw GDB output from deep trace.
 
