@@ -593,6 +593,7 @@ def _try_candidates(null_diff=None):
         print(f'{indent}[unified] candidates: '
               + ', '.join(f'{a}|{b}' for a, b in order[:8]))
         weak_best = None
+        absorbed_best = None
         for callee_a, callee_b in order[:8]:
             sub = locate_fork_dynamically(
                 binary_a, binary_b, source_root_a, source_root_b, callee_a,
@@ -607,13 +608,31 @@ def _try_candidates(null_diff=None):
             if sub.get('status') == 'decision_fork' and not sub.get('weak') \
                     and sub.get('diff', {}).get('kind') in \
                     ('outcome', 'value', 'text'):
+                if _is_absorbed(sub, ia_last, ib_last, refactoring_map):
+                    print(f'{indent}[unified]     !! absorbed '
+                          f'(parent decisions after the call still match) — '
+                          f'continuing descent')
+                    if absorbed_best is None:
+                        sub['absorbed'] = True
+                        absorbed_best = sub
+                    continue
                 return sub
             if sub.get('status') == 'value_fork':
+                if _is_absorbed(sub, ia_last, ib_last, refactoring_map):
+                    print(f'{indent}[unified]     !! absorbed value fork — '
+                          f'continuing descent')
+                    if absorbed_best is None:
+                        sub['absorbed'] = True
+                        absorbed_best = sub
+                    continue
                 return sub
             if sub.get('status') == 'decision_fork' and sub.get('weak') \
                     and weak_best is None:
                 weak_best = sub
-        return weak_best
+        if absorbed_best:
+            print(f'{indent}[unified]   no non-absorbed fork found — '
+                  f'reporting the best absorbed one')
+        return weak_best or absorbed_best
 
     # 1) STRONG decision-level fork (outcome / count): the path itself
     #    diverges here — report immediately (closest to crash first),
