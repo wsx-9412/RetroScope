@@ -232,6 +232,9 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
     if refactoring_map:
         func_b = refactoring_map.get(func_a, func_a)
     try_names_b = list(dict.fromkeys([func_b, func_a]))
+    indent = '  ' * _depth
+    print(f'{indent}[unified] level {_depth}: {func_a} '
+          f'(B side tried: {try_names_b})')
 
     ra, used_a = _record_side(binary_a, [func_a], source_root_a, args, timeout)
     if ra is None:
@@ -239,6 +242,8 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
     rb, used_b = _record_side(binary_b, try_names_b, source_root_b, args, timeout)
     if rb is None:
         return {'status': 'record_failed', 'side': 'b', 'func': func_b}
+    print(f'{indent}[unified] recorded A={len(ra.get("invocations") or [])} '
+          f'inv, B={len(rb.get("invocations") or [])} inv')
 
     inv_a = ra.get('invocations') or []
     inv_b = rb.get('invocations') or []
