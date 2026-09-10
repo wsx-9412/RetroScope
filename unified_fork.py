@@ -40,7 +40,7 @@ _SEMANTIC_SUFFIXES = ('WithLimit', 'Checked', 'Safe', 'Ex', 'NoSSE', 'Array')
 
 
 def _norm(text):
-    return re.sub(r'\s+', '', (text or ''))
+    return re.sub(r'[\s{};]+', '', (text or ''))
 
 
 def _name_pair(name_a, name_b, refactoring_map=None):
@@ -226,24 +226,30 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
     inv_b = rb.get('invocations') or []
     n = min(len(inv_a), len(inv_b))
 
-    # 1) Decision-level comparison, last invocation first (closest to the
-    #    reference crash / exit).
-    for i in range(n - 1, -1, -1):
-        diff = compare_invocations(inv_a[i], inv_b[i])
-        if diff:
-            return {
-                'status': 'decision_fork',
-                'function_a': used_a, 'function_b': used_b,
-                'invocation': i + 1,
-                'a_invocations': len(inv_a), 'b_invocations': len(inv_b),
-                'diff': diff,
-                'a_events': len(inv_a[i].get('events') or []),
-                'b_events': len(inv_b[i].get('events') or []),
-                'chain': _visited_copy(_visited),
-            }
+    def _find_diff(strong_only=False):
+        for i in range(n - 1, -1, -1):
+            diff = compare_invocations(inv_a[i], inv_b[i])
+            if diff and (not strong_only or diff.get('strong')):
+                return i, diff
+        return None, None
 
-    # 2) No decision-level divergence: descend into callees first — a return
-    #    difference at this level may merely reflect a deeper callee fork.
+    # 1) STRONG decision-level fork (outcome / count): the path itself
+    #    diverges here — report immediately (closest to crash first).
+    i, diff = _find_diff(strong_only=True)
+    if diff:
+        return {
+            'status': 'decision_fork',
+            'function_a': used_a, 'function_b': used_b,
+            'invocation': i + 1,
+            'a_invocations': len(inv_a), 'b_invocations': len(inv_b),
+            'diff': diff,
+            'a_events': len(inv_a[i].get('events') or []),
+            'b_events': len(inv_b[i].get('events') or []),
+            'chain': _visited_copy(_visited),
+        }
+
+    # 2) No strong divergence: descend into callees first — a weak diff at
+    #    this level may merely reflect deeper callee state.
     if n == 0:
         return {'status': 'no_divergence',
                 'reason': 'no invocations recorded at this level'}
@@ -256,7 +262,22 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
         if sub.get('status') in ('decision_fork', 'value_fork'):
             return sub
 
-    # 3) Nothing diverged in callees: value-level comparison at this level.
+    # 3) Weak decision-level fork (text rewrite / operand-value difference).
+    i, diff = _find_diff(strong_only=False)
+    if diff and not diff.get('strong'):
+        return {
+            'status': 'decision_fork',
+            'function_a': used_a, 'function_b': used_b,
+            'invocation': i + 1,
+            'a_invocations': len(inv_a), 'b_invocations': len(inv_b),
+            'diff': diff,
+            'weak': True,
+            'a_events': len(inv_a[i].get('events') or []),
+            'b_events': len(inv_b[i].get('events') or []),
+            'chain': _visited_copy(_visited),
+        }
+
+    # 4) Value-level comparison (function return values).
     for i in range(n - 1, -1, -1):
         ra_r, rb_r = inv_a[i].get('return'), inv_b[i].get('return')
         if ra_r in (None, '?') or rb_r in (None, '?'):
