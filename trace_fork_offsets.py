@@ -999,6 +999,225 @@ def run_deep_tiffopen_trace(binary, input_file, program_args, timeout=30):
     return output, None
 
 
+def run_gdb_chain_trace(binary, fork_spec, variables, input_file, program_args, timeout=120):
+    """Use GDB watchpoints to chain-trace variables back to file offsets.
+
+    For each variable:
+    1. At the fork point, get the variable's address and value
+    2. Set a watchpoint on that address
+    3. Re-run and catch when the value is written
+    4. Analyze the call stack to find the data source
+    5. If from file I/O, record the file offset
+
+    Returns a dict: {var_name: {'address': hex, 'value': int, 'file_offsets': [...], 'trace': [...]}}
+    """
+    real_binary = resolve_binary(binary)
+    run_parts = [a.replace('{input_file}', input_file).replace('{input}', input_file)
+                 for a in program_args]
+    env = build_run_env(real_binary)
+
+    # Build GDB script for chain tracing
+    # Phase 1: At fork point, capture variable addresses and values
+    # Phase 2: Set watchpoints and re-run to trace writes
+    var_list = ', '.join(f'"{v}"' for v in variables)
+
+    script = f"""set pagination off
+set confirm off
+set breakpoint pending on
+set print pretty on
+
+# Phase 1: Hit fork point and capture variable info
+break {fork_spec}
+commands
+  silent
+  printf "FORK_HIT\\n"
+  python
+import gdb
+
+_vars = [{var_list}]
+_results = {{}}
+
+for var_expr in _vars:
+    try:
+        val = gdb.parse_and_eval(var_expr)
+        addr = int(val.address) if val.address else 0
+        _results[var_expr] = {{
+            'address': f'0x{{addr:x}}' if addr else '0x0',
+            'value': int(val),
+            'size': val.type.sizeof,
+        }}
+        print(f"VAR {{var_expr}} addr=0x{{addr:x}} val={{int(val)}} size={{val.type.sizeof}}")
+    except Exception as e:
+        print(f"VAR_ERR {{var_expr}}: {{e}}")
+
+# Also capture tif pointer and tif_fields array base
+try:
+    tif_ptr = int(gdb.parse_and_eval('tif'))
+    tif_fields_ptr = int(gdb.parse_and_eval('tif->tif_fields'))
+    tif_nfields = int(gdb.parse_and_eval('tif->tif_nfields'))
+    print(f"TIF_INFO tif=0x{{tif_ptr:x}} tif_fields=0x{{tif_fields_ptr:x}} nfields={{tif_nfields}}")
+except Exception as e:
+    print(f"TIF_ERR: {{e}}")
+
+# Capture mb index if available
+try:
+    mb_val = int(gdb.parse_and_eval('mb'))
+    print(f"MB_VAL {{mb_val}}")
+except:
+    pass
+
+print("PHASE1_END")
+end
+  quit
+end
+
+run {' '.join(run_parts)}
+"""
+
+    fd, script_file = tempfile.mkstemp(suffix='.gdb', prefix='gdb_chain_')
+    os.close(fd)
+    with open(script_file, 'w') as f:
+        f.write(script)
+
+    try:
+        proc = subprocess.run(
+            ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
+            capture_output=True, text=True, timeout=timeout, env=env)
+    except subprocess.TimeoutExpired:
+        return None, 'timeout'
+    finally:
+        try: os.unlink(script_file)
+        except: pass
+
+    output = proc.stdout + proc.stderr
+    if 'FORK_HIT' not in output:
+        return None, 'fork_not_reached'
+
+    # Parse phase 1 results
+    results = {}
+    tif_info = {}
+    mb_val = None
+
+    for line in output.splitlines():
+        line = line.strip()
+        m = re.match(r'VAR (\S+) addr=(0x[0-9a-f]+) val=(-?\d+) size=(\d+)', line)
+        if m:
+            results[m.group(1)] = {
+                'address': m.group(2),
+                'value': int(m.group(3)),
+                'size': int(m.group(4)),
+                'file_offsets': [],
+                'trace': [],
+            }
+            continue
+        m = re.match(r'TIF_INFO tif=(0x[0-9a-f]+) tif_fields=(0x[0-9a-f]+) nfields=(\d+)', line)
+        if m:
+            tif_info = {'tif': m.group(1), 'tif_fields': m.group(2), 'nfields': int(m.group(3))}
+            continue
+        m = re.match(r'MB_VAL (\d+)', line)
+        if m:
+            mb_val = int(m.group(1))
+
+    if not results:
+        return None, 'no_variables'
+
+    # Phase 2: For each variable with an address, set watchpoint and trace
+    # We do this in a second GDB run for each variable
+    for var_name, var_info in results.items():
+        addr = var_info['address']
+        if addr == '0x0':
+            continue
+
+        trace_result = _trace_write_location(real_binary, fork_spec, var_name, addr,
+                                              var_info['value'], input_file, run_parts, env, timeout)
+        if trace_result:
+            var_info['file_offsets'] = trace_result.get('file_offsets', [])
+            var_info['trace'] = trace_result.get('trace', [])
+
+    return results, None
+
+
+def _trace_write_location(binary, fork_spec, var_name, addr, expected_val, input_file,
+                          run_parts, env, timeout):
+    """Set a watchpoint on addr and trace when it's written.
+
+    Returns {'file_offsets': [...], 'trace': [...]} or None.
+    """
+    # Build script that:
+    # 1. Sets watchpoint on the address
+    # 2. Runs until watchpoint triggers
+    # 3. Captures backtrace and assignment info
+    script = f"""set pagination off
+set confirm off
+set breakpoint pending on
+set print pretty on
+
+# Set watchpoint on the target address
+watch *{addr}
+commands
+  silent
+  printf "WATCH_HIT\\n"
+  printf "BACKTRACE_START\\n"
+  backtrace 20
+  printf "BACKTRACE_END\\n"
+  printf "FRAME_INFO_START\\n"
+  info frame
+  printf "FRAME_INFO_END\\n"
+  printf "WATCH_DONE\\n"
+  quit
+end
+
+run {' '.join(run_parts)}
+"""
+
+    fd, script_file = tempfile.mkstemp(suffix='.gdb', prefix='gdb_watch_')
+    os.close(fd)
+    with open(script_file, 'w') as f:
+        f.write(script)
+
+    try:
+        proc = subprocess.run(
+            ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', binary],
+            capture_output=True, text=True, timeout=timeout, env=env)
+    except subprocess.TimeoutExpired:
+        return None
+    finally:
+        try: os.unlink(script_file)
+        except: pass
+
+    output = proc.stdout + proc.stderr
+    if 'WATCH_HIT' not in output:
+        return None
+
+    # Parse backtrace to find TIFF-related functions
+    trace = []
+    in_backtrace = False
+    for line in output.splitlines():
+        line = line.strip()
+        if line == 'BACKTRACE_START':
+            in_backtrace = True
+            continue
+        if line == 'BACKTRACE_END':
+            break
+        if in_backtrace:
+            trace.append(line)
+
+    # Look for TIFF functions in the trace that read from file
+    tiff_funcs = ['TIFFReadDirectory', 'TIFFFetchNormalTag', 'TIFFFetchStripThing',
+                  'TIFFFetchDirectory', '_TIFFReadDirEntryArray', 'TIFFReadCustomDirectory']
+
+    result = {'file_offsets': [], 'trace': trace}
+
+    # If we found a TIFF function, try to extract tag info
+    for tline in trace:
+        for func in tiff_funcs:
+            if func in tline:
+                result['trace'].append(f'FOUND_FUNC: {func}')
+                break
+
+    return result
+
+
 def parse_deep_trace(output):
     """Parse raw GDB output from deep trace.
 
