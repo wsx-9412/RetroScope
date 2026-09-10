@@ -970,15 +970,19 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
     # Effective-line mapping: one breakpoint per instruction address.
     call_lines_src = find_call_sites(fsrc, func, body=gbody)
     then_lines_src = _compute_then_lines(fsrc, decisions)
+    g_entry0, _ = _gdb_effective_lines(real_bin, func, source_root, args,
+                                       fsrc, set())
+    if g_entry0 is None:
+        g_entry0 = _compute_entry_line(fsrc, gbody)
     role_lines = set(d['line'] for d in decisions) \
         | set(int(k) for k in call_lines_src) \
-        | set(then_lines_src.values())
+        | set(then_lines_src.values()) | {g_entry0}
     g_entry, eff_lines = _gdb_effective_lines(
         real_bin, func, source_root, args, fsrc, role_lines)
     if eff_lines:
-        entry_line = g_entry or _compute_entry_line(fsrc, gbody)
+        entry_line = g_entry or g_entry0
     else:
-        entry_line = _compute_entry_line(fsrc, gbody)
+        entry_line = g_entry0
         eff_lines = {ln: ln for ln in role_lines}
 
     clauses_by_line = {}
