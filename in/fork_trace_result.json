@@ -1,10 +1,9 @@
 {
-  "binary_target": "/tmp/fork_analysis_fn74f721/target/tools/.libs/tiffcrop",
-  "binary_ref": "/tmp/fork_analysis_fn74f721/ref/tools/.libs/tiffcrop",
-  "fork_spec": "/tmp/fork_analysis_fn74f721/target/libtiff/tif_dirread.c:4175",
+  "binary_target": "/tmp/fork_analysis_nfputohu/target/tools/.libs/tiffcrop",
+  "binary_ref": "/tmp/fork_analysis_nfputohu/ref/tools/.libs/tiffcrop",
+  "fork_spec": "/tmp/fork_analysis_nfputohu/target/libtiff/tif_dirread.c:4175",
   "variables": [
     "tif->tif_fields[mb]->field_tag",
-    "uint32",
     "tagid",
     "ma",
     "mb",
@@ -12,13 +11,100 @@
   ],
   "differing_variables": [
     "tif->tif_fields[mb]->field_tag",
-    "uint32",
-    "tagid",
     "ma",
     "mb",
     "mc"
   ],
-  "target_file_reads": [],
-  "ref_file_reads": [],
-  "variable_mapping": {}
+  "target_file_reads": [
+    {
+      "fd": 3,
+      "offset": 64,
+      "size": 784,
+      "buf_addr": 140725008495072
+    },
+    {
+      "fd": 3,
+      "offset": 848,
+      "size": 48,
+      "buf_addr": 140725008495008
+    },
+    {
+      "fd": 3,
+      "offset": 896,
+      "size": 68,
+      "buf_addr": 140725008494928
+    }
+  ],
+  "ref_file_reads": [
+    {
+      "fd": 3,
+      "offset": 64,
+      "size": 784,
+      "buf_addr": 140731400598176
+    },
+    {
+      "fd": 3,
+      "offset": 848,
+      "size": 48,
+      "buf_addr": 140731400598112
+    },
+    {
+      "fd": 3,
+      "offset": 896,
+      "size": 68,
+      "buf_addr": 140731400598032
+    }
+  ],
+  "variable_mapping": {
+    "tif->tif_fields[mb]->field_tag": {
+      "address": "0x7de4057e9650",
+      "value": 559,
+      "size": 4,
+      "source": "not from input file",
+      "source_chain": [],
+      "direct_offsets": [],
+      "indirect_offsets": [],
+      "input_offsets": []
+    },
+    "tagid": {
+      "address": "0x7ffd18241ad4",
+      "value": 277,
+      "size": 2,
+      "source": "not from input file",
+      "source_chain": [],
+      "direct_offsets": [],
+      "indirect_offsets": [],
+      "input_offsets": []
+    },
+    "ma": {
+      "address": "0x7ffd18241ae4",
+      "value": -1,
+      "size": 4,
+      "source": "not from input file",
+      "source_chain": [],
+      "direct_offsets": [],
+      "indirect_offsets": [],
+      "input_offsets": []
+    },
+    "mb": {
+      "address": "0x7ffd18241ae8",
+      "value": 75,
+      "size": 4,
+      "source": "not from input file",
+      "source_chain": [],
+      "direct_offsets": [],
+      "indirect_offsets": [],
+      "input_offsets": []
+    },
+    "mc": {
+      "address": "0x7ffd18241aec",
+      "value": 152,
+      "size": 4,
+      "source": "not from input file",
+      "source_chain": [],
+      "direct_offsets": [],
+      "indirect_offsets": [],
+      "input_offsets": []
+    }
+  }
 }
