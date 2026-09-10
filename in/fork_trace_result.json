@@ -1,10 +1,9 @@
 {
-  "binary_target": "/tmp/fork_analysis_luyrzukc/target/tools/.libs/tiffcrop",
-  "binary_ref": "/tmp/fork_analysis_luyrzukc/ref/tools/.libs/tiffcrop",
-  "fork_spec": "tif_dirread.c:5432",
+  "binary_target": "/tmp/fork_analysis_i6el4l_q/target/tools/.libs/tiffcrop",
+  "binary_ref": "/tmp/fork_analysis_i6el4l_q/ref/tools/.libs/tiffcrop",
+  "fork_spec": "/tmp/fork_analysis_i6el4l_q/target/libtiff/mkg3states.c:2240",
   "variables": [
-    "tif",
-    "dir",
+    "in",
     "image.width",
     "image.length",
     "image.bps",
@@ -23,8 +22,7 @@
     "crop.crop_mode"
   ],
   "differing_variables": [
-    "tif",
-    "dir",
+    "in",
     "image.width",
     "image.length",
     "image.bps",
