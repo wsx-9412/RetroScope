@@ -3774,21 +3774,22 @@ def main():
 
     # Show chain trace results if available
     if chain_trace_results:
-        print(f'\n  GDB watchpoint chain trace results:')
-        for var_name, trace in chain_trace_results.items():
-            depth = trace.get('depth_reached', 0)
-            file_offsets = trace.get('file_offsets', [])
-            writers = trace.get('chain', [])
-            
-            print(f'    {var_name}:')
-            print(f'      depth traced: {depth}')
-            if writers:
-                chain_str = ' → '.join([w.get('function') or '?' for w in writers])
-                print(f'      write chain: {chain_str}')
-            if file_offsets:
-                print(f'      file offsets: {[f"0x{o:x}" for o in file_offsets]}')
+        print(f'\n  GDB function chain trace summary:')
+        ctx = chain_trace_results.get('fork_context', {})
+        tagid = ctx.get('tagid')
+        tagid_idx = ctx.get('tagid_index')
+        
+        if tagid is not None:
+            entry_off, val_off, tag_name = map_libtiff_tag_to_file_offset(tagid, input_file)
+            if entry_off is not None:
+                print(f'    tagid={tagid} ({tag_name})')
+                print(f'      ← read from IFD entry at file offset 0x{entry_off:x}')
+                print(f'      ← value at file offset 0x{val_off:x}')
             else:
-                print(f'      file offsets: (not directly from file)')
+                print(f'    tagid={tagid} (internal tag, not from IFD)')
+        
+        if tagid_idx is not None:
+            print(f'    Binary search found tagid at tif_fields[{tagid_idx}]')
 
     # ================================================================
     # Summary — dynamic, based on analysis results
