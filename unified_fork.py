@@ -495,6 +495,8 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
             sub = _try_candidates(null_diff=diff)
             if sub:
                 return sub
+            print(f'{indent}[unified]   no deeper strong fork — '
+                  f'reporting the wrapper NULL fork itself')
         return {
             'status': 'decision_fork',
             'function_a': used_a, 'function_b': used_b,
