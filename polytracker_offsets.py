@@ -394,11 +394,12 @@ def _instrument_source(source_dir, instrument):
             if v in pointer_vars:
                 # Pointer: the address is untainted (from malloc); trace the
                 # taint of the memory it points to (read from the input).
-                # Guard with a NULL check so a NULL pointer (e.g. before the
-                # first allocation) is safe.
+                # For NULL checks like `if (!ptr)`, we need to trace why the
+                # pointer is NULL - log a special marker when ptr is NULL.
                 calls.append(
-                    f'if ({v}) __polytracker_log_var_taint("{v}", '
-                    f'dfsan_read_label({v}, sizeof(*({v}))));')
+                    f'if ({v}) {{ __polytracker_log_var_taint("{v}", '
+                    f'dfsan_read_label({v}, sizeof(*({v})))); }} '
+                    f'else {{ __polytracker_log_var_taint("{v}_NULL", 0); }}')
             else:
                 calls.append(
                     f'__polytracker_log_var_taint("{v}", '
