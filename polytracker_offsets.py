@@ -439,10 +439,15 @@ def _instrument_source(source_dir, instrument):
                 # taint of the memory it points to (read from the input).
                 # For NULL checks like `if (!ptr)`, we need to trace why the
                 # pointer is NULL - log a special marker when ptr is NULL.
+                # Also log the pointer's own taint (which tracks where the
+                # pointer value came from, e.g., function return values).
                 calls.append(
                     f'if ({v}) {{ __polytracker_log_var_taint("{v}", '
-                    f'dfsan_read_label({v}, sizeof(*({v})))); }} '
-                    f'else {{ __polytracker_log_var_taint("{v}_NULL", 0); }}')
+                    f'dfsan_read_label({v}, sizeof(*({v})))); '
+                    f'__polytracker_log_var_taint("{v}_ptr", '
+                    f'dfsan_read_label(&({v}), sizeof({v}))); }} '
+                    f'else {{ __polytracker_log_var_taint("{v}_NULL", '
+                    f'dfsan_read_label(&({v}), sizeof({v}))); }}')
             else:
                 calls.append(
                     f'__polytracker_log_var_taint("{v}", '
