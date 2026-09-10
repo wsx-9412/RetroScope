@@ -671,6 +671,35 @@ def _branch_then_region(lines, line_no, max_scan=80):
     return None
 
 
+
+def _compute_then_lines(fsrc, decisions):
+    """Decision line -> first EXECUTABLE line of its then-region.
+
+    Brace-only lines (``{``, ``}``, ``else``) emit no code: a breakpoint on
+    them resolves to the NEXT code line, duplicating that line's breakpoint
+    (gdb fires only one bp per stop at the same address, silently swallowing
+    the other).  Skipping them keeps one breakpoint per executable line.
+    """
+    try:
+        lines = _strip_c_comments_strings(
+            Path(fsrc).read_text(errors='replace').splitlines())
+    except Exception:
+        return {}
+    out = {}
+    for d in decisions:
+        reg = _branch_then_region(lines, d['line'])
+        if not reg:
+            continue
+        ts, te = reg
+        for j in range(ts - 1, min(te, len(lines))):
+            s = lines[j].strip()
+            if s and s not in ('{', '}', 'else', 'else {', '} else',
+                               '} else {', 'do', 'while'):
+                out[d['line']] = j + 1
+                break
+    return out
+
+
 def _build_bp_script(config):
     """Build the gdb script for BREAKPOINT-mode recording.
 
@@ -895,14 +924,7 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         "call_lines": {str(k): v for k, v
                         in find_call_sites(fsrc, func, body=gbody).items()},
         "return_lines": sorted(find_return_lines(fsrc, func, body=gbody)),
-        "then_lines": {d['line']: _branch_then_region(
-            _strip_c_comments_strings(
-                Path(fsrc).read_text(errors='replace').splitlines()),
-            d['line'])[0] for d in decisions
-            if _branch_then_region(
-                _strip_c_comments_strings(
-                    Path(fsrc).read_text(errors='replace').splitlines()),
-                d['line']) is not None},
+        "then_lines": _compute_then_lines(fsrc, decisions),
         "mode": mode,
         "max_steps": 200000,
         "max_events": 100000,
