@@ -3986,8 +3986,8 @@ def main():
                 if info.get('file_offset') is not None:
                     print(f'      tagid={tagid} ({name}):')
                     print(f'        dp={info["dp"]}  dir={info["dir"]}')
-                    print(f'        IFD buffer read at file offset '
-                          f'0x{info["ifd_offset"]:x}')
+                    print(f'        IFD at file offset '
+                          f'0x{info["ifd_offset"]:x} (tif->tif_diroff)')
                     print(f'        entry index {info["entry_index"]} '
                           f'-> tdir_tag at file offset '
                           f'0x{info["file_offset"]:x}')
