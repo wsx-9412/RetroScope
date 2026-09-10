@@ -180,11 +180,26 @@ def _recurse_candidates(inv_a, inv_b, refactoring_map, source_a=None,
     return [(na, nb) for _, _, na, nb in pairs]
 
 
-def _record_side(binary, func_names, source_root, args, timeout):
-    """Record decision events, trying each candidate function name."""
+def _record_side(binary, func_names, source_root, args, timeout, source_hint=None):
+    """Record decision events, trying each candidate function name.
+
+    ``source_hint`` (a file path) narrows the source lookup to the caller's
+    file first — same-name functions exist in several files (e.g. _TIFFmemcpy
+    in tif_unix.c vs a fake match in tif_dir.c).
+    """
+    root_eff = source_root
+    if source_hint:
+        hint_dir = str(Path(source_hint).parent)
+        hint_name = Path(source_hint).name
+        try:
+            import decision_trace as dt
+            if is_function_definition(source_hint, func_names[0]):
+                root_eff = hint_dir
+        except Exception:
+            pass
     for fname in func_names:
         try:
-            r = record_decisions(binary, fname, args, source_root=source_root,
+            r = record_decisions(binary, fname, args, source_root=root_eff,
                                  timeout=timeout)
         except Exception as e:
             r = {'error': f'record failed: {e}'}
