@@ -47,6 +47,30 @@ def resolve_binary(binary):
     return binary
 
 
+def build_run_env(binary):
+    """Build an environment that loads the version's freshly built libtiff.
+
+    The real ELF binary lives in tools/.libs and carries no RPATH; the libtool
+    wrapper (tools/tiffcrop) normally exports LD_LIBRARY_PATH.  When invoking
+    .libs/tiffcrop directly, point LD_LIBRARY_PATH at <root>/libtiff/.libs so
+    the built libtiff (with its debug info) is loaded instead of the system
+    one -- otherwise both versions silently run the system libtiff.
+    """
+    env = os.environ.copy()
+    d = os.path.dirname(os.path.abspath(binary))
+    for _ in range(6):
+        cand = os.path.join(d, 'libtiff', '.libs')
+        if os.path.isdir(cand):
+            prev = env.get('LD_LIBRARY_PATH', '')
+            env['LD_LIBRARY_PATH'] = cand + (':' + prev if prev else '')
+            break
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        d = parent
+    return env
+
+
 def extract_variables_from_statement(stmt):
     """Extract C variable expressions from a fork statement.
 
