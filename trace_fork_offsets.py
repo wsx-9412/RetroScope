@@ -1218,6 +1218,294 @@ run {' '.join(run_parts)}
     return result
 
 
+def run_gdb_watchpoint_chain_trace(binary, fork_spec, var_expr, input_file, program_args,
+                                    max_depth=5, timeout=300):
+    """True GDB watchpoint-based chain tracing.
+
+    Algorithm:
+    1. At fork point, get variable's address and value
+    2. Set watchpoint on that address
+    3. Re-run, when watchpoint triggers: capture backtrace (find writer)
+    4. In the writer function, find what data it reads (parameters, file I/O)
+    5. Recursively trace those sources up to max_depth
+    6. If we hit a file I/O function (pread64, read), record the file offset
+
+    Returns: {'chain': [...], 'file_offsets': [...], 'trace_tree': {...}}
+    """
+    real_binary = resolve_binary(binary)
+    run_parts = [a.replace('{input_file}', input_file).replace('{input}', input_file)
+                 for a in program_args]
+    env = build_run_env(real_binary)
+
+    # Phase 1: Get variable address at fork point
+    addr_script = f"""set pagination off
+set confirm off
+set breakpoint pending on
+
+break {fork_spec}
+commands
+  silent
+  printf "FORK_HIT\\n"
+  python
+import gdb
+try:
+    val = gdb.parse_and_eval('{var_expr}')
+    addr = int(val.address) if val.address else 0
+    print(f"VAR_ADDR 0x{{addr:x}}")
+    print(f"VAR_VAL {{int(val)}}")
+    print(f"VAR_SIZE {{val.type.sizeof}}")
+except Exception as e:
+    print(f"VAR_ERR {{e}}")
+end
+  quit
+end
+
+run {' '.join(run_parts)}
+"""
+
+    fd, script_file = tempfile.mkstemp(suffix='.gdb', prefix='gdb_addr_')
+    os.close(fd)
+    with open(script_file, 'w') as f:
+        f.write(addr_script)
+
+    try:
+        proc = subprocess.run(
+            ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
+            capture_output=True, text=True, timeout=30, env=env)
+    except subprocess.TimeoutExpired:
+        return None, 'timeout_phase1'
+    finally:
+        try: os.unlink(script_file)
+        except: pass
+
+    output = proc.stdout + proc.stderr
+    if 'FORK_HIT' not in output:
+        return None, 'fork_not_reached'
+
+    # Parse variable info
+    var_addr = None
+    var_val = None
+    var_size = None
+    for line in output.splitlines():
+        m = re.match(r'VAR_ADDR (0x[0-9a-f]+)', line.strip())
+        if m: var_addr = int(m.group(1), 16)
+        m = re.match(r'VAR_VAL (-?\d+)', line.strip())
+        if m: var_val = int(m.group(1))
+        m = re.match(r'VAR_SIZE (\d+)', line.strip())
+        if m: var_size = int(m.group(1))
+
+    if var_addr is None or var_addr == 0:
+        return None, 'no_address'
+
+    # Phase 2: Set watchpoint and trace write chain
+    chain = []
+    file_offsets = []
+    trace_tree = {
+        'var': var_expr,
+        'addr': f'0x{var_addr:x}',
+        'value': var_val,
+        'writers': [],
+    }
+
+    current_addr = var_addr
+    for depth in range(max_depth):
+        # Set watchpoint on current address
+        watch_script = f"""set pagination off
+set confirm off
+set breakpoint pending on
+
+# Set watchpoint on the address
+watch *{current_addr}
+commands
+  silent
+  printf "WATCH_HIT depth={depth}\\n"
+  printf "BACKTRACE_START\\n"
+  backtrace 30
+  printf "BACKTRACE_END\\n"
+  # Capture frame info to find the writer function
+  printf "FRAME_INFO_START\\n"
+  info frame
+  printf "FRAME_INFO_END\\n"
+  # Capture local variables in the writer
+  printf "LOCALS_START\\n"
+  info locals
+  printf "LOCALS_END\\n"
+  # Capture function arguments
+  printf "ARGS_START\\n"
+  info args
+  printf "ARGS_END\\n"
+  quit
+end
+
+run {' '.join(run_parts)}
+"""
+
+        fd, script_file = tempfile.mkstemp(suffix='.gdb', prefix='gdb_watch_')
+        os.close(fd)
+        with open(script_file, 'w') as f:
+            f.write(watch_script)
+
+        try:
+            proc = subprocess.run(
+                ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
+                capture_output=True, text=True, timeout=60, env=env)
+        except subprocess.TimeoutExpired:
+            try: os.unlink(script_file)
+            except: pass
+            break
+        finally:
+            try: os.unlink(script_file)
+            except: pass
+
+        output = proc.stdout + proc.stderr
+        if 'WATCH_HIT' not in output:
+            break
+
+        # Parse backtrace
+        writer_info = _parse_watchpoint_hit(output, depth)
+        if not writer_info:
+            break
+
+        chain.append(writer_info)
+        trace_tree['writers'].append(writer_info)
+
+        # Check if we hit a file I/O function
+        func_name = writer_info.get('function', '')
+        if func_name in ('pread64', 'read', '_tiffReadProc', '_TIFFmemcpy'):
+            # Extract file offset from arguments
+            offset = writer_info.get('offset')
+            if offset is not None:
+                file_offsets.append(offset)
+            break
+
+        # Check if we hit a TIFF read function
+        if func_name in ('TIFFReadDirectory', 'TIFFFetchNormalTag', 'TIFFFetchStripThing',
+                         '_TIFFReadDirEntryArray', 'TIFFReadCustomDirectory'):
+            # These functions read from file - the data comes from pread64
+            # We've traced far enough
+            break
+
+        # Try to find the next address to trace (the source of the data)
+        # Look for pointer arguments or source variables
+        source_addr = _find_source_address(writer_info)
+        if source_addr is None or source_addr == current_addr:
+            break
+        current_addr = source_addr
+
+    result = {
+        'chain': chain,
+        'file_offsets': file_offsets,
+        'trace_tree': trace_tree,
+        'depth_reached': len(chain),
+    }
+    return result, None
+
+
+def _parse_watchpoint_hit(output, depth):
+    """Parse GDB output from a watchpoint hit."""
+    info = {
+        'depth': depth,
+        'function': None,
+        'file': None,
+        'line': None,
+        'backtrace': [],
+        'locals': {},
+        'args': {},
+        'offset': None,
+    }
+
+    in_backtrace = False
+    in_frame = False
+    in_locals = False
+    in_args = False
+
+    for line in output.splitlines():
+        line = line.strip()
+
+        if line == 'BACKTRACE_START':
+            in_backtrace = True
+            continue
+        if line == 'BACKTRACE_END':
+            in_backtrace = False
+            continue
+        if in_backtrace:
+            info['backtrace'].append(line)
+            # Extract top frame function
+            if info['function'] is None:
+                m = re.match(r'#\d+\s+(\w+)\s*\(', line)
+                if m:
+                    info['function'] = m.group(1)
+                    # Extract file:line if present
+                    m2 = re.search(r'at\s+([^:]+):(\d+)', line)
+                    if m2:
+                        info['file'] = m2.group(1)
+                        info['line'] = int(m2.group(2))
+            continue
+
+        if line == 'FRAME_INFO_START':
+            in_frame = True
+            continue
+        if line == 'FRAME_INFO_END':
+            in_frame = False
+            continue
+
+        if line == 'LOCALS_START':
+            in_locals = True
+            continue
+        if line == 'LOCALS_END':
+            in_locals = False
+            continue
+        if in_locals:
+            m = re.match(r'(\w+)\s*=\s*(.+)', line)
+            if m:
+                info['locals'][m.group(1)] = m.group(2)
+            continue
+
+        if line == 'ARGS_START':
+            in_args = True
+            continue
+        if line == 'ARGS_END':
+            in_args = False
+            continue
+        if in_args:
+            m = re.match(r'(\w+)\s*=\s*(.+)', line)
+            if m:
+                info['args'][m.group(1)] = m.group(2)
+                # Extract offset from pread64 arguments
+                if m.group(1) == 'offset':
+                    try:
+                        info['offset'] = int(m.group(2))
+                    except:
+                        pass
+            continue
+
+    return info
+
+
+def _find_source_address(writer_info):
+    """Try to find the source address that the writer read from."""
+    # Look for pointer arguments that might be the data source
+    args = writer_info.get('args', {})
+    locals_dict = writer_info.get('locals', {})
+
+    # Common patterns: buf, data, src, in, dir
+    source_names = ['buf', 'data', 'src', 'in', 'dir', 'tdir', 'value', 'v']
+
+    for name in source_names:
+        if name in args:
+            val_str = args[name]
+            m = re.match(r'0x([0-9a-f]+)', val_str)
+            if m:
+                return int(m.group(1), 16)
+        if name in locals_dict:
+            val_str = locals_dict[name]
+            m = re.match(r'0x([0-9a-f]+)', val_str)
+            if m:
+                return int(m.group(1), 16)
+
+    return None
+
+
 def run_gdb_libtiff_tag_trace(binary, fork_spec, input_file, program_args, timeout=60):
     """Trace libtiff tag accesses at the fork point to file offsets.
 
