@@ -970,6 +970,7 @@ def run_deep_tiffopen_trace(binary, input_file, program_args, timeout=30):
     cmds = [
         'set pagination off',
         'set confirm off',
+        'set breakpoint pending on',
         'break TIFFOpen',
         'break TIFFFetchStripThing',
         'catch syscall pread64',
@@ -989,7 +990,8 @@ def run_deep_tiffopen_trace(binary, input_file, program_args, timeout=30):
     try:
         proc = subprocess.run(
             gdb_args,
-            capture_output=True, text=True, timeout=timeout)
+            capture_output=True, text=True, timeout=timeout,
+            env=build_run_env(real_binary))
     except subprocess.TimeoutExpired:
         return None, 'timeout'
 
@@ -2357,21 +2359,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
             cmd = [binary] + [a.replace('{input_file}', tmp_path).replace('{input}', tmp_path)
                               if '{' in a else (tmp_path if a == input_file else a)
                               for a in program_args]
-            env = os.environ.copy()
-            # Walk up from the binary to find the version's libtiff/.libs (the
-            # binary lives at <root>/tools/.libs/tiffcrop, libtiff at
-            # <root>/libtiff/.libs).  A naive dirname+dirname lands in tools/
-            # and misses it, silently loading the *system* libtiff.
-            d = os.path.dirname(binary)
-            for _ in range(6):
-                cand = os.path.join(d, 'libtiff', '.libs')
-                if os.path.isdir(cand):
-                    env['LD_LIBRARY_PATH'] = cand + ':' + env.get('LD_LIBRARY_PATH', '')
-                    break
-                parent = os.path.dirname(d)
-                if parent == d:
-                    break
-                d = parent
+            env = build_run_env(binary)
             proc = subprocess.run(cmd, capture_output=True, text=True,
                                   timeout=timeout, env=env)
             return proc.stdout + proc.stderr, proc.returncode
