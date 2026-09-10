@@ -92,6 +92,13 @@ def compare_invocations(inv_a, inv_b):
       * 'value'   (WEAK)   — same outcome but different operand values
         (downstream state difference; NOT causal by itself).
 
+    When several outcome divergences exist inside one invocation, the LAST
+    one whose effects are NOT re-converged is reported (the causal fork):
+    an earlier divergence is skipped when every later decision matches on
+    both sides again (i.e. the two paths re-converged and the fork is
+    absorbed).  Only when every outcome divergence re-converges does the
+    report fall back to the FIRST one.
+
     The caller must report strong diffs before recursing, and only fall back
     to weak diffs when no deeper divergence exists.
     """
@@ -108,16 +115,29 @@ def compare_invocations(inv_a, inv_b):
                       'clauses': eb.get('clauses', {}), 'outcome': db,
                       'exprs': eb.get('exprs', [])}}
 
-    strong = None
+    def _same_after(k):
+        """True when the decision sequences re-converge after position k:
+        every later decision (text AND outcome) matches on both sides and the
+        total decision counts are equal.  A divergence at k with re-converged
+        suffixes did not change the subsequent path (absorbed)."""
+        if len(ev_a) != len(ev_b):
+            return False
+        for j in range(k + 1, n):
+            ea, eb = ev_a[j], ev_b[j]
+            if _norm(ea.get('text', '')) != _norm(eb.get('text', '')):
+                return False
+            if ea.get('outcome') != eb.get('outcome'):
+                return False
+        return True
+
+    outcome_diffs = []
     weak = None
     for k in range(n):
         ea, eb = ev_a[k], ev_b[k]
         da, db = ea.get('outcome'), eb.get('outcome')
         if da != db and da is not None and db is not None:
-            strong = strong or _mk('outcome', True, k, ea, eb, da, db)
+            outcome_diffs.append(k)
             continue
-        if len(ev_a) != len(ev_b) and strong is None:
-            pass
         ta, tb = _norm(ea.get('text', '')), _norm(eb.get('text', ''))
         va, vb = _value_tuple(ea.get('clauses') or {}), \
             _value_tuple(eb.get('clauses') or {})
@@ -125,8 +145,19 @@ def compare_invocations(inv_a, inv_b):
             weak = _mk('text', False, k, ea, eb, da, db)
         elif va and vb and va != vb and weak is None:
             weak = _mk('value', False, k, ea, eb, da, db)
-    if strong:
-        return strong
+
+    if outcome_diffs:
+        # Causal fork: the LAST outcome divergence whose suffix does NOT
+        # re-converge (its effects really diverge afterwards).  Skipped
+        # earlier divergences re-converged (absorbed).
+        for k in reversed(outcome_diffs):
+            if not _same_after(k):
+                return _mk('outcome', True, k, ev_a[k], ev_b[k],
+                           ev_a[k].get('outcome'), ev_b[k].get('outcome'))
+        # Every outcome divergence re-converged: report the first one.
+        k = outcome_diffs[0]
+        return _mk('outcome', True, k, ev_a[k], ev_b[k],
+                   ev_a[k].get('outcome'), ev_b[k].get('outcome'))
     if weak:
         return weak
     if len(ev_a) != len(ev_b):
