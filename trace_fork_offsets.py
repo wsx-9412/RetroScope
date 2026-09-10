@@ -4086,7 +4086,8 @@ def main():
 
         # Print match summary
         any_match = False
-        for offset, info in sorted(crash_results.items()):
+        for offset, info in sorted((k, v) for k, v in crash_results.items()
+                                   if isinstance(k, int)):
             if info['matches']:
                 if not any_match:
                     print(f'\n  {"="*60}')
