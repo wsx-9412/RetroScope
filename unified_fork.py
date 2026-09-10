@@ -78,9 +78,18 @@ def _value_tuple(clauses):
 def compare_invocations(inv_a, inv_b):
     """Compare one invocation pair; return a diff dict or None.
 
-    A diff is reported on the FIRST decision position where the two sides
-    differ in (outcome, operand values) — text differences alone (e.g. a
-    semantic pair rewording the same condition) continue the alignment.
+    Diff kinds (strong to weak):
+      * 'outcome' (STRONG) — the two sides reached different outcomes at the
+        same decision position: the path itself diverges here;
+      * 'count'   (STRONG) — one side took extra decisions: path shortening /
+        an added guard;
+      * 'text'    (WEAK)   — condition text rewritten (semantic pair); path
+        may still be equivalent;
+      * 'value'   (WEAK)   — same outcome but different operand values
+        (downstream state difference; NOT causal by itself).
+
+    The caller must report strong diffs before recursing, and only fall back
+    to weak diffs when no deeper divergence exists.
     """
     ev_a = inv_a.get('events') or []
     ev_b = inv_b.get('events') or []
@@ -89,24 +98,30 @@ def compare_invocations(inv_a, inv_b):
         ea, eb = ev_a[k], ev_b[k]
         da, db = ea.get('outcome'), eb.get('outcome')
         if da != db and da is not None and db is not None:
-            return {'kind': 'outcome', 'index': k,
+            return {'kind': 'outcome', 'strong': True, 'index': k,
                     'a': {'line': ea['line'], 'text': ea.get('text', ''),
                           'clauses': ea.get('clauses', {}), 'outcome': da},
                     'b': {'line': eb['line'], 'text': eb.get('text', ''),
                           'clauses': eb.get('clauses', {}), 'outcome': db}}
-        ta, tb = _value_tuple(ea.get('clauses') or {}), \
-            _value_tuple(eb.get('clauses') or {})
+        ta, tb = _norm(ea.get('text', '')), _norm(eb.get('text', ''))
         if ta and tb and ta != tb:
-            # Same outcome but different operand values -> the guard is about
-            # to behave differently (state fork).
-            return {'kind': 'value', 'index': k,
+            return {'kind': 'text', 'strong': False, 'index': k,
+                    'a': {'line': ea['line'], 'text': ea.get('text', ''),
+                          'clauses': ea.get('clauses', {}), 'outcome': da},
+                    'b': {'line': eb['line'], 'text': eb.get('text', ''),
+                          'clauses': eb.get('clauses', {}), 'outcome': db}}
+        va, vb = _value_tuple(ea.get('clauses') or {}), \
+            _value_tuple(eb.get('clauses') or {})
+        if va and vb and va != vb:
+            return {'kind': 'value', 'strong': False, 'index': k,
                     'a': {'line': ea['line'], 'text': ea.get('text', ''),
                           'clauses': ea.get('clauses', {}), 'outcome': da},
                     'b': {'line': eb['line'], 'text': eb.get('text', ''),
                           'clauses': eb.get('clauses', {}), 'outcome': db}}
     if len(ev_a) != len(ev_b):
         side = 'a' if len(ev_a) > len(ev_b) else 'b'
-        return {'kind': 'count', 'index': n, 'extra_side': side,
+        return {'kind': 'count', 'strong': True, 'index': n,
+                'extra_side': side,
                 'a_events': len(ev_a), 'b_events': len(ev_b),
                 'a': {'line': ev_a[n]['line'] if n < len(ev_a) else None,
                       'text': ev_a[n].get('text', '') if n < len(ev_a) else ''},
