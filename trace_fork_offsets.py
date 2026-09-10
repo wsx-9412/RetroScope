@@ -1510,12 +1510,12 @@ while f is not None:
         fname = ''
     try:
         dp = int(f.read_var('dp'))
-        print(f"CALLER_DP 0x{{dp:x}} {fname}")
+        print(f"CALLER_DP 0x{{dp:x}} " + fname)
     except Exception:
         pass
     try:
         d = int(f.read_var('dir'))
-        print(f"CALLER_DIR 0x{{d:x}} {fname}")
+        print(f"CALLER_DIR 0x{{d:x}} " + fname)
     except Exception:
         pass
     try:
@@ -3927,53 +3927,51 @@ def main():
                 print(f'    offset=0x{offset:04x} size={size} -- within file boundary')
 
     # ================================================================
-    # Step 4.5: GDB function chain trace (data flow through libtiff)
+    # Step 4.5: GDB call-site argument trace (fully dynamic)
     # ================================================================
     chain_trace_results = {}
     if binary and fork_spec and input_file:
         print(f'\n{"="*60}')
-        print(f'  Step 4.5: GDB function chain trace (data flow → file offset)')
+        print(f'  Step 4.5: GDB call-site argument trace (fully dynamic)')
         print(f'{"="*60}')
 
-        # Function-based chain trace
-        chain_result, err = run_gdb_function_chain_trace(
-            binary, fork_spec, input_file, program_args, timeout=a.timeout * 2)
-        
+        # Fully dynamic: chain pread64(IFD buffer) -> dir -> dp -> dp->tdir_tag
+        fork_func_name = 'TIFFReadDirectoryFindFieldInfo'
+        cs_result, err = run_gdb_call_site_trace(
+            binary, fork_spec, fork_func_name, input_file, program_args,
+            timeout=a.timeout * 2)
+
         if err:
-            print(f'  [!] Chain trace failed: {err}')
-        elif chain_result:
-            chain_trace_results = chain_result
-            ctx = chain_result.get('fork_context', {})
-            funcs = chain_result.get('functions_called', [])
-            preads = chain_result.get('pread64_calls', [])
-            tag_fetches = chain_result.get('tag_fetches', [])
-            
-            print(f'  [*] Fork point context:')
-            print(f'      mb = {ctx.get("mb", "?")}')
-            print(f'      tagid = {ctx.get("tagid", "?")}')
-            print(f'      tif->tif_fields[mb]->field_tag = {ctx.get("field_tag", "?")}')
-            print(f'      tif->tif_nfields = {ctx.get("nfields", "?")}')
-            tagid_idx = ctx.get('tagid_index')
-            if tagid_idx is not None:
-                print(f'      tagid found at tif_fields[{tagid_idx}]')
-            
-            print(f'\n  [*] Function call chain (data flow):')
-            for func in funcs:
-                print(f'      {func}()')
-            
-            if tag_fetches:
-                print(f'\n  [*] Tags fetched from file:')
-                for tag in tag_fetches[:10]:  # Show first 10
-                    entry_off, val_off, tag_name = map_libtiff_tag_to_file_offset(tag, input_file)
-                    if entry_off is not None:
-                        print(f'      tag {tag} ({tag_name}) → IFD entry at 0x{entry_off:x}')
-                    else:
-                        print(f'      tag {tag} (internal/built-in)')
-            
-            if preads:
-                print(f'\n  [*] File reads (pread64 calls):')
-                for p in preads[:10]:  # Show first 10
-                    print(f'      offset=0x{p["offset"]:x} size={p["size"]}')
+            print(f'  [!] Call-site trace failed: {err}')
+        elif cs_result:
+            chain_trace_results = cs_result
+            mappings = cs_result.get('tag_mappings', {})
+            invocations = cs_result.get('invocations', [])
+
+            if invocations:
+                print(f'  [*] Fork-point invocations ({len(invocations)}):')
+                shown = invocations[:3]
+                for inv in shown:
+                    print(f'      tagid={inv["tagid"]} mb={inv["mb"]} '
+                          f'field_tag={inv["field_tag"]}')
+                if len(invocations) > 3:
+                    print(f'      ... (+{len(invocations)-3} more)')
+
+            print(f'\n  [*] Call-site actual arguments (dp->tdir_tag) -> file offsets:')
+            if not mappings:
+                print(f'      (no call-site mapping captured)')
+            for tagid, info in mappings.items():
+                name = info.get('tag_name', f'tag_{tagid}')
+                if info.get('file_offset') is not None:
+                    print(f'      tagid={tagid} ({name}):')
+                    print(f'        dp={info["dp"]}  dir={info["dir"]}')
+                    print(f'        IFD buffer read at file offset '
+                          f'0x{info["ifd_offset"]:x}')
+                    print(f'        entry index {info["entry_index"]} '
+                          f'-> tdir_tag at file offset '
+                          f'0x{info["file_offset"]:x}')
+                else:
+                    print(f'      tagid={tagid} ({name}): no IFD buffer match')
 
     # ================================================================
     # Step 5: Variable → file offset mapping
@@ -3994,24 +3992,21 @@ def main():
         else:
             print(f'      file offsets: (not from input file)')
 
-    # Show chain trace results if available
-    if chain_trace_results:
-        print(f'\n  GDB function chain trace summary:')
-        ctx = chain_trace_results.get('fork_context', {})
-        tagid = ctx.get('tagid')
-        tagid_idx = ctx.get('tagid_index')
-        
-        if tagid is not None:
-            entry_off, val_off, tag_name = map_libtiff_tag_to_file_offset(tagid, input_file)
-            if entry_off is not None:
-                print(f'    tagid={tagid} ({tag_name})')
-                print(f'      ← read from IFD entry at file offset 0x{entry_off:x}')
-                print(f'      ← value at file offset 0x{val_off:x}')
+    # Show call-site trace results if available (fully dynamic mapping)
+    if chain_trace_results and chain_trace_results.get('tag_mappings'):
+        print(f'\n  GDB call-site trace summary (dynamic):')
+        invocations = chain_trace_results.get('invocations', [])
+        for tagid, info in chain_trace_results['tag_mappings'].items():
+            name = info.get('tag_name', f'tag_{tagid}')
+            if info.get('file_offset') is not None:
+                print(f'    tagid={tagid} ({name})')
+                print(f'      ← dp->tdir_tag (IFD entry '
+                      f'#{info["entry_index"]}) at file offset '
+                      f'0x{info["file_offset"]:x}')
+                print(f'      ← IFD buffer read by pread64 at '
+                      f'0x{info["ifd_offset"]:x} (buf={info["dir"]})')
             else:
-                print(f'    tagid={tagid} (internal tag, not from IFD)')
-        
-        if tagid_idx is not None:
-            print(f'    Binary search found tagid at tif_fields[{tagid_idx}]')
+                print(f'    tagid={tagid} ({name}): no file mapping')
 
     # ================================================================
     # Summary — dynamic, based on analysis results
