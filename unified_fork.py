@@ -267,14 +267,15 @@ def build_dynamic_result(res, boundary_func, source_root_a, source_root_b,
         out['root_cause_statement_a'] = a.get('text', '')
         out['root_cause_statement_b'] = b.get('text', '')
         variables = []
-        for cl in (a.get('clauses') or {}).values():
-            for side in ('lhs', 'rhs'):
-                expr = cl.get(side, '')
-                if expr and not re.fullmatch(r'0x[0-9a-fA-F]+|\d+', expr):
-                    variables.append(expr)
-        variables += extract_variables_from_statement(a.get('text', ''))
-        variables += extract_variables_from_statement(b.get('text', ''))
-        out['variables'] = list(dict.fromkeys(variables))
+        for text in (a.get('text', ''), b.get('text', '')):
+            for v in extract_variables_from_statement(text):
+                if re.fullmatch(r'[0-9xXa-fA-F_]+', v):
+                    continue  # numeric literal
+                if re.fullmatch(r'[A-Z_][A-Z0-9_]*', v):
+                    continue  # macro / enum constant (not a mutation target)
+                if v not in variables:
+                    variables.append(v)
+        out['variables'] = variables
         verdict = 'weak' if res.get('weak') else 'strong'
         out['description'] = (
             f"Unified dynamic fork locator ({verdict}):\n"

@@ -808,6 +808,14 @@ def _annotate_divergence_confidence(div):
             notes.append('target crashed on its own at the fork site; the '
                          'mutation must BOTH dodge the target crash AND reach '
                          'the reference crash point')
+    elif div.get('dynamic_fork'):
+        path = 'dynamic_fork'
+        dyn = div.get('dynamic_fork') or {}
+        if dyn.get('status') == 'decision_fork' and not dyn.get('weak'):
+            pass  # strong dynamic evidence — high confidence
+        else:
+            notes.append('fork located with weak dynamic evidence '
+                         '(value/text divergence or value fork)')
     elif div.get('semantic_fork'):
         path = 'semantic_static_diff'
         notes.append('fork located by static source diff (guard added in one '
@@ -832,6 +840,8 @@ def _annotate_divergence_confidence(div):
     elif path == 'backward_tracer_gdb':
         level = 'medium'
     elif path == 'crash_based':
+        level = 'medium'
+    elif path == 'dynamic_fork' and notes:
         level = 'medium'
 
     if not div.get('variables'):
