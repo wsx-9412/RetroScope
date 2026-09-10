@@ -3245,6 +3245,54 @@ def main():
                 print(f'    offset=0x{offset:04x} size={size} -- within file boundary')
 
     # ================================================================
+    # Step 4.5: GDB chain trace for libtiff tag variables
+    # ================================================================
+    libtiff_trace = {}
+    if binary and fork_spec and input_file:
+        print(f'\n{"="*60}')
+        print(f'  Step 4.5: GDB chain trace (libtiff tag → file offset)')
+        print(f'{"="*60}')
+
+        trace_result, err = run_gdb_libtiff_tag_trace(
+            binary, fork_spec, input_file, program_args, timeout=a.timeout)
+        if err:
+            print(f'  [!] Chain trace failed: {err}')
+        elif trace_result:
+            libtiff_trace = trace_result
+            mb = trace_result.get('mb')
+            tagid = trace_result.get('tagid')
+            field_tag = trace_result.get('field_tag')
+            nfields = trace_result.get('nfields')
+
+            print(f'  [*] At fork point (tif_dirread.c:4175):')
+            print(f'      mb (binary search index) = {mb}')
+            print(f'      tagid (function param) = {tagid}')
+            print(f'      tif->tif_fields[mb]->field_tag = {field_tag}')
+            print(f'      tif->tif_nfields = {nfields}')
+
+            # Map field_tag to file offset
+            if field_tag is not None:
+                entry_off, val_off, tag_name = map_libtiff_tag_to_file_offset(field_tag, input_file)
+                if entry_off is not None:
+                    print(f'\n  [*] Tag {field_tag} ({tag_name}) found in IFD:')
+                    print(f'      IFD entry offset: 0x{entry_off:x}')
+                    print(f'      Value field offset: 0x{val_off:x}')
+                    libtiff_trace['field_tag_entry_offset'] = entry_off
+                    libtiff_trace['field_tag_value_offset'] = val_off
+                    libtiff_trace['field_tag_name'] = tag_name
+                else:
+                    print(f'\n  [!] Tag {field_tag} not found in IFD (may be internal/built-in)')
+
+            # Map tagid to file offset
+            if tagid is not None and tagid != field_tag:
+                entry_off, val_off, tag_name = map_libtiff_tag_to_file_offset(tagid, input_file)
+                if entry_off is not None:
+                    print(f'\n  [*] Tagid {tagid} ({tag_name}) found in IFD:')
+                    print(f'      IFD entry offset: 0x{entry_off:x}')
+                    libtiff_trace['tagid_entry_offset'] = entry_off
+                    libtiff_trace['tagid_name'] = tag_name
+
+    # ================================================================
     # Step 5: Variable → file offset mapping
     # ================================================================
     print(f'\n{"="*60}')
