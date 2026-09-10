@@ -2482,21 +2482,23 @@ def main():
     input_file = config.get('input_file', '')
     program_args = config.get('program_args', [])
 
-    # Add image_data struct fields for dynamic data flow observation
-    # These are the TIFF tag values the program actually read from the file
-    _image_fields = ['image.width', 'image.length', 'image.bps', 'image.spp',
-                     'image.compression', 'image.photometric', 'image.orientation',
-                     'image.planar', 'image.res_unit']
-    for _f in _image_fields:
-        if _f not in variables:
-            variables.append(_f)
-    # Add crop_mask fields for computation chain observation
-    _crop_fields = ['crop.combined_width', 'crop.combined_length',
-                    'crop.bufftotal', 'crop.zones', 'crop.selections',
-                    'crop.edge_ref', 'crop.crop_mode']
-    for _f in _crop_fields:
-        if _f not in variables:
-            variables.append(_f)
+    # Legacy TIFF convenience: for forks produced WITHOUT the unified dynamic
+    # locator, additionally probe the image/crop geometry fields (they feed
+    # the TIFF tag-value matching).  Dynamic-locator forks already carry the
+    # precise guard operands (e.g. ['in']) and must NOT be polluted.
+    if not config.get('dynamic_fork'):
+        _image_fields = ['image.width', 'image.length', 'image.bps', 'image.spp',
+                         'image.compression', 'image.photometric', 'image.orientation',
+                         'image.planar', 'image.res_unit']
+        for _f in _image_fields:
+            if _f not in variables:
+                variables.append(_f)
+        _crop_fields = ['crop.combined_width', 'crop.combined_length',
+                        'crop.bufftotal', 'crop.zones', 'crop.selections',
+                        'crop.edge_ref', 'crop.crop_mode']
+        for _f in _crop_fields:
+            if _f not in variables:
+                variables.append(_f)
 
     if not binary:
         print('Error: --binary required (not found in JSON)', file=sys.stderr)
