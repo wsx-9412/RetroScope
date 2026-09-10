@@ -629,6 +629,10 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
     if not fsrc:
         print(f'  [!] source for {func} not found under {source_root or real_bin}')
         return None
+    if func == 'main':
+        msrc = _gdb_main_source(real_bin, source_root)
+        if msrc:
+            fsrc = msrc
     decisions = find_function_decisions(fsrc, func)
     if not decisions:
         print(f'  [!] no decision lines found for {func} in {fsrc}')

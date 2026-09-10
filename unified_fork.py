@@ -338,6 +338,18 @@ def build_dynamic_result(res, boundary_func, source_root_a, source_root_b,
     return out
 
 
+def _null_compare_fork(diff):
+    """True when the strong fork compares a pointer/return value to NULL —
+    a wrapper-level fork (e.g. ``if (in == NULL)`` after TIFFOpen).  The
+    mutation-relevant guard lives inside the function that produced the
+    pointer, so we must keep descending instead of stopping here."""
+    if not diff:
+        return False
+    a, b = diff.get('a') or {}, diff.get('b') or {}
+    text = (a.get('text') or '') + ' ' + (b.get('text') or '')
+    return 'NULL' in text or 'null' in text
+
+
 def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                             func_a, args, refactoring_map=None, timeout=300,
                             max_depth=4, _depth=0, _visited=None,
