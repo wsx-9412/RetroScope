@@ -290,14 +290,21 @@ def build_dynamic_result(res, boundary_func, source_root_a, source_root_b,
                 # two versions (the mutation-relevant operand).
                 if va.get(side) != vb.get(side) and expr not in variables:
                     variables.append(expr)
-        for text in (a.get('text', ''), b.get('text', '')):
-            for v in re.findall(r'[A-Za-z_]\w*', text):
-                if re.fullmatch(r'[0-9xXa-fA-F_]+', v):
-                    continue
-                if re.fullmatch(r'[A-Z_][A-Z0-9_]*', v):
-                    continue
-                if v not in variables:
-                    variables.append(v)
+        if not exprs:
+            _CKEYWORDS = {'if', 'else', 'for', 'while', 'do', 'switch',
+                          'case', 'return', 'sizeof', 'goto', 'break',
+                          'continue', 'typedef', 'struct', 'union', 'enum',
+                          'const', 'static'}
+            for text in (a.get('text', ''), b.get('text', '')):
+                for v in re.findall(r'[A-Za-z_]\w*', text):
+                    if v in _CKEYWORDS:
+                        continue
+                    if re.fullmatch(r'[0-9xXa-fA-F_]+', v):
+                        continue
+                    if re.fullmatch(r'[A-Z_][A-Z0-9_]*', v):
+                        continue
+                    if v not in variables:
+                        variables.append(v)
         out['variables'] = variables
         verdict = 'weak' if res.get('weak') else 'strong'
         out['description'] = (
