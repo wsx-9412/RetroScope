@@ -862,6 +862,21 @@ def locate_offsets(source_dir, program_name, input_file, fork_function,
             "statement": fork_statement or "",
         }
 
+    try:
+        return _locate_offsets_in_work(work, input_file, program_name,
+                                       build_cmds, compile_flags, instrument,
+                                       full_args, fork_function)
+    finally:
+        # The build workspace is pure intermediate data (wllvm bitcode + -g
+        # -O0 objects can reach tens of GB); a fresh copy is made on every
+        # run, so remove it as soon as the offsets are extracted.
+        print(f"    [PolyTracker] cleaning build workspace: {work}")
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def _locate_offsets_in_work(work, input_file, program_name, build_cmds,
+                            compile_flags, instrument, full_args,
+                            fork_function):
     binary = build_instrumented(work, program_name, build_cmds,
                                 compile_flags=compile_flags, instrument=instrument)
     if binary is None:
