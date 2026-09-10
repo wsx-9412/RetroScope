@@ -236,7 +236,13 @@ def _gdb_function_range(binary, func, source_root, args):
                            env=env)
     except Exception:
         return None
-    nums = [int(m) for m in re.findall(r'^\s*(\d+)\s+', r.stdout + r.stderr, re.M)]
+    out = r.stdout + r.stderr
+    # Only the /m section carries this function's source lines.
+    m = re.search(r'Dump of assembler code for function .*?\n(.*?)'
+                  r'End of assembler dump\.', out, re.S)
+    if not m:
+        return None
+    nums = [int(x) for x in re.findall(r'^\s*(\d+)\s+', m.group(1), re.M)]
     if not nums:
         return None
     return min(nums), max(nums)
@@ -257,7 +263,7 @@ def _function_body(source_file, func_name, body=None):
         return None
     lines = _strip_c_comments_strings(raw_lines)
     if body:
-        return body[0], body[1], lines
+        return body[0], min(body[1], len(lines)), lines
     n = len(lines)
     pat = re.compile(
         r'^(?:(?:static|inline|extern)\s+)?(?:[\w\s\*]+?\s+)?'
