@@ -674,11 +674,11 @@ def _branch_then_region(lines, line_no, max_scan=80):
 def _build_bp_script(config):
     """Build the gdb script for BREAKPOINT-mode recording.
 
-    Every decision line gets a classic ``break`` + ``commands`` block:
-    ``silent``, then python records the operand values, executes ONE
-    ``next`` (real control flow: the condition + the first statement of the
-    branch actually taken), and reports the reached source line.  The client
-    derives the decision OUTCOME from that line (then-region membership) —
+    One breakpoint PER UNIQUE SOURCE LINE (multiple breakpoints at the same
+    address only fire once per stop in gdb — the rest are silently swallowed,
+    so decision/call/then roles on the same line MUST be merged into a single
+    commands block).  The client derives each decision's OUTCOME from the
+    unified order stream (then-region membership of the next recorded line) —
     this works even for conditions gdb cannot evaluate (function calls,
     macros, enum constants), because the branch was really taken.
     """
@@ -697,13 +697,22 @@ def _build_bp_script(config):
 
     max_events = config.get('max_events', 100000)
 
-    # Decision lines: record operands only (no stepping — stepping commands
-    # inside ``commands`` blocks kill the inferior in gdb 12.1 batch mode).
+    # Merge roles per line: decisions / calls / then-starts.
+    roles = {}
     for dl in config['decisions']:
-        line = dl['line']
-        # repr() yields a valid Python literal (True/None) unlike json.dumps
-        # (true/null are invalid Python).
-        cl = repr({str(i): c for i, c in enumerate(dl['clauses'])})
+        roles.setdefault(dl['line'], {'dec': None, 'calls': [], 'thens': []})
+        roles[dl['line']]['dec'] = dl
+    for ln, callees in (config.get('call_lines') or {}).items():
+        roles.setdefault(int(ln), {'dec': None, 'calls': [], 'thens': []})
+        roles[int(ln)]['calls'].extend(callees)
+    for dl in config['decisions']:
+        ts = (config.get('then_lines') or {}).get(dl['line'])
+        if ts:
+            roles.setdefault(ts, {'dec': None, 'calls': [], 'thens': []})
+            roles[ts]['thens'].append(dl['line'])
+
+    for line in sorted(roles):
+        role = roles[line]
         L.append(f'break {config["file"]}:{line}')
         L.append('commands')
         L.append('silent')
@@ -711,59 +720,38 @@ def _build_bp_script(config):
         L.append('if S["order"] < MAX_EVENTS:')
         L.append('    S["order"] += 1')
         L.append('    __o = S["order"]')
-        L.append('    __vals = {}')
-        L.append(f'    __CL = {cl}')
-        L.append('    for __i, __c in __CL.items():')
-        L.append('        __v = {}')
-        L.append('        for __s in ("lhs", "rhs"):')
-        L.append('            __e = __c.get(__s, "")')
-        L.append('            if not __e or __c.get("op") is None:')
-        L.append('                continue')
-        L.append('            try:')
-        L.append('                __v[__s] = int(gdb.parse_and_eval(__e))')
-        L.append('            except Exception:')
-        L.append('                __v[__s] = None')
-        L.append('        if __v:')
-        L.append('            __vals[__i] = __v')
-        L.append('    gdb.write("##EVT %d %d %d %s\\n" % '
-                 '(__o, S["inv"], __EVTLINE__, json.dumps(__vals)))'
-                 .replace('__EVTLINE__', str(line)))
-        L.append('end')
-        L.append('continue')
-        L.append('end')
-
-    # Then-branch breakpoints: one per decision with a static then-region.
-    # A hit at the body's first line (in the unified order stream) tells the
-    # client the decision was really TAKEN — no stepping required.
-    for dl in config['decisions']:
-        ts = (config.get('then_lines') or {}).get(dl['line'])
-        if not ts:
-            continue
-        L.append(f'break {config["file"]}:{ts}')
-        L.append('commands')
-        L.append('silent')
-        L.append('python')
-        L.append('if S["order"] < MAX_EVENTS:')
-        L.append('    S["order"] += 1')
-        L.append('    gdb.write("##THEN %d %d\\\\n" % '
-                 '(S["order"], __THENLINE__))'
-                 .replace('__THENLINE__', str(dl['line'])))
-        L.append('end')
-        L.append('continue')
-        L.append('end')
-
-    # Call lines: record callees (no stepping).
-    for ln, callees in (config.get('call_lines') or {}).items():
-        L.append(f'break {config["file"]}:{ln}')
-        L.append('commands')
-        L.append('silent')
-        L.append('python')
-        L.append('if S["order"] < MAX_EVENTS:')
-        L.append('    S["order"] += 1')
-        L.append('    gdb.write("##CALL %d %d %d %s\\n" % '
-                 '(S["order"], S["inv"], __CALLLINE__, json.dumps(__CALLEES__)))'
-                 .replace('__CALLLINE__', str(ln))
-                 .replace('__CALLEES__', repr(callees)))
+        if role['dec'] is not None:
+            # repr() yields a valid Python literal (True/None) unlike
+            # json.dumps (true/null are invalid Python).
+            cl = repr({str(i): c for i, c
+                       in enumerate(role['dec']['clauses'])})
+            L.append('    __vals = {}')
+            L.append(f'    __CL = {cl}')
+            L.append('    for __i, __c in __CL.items():')
+            L.append('        __v = {}')
+            L.append('        for __s in ("lhs", "rhs"):')
+            L.append('            __e = __c.get(__s, "")')
+            L.append('            if not __e or __c.get("op") is None:')
+            L.append('                continue')
+            L.append('            try:')
+            L.append('                __v[__s] = int(gdb.parse_and_eval(__e))')
+            L.append('            except Exception:')
+            L.append('                __v[__s] = None')
+            L.append('        if __v:')
+            L.append('            __vals[__i] = __v')
+            L.append('    gdb.write("##EVT %d %d %d %s\\n" % '
+                     '(__o, S["inv"], __EVTLINE__, json.dumps(__vals)))'
+                     .replace('__EVTLINE__', str(line)))
+        if role['calls']:
+            L.append('    gdb.write("##CALL %d %d %d %s\\n" % '
+                     '(S["order"], S["inv"], __CALLLINE__, '
+                     'json.dumps(__CALLEES__)))'
+                     .replace('__CALLLINE__', str(line))
+                     .replace('__CALLEES__', repr(role['calls'])))
+        for dline in role['thens']:
+            L.append('    gdb.write("##THEN %d %d\\n" % '
+                     '(S["order"], __THENLINE__))'
+                     .replace('__THENLINE__', str(dline)))
         L.append('end')
         L.append('continue')
         L.append('end')
