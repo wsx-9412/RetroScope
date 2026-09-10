@@ -1,7 +1,7 @@
 {
-  "binary_target": "/tmp/fork_analysis_vl5v7joj/target/tools/.libs/tiffcrop",
-  "binary_ref": "/tmp/fork_analysis_vl5v7joj/ref/tools/.libs/tiffcrop",
-  "fork_spec": "/tmp/fork_analysis_vl5v7joj/target/libtiff/tif_dirread.c:4175",
+  "binary_target": "/tmp/fork_analysis_qcwd0pv_/target/tools/.libs/tiffcrop",
+  "binary_ref": "/tmp/fork_analysis_qcwd0pv_/ref/tools/.libs/tiffcrop",
+  "fork_spec": "/tmp/fork_analysis_qcwd0pv_/target/libtiff/tif_dirread.c:4175",
   "variables": [
     "tif->tif_fields[mb]->field_tag",
     "tagid",
@@ -20,19 +20,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140735957280976
+      "buf_addr": 140723728073408
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140735957280912
+      "buf_addr": 140723728073344
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140735957280832
+      "buf_addr": 140723728073264
     }
   ],
   "ref_file_reads": [
@@ -40,24 +40,24 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140736479178656
+      "buf_addr": 140723417335056
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140736479178592
+      "buf_addr": 140723417334992
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140736479178512
+      "buf_addr": 140723417334912
     }
   ],
   "variable_mapping": {
     "tif->tif_fields[mb]->field_tag": {
-      "address": "0x721015fe9650",
+      "address": "0x7c81ec5e9650",
       "value": 559,
       "size": 4,
       "source": "not from input file",
@@ -67,7 +67,7 @@
       "input_offsets": []
     },
     "tagid": {
-      "address": "0x7fffa4bd51c4",
+      "address": "0x7ffccbd26bb4",
       "value": 277,
       "size": 2,
       "source": "not from input file",
@@ -77,7 +77,7 @@
       "input_offsets": []
     },
     "ma": {
-      "address": "0x7fffa4bd51d4",
+      "address": "0x7ffccbd26bc4",
       "value": -1,
       "size": 4,
       "source": "not from input file",
@@ -87,7 +87,7 @@
       "input_offsets": []
     },
     "mb": {
-      "address": "0x7fffa4bd51d8",
+      "address": "0x7ffccbd26bc8",
       "value": 75,
       "size": 4,
       "source": "not from input file",
@@ -97,7 +97,7 @@
       "input_offsets": []
     },
     "mc": {
-      "address": "0x7fffa4bd51dc",
+      "address": "0x7ffccbd26bcc",
       "value": 152,
       "size": 4,
       "source": "not from input file",
