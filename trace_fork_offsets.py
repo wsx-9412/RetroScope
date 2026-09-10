@@ -4111,7 +4111,6 @@ def main():
         'differing_variables': differing_vars,
         'target_file_reads': positioned_b,
         'ref_file_reads': positioned_a,
-        'variable_mapping': result.get('variables', {}),
         'chain_trace': chain_trace_results,
     }
     out_path = os.path.join(os.path.dirname(input_file) if input_file else '.', 'fork_trace_result.json')
