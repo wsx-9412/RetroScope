@@ -1530,6 +1530,10 @@ try:
     print("ENTSIZE %d" % int(gdb.parse_and_eval('sizeof(TIFFDirEntry)')))
 except Exception:
     pass
+try:
+    print("FLAGS %d" % int(gdb.parse_and_eval('tif->tif_flags')))
+except Exception:
+    pass
 end
   quit
 end
