@@ -584,6 +584,34 @@ def _collect_lib_paths(binary):
     return dirs
 
 
+def _gdb_main_source(binary, source_root):
+    """Ask GDB which source file contains the *executed* ``main``.
+
+    ``main`` is defined in many files of a source tree (e.g. tiffcrop.c vs
+    libtiff/mkg3states.c); the static search may pick the wrong one.  Running
+    ``gdb start`` stops at the real entry point and ``info source`` reports
+    its file — precise and generic.
+    """
+    try:
+        cmd = ['gdb', '-batch', '-q', '-ex', 'start', '-ex', 'info source',
+               '--args', str(resolve_binary(binary))]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    except Exception:
+        return None
+    m = re.search(r'Current source file is (.+)', r.stdout + r.stderr)
+    if not m:
+        return None
+    path = m.group(1).strip()
+    if os.path.isabs(path) and Path(path).exists():
+        return path
+    candidate = Path(source_root or '.') / path
+    if candidate.exists():
+        return str(candidate)
+    for f in Path(source_root or '.').rglob(Path(path).name):
+        return str(f)
+    return None
+
+
 def record_decisions(binary, func, args, source_root=None, timeout=180,
                      out_path=None, limit=100000, mode='bp'):
     """Run ``binary args`` under GDB and record the decision events of ``func``.
