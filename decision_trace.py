@@ -700,7 +700,9 @@ def _build_bp_script(config):
     # Decision lines: record operands, step once, report the reached line.
     for dl in config['decisions']:
         line = dl['line']
-        cl = json.dumps({str(i): c for i, c in enumerate(dl['clauses'])})
+        # repr() yields a valid Python literal (True/None) unlike json.dumps
+        # (true/null are invalid Python).
+        cl = repr({str(i): c for i, c in enumerate(dl['clauses'])})
         L.append(f'break {config["file"]}:{line}')
         L.append('commands')
         L.append('silent')
