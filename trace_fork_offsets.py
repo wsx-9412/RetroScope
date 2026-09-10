@@ -3665,18 +3665,6 @@ def main():
     print(f'[*] Variables: {variables}')
     print(f'[*] Input: {input_file}')
 
-    tiff_tags = None
-    tiff_tags_all = None
-    if input_file and os.path.isfile(input_file):
-        try:
-            tags = parse_tiff_ifd(input_file)
-            if tags:
-                tiff_tags = analyze_tiff_tags(tags)
-                tiff_tags_all = analyze_tiff_tags_all(tags)
-                print(f'[*] TIFF tags found: {list(tiff_tags.keys())}')
-        except Exception as e:
-            print(f'[*] File parse skipped: {e}')
-
     # Find the correct fork line for each version
     fork_spec_b = fork_spec  # Target version (tiff-4.0.8) - uses line from read_source_fork_statement
     ref_fork_file = config.get('ref_fork_file') or fork_file
