@@ -310,6 +310,49 @@ def _parse_if_line(stripped):
     return None
 
 
+def _find_pointer_assignment(source_dir, src_name, var_name, fork_line):
+    """Find the assignment statement for a pointer variable before the fork line.
+    
+    Returns (line_number, assigned_expr) or (None, None).
+    For example, for `crop_buff`, returns (line, "TIFFReadEncodedStrip(...)")
+    """
+    target = None
+    for p in source_dir.rglob(src_name):
+        if p.is_file():
+            target = p
+            break
+    if target is None:
+        return None, None
+    
+    lines = target.read_text(errors="replace").splitlines()
+    
+    # Search backwards from fork_line to find the assignment
+    for i in range(min(fork_line - 1, len(lines) - 1), -1, -1):
+        line = lines[i]
+        # Look for `var_name = ...` pattern
+        m = re.search(r'\b' + re.escape(var_name) + r'\s*=\s*(.+?)(?:;|$)', line)
+        if m:
+            return i + 1, m.group(1).strip()
+    
+    return None, None
+
+
+def _extract_function_calls(expr):
+    """Extract function calls from an expression.
+    
+    For example, `TIFFReadEncodedStrip(tif, strip, buf, size)` returns
+    `['TIFFReadEncodedStrip']`.
+    """
+    if not expr:
+        return []
+    # Match function_name(...) pattern
+    calls = re.findall(r'\b([a-zA-Z_]\w*)\s*\(', expr)
+    # Filter out keywords and common non-function identifiers
+    keywords = {'if', 'else', 'while', 'for', 'do', 'switch', 'case', 'return',
+                'sizeof', 'typeof', 'alignof', 'static_cast', 'dynamic_cast'}
+    return [c for c in calls if c not in keywords]
+
+
 def _instrument_source(source_dir, instrument):
     """Insert taint-logging calls for each fork-statement variable.
 
