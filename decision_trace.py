@@ -635,13 +635,149 @@ gdb.write("##INVTOTAL %d\n" % inv)
 '''
 
 
+def _branch_then_region(lines, line_no, max_scan=80):
+    """Return (then_start, then_end) — the 1-based inclusive line range of
+    the TRUE branch of a decision line, or None when it cannot be determined
+    (inline-body ifs and switch statements have no single then-region).
+
+    ``lines`` must be comment/string-stripped (as in _function_body).
+    """
+    if line_no < 1 or line_no > len(lines):
+        return None
+    idx = line_no - 1
+    stripped = lines[idx].strip()
+    if stripped.startswith('switch'):
+        return None
+    # Inline body (`if (x) y = 1;`): the next executed line is the line
+    # AFTER the whole statement regardless of the branch — not inferable.
+    if ';' in stripped:
+        return None
+    body_open = None
+    for j in range(idx, min(idx + max_scan, len(lines))):
+        if '{' in lines[j]:
+            body_open = j
+            break
+    if body_open is None:
+        # Unbraced single statement on the following line.
+        for j in range(idx + 1, min(idx + max_scan, len(lines))):
+            if lines[j].strip():
+                return (j + 1, j + 1)
+        return None
+    depth = 0
+    for j in range(body_open, len(lines)):
+        depth += lines[j].count('{') - lines[j].count('}')
+        if depth == 0:
+            return (body_open + 1, j + 1)
+    return None
+
+
+def _build_bp_script(config):
+    """Build the gdb script for BREAKPOINT-mode recording.
+
+    Every decision line gets a classic ``break`` + ``commands`` block:
+    ``silent``, then python records the operand values, executes ONE
+    ``next`` (real control flow: the condition + the first statement of the
+    branch actually taken), and reports the reached source line.  The client
+    derives the decision OUTCOME from that line (then-region membership) —
+    this works even for conditions gdb cannot evaluate (function calls,
+    macros, enum constants), because the branch was really taken.
+    """
+    L = []
+    L.append('set pagination off')
+    L.append('set confirm off')
+    L.append('set breakpoint pending on')
+    for d in config.get('dirs') or []:
+        if d:
+            L.append(f'directory {d}')
+    L.append('python')
+    L.append('import json')
+    L.append('S = {"inv": 0, "order": 0}')
+    L.append('MAX_EVENTS = %d' % config.get('max_events', 100000))
+    L.append('end')
+
+    spec = '%s:%d' % (config['file'], 0) if False else None  # placeholder
+    max_events = config.get('max_events', 100000)
+
+    # Decision lines: record operands, step once, report the reached line.
+    for dl in config['decisions']:
+        line = dl['line']
+        cl = json.dumps({str(i): c for i, c in enumerate(dl['clauses'])})
+        L.append(f'break {config["file"]}:{line}')
+        L.append('commands')
+        L.append('silent')
+        L.append('python')
+        L.append('if S["order"] < MAX_EVENTS:')
+        L.append('    S["order"] += 1')
+        L.append('    __o = S["order"]')
+        L.append('    __vals = {}')
+        L.append(f'    __CL = {cl}')
+        L.append('    for __i, __c in __CL.items():')
+        L.append('        __v = {}')
+        L.append('        for __s in ("lhs", "rhs"):')
+        L.append('            __e = __c.get(__s, "")')
+        L.append('            if not __e or __c.get("op") is None:')
+        L.append('                continue')
+        L.append('            try:')
+        L.append('                __v[__s] = int(gdb.parse_and_eval(__e))')
+        L.append('            except Exception:')
+        L.append('                __v[__s] = None')
+        L.append('        if __v:')
+        L.append('            __vals[__i] = __v')
+        L.append('    gdb.write("##EVT %d %d %d %s\\n" % '
+                 '(__o, S["inv"], %d, json.dumps(__vals)))' % line)
+        L.append('    try:')
+        L.append('        gdb.execute("next", to_string=True)')
+        L.append('        __ln = gdb.newest_frame().find_sal().line')
+        L.append('    except Exception:')
+        L.append('        __ln = 0')
+        L.append('    gdb.write("##NEXTLN %d %d\\n" % (__o, __ln))')
+        L.append('end')
+        L.append('continue')
+        L.append('end')
+
+    # Call lines: record callees (no stepping).
+    for ln, callees in (config.get('call_lines') or {}).items():
+        L.append(f'break {config["file"]}:{ln}')
+        L.append('commands')
+        L.append('silent')
+        L.append('python')
+        L.append('if S["order"] < MAX_EVENTS:')
+        L.append('    S["order"] += 1')
+        L.append('    gdb.write("##CALL %d %d %d %s\\n" % '
+                 '(S["order"], S["inv"], %s, json.dumps(%s)))'
+                 % (ln, repr(callees)))
+        L.append('end')
+        L.append('continue')
+        L.append('end')
+
+    # Entry breakpoint: counts invocations.
+    L.append(f'break {config["func"]}')
+    L.append('commands')
+    L.append('silent')
+    L.append('python')
+    L.append('S["inv"] += 1')
+    L.append('gdb.write("##ENTER %d\\n" % S["inv"])')
+    L.append('end')
+    L.append('continue')
+    L.append('end')
+
+    L.append('run ' + config['runargs'])
+    L.append('python')
+    L.append('gdb.write("##TOTAL %d\\n" % S["order"])')
+    L.append('gdb.write("##INVTOTAL %d\\n" % S["inv"])')
+    L.append('end')
+    return '\n'.join(L) + '\n'
+
+
 def _build_gdb_script(config):
     # The JSON is a valid Python literal; splice it directly into the template
     # (avoids argv quoting problems — gdb does not shell-parse -ex arguments).
     # Backslashes must be doubled: inside the triple-quoted python literal the
     # string parser consumes one level of escaping, which would corrupt the
     # JSON (e.g. \" inside condition texts).
-    template = _STEP_TEMPLATE if config.get("mode") == "step" else _GDB_TEMPLATE
+    if config.get("mode") != "step":
+        return _build_bp_script(config)
+    template = _STEP_TEMPLATE
     return template.replace('__CONFIG__', json.dumps(config).replace('\\', '\\\\'))
 
 
