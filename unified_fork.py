@@ -572,7 +572,7 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
     #    lives deeper inside the pointer's producer.
     i, diff = _find_diff(strong_only=True)
     if diff:
-        if _needs_descent(diff, source_root_a):
+        if _needs_descent(diff, source_root_a, file_path=ra.get('file')):
             print(f'{indent}[unified] wrapper/pointer-level fork at '
                   f'{used_a}:{diff["a"].get("line")} (taint-dead operands) '
                   f'— descending into the producer chain')

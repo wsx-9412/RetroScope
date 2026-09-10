@@ -584,21 +584,31 @@ def _collect_lib_paths(binary):
     return dirs
 
 
-def _gdb_main_source(binary, source_root):
-    """Ask GDB which source file contains the *executed* ``main``.
+def _gdb_resolve_function_source(binary, func, source_root, args):
+    """Ask GDB which source file contains the *executed* ``func``.
 
-    ``main`` is defined in many files of a source tree (e.g. tiffcrop.c vs
-    libtiff/mkg3states.c); the static search may pick the wrong one.  Running
-    ``gdb start`` stops at the real entry point and ``info source`` reports
-    its file — precise and generic.
+    Many function names exist in several files of a source tree (main in
+    tiffcrop.c vs mkg3states.c; TIFFOpen in tif_unix.c vs tif_win32.c; ...);
+    a static name search may pick the wrong one.  ``gdb start`` loads the
+    real shared libraries and stops at main entry; ``info line <func>`` then
+    reports the file of the ACTUAL function the binary will execute —
+    precise and generic.  Falls back to None (the caller keeps its static
+    search).
     """
     try:
-        cmd = ['gdb', '-batch', '-q', '-ex', 'start', '-ex', 'info source',
-               '--args', str(resolve_binary(binary))]
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        libs = _collect_lib_paths(binary)
+        env = os.environ.copy()
+        env['ASAN_OPTIONS'] = 'detect_leaks=0'
+        if libs:
+            env['LD_LIBRARY_PATH'] = ':'.join(libs + [env.get('LD_LIBRARY_PATH', '')])
+        cmd = ['gdb', '-batch', '-q', '-ex', 'start', '-ex',
+               f'info line {func}', '--args', str(resolve_binary(binary))] \
+            + [str(a) for a in args]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=60,
+                           env=env)
     except Exception:
         return None
-    m = re.search(r'Current source file is (.+)', r.stdout + r.stderr)
+    m = re.search(r'Line \d+ of "([^"]+)"', r.stdout + r.stderr)
     if not m:
         return None
     path = m.group(1).strip()
