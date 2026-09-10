@@ -350,6 +350,45 @@ def _null_compare_fork(diff):
     return 'NULL' in text or 'null' in text
 
 
+def _producer_candidates(diff, source_file_a, source_file_b,
+                         cnt_a, cnt_b, refactoring_map):
+    """Function names that produce the NULL-comparison operands.
+
+    ``if (in == NULL)`` -> look for ``in = TIFFOpen(...)`` in the caller's
+    source and return TIFFOpen as the function to descend into FIRST — the
+    real guard lives inside the producer, not in any random callee.
+    """
+    operands = set()
+    for side in (diff.get('a') or {}, diff.get('b') or {}):
+        for expr_a, expr_b in side.get('exprs') or []:
+            for expr in (expr_a, expr_b):
+                if expr and re.fullmatch(r'[A-Za-z_]\w*', expr):
+                    operands.add(expr)
+    producers = []
+    for src, cnt in ((source_file_a, cnt_a), (source_file_b, cnt_b)):
+        if not src:
+            continue
+        try:
+            text = Path(src).read_text(errors='replace')
+        except Exception:
+            continue
+        for name in operands:
+            for m in re.finditer(r'\b' + re.escape(name) + r'\s*=\s*'
+                                 r'([A-Za-z_]\w*)\s*\(', text):
+                prod = m.group(1)
+                if prod not in producers:
+                    producers.append(prod)
+    # Pair with matching counts on the other side.
+    out = []
+    for prod_a in producers:
+        for prod_b, cb in cnt_b.items():
+            if cnt_a.get(prod_a) == cb and _name_pair(prod_a, prod_b,
+                                                      refactoring_map):
+                out.append((prod_a, prod_b))
+                break
+    return out
+
+
 def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                             func_a, args, refactoring_map=None, timeout=300,
                             max_depth=4, _depth=0, _visited=None,
