@@ -36,6 +36,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from decision_trace import record_decisions
 from decision_trace import _locate_function_source, find_function_decisions
+from decision_trace import is_function_definition
 
 _SEMANTIC_SUFFIXES = ('WithLimit', 'Checked', 'Safe', 'Ex', 'NoSSE', 'Array')
 
@@ -190,10 +191,8 @@ def _record_side(binary, func_names, source_root, args, timeout, source_hint=Non
     root_eff = source_root
     if source_hint:
         hint_dir = str(Path(source_hint).parent)
-        hint_name = Path(source_hint).name
         try:
-            import decision_trace as dt
-            if is_function_definition(source_hint, func_names[0]):
+            if any(is_function_definition(source_hint, n) for n in func_names):
                 root_eff = hint_dir
         except Exception:
             pass
@@ -227,7 +226,8 @@ def _fork_summary(res, func_a, func_b):
 
 def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                             func_a, args, refactoring_map=None, timeout=300,
-                            max_depth=4, _depth=0, _visited=None):
+                            max_depth=4, _depth=0, _visited=None,
+                            _hint_a=None, _hint_b=None):
     """Unified dynamic fork locator (see module docstring).
 
     Returns a dict with ``status`` in
@@ -251,10 +251,12 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
     print(f'{indent}[unified] level {_depth}: {func_a} '
           f'(B side tried: {try_names_b})')
 
-    ra, used_a = _record_side(binary_a, [func_a], source_root_a, args, timeout)
+    ra, used_a = _record_side(binary_a, [func_a], source_root_a, args, timeout,
+                              source_hint=_hint_a)
     if ra is None:
         return {'status': 'record_failed', 'side': 'a', 'func': func_a}
-    rb, used_b = _record_side(binary_b, try_names_b, source_root_b, args, timeout)
+    rb, used_b = _record_side(binary_b, try_names_b, source_root_b, args,
+                              timeout, source_hint=_hint_b)
     if rb is None:
         return {'status': 'record_failed', 'side': 'b', 'func': func_b}
     print(f'{indent}[unified] recorded A={len(ra.get("invocations") or [])} '
