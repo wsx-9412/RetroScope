@@ -470,15 +470,15 @@ class LineBP(gdb.Breakpoint):
             return False
         if S["order"] >= MAX_EVENTS:
             return False
+        S["order"] += 1  # unified hit counter (decisions AND calls)
         if self.line in decision_lines:
-            S["order"] += 1
             clauses = eval_clauses(self.line)
             gdb.write("##EVT %d %d %d %s\n"
                       % (S["order"], S["inv"], self.line, json.dumps(clauses)))
         callees = call_lines.get(str(self.line))
         if callees:
-            gdb.write("##CALL %d %d %s\n"
-                      % (S["inv"], self.line, json.dumps(callees)))
+            gdb.write("##CALL %d %d %d %s\n"
+                      % (S["order"], S["inv"], self.line, json.dumps(callees)))
         return False
 
 class EntryBP(gdb.Breakpoint):
@@ -611,8 +611,8 @@ while True:
             gdb.write("##EVT %d %d %d %s\n" % (order, inv, line, json.dumps(clauses)))
         callees = call_lines.get(str(line))
         if callees:
-            gdb.write("##CALL %d %d %s\n"
-                      % (inv, line, json.dumps(callees)))
+            gdb.write("##CALL %d %d %d %s\n"
+                      % (order, inv, line, json.dumps(callees)))
         if line in return_lines:
             try:
                 text = gdb.execute("finish", to_string=True)
@@ -805,10 +805,11 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
     bp_fail = bool(re.search(r'##BPFAIL', out))
 
     calls = []
-    for m in re.finditer(r'##CALL (\d+) (\d+) (\[.*\])', out):
+    for m in re.finditer(r'##CALL (\d+) (\d+) (\d+) (\[.*\])', out):
         try:
-            calls.append({'inv': int(m.group(1)), 'line': int(m.group(2)),
-                          'callees': json.loads(m.group(3))})
+            calls.append({'order': int(m.group(1)), 'inv': int(m.group(2)),
+                          'line': int(m.group(3)),
+                          'callees': json.loads(m.group(4))})
         except Exception:
             pass
     rets = {}
