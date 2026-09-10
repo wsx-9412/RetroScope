@@ -152,10 +152,15 @@ def _ret_equal(ra, rb):
 
 def _recurse_candidates(inv_a, inv_b, refactoring_map, source_a=None,
                         source_b=None):
-    """Callees invoked the same number of times on both sides, ranked by
-    static decision density (most decision-dense first: the divergence is
-    likeliest inside functions with their own guards), then by their last
-    call position (closest to the function exit) as a tiebreak."""
+    """Callees invoked on BOTH sides, ranked by static decision density
+    (most decision-dense first: the divergence is likeliest inside functions
+    with their own guards), then by their last call position as a tiebreak.
+
+    Invocation counts may differ (the target bails out early on a failing
+    path and stops calling — e.g. TIFFOpen called 2x vs 1x): a callee is a
+    candidate as soon as BOTH sides called it at least once (pairing by the
+    min count; the recursive level then aligns the common invocations).
+    """
     cnt_a, last_a = {}, {}
     for c in inv_a.get('calls') or []:
         for name in c.get('callees') or []:
@@ -181,7 +186,7 @@ def _recurse_candidates(inv_a, inv_b, refactoring_map, source_a=None,
     pairs = []
     for name_a, ca in cnt_a.items():
         for name_b, cb in cnt_b.items():
-            if ca == cb and _name_pair(name_a, name_b, refactoring_map):
+            if min(ca, cb) >= 1 and _name_pair(name_a, name_b, refactoring_map):
                 pos = max(last_a.get(name_a, 0), last_b.get(name_b, 0))
                 nd = (_static_decisions(name_a, source_a)
                       + _static_decisions(name_b, source_b)) // 2
