@@ -266,11 +266,14 @@ def build_dynamic_result(res, boundary_func, source_root_a, source_root_b,
         out['root_cause_line_b'] = b['line']
         out['root_cause_statement_a'] = a.get('text', '')
         out['root_cause_statement_b'] = b.get('text', '')
+        _CKEYWORDS = {'if', 'else', 'for', 'while', 'do', 'switch', 'case',
+                      'return', 'sizeof', 'goto', 'break', 'continue',
+                      'typedef', 'struct', 'union', 'enum', 'const', 'static'}
         variables = []
         for text in (a.get('text', ''), b.get('text', '')):
-            for v in extract_variables_from_statement(text):
-                if re.fullmatch(r'[0-9xXa-fA-F_]+', v):
-                    continue  # numeric literal
+            for v in re.findall(r'[A-Za-z_]\w*', text):
+                if v in _CKEYWORDS:
+                    continue
                 if re.fullmatch(r'[A-Z_][A-Z0-9_]*', v):
                     continue  # macro / enum constant (not a mutation target)
                 if v not in variables:
