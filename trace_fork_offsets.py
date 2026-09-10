@@ -1588,8 +1588,10 @@ run {run_args}
 
         # File offset of the IFD entry.  tif->tif_diroff points at the
         # directory count (2 bytes for classic TIFF); the entry array starts
-        # 2 bytes later.  dp - dir is the byte offset of the entry in the
-        # buffer; tdir_tag is the entry's first field.
+        # 2 bytes later.  dp - dir is the entry's offset in the *in-memory*
+        # buffer, where each TIFFDirEntry is 24 bytes (uint64 tdir_count);
+        # on disk each classic-TIFF entry is 12 bytes, so the file offset
+        # uses 12 bytes per entry.
         entry_off = None
         entry_index = None
         if (diroff is not None and dp_addr is not None and dir_addr is not None
@@ -1597,7 +1599,7 @@ run {run_args}
             delta = dp_addr - dir_addr
             esz = entry_size if entry_size else 12
             entry_index = delta // esz
-            entry_off = diroff + 2 + delta
+            entry_off = diroff + 2 + entry_index * 12
 
         tag_mappings[tagid] = {
             'file_offset': entry_off,
