@@ -98,36 +98,37 @@ def compare_invocations(inv_a, inv_b):
     ev_a = inv_a.get('events') or []
     ev_b = inv_b.get('events') or []
     n = min(len(ev_a), len(ev_b))
+
+    def _mk(kind, strong, k, ea, eb, da, db):
+        return {'kind': kind, 'strong': strong, 'index': k,
+                'a': {'line': ea.get('line'), 'text': ea.get('text', ''),
+                      'clauses': ea.get('clauses', {}), 'outcome': da,
+                      'exprs': ea.get('exprs', [])},
+                'b': {'line': eb.get('line'), 'text': eb.get('text', ''),
+                      'clauses': eb.get('clauses', {}), 'outcome': db,
+                      'exprs': eb.get('exprs', [])}}
+
+    strong = None
+    weak = None
     for k in range(n):
         ea, eb = ev_a[k], ev_b[k]
         da, db = ea.get('outcome'), eb.get('outcome')
         if da != db and da is not None and db is not None:
-            return {'kind': 'outcome', 'strong': True, 'index': k,
-                    'a': {'line': ea['line'], 'text': ea.get('text', ''),
-                          'clauses': ea.get('clauses', {}), 'outcome': da,
-                          'exprs': ea.get('exprs', [])},
-                    'b': {'line': eb['line'], 'text': eb.get('text', ''),
-                          'clauses': eb.get('clauses', {}), 'outcome': db,
-                          'exprs': eb.get('exprs', [])}}
+            strong = strong or _mk('outcome', True, k, ea, eb, da, db)
+            continue
+        if len(ev_a) != len(ev_b) and strong is None:
+            pass
         ta, tb = _norm(ea.get('text', '')), _norm(eb.get('text', ''))
-        if ta and tb and ta != tb:
-            return {'kind': 'text', 'strong': False, 'index': k,
-                    'a': {'line': ea['line'], 'text': ea.get('text', ''),
-                          'clauses': ea.get('clauses', {}), 'outcome': da,
-                          'exprs': ea.get('exprs', [])},
-                    'b': {'line': eb['line'], 'text': eb.get('text', ''),
-                          'clauses': eb.get('clauses', {}), 'outcome': db,
-                          'exprs': eb.get('exprs', [])}}
         va, vb = _value_tuple(ea.get('clauses') or {}), \
             _value_tuple(eb.get('clauses') or {})
-        if va and vb and va != vb:
-            return {'kind': 'value', 'strong': False, 'index': k,
-                    'a': {'line': ea['line'], 'text': ea.get('text', ''),
-                          'clauses': ea.get('clauses', {}), 'outcome': da,
-                          'exprs': ea.get('exprs', [])},
-                    'b': {'line': eb['line'], 'text': eb.get('text', ''),
-                          'clauses': eb.get('clauses', {}), 'outcome': db,
-                          'exprs': eb.get('exprs', [])}}
+        if ta and tb and ta != tb and weak is None:
+            weak = _mk('text', False, k, ea, eb, da, db)
+        elif va and vb and va != vb and weak is None:
+            weak = _mk('value', False, k, ea, eb, da, db)
+    if strong:
+        return strong
+    if weak:
+        return weak
     if len(ev_a) != len(ev_b):
         side = 'a' if len(ev_a) > len(ev_b) else 'b'
         return {'kind': 'count', 'strong': True, 'index': n,

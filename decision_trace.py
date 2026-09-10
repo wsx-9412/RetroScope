@@ -733,6 +733,13 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
             vals = ev['clauses'].get(str(i), {})
             lhs, rhs = vals.get('lhs'), vals.get('rhs')
             op = cl.get('op')
+            # gdb cannot parse the NULL macro; a NULL operand is 0 by
+            # definition, which makes comparisons like `in == NULL`
+            # computable (and the fork STRONG when the pointer differs).
+            if lhs is None and cl.get('lhs') in ('NULL', 'nullptr'):
+                lhs = 0
+            if rhs is None and cl.get('rhs') in ('NULL', 'nullptr'):
+                rhs = 0
             if op is None or lhs is None or rhs is None:
                 unknown = True
                 results.append(None)
