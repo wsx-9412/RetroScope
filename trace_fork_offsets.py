@@ -1522,7 +1522,6 @@ while f is not None:
         f = f.older()
     except Exception:
         break
-end
 try:
     print("DIROFF %d" % int(gdb.parse_and_eval('tif->tif_diroff')))
 except Exception:
@@ -1558,6 +1557,8 @@ run {run_args}
         preads = []
         dp_addr = None
         dir_addr = None
+        diroff = None
+        entry_size = None
         for line in out_b.splitlines():
             line = line.strip()
             m = re.match(r'PREAD64 fd=(\d+) offset=(-?\d+) size=(-?\d+) buf=(0x[0-9a-f]+)', line)
@@ -1576,36 +1577,35 @@ run {run_args}
             m = re.match(r'CALLER_DIR (0x[0-9a-f]+) (\S+)', line)
             if m:
                 dir_addr = int(m.group(1), 16)
+                continue
+            m = re.match(r'DIROFF (\d+)', line)
+            if m:
+                diroff = int(m.group(1))
+                continue
+            m = re.match(r'ENTSIZE (\d+)', line)
+            if m:
+                entry_size = int(m.group(1))
 
-        # Locate the pread64 whose buffer IS the IFD buffer (buf == dir).
-        # Fallback: the smallest buffer that fully contains dp.
-        ifd_off = None
-        if dir_addr is not None:
-            for p in preads:
-                if p['buf'] == dir_addr:
-                    ifd_off = p['offset']
-                    break
-        if ifd_off is None and dp_addr is not None:
-            for p in sorted(preads, key=lambda q: q['size']):
-                if p['buf'] <= dp_addr < p['buf'] + p['size']:
-                    ifd_off = p['offset']
-                    dir_addr = p['buf']
-                    break
-
+        # File offset of the IFD entry.  tif->tif_diroff points at the
+        # directory count (2 bytes for classic TIFF); the entry array starts
+        # 2 bytes later.  dp - dir is the byte offset of the entry in the
+        # buffer; tdir_tag is the entry's first field.
         entry_off = None
         entry_index = None
-        if ifd_off is not None and dp_addr is not None and dir_addr is not None:
+        if (diroff is not None and dp_addr is not None and dir_addr is not None
+                and dp_addr >= dir_addr):
             delta = dp_addr - dir_addr
-            if delta >= 0:
-                entry_index = delta // 12          # sizeof(TIFFDirEntry) = 12
-                entry_off = ifd_off + delta        # tdir_tag is the first field
+            esz = entry_size if entry_size else 12
+            entry_index = delta // esz
+            entry_off = diroff + 2 + delta
 
         tag_mappings[tagid] = {
             'file_offset': entry_off,
             'entry_index': entry_index,
             'dp': f'0x{dp_addr:x}' if dp_addr else None,
             'dir': f'0x{dir_addr:x}' if dir_addr else None,
-            'ifd_offset': ifd_off,
+            'ifd_offset': diroff,
+            'entry_size': entry_size,
             'tag_name': _TIFF_TAG_NAMES.get(tagid, f'tag_{tagid}'),
         }
         pread64_all.extend(preads)
