@@ -163,15 +163,55 @@ def parse_condition_clauses(cond):
 
 
 def _function_body(source_file, func_name):
-    """Return (start, end, lines) of func_name's body, or None."""
-    fn_line = find_function_line(source_file, func_name)
-    if not fn_line:
+    """Return (start, end, lines) of func_name's body, or None.
+
+    Robust variant of find_function_body_range: ALL definition-like lines are
+    brace-matched, and the LONGEST valid span is chosen.  The backward
+    signature scan fails for ``main`` (the previous function's signature is
+    found instead), yielding a tiny/empty body — the longest-span rule fixes
+    that without any project-specific knowledge.
+    """
+    try:
+        lines = Path(source_file).read_text(errors='replace').splitlines()
+    except Exception:
         return None
-    body = find_function_body_range(source_file, fn_line)
-    if not body:
+    n = len(lines)
+    pat = re.compile(
+        r'^(?:(?:static|inline|extern)\s+)?(?:[\w\s\*]+?\s+)?'
+        + re.escape(func_name) + r'\s*\(')
+    candidates = []
+    for i, raw in enumerate(lines):
+        stripped = raw.strip()
+        if not stripped or stripped.startswith(('#', '//', '/*', '*')):
+            continue
+        if stripped.endswith(';'):
+            continue  # forward declaration
+        if pat.match(stripped):
+            candidates.append(i)
+    best = None
+    for i in candidates:
+        brace = None
+        for j in range(i, min(i + 30, n)):
+            if '{' in lines[j]:
+                brace = j
+                break
+        if brace is None:
+            continue
+        depth = 0
+        end = None
+        for j in range(brace, n):
+            depth += lines[j].count('{') - lines[j].count('}')
+            if depth == 0:
+                end = j
+                break
+        if end is None:
+            continue
+        span = end - i
+        if best is None or span > best[0]:
+            best = (span, brace + 1, end + 1)
+    if best is None:
         return None
-    lines = Path(source_file).read_text(errors='replace').splitlines()
-    return body[0], body[1], lines
+    return best[1], best[2], lines
 
 
 _SKIP_CALL_TOKENS = {
