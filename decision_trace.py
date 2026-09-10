@@ -695,7 +695,6 @@ def _build_bp_script(config):
     L.append('MAX_EVENTS = %d' % config.get('max_events', 100000))
     L.append('end')
 
-    spec = '%s:%d' % (config['file'], 0) if False else None  # placeholder
     max_events = config.get('max_events', 100000)
 
     # Decision lines: record operands, step once, report the reached line.
@@ -904,9 +903,12 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
     if libs:
         env['LD_LIBRARY_PATH'] = ':'.join(libs + [env.get('LD_LIBRARY_PATH', '')])
 
-    cmd = ['gdb', '-batch', '-q',
-           '-ex', f"python exec(open({script!r}).read())",
-           str(real_bin)]
+    if mode == 'bp':
+        cmd = ['gdb', '-batch', '-q', '-x', script, str(real_bin)]
+    else:
+        cmd = ['gdb', '-batch', '-q',
+               '-ex', f"python exec(open({script!r}).read())",
+               str(real_bin)]
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
                            env=env)
@@ -931,8 +933,12 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         except Exception:
             clauses = {}
         events[n] = {'n': n, 'inv': inv, 'line': line, 'clauses': clauses}
-    # Invocation markers: ENTER <inv> / CALL <inv> <line> <json> / RET <inv> <val>
+    # Invocation markers: ENTER <inv> / CALL <order> <inv> <line> <json> /
+    # RET <inv> <val> / NEXTLN <order> <line> (real branch reached)
     enters = [int(m) for m in re.findall(r'##ENTER (\d+)', out)]
+    next_lines = {}
+    for m in re.finditer(r'##NEXTLN (\d+) (\d+)', out):
+        next_lines[int(m.group(1))] = int(m.group(2))
     totals = re.findall(r'##TOTAL (\d+)', out)
     total = int(totals[-1]) if totals else len(events)
     inv_total = int((re.findall(r'##INVTOTAL (\d+)', out) or [0])[-1])
@@ -957,12 +963,25 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
     for n in events:
         ln = events[n]['line']
         events[n]['text'] = src_lines[ln - 1].strip() if 0 < ln <= len(src_lines) else ''
+        if n in next_lines:
+            events[n]['next_line'] = next_lines[n]
 
-    # Compute outcomes client-side from the numeric clause values.
+    # Compute outcomes: REAL branch taken (##NEXTLN inside the then-region)
+    # takes precedence over clause-value arithmetic — the former works for
+    # conditions gdb cannot evaluate (calls, macros, enum constants).
     dline_map = {d['line']: d for d in decisions}
+    regions = {}
+    for d in decisions:
+        regions[d['line']] = _branch_then_region(src_lines, d['line'])
     for n, ev in events.items():
         d = dline_map.get(ev['line'])
         if not d:
+            continue
+        nl = ev.get('next_line')
+        if nl and regions.get(ev['line']):
+            ts, te = regions[ev['line']]
+            ev['outcome'] = (ts <= nl <= te)
+            ev['outcome_from_flow'] = True
             continue
         results = []
         unknown = False
