@@ -278,11 +278,15 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                 'reason': 'no invocations recorded at this level'}
     cand = _recurse_candidates(inv_a[-1], inv_b[-1], refactoring_map,
                                source_root_a, source_root_b)
+    print(f'{indent}[unified] candidates: '
+          + ', '.join(f'{a}|{b}' for a, b in cand[:6]))
     for callee_a, callee_b in cand[:6]:
         sub = locate_fork_dynamically(
             binary_a, binary_b, source_root_a, source_root_b, callee_a,
             args, refactoring_map=refactoring_map, timeout=timeout,
             max_depth=max_depth, _depth=_depth + 1, _visited=_visited)
+        print(f'{indent}[unified]   -> {callee_a}: {sub.get("status")} '
+              f'{sub.get("reason", "")}')
         if sub.get('status') in ('decision_fork', 'value_fork'):
             return sub
 

@@ -624,6 +624,8 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         except Exception:
             clauses = {}
         events[n] = {'n': n, 'inv': inv, 'line': line, 'clauses': clauses}
+    # Invocation markers: ENTER <inv> / CALL <inv> <line> <json> / RET <inv> <val>
+    enters = [int(m) for m in re.findall(r'##ENTER (\d+)', out)]
     totals = re.findall(r'##TOTAL (\d+)', out)
     total = int(totals[-1]) if totals else len(events)
     inv_total = int((re.findall(r'##INVTOTAL (\d+)', out) or [0])[-1])
@@ -631,8 +633,6 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         inv_total = len(enters)
     bp_fail = bool(re.search(r'##BPFAIL', out))
 
-    # Invocation markers: ENTER <inv> / CALL <inv> <line> <json> / RET <inv> <val>
-    enters = [int(m) for m in re.findall(r'##ENTER (\d+)', out)]
     calls = []
     for m in re.finditer(r'##CALL (\d+) (\d+) (\[.*\])', out):
         try:
