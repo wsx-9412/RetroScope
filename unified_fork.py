@@ -422,11 +422,12 @@ def _operands_pointer(diff, source_root, file_path=None):
     return False
 
 
-def _needs_descent(diff, source_root):
+def _needs_descent(diff, source_root, file_path=None):
     """Descent is needed only when the fork's differing operands are
     taint-dead: pointer variables or NULL comparisons.  Scalar guards are
     reported directly (their operands can be tainted)."""
-    return _null_compare_fork(diff) or _operands_pointer(diff, source_root)
+    return (_null_compare_fork(diff)
+            or _operands_pointer(diff, source_root, file_path=file_path))
 
 
 def _producer_candidates(diff, source_file_a, source_file_b,
