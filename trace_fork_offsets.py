@@ -3311,6 +3311,32 @@ def main():
         else:
             print(f'      file offsets: (not from input file)')
 
+    # Show libtiff tag trace results if available
+    if libtiff_trace:
+        print(f'\n  Libtiff tag chain trace (GDB + IFD parsing):')
+        field_tag = libtiff_trace.get('field_tag')
+        tagid = libtiff_trace.get('tagid')
+        mb = libtiff_trace.get('mb')
+
+        if field_tag is not None:
+            entry_off = libtiff_trace.get('field_tag_entry_offset')
+            val_off = libtiff_trace.get('field_tag_value_offset')
+            tag_name = libtiff_trace.get('field_tag_name', 'unknown')
+            if entry_off is not None:
+                print(f'    tif->tif_fields[{mb}]->field_tag = {field_tag} ({tag_name})')
+                print(f'      ← determined by IFD entry at file offset 0x{entry_off:x}')
+                print(f'      ← value field at file offset 0x{val_off:x}')
+            else:
+                print(f'    tif->tif_fields[{mb}]->field_tag = {field_tag}')
+                print(f'      ← internal tag (not in IFD)')
+
+        if tagid is not None:
+            entry_off = libtiff_trace.get('tagid_entry_offset')
+            tag_name = libtiff_trace.get('tagid_name', 'unknown')
+            if entry_off is not None:
+                print(f'    tagid = {tagid} ({tag_name})')
+                print(f'      ← determined by IFD entry at file offset 0x{entry_off:x}')
+
     # ================================================================
     # Summary — dynamic, based on analysis results
     # ================================================================
@@ -3437,6 +3463,7 @@ def main():
         'target_file_reads': positioned_b,
         'ref_file_reads': positioned_a,
         'variable_mapping': result.get('variables', {}),
+        'libtiff_tag_trace': libtiff_trace,
     }
     out_path = os.path.join(os.path.dirname(input_file) if input_file else '.', 'fork_trace_result.json')
     with open(out_path, 'w') as f:
