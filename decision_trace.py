@@ -304,6 +304,104 @@ for d in config["dirs"]:
     except Exception:
         pass
 
+MAX_EVENTS = config.get("max_events", 100000)
+MODE = config.get("mode", "bp")          # "bp" (breakpoint, fast) or "step"
+decision_lines = set(d["line"] for d in config["decisions"])
+clauses_by_line = config["clauses_by_line"]
+call_lines = config.get("call_lines", {})       # str(line) -> [callee...]
+return_lines = set(config.get("return_lines", []))
+RET_RE = re.compile(r'Value returned is \$(\d+)\s*=\s*(.+)')
+S = {"order": 0, "inv": 0, "created": False}
+
+def eval_clauses(line):
+    clauses = {}
+    for ci, cl in enumerate(clauses_by_line.get(str(line), [])):
+        vals = {}
+        for side in ("lhs", "rhs"):
+            expr = cl.get(side, "")
+            if not expr or cl.get("op") is None:
+                continue
+            try:
+                v = gdb.parse_and_eval(expr)
+                vals[side] = int(v)
+            except Exception:
+                vals[side] = None
+        if vals:
+            clauses[str(ci)] = vals
+    return clauses
+
+def in_func():
+    try:
+        return gdb.newest_frame().name() == config["func"]
+    except Exception:
+        return False
+
+class LineBP(gdb.Breakpoint):
+    def __init__(self, spec, line):
+        super(LineBP, self).__init__(spec, internal=False)
+        self.line = line
+    def stop(self):
+        if not in_func():
+            return False
+        if S["order"] >= MAX_EVENTS:
+            return False
+        if self.line in decision_lines:
+            S["order"] += 1
+            clauses = eval_clauses(self.line)
+            gdb.write("##EVT %d %d %s\n"
+                      % (S["order"], self.line, json.dumps(clauses)))
+        callees = call_lines.get(str(self.line))
+        if callees:
+            gdb.write("##CALL %d %d %s\n"
+                      % (S["inv"], self.line, json.dumps(callees)))
+        return False
+
+class EntryBP(gdb.Breakpoint):
+    def __init__(self, spec):
+        super(EntryBP, self).__init__(spec, internal=False)
+    def stop(self):
+        if not in_func():
+            return False
+        S["inv"] += 1
+        gdb.write("##ENTER %d\n" % S["inv"])
+        if not S["created"]:
+            S["created"] = True
+            # Line breakpoints can only resolve now (the shared library is
+            # loaded and its symtab is in scope); absolute paths avoid the
+            # basename matching problem of pending file:line breakpoints.
+            for ln in sorted(set(decision_lines) |
+                             {int(k) for k in call_lines}):
+                try:
+                    LineBP("%s:%d" % (config["file"], ln), ln)
+                except Exception as e:
+                    gdb.write("##BPFAIL %d %s\n" % (ln, str(e)))
+        return False
+
+gdb.write("##READY\n")
+try:
+    EntryBP(config["func"])
+except Exception as e:
+    gdb.write("##BPFAIL 0 %s\n" % str(e))
+gdb.execute("run " + config["runargs"])
+gdb.write("##TOTAL %d\n" % S["order"])
+gdb.write("##INVTOTAL %d\n" % S["inv"])
+'''
+
+
+_STEP_TEMPLATE = r'''
+import json
+import re
+
+config = json.loads("""__CONFIG__""")
+gdb.execute("set pagination off")
+gdb.execute("set confirm off")
+gdb.execute("set breakpoint pending on")
+for d in config["dirs"]:
+    try:
+        gdb.execute(f"directory {d}")
+    except Exception:
+        pass
+
 MAX_STEPS = config.get("max_steps", 200000)
 MAX_EVENTS = config.get("max_events", 100000)
 decision_lines = set(d["line"] for d in config["decisions"])
@@ -360,8 +458,6 @@ while True:
         gdb.write("##END noframe\n")
         break
     if fn != config["func"]:
-        # Stopped somewhere else (signal/crash/exit); if the process is still
-        # alive, try again — otherwise the next continue raises and ends.
         gdb.write("##STOPOTHER %s\n" % str(fn))
         continue
     inv += 1
@@ -374,8 +470,6 @@ while True:
         except gdb.error:
             break
         if fn != config["func"]:
-            # The previous step returned to the caller; capture a best-effort
-            # return value from the return register if we can.
             try:
                 rv = gdb.parse_and_eval("$rax")
                 gdb.write("##RET %d %s\n" % (inv, str(rv)))
@@ -395,8 +489,6 @@ while True:
             gdb.write("##CALL %d %d %s\n"
                       % (inv, line, json.dumps(callees)))
         if line in return_lines:
-            # At a return statement: run 'finish' so the return value is
-            # reported at the return point ($rax is still valid).
             try:
                 text = gdb.execute("finish", to_string=True)
                 m = RET_RE.search(text)
@@ -421,7 +513,8 @@ gdb.write("##INVTOTAL %d\n" % inv)
 def _build_gdb_script(config):
     # The JSON is a valid Python literal; splice it directly into the template
     # (avoids argv quoting problems — gdb does not shell-parse -ex arguments).
-    return _GDB_TEMPLATE.replace('__CONFIG__', json.dumps(config))
+    template = _STEP_TEMPLATE if config.get("mode") == "step" else _GDB_TEMPLATE
+    return template.replace('__CONFIG__', json.dumps(config))
 
 
 # --------------------------------------------------------------------------
