@@ -424,6 +424,19 @@ def _operands_pointer(diff, source_root, file_path=None):
     return False
 
 
+
+def _same_operands(diff):
+    """True when both sides evaluated the SAME operand values at the fork.
+
+    Same values + different outcome = a CODE-CHANGE fork (the code decides
+    differently, e.g. an added guard or a rewritten branch): mutating the
+    input cannot flip it.  The mutation-relevant fork is the deeper STATE
+    fork that makes the operands differ — so descend.
+    """
+    a = (diff.get('a') or {}).get('clauses') or {}
+    b = (diff.get('b') or {}).get('clauses') or {}
+    return _value_tuple(a) == _value_tuple(b) and bool(a or b)
+
 def _needs_descent(diff, source_root, file_path=None):
     """Descent is needed only when the fork's differing operands are
     taint-dead: pointer variables or NULL comparisons.  Scalar guards are
@@ -640,6 +653,8 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
     #    lives deeper inside the pointer's producer.
     i, diff = _find_diff(strong_only=True)
     if diff:
+        is_code_change = (diff.get('kind') == 'outcome'
+                          and _same_operands(diff))
         if _needs_descent(diff, source_root_a, file_path=ra.get('file')):
             print(f'{indent}[unified] wrapper/pointer-level fork at '
                   f'{used_a}:{diff["a"].get("line")} (taint-dead operands) '
@@ -649,6 +664,16 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                 return sub
             print(f'{indent}[unified]   no deeper strong fork — '
                   f'reporting the wrapper fork itself')
+        elif is_code_change:
+            print(f'{indent}[unified] code-change fork at '
+                  f'{used_a}:{diff["a"].get("line")} (identical operand '
+                  f'values, different outcome — input mutation cannot flip '
+                  f'it) — descending to find the state fork')
+            sub = _try_candidates(null_diff=None)
+            if sub:
+                return sub
+            print(f'{indent}[unified]   no deeper state fork — '
+                  f'reporting the code-change fork itself')
         else:
             print(f'{indent}[unified] scalar-operand fork at '
                   f'{used_a}:{diff["a"].get("line")} — reporting directly '
