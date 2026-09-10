@@ -376,6 +376,14 @@ def _instrument_source(source_dir, instrument):
         return
 
     vars_ = []
+    # C type names that should not be instrumented (they're not variables)
+    c_types = {
+        'int', 'char', 'short', 'long', 'float', 'double', 'void', 'signed', 'unsigned',
+        'int8_t', 'int16_t', 'int32_t', 'int64_t', 'uint8_t', 'uint16_t', 'uint32_t', 'uint64_t',
+        'int8', 'int16', 'int32', 'int64', 'uint8', 'uint16', 'uint32', 'uint64',
+        'size_t', 'ssize_t', 'ptrdiff_t', 'off_t', 'pid_t', 'uid_t', 'gid_t',
+        'bool', 'true', 'false', 'NULL',
+    }
     for v in variables:
         if not v:
             continue
@@ -386,6 +394,9 @@ def _instrument_source(source_dir, instrument):
         # Skip all-caps macros / enum constants (e.g. COMPOSITE_IMAGES) — they
         # are not lvalues, so &(macro) fails to compile.
         if re.match(r'^[A-Z][A-Z0-9_]*$', v):
+            continue
+        # Skip C type names (e.g. uint32, int) — they're not variables.
+        if v in c_types:
             continue
         # Skip expressions that would not compile as an lvalue (e.g. LHS
         # assignment targets are fine, but casts/function results are not).
