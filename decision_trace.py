@@ -162,19 +162,76 @@ def parse_condition_clauses(cond):
     return clauses
 
 
+def _strip_c_comments_strings(lines):
+    """Remove C comments and string/char literals so brace counting and
+    token scans are not corrupted by '{'/'}' inside comments or strings."""
+    out = []
+    in_block = False
+    in_str = in_char = False
+    for raw in lines:
+        res = []
+        i, n = 0, len(raw)
+        while i < n:
+            c = raw[i]
+            nxt = raw[i + 1] if i + 1 < n else ''
+            if in_block:
+                if c == '*' and nxt == '/':
+                    in_block = False
+                    i += 2
+                    continue
+                i += 1
+                continue
+            if in_str:
+                if c == '\\':
+                    i += 2
+                    continue
+                if c == '"':
+                    in_str = False
+                i += 1
+                continue
+            if in_char:
+                if c == '\\':
+                    i += 2
+                    continue
+                if c == "'":
+                    in_char = False
+                i += 1
+                continue
+            if c == '/' and nxt == '/':
+                break  # line comment
+            if c == '/' and nxt == '*':
+                in_block = True
+                i += 2
+                continue
+            if c == '"':
+                in_str = True
+                i += 1
+                continue
+            if c == "'":
+                in_char = True
+                i += 1
+                continue
+            res.append(c)
+            i += 1
+        out.append(''.join(res))
+    return out
+
+
 def _function_body(source_file, func_name):
     """Return (start, end, lines) of func_name's body, or None.
 
     Robust variant of find_function_body_range: ALL definition-like lines are
-    brace-matched, and the LONGEST valid span is chosen.  The backward
-    signature scan fails for ``main`` (the previous function's signature is
-    found instead), yielding a tiny/empty body — the longest-span rule fixes
-    that without any project-specific knowledge.
+    brace-matched (after stripping comments/strings so '{' inside literals
+    cannot corrupt the depth count), and the LONGEST valid span is chosen.
+    The backward signature scan fails for ``main`` (the previous function's
+    signature is found instead) and multi-line signatures (TIFFClientOpen),
+    which the longest-span rule fixes without any project-specific knowledge.
     """
     try:
-        lines = Path(source_file).read_text(errors='replace').splitlines()
+        raw_lines = Path(source_file).read_text(errors='replace').splitlines()
     except Exception:
         return None
+    lines = _strip_c_comments_strings(raw_lines)
     n = len(lines)
     pat = re.compile(
         r'^(?:(?:static|inline|extern)\s+)?(?:[\w\s\*]+?\s+)?'
@@ -639,10 +696,9 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
     if not fsrc:
         print(f'  [!] source for {func} not found under {source_root or real_bin}')
         return None
-    if func == 'main':
-        msrc = _gdb_main_source(real_bin, source_root)
-        if msrc:
-            fsrc = msrc
+    gsrc = _gdb_resolve_function_source(real_bin, func, source_root, args)
+    if gsrc:
+        fsrc = gsrc
     decisions = find_function_decisions(fsrc, func)
     if not decisions:
         print(f'  [!] no decision lines found for {func} in {fsrc}')
