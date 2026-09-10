@@ -474,7 +474,12 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                 _hint_a=ra.get('file'), _hint_b=rb.get('file'))
             print(f'{indent}[unified]   -> {callee_a}: {sub.get("status")} '
                   f'{sub.get("reason", "")}')
-            if sub.get('status') == 'decision_fork' and not sub.get('weak'):
+            # A callee-level count fork is usually an ABSORBED divergence
+            # (extra/removed statements that do not change the caller's
+            # later behavior) — only outcome/value/text forks are decisive.
+            if sub.get('status') == 'decision_fork' and not sub.get('weak') \
+                    and sub.get('diff', {}).get('kind') in \
+                    ('outcome', 'value', 'text'):
                 return sub
             if sub.get('status') == 'value_fork':
                 return sub
