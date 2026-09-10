@@ -744,8 +744,9 @@ def _build_bp_script(config):
         L.append('if S["order"] < MAX_EVENTS:')
         L.append('    S["order"] += 1')
         L.append('    gdb.write("##CALL %d %d %d %s\\n" % '
-                 '(S["order"], S["inv"], %s, json.dumps(%s)))'
-                 % (ln, repr(callees)))
+                 '(S["order"], S["inv"], __CALLLINE__, json.dumps(__CALLEES__)))'
+                 .replace('__CALLLINE__', str(ln))
+                 .replace('__CALLEES__', repr(callees)))
         L.append('end')
         L.append('continue')
         L.append('end')
