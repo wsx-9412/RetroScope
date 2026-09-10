@@ -723,7 +723,8 @@ def _build_bp_script(config):
         L.append('        if __v:')
         L.append('            __vals[__i] = __v')
         L.append('    gdb.write("##EVT %d %d %d %s\\n" % '
-                 '(__o, S["inv"], %d, json.dumps(__vals)))' % line)
+                 '(__o, S["inv"], __EVTLINE__, json.dumps(__vals)))'
+                 .replace('__EVTLINE__', str(line)))
         L.append('    try:')
         L.append('        gdb.execute("next", to_string=True)')
         L.append('        __ln = gdb.newest_frame().find_sal().line')
