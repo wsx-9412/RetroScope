@@ -709,7 +709,10 @@ def _gdb_effective_lines(binary, func, source_root, args, fsrc, role_lines):
         if libs:
             env['LD_LIBRARY_PATH'] = ':'.join(libs + [env.get('LD_LIBRARY_PATH', '')])
         cmds = ['gdb', '-batch', '-q', '-ex', 'start']
-        cmds += ['-ex', f'info line {func}']
+        # The function's TRUE first-instruction line: resolve a breakpoint on
+        # the symbol and read where gdb actually places it (``info line``
+        # reports the declaration line instead — 224 vs the real 229).
+        cmds += ['-ex', f'break {func}', '-ex', 'info breakpoints']
         for ln in sorted(set(role_lines)):
             cmds += ['-ex', f'info line {fsrc}:{ln}']
         cmds += ['--args', str(resolve_binary(binary))] + [str(a) for a in args]
@@ -718,13 +721,14 @@ def _gdb_effective_lines(binary, func, source_root, args, fsrc, role_lines):
     except Exception:
         return None, {}
     out = r.stdout + r.stderr
+    m = re.search(r'in \S+ at \S+:?(\d+)', out)
+    entry = int(m.group(1)) if m else None
     lines_out = re.findall(r'Line (\d+) of "[^"]+"', out)
-    if len(lines_out) != 1 + len(role_lines):
-        return None, {}
-    entry = int(lines_out[0])
+    if len(lines_out) != len(role_lines):
+        return entry, {}
     eff = {}
     for ln in sorted(set(role_lines)):
-        eff[ln] = int(lines_out[1 + sorted(set(role_lines)).index(ln)])
+        eff[ln] = int(lines_out[sorted(set(role_lines)).index(ln)])
     return entry, eff
 
 def _compute_then_lines(fsrc, decisions):
