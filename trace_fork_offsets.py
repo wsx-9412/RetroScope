@@ -3824,10 +3824,6 @@ def main():
     print(f'  Step 4: Trace file I/O → input file offsets')
     print(f'{"="*60}')
 
-    result = analyze_offsets(parsed_b, input_file, variables, tiff_tags, tiff_tags_all,
-                             fork_file=fork_file, fork_line=fork_line, binary=binary,
-                             file_reads=parsed_b.get('file_reads', []))
-
     # Collect pread64 calls from both versions
     file_reads_b = parsed_b.get('file_reads', [])
     file_reads_a = parsed_a.get('file_reads', []) if parsed_a else []
@@ -3949,29 +3945,44 @@ def main():
                     print(f'      tagid={tagid} ({name}): no IFD buffer match')
 
     # ================================================================
-    # Step 5: Variable → file offset mapping
+    # Step 5: Fork-variable → file offset mapping (fully dynamic)
     # ================================================================
     print(f'\n{"="*60}')
-    print(f'  Step 5: Variable → input file offset mapping')
+    print(f'  Step 5: Fork-variable → input file offset mapping')
     print(f'{"="*60}')
 
-    print(f'\n  Variable → file offset mapping:')
-    for name, info in result.get('variables', {}).items():
-        direct = info.get('direct_offsets', [])
-        src = info['source']
-        print(f'    {name}:')
-        print(f'      address={info["address"]}  value={info["value"]}  size={info["size"]}')
-        print(f'      value source: {src}')
-        if direct:
-            print(f'      file offsets (modify to change value): {format_offsets(direct)}')
-        else:
-            print(f'      file offsets: (not from input file)')
+    # Identify the DIVERGING invocation's tagid from the divergence result:
+    # the fork statement's comparison clauses record the runtime operand
+    # values (e.g. `field_tag < tagid` with lhs=270, rhs=269), so the
+    # diverging call-site argument is the rhs of the first clause.
+    fork_tagid = None
+    df = config.get('dynamic_fork') or {}
+    diff_b = ((df.get('diff') or {}).get('b') or {})
+    b_clauses = diff_b.get('clauses') or {}
+    if b_clauses:
+        for _k in sorted(b_clauses, key=lambda k: int(k)):
+            _c = b_clauses[_k]
+            if _c.get('rhs') is not None:
+                fork_tagid = int(_c.get('rhs'))
+                break
 
-    # Show call-site trace results if available (fully dynamic mapping)
     if chain_trace_results and chain_trace_results.get('tag_mappings'):
-        print(f'\n  GDB call-site trace summary (dynamic):')
-        invocations = chain_trace_results.get('invocations', [])
-        for tagid, info in chain_trace_results['tag_mappings'].items():
+        all_mappings = chain_trace_results['tag_mappings']
+        # Only the diverging invocation's actual argument matters; the rest
+        # are other calls in the run and are unrelated to the fork.
+        if fork_tagid is not None:
+            key = str(fork_tagid)
+            selected = {key: all_mappings[key]} if key in all_mappings else {}
+        else:
+            selected = dict(all_mappings)
+
+        if fork_tagid is not None:
+            print(f'\n  [*] Diverging invocation: tagid={fork_tagid} '
+                  f'(from divergence clauses rhs)')
+        print(f'\n  GDB call-site trace summary (fully dynamic):')
+        if not selected:
+            print(f'    (no mapping for the diverging call-site argument)')
+        for tagid, info in selected.items():
             name = info.get('tag_name', f'tag_{tagid}')
             if info.get('file_offset') is not None:
                 print(f'    tagid={tagid} ({name})')
@@ -3982,6 +3993,9 @@ def main():
                       f'0x{info["ifd_offset"]:x} (tif->tif_diroff)')
             else:
                 print(f'    tagid={tagid} ({name}): no file mapping')
+
+        # Keep only the diverging mapping in the saved result.
+        chain_trace_results['tag_mappings'] = selected
 
     # ================================================================
     # Summary — dynamic, based on analysis results
