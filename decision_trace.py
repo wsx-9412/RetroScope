@@ -307,14 +307,14 @@ _SKIP_CALL_TOKENS = {
 }
 
 
-def find_call_sites(source_file, func_name):
+def find_call_sites(source_file, func_name, body=None):
     """Map function-body lines to the callee names they call (static, best-effort).
 
     Returns ``{line: [callee, ...]}``.  Used to (a) confirm which callees a
     divergent invocation actually executed and (b) drive the recursive descent
     into callees whose behavior diverges.
     """
-    fb = _function_body(source_file, func_name)
+    fb = _function_body(source_file, func_name, body=body)
     if not fb:
         return {}
     start, end, lines = fb
@@ -340,9 +340,9 @@ def find_call_sites(source_file, func_name):
     return call_lines
 
 
-def find_return_lines(source_file, func_name):
+def find_return_lines(source_file, func_name, body=None):
     """Lines of func_name's body containing a return statement."""
-    fb = _function_body(source_file, func_name)
+    fb = _function_body(source_file, func_name, body=body)
     if not fb:
         return set()
     start, end, lines = fb
@@ -354,13 +354,13 @@ def find_return_lines(source_file, func_name):
     return ret
 
 
-def find_function_decisions(source_file, func_name):
+def find_function_decisions(source_file, func_name, body=None):
     """Locate all decision lines inside ``func_name`` in ``source_file``.
 
     Returns a list of ``{line, text, clauses}``.  Conditions spanning several
     lines are folded into the start line's text via paren balancing.
     """
-    fb = _function_body(source_file, func_name)
+    fb = _function_body(source_file, func_name, body=body)
     if not fb:
         return []
     start, end, lines = fb
@@ -725,7 +725,8 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
     gsrc = _gdb_resolve_function_source(real_bin, func, source_root, args)
     if gsrc:
         fsrc = gsrc
-    decisions = find_function_decisions(fsrc, func)
+    gbody = _gdb_function_range(real_bin, func, source_root, args)
+    decisions = find_function_decisions(fsrc, func, body=gbody)
     if not decisions:
         print(f'  [!] no decision lines found for {func} in {fsrc}')
         return None
@@ -743,8 +744,9 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         "runargs": " ".join(str(a) for a in args),
         "decisions": decisions,
         "clauses_by_line": clauses_by_line,
-        "call_lines": {str(k): v for k, v in find_call_sites(fsrc, func).items()},
-        "return_lines": sorted(find_return_lines(fsrc, func)),
+        "call_lines": {str(k): v for k, v
+                        in find_call_sites(fsrc, func, body=gbody).items()},
+        "return_lines": sorted(find_return_lines(fsrc, func, body=gbody)),
         "mode": mode,
         "max_steps": 200000,
         "max_events": 100000,
