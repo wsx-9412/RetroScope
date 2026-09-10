@@ -356,6 +356,11 @@ def read_trace_json(json_path):
             variables = extract_variables_from_statement(root_cause_stmt)
             full_fork_stmt = root_cause_stmt
 
+    # Reference-side line/file (dynamic-locator forks carry both sides).
+    ref_line = div.get('root_cause_line_a')
+    if ref_line:
+        original_fork_line = ref_line
+
     return {
         'binary_b': binary,
         'binary_a': div.get('binary_a', ''),
@@ -365,10 +370,12 @@ def read_trace_json(json_path):
         'fork_file': root_cause_file,
         'fork_line': root_cause_line,
         'original_fork_line': original_fork_line,
+        'ref_fork_file': div.get('root_cause_file_a', ''),
         'fork_stmt': full_fork_stmt,
         'program_args': args,
         'variables': variables,
         '_code_change': orig_is_code_change,
+        'dynamic_fork': div.get('dynamic_fork'),
         'root_cause_statement_a': div.get('root_cause_statement_a', ''),
         'root_cause_statement_b': div.get('root_cause_statement_b', ''),
     }
