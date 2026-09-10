@@ -1390,6 +1390,228 @@ run {' '.join(run_parts)}
     return result, None
 
 
+def run_gdb_call_site_trace(binary, fork_spec, fork_func, input_file, program_args,
+                            timeout=120):
+    """Fully dynamic call-site argument back-tracing (no static analysis).
+
+    For a fork variable that is a function parameter (e.g. ``tagid`` in
+    ``TIFFReadDirectoryFindFieldInfo``), the value's true source is the
+    *call-site actual argument*: ``dp->tdir_tag`` inside ``TIFFReadDirectory``,
+    where ``dp`` iterates over the IFD buffer ``dir`` that was read from the
+    file by a single ``pread64``.
+
+    Chain (all resolved dynamically, no source parsing):
+
+      pread64(buf=dir, offset=IFD_off)   <- IFD buffer read from the file
+        -> dir                           <- buffer base (caller local)
+        -> dp                            <- current IFD entry (caller local)
+        -> dp->tdir_tag == tagid         <- actual argument at the call site
+        -> file offset = IFD_off + (dp - dir)
+
+    Two GDB runs:
+      Phase A: hit the fork point on every invocation, record (tagid, mb,
+               field_tag) for each; the program runs to completion.
+      Phase B: for each distinct tagid, run again with a conditional breakpoint
+               ``break <fork_func> if tagid == N`` plus ``catch syscall
+               pread64``; on hit, read ``dp``/``dir`` from the caller frames
+               and quit.
+
+    Returns
+      {'tag_mappings': {tagid: {file_offset, entry_index, dp, dir, ifd_offset,
+                                tag_name}},
+       'invocations': [...], 'pread64': [...]} or (None, error).
+    """
+    real_binary = resolve_binary(binary)
+    run_parts = [a.replace('{input_file}', input_file).replace('{input}', input_file)
+                 for a in program_args]
+    run_args = ' '.join(run_parts)
+    env = build_run_env(real_binary)
+
+    # ------------------------------------------------------------------
+    # Phase A: record every fork-point invocation
+    # ------------------------------------------------------------------
+    phase_a = f"""set pagination off
+set confirm off
+set breakpoint pending on
+
+break {fork_spec}
+commands
+  silent
+  printf "FORK_INV tagid=%u mb=%d field_tag=%u\\n", tagid, mb, tif->tif_fields[mb]->field_tag
+  continue
+end
+
+run {run_args}
+"""
+    fd, script_file = tempfile.mkstemp(suffix='.gdb', prefix='gdb_callsite_a_')
+    os.close(fd)
+    with open(script_file, 'w') as f:
+        f.write(phase_a)
+    try:
+        proc = subprocess.run(
+            ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
+            capture_output=True, text=True, timeout=timeout, env=env)
+    except subprocess.TimeoutExpired:
+        return None, 'timeout_phase_a'
+    finally:
+        try: os.unlink(script_file)
+        except: pass
+
+    out_a = proc.stdout + proc.stderr
+    if 'FORK_INV' not in out_a:
+        return None, 'fork_not_reached'
+
+    invocations = []
+    for line in out_a.splitlines():
+        m = re.match(r'FORK_INV tagid=(\d+) mb=(-?\d+) field_tag=(-?\d+)', line.strip())
+        if m:
+            invocations.append({
+                'tagid': int(m.group(1)),
+                'mb': int(m.group(2)),
+                'field_tag': int(m.group(3)),
+            })
+    if not invocations:
+        return None, 'no_invocations'
+
+    distinct_tagids = list(dict.fromkeys(v['tagid'] for v in invocations))
+
+    # ------------------------------------------------------------------
+    # Phase B: per-tagid conditional breakpoint at the fork-function entry
+    # ------------------------------------------------------------------
+    pread64_all = []
+    tag_mappings = {}
+
+    for tagid in distinct_tagids:
+        phase_b = f"""set pagination off
+set confirm off
+set breakpoint pending on
+
+catch syscall pread64
+commands
+  silent
+  if $rdi >= 3 && $rdx > 0 && $rdx < 1000000
+    printf "PREAD64 fd=%d offset=%ld size=%ld buf=0x%lx\\n", $rdi, $r10, $rdx, $rsi
+  end
+  continue
+end
+
+break {fork_func} if tagid == {tagid}
+commands
+  silent
+  printf "CALL_HIT tagid={tagid}\\n"
+  python
+import gdb
+frame = gdb.newest_frame()
+f = frame.older()
+while f is not None:
+    try:
+        fname = f.name() or ''
+    except Exception:
+        fname = ''
+    try:
+        dp = int(f.read_var('dp'))
+        print(f"CALLER_DP 0x{{dp:x}} {fname}")
+    except Exception:
+        pass
+    try:
+        d = int(f.read_var('dir'))
+        print(f"CALLER_DIR 0x{{d:x}} {fname}")
+    except Exception:
+        pass
+    try:
+        f = f.older()
+    except Exception:
+        break
+end
+  quit
+end
+
+run {run_args}
+"""
+        fd, script_file = tempfile.mkstemp(suffix='.gdb', prefix='gdb_callsite_b_')
+        os.close(fd)
+        with open(script_file, 'w') as f:
+            f.write(phase_b)
+        try:
+            proc = subprocess.run(
+                ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
+                capture_output=True, text=True, timeout=timeout, env=env)
+        except subprocess.TimeoutExpired:
+            continue
+        finally:
+            try: os.unlink(script_file)
+            except: pass
+
+        out_b = proc.stdout + proc.stderr
+        if 'CALL_HIT' not in out_b:
+            continue
+
+        preads = []
+        dp_addr = None
+        dir_addr = None
+        for line in out_b.splitlines():
+            line = line.strip()
+            m = re.match(r'PREAD64 fd=(\d+) offset=(-?\d+) size=(-?\d+) buf=(0x[0-9a-f]+)', line)
+            if m:
+                preads.append({
+                    'fd': int(m.group(1)),
+                    'offset': int(m.group(2)),
+                    'size': int(m.group(3)),
+                    'buf': int(m.group(4), 16),
+                })
+                continue
+            m = re.match(r'CALLER_DP (0x[0-9a-f]+) (\S+)', line)
+            if m:
+                dp_addr = int(m.group(1), 16)
+                continue
+            m = re.match(r'CALLER_DIR (0x[0-9a-f]+) (\S+)', line)
+            if m:
+                dir_addr = int(m.group(1), 16)
+
+        # Locate the pread64 whose buffer IS the IFD buffer (buf == dir).
+        # Fallback: the smallest buffer that fully contains dp.
+        ifd_off = None
+        if dir_addr is not None:
+            for p in preads:
+                if p['buf'] == dir_addr:
+                    ifd_off = p['offset']
+                    break
+        if ifd_off is None and dp_addr is not None:
+            for p in sorted(preads, key=lambda q: q['size']):
+                if p['buf'] <= dp_addr < p['buf'] + p['size']:
+                    ifd_off = p['offset']
+                    dir_addr = p['buf']
+                    break
+
+        entry_off = None
+        entry_index = None
+        if ifd_off is not None and dp_addr is not None and dir_addr is not None:
+            delta = dp_addr - dir_addr
+            if delta >= 0:
+                entry_index = delta // 12          # sizeof(TIFFDirEntry) = 12
+                entry_off = ifd_off + delta        # tdir_tag is the first field
+
+        tag_mappings[tagid] = {
+            'file_offset': entry_off,
+            'entry_index': entry_index,
+            'dp': f'0x{dp_addr:x}' if dp_addr else None,
+            'dir': f'0x{dir_addr:x}' if dir_addr else None,
+            'ifd_offset': ifd_off,
+            'tag_name': _TIFF_TAG_NAMES.get(tagid, f'tag_{tagid}'),
+        }
+        pread64_all.extend(preads)
+
+    # Tag name lookup for the diverging invocation (last invocation's tagid)
+    for tagid in tag_mappings:
+        pass
+
+    return {
+        'tag_mappings': tag_mappings,
+        'invocations': invocations,
+        'pread64': pread64_all,
+    }, None
+
+
 def run_gdb_watchpoint_chain_trace(binary, fork_spec, var_expr, input_file, program_args,
                                     max_depth=5, timeout=300):
     """True GDB watchpoint-based chain tracing.
