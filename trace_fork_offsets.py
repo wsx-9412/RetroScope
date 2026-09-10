@@ -93,6 +93,8 @@ def extract_variables_from_statement(stmt):
         'struct', 'union', 'enum', 'typedef', 'sizeof', 'NULL', 'true',
         'false', 'uint8_t', 'uint16_t', 'uint32_t', 'uint64_t',
         'int8_t', 'int16_t', 'int32_t', 'int64_t', 'size_t',
+        'uint8', 'uint16', 'uint32', 'uint64', 'int8', 'int16', 'int32',
+        'int64', 'toff_t', 'tsize_t', 'tdata_t', 'uint', 'ushort', 'uchar',
         # Preprocessor and control flow
         'goto', 'defined', 'endif', 'elif', 'ifdef', 'ifndef',
         # Common C identifiers that are not variables
@@ -704,6 +706,7 @@ GDB_SCRIPT = r"""set pagination off
 set confirm off
 set print finish off
 set disable-randomization off
+set breakpoint pending on
 
 catch syscall read
 catch syscall pread64
@@ -908,37 +911,47 @@ def run_gdb_trace(binary, fork_spec, variables, input_file, program_args, timeou
     run_parts = [a.replace('{input_file}', input_file).replace('{input}', input_file)
                  for a in program_args]
 
-    script = GDB_SCRIPT.format(
-        fork_spec=fork_spec,
-        var_dump=build_var_dump_block(variables),
-        strip_offset=build_strip_offset_block(),
-        heap_scan=build_heap_scan_block(),
-        run_args=' '.join(run_parts),
-    )
+    # The absolute fork path comes from the binary's debug info.  If it no
+    # longer matches (e.g. the build dir was removed), fall back to the source
+    # basename, which GDB matches against any loaded symtab.
+    specs = [fork_spec]
+    path, _, line = fork_spec.rpartition(':')
+    if path and os.sep in path:
+        base_spec = f'{os.path.basename(path)}:{line}'
+        if base_spec != fork_spec:
+            specs.append(base_spec)
 
-    fd2, script_file = tempfile.mkstemp(suffix='.gdb', prefix='gdb_trace_')
-    os.close(fd2)
-    with open(script_file, 'w') as f:
-        f.write(script)
+    env = build_run_env(real_binary)
+    output = ''
+    for spec in specs:
+        script = GDB_SCRIPT.format(
+            fork_spec=spec,
+            var_dump=build_var_dump_block(variables),
+            strip_offset=build_strip_offset_block(),
+            heap_scan=build_heap_scan_block(),
+            run_args=' '.join(run_parts),
+        )
 
-    try:
-        proc = subprocess.run(
-            ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
-            capture_output=True, text=True, timeout=timeout)
-    except subprocess.TimeoutExpired:
-        try: os.unlink(script_file)
-        except: pass
-        return None, 'timeout'
-    finally:
-        try: os.unlink(script_file)
-        except: pass
+        fd2, script_file = tempfile.mkstemp(suffix='.gdb', prefix='gdb_trace_')
+        os.close(fd2)
+        with open(script_file, 'w') as f:
+            f.write(script)
 
-    output = proc.stdout + proc.stderr
+        try:
+            proc = subprocess.run(
+                ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
+                capture_output=True, text=True, timeout=timeout, env=env)
+        except subprocess.TimeoutExpired:
+            return None, 'timeout'
+        finally:
+            try: os.unlink(script_file)
+            except: pass
 
-    if 'FORK_REACHED' not in output:
-        return None, 'fork_not_reached'
+        output = proc.stdout + proc.stderr
+        if 'FORK_REACHED' in output:
+            return output, None
 
-    return output, None
+    return None, 'fork_not_reached'
 
 
 def run_deep_tiffopen_trace(binary, input_file, program_args, timeout=30):
