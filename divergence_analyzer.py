@@ -5528,6 +5528,57 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                         pass
                 func_name, a_idx, b_idx = anchor_func, anchor_a, anchor_b
                 print(f"  Crash-anchored divergence function: {func_name}")
+
+                # ==========================================================
+                # PRIMARY (unified dynamic fork locator): run BOTH versions
+                # under GDB at the boundary function, compare their DECISION
+                # traces invocation-by-invocation, and descend into callees
+                # until the last differing decision is found.  Yields the
+                # fork statement with REAL source text and operand values on
+                # both sides.  Only on failure do we fall back to the legacy
+                # heuristic paths below.
+                # ==========================================================
+                try:
+                    from unified_fork import (locate_fork_dynamically,
+                                              build_dynamic_result)
+                    dyn_root_a = (source_dirs_a or [None])[0]
+                    dyn_root_b = (source_dirs_b or [None])[0]
+                    dyn = locate_fork_dynamically(
+                        binary_a, binary_b, dyn_root_a, dyn_root_b,
+                        anchor_func, args_b,
+                        refactoring_map=refactoring_map,
+                        timeout=max(gdb_timeout, 240))
+                    if dyn.get('status') in ('decision_fork', 'value_fork'):
+                        print(f"\n  [unified-dynamic] {dyn['status']} "
+                              f"in {dyn.get('function_a')}/"
+                              f"{dyn.get('function_b')}")
+                        try:
+                            from unified_fork import _fork_summary
+                            print(f"  {_fork_summary(dyn, anchor_func, anchor_func)}")
+                        except Exception:
+                            pass
+                        result = build_dynamic_result(
+                            dyn, anchor_func, dyn_root_a, dyn_root_b,
+                            input_file=input_file, fork_meta=fork_meta)
+                        if input_file:
+                            result["input_file"] = str(input_file)
+                        if not skip_polytracker:
+                            try:
+                                result = _polytracker_locate_input_offsets(
+                                    result, config=config, binary_b=binary_b,
+                                    binary_a=binary_a)
+                            except Exception as e:
+                                print(f"  [PolyTracker] Analysis failed: {e}")
+                                result["polytracker_offsets"] = {
+                                    "status": "error", "error": str(e)}
+                        return result
+                    else:
+                        print(f"  [unified-dynamic] no fork found "
+                              f"({dyn.get('status')}: {dyn.get('reason', '')}) "
+                              f"— falling back to legacy analysis.")
+                except Exception as e:
+                    print(f"  [unified-dynamic] failed: {e} — "
+                          f"falling back to legacy analysis.")
             elif matches:
                 print("  [crash-anchor] no trace-level boundary — "
                       "falling back to the last LCS match.")

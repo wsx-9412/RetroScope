@@ -29,6 +29,7 @@ No project-specific knowledge is used.
 
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -37,6 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from decision_trace import record_decisions
 from decision_trace import _locate_function_source, find_function_decisions
 from decision_trace import is_function_definition
+from trace_fork_offsets import extract_variables_from_statement
 
 _SEMANTIC_SUFFIXES = ('WithLimit', 'Checked', 'Safe', 'Ex', 'NoSSE', 'Array')
 
@@ -288,7 +290,11 @@ def build_dynamic_result(res, boundary_func, source_root_a, source_root_b,
             f"({os.path.basename(file_b or '')}:{b['line']}) "
             f"outcome={b.get('outcome')} clauses={b.get('clauses')}")
     else:
-        out['root_cause_line = None'] = True
+        out['root_cause_line'] = None
+        out['root_cause_line_a'] = None
+        out['root_cause_line_b'] = None
+        out['root_cause_statement_a'] = ''
+        out['root_cause_statement_b'] = ''
         out['description'] = (
             f"Unified dynamic fork locator (value fork):\n"
             f"Fork function: {fa} / {fb}, invocation #{res['invocation']}\n"
@@ -450,12 +456,15 @@ def main():
     ap.add_argument('--func', required=True, help='boundary (innermost common) function')
     ap.add_argument('--timeout', type=int, default=300)
     ap.add_argument('--depth', type=int, default=4)
+    ap.add_argument('--out', help='save the locator JSON result')
     ap.add_argument('--args', nargs=argparse.REMAINDER, default=[])
     a = ap.parse_args()
 
     res = locate_fork_dynamically(
         a.binary_a, a.binary_b, a.source_a, a.source_b, a.func,
         a.args, timeout=a.timeout, max_depth=a.depth)
+    if a.out:
+        Path(a.out).write_text(json.dumps(res, indent=2, ensure_ascii=False))
     print(json.dumps(res, indent=2, ensure_ascii=False))
     print('\nSummary:', _fork_summary(res, a.func, a.func))
 
