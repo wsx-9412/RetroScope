@@ -385,6 +385,14 @@ while True:
             line = frame.find_sal().line
         except Exception:
             line = 0
+        if line in decision_lines and order < MAX_EVENTS:
+            order += 1
+            clauses = eval_clauses(line)
+            gdb.write("##EVT %d %d %s\n" % (order, line, json.dumps(clauses)))
+        callees = call_lines.get(str(line))
+        if callees:
+            gdb.write("##CALL %d %d %s\n"
+                      % (inv, line, json.dumps(callees)))
         if line in return_lines:
             # At a return statement: run 'finish' so the return value is
             # reported at the return point ($rax is still valid).
@@ -398,14 +406,6 @@ while True:
             except gdb.error as e:
                 gdb.write("##RET %d ?\n" % inv)
             break
-        if line in decision_lines and order < MAX_EVENTS:
-            order += 1
-            clauses = eval_clauses(line)
-            gdb.write("##EVT %d %d %s\n" % (order, line, json.dumps(clauses)))
-        callees = call_lines.get(str(line))
-        if callees:
-            gdb.write("##CALL %d %d %s\n"
-                      % (inv, line, json.dumps(callees)))
         try:
             gdb.execute("next", to_string=True)
         except gdb.error:
@@ -483,6 +483,10 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         "runargs": " ".join(str(a) for a in args),
         "decisions": decisions,
         "clauses_by_line": clauses_by_line,
+        "call_lines": {str(k): v for k, v in find_call_sites(fsrc, func).items()},
+        "return_lines": sorted(find_return_lines(fsrc, func)),
+        "max_steps": 200000,
+        "max_events": 100000,
     }
 
     with tempfile.NamedTemporaryFile('w', suffix='.py', delete=False) as tf:
