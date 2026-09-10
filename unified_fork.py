@@ -213,15 +213,92 @@ def _fork_summary(res, func_a, func_b):
     """Human-readable summary line for a fork result."""
     if not res or res.get('status') not in ('decision_fork', 'value_fork'):
         return ''
+    fa = res.get('function_a') or func_a
+    fb = res.get('function_b') or func_b
     if res['status'] == 'decision_fork':
         d = res['diff']
         a, b = d['a'], d['b']
-        return (f'decision fork in {func_a}/{func_b} (inv {res["invocation"]}, '
-                f'decision #{d["index"]}, kind={d["kind"]}): '
+        return (f'decision fork in {fa}/{fb} (inv {res["invocation"]}, '
+                f'decision #{d["index"]}, kind={d["kind"]}'
+                f'{", weak" if res.get("weak") else ""}): '
                 f'A[L{a["line"]}] outcome={a["outcome"]} clauses={a["clauses"]} '
                 f'| B[L{b["line"]}] outcome={b["outcome"]} clauses={b["clauses"]}')
-    return (f'value fork in {func_a}/{func_b} (inv {res["invocation"]}): '
+    return (f'value fork in {fa}/{fb} (inv {res["invocation"]}): '
             f'A return={res.get("ret_a")} | B return={res.get("ret_b")}')
+
+
+def build_dynamic_result(res, boundary_func, source_root_a, source_root_b,
+                         input_file=None, fork_meta=None):
+    """Assemble a divergence-result dict (the shape .diverge.json consumers
+    expect) from a unified dynamic locator result.
+
+    Statements are the REAL source lines of both versions at the fork
+    decision (never synthetic descriptions); variables come from the guard's
+    operands, ready for value-level taint instrumentation.
+    """
+    out = {'dynamic_fork': res}
+    if res.get('status') not in ('decision_fork', 'value_fork'):
+        return out
+    fa = res.get('function_a') or boundary_func
+    fb = res.get('function_b') or boundary_func
+
+    def _loc(name, root):
+        try:
+            return _locate_function_source(name, root)
+        except Exception:
+            return None
+
+    file_a = _loc(fa, source_root_a)
+    file_b = _loc(fb, source_root_b) or file_a
+    out['divergence_function'] = boundary_func
+    out['root_cause_function'] = fb
+    out['root_cause_file'] = os.path.basename(file_b or '') or fa
+    out['root_cause_file_a'] = file_a
+    out['root_cause_file_b'] = file_b
+
+    if res['status'] == 'decision_fork':
+        d = res['diff']
+        a, b = d['a'], d['b']
+        out['root_cause_line'] = b['line']
+        out['root_cause_line_a'] = a['line']
+        out['root_cause_line_b'] = b['line']
+        out['root_cause_statement_a'] = a.get('text', '')
+        out['root_cause_statement_b'] = b.get('text', '')
+        variables = []
+        for cl in (a.get('clauses') or {}).values():
+            for side in ('lhs', 'rhs'):
+                expr = cl.get(side, '')
+                if expr and not re.fullmatch(r'0x[0-9a-fA-F]+|\d+', expr):
+                    variables.append(expr)
+        variables += extract_variables_from_statement(a.get('text', ''))
+        variables += extract_variables_from_statement(b.get('text', ''))
+        out['variables'] = list(dict.fromkeys(variables))
+        verdict = 'weak' if res.get('weak') else 'strong'
+        out['description'] = (
+            f"Unified dynamic fork locator ({verdict}):\n"
+            f"Divergence function: {boundary_func}\n"
+            f"Fork function: {fa} / {fb}\n"
+            f"Invocation #{res['invocation']} (of {res['a_invocations']} vs "
+            f"{res['b_invocations']}), decision #{d['index']} "
+            f"(kind={d['kind']})\n"
+            f"  Reference: {a.get('text', '')}  "
+            f"({os.path.basename(file_a or '')}:{a['line']}) "
+            f"outcome={a.get('outcome')} clauses={a.get('clauses')}\n"
+            f"  Target:    {b.get('text', '')}  "
+            f"({os.path.basename(file_b or '')}:{b['line']}) "
+            f"outcome={b.get('outcome')} clauses={b.get('clauses')}")
+    else:
+        out['root_cause_line = None'] = True
+        out['description'] = (
+            f"Unified dynamic fork locator (value fork):\n"
+            f"Fork function: {fa} / {fb}, invocation #{res['invocation']}\n"
+            f"  Reference return: {res.get('ret_a')}\n"
+            f"  Target return:    {res.get('ret_b')}")
+    if input_file:
+        out['input_file'] = str(input_file)
+    if fork_meta:
+        out['fork_chain'] = fork_meta
+    return out
 
 
 def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
@@ -297,15 +374,23 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                                source_root_a, source_root_b)
     print(f'{indent}[unified] candidates: '
           + ', '.join(f'{a}|{b}' for a, b in cand[:6]))
+    weak_best = None
     for callee_a, callee_b in cand[:6]:
         sub = locate_fork_dynamically(
             binary_a, binary_b, source_root_a, source_root_b, callee_a,
             args, refactoring_map=refactoring_map, timeout=timeout,
-            max_depth=max_depth, _depth=_depth + 1, _visited=_visited)
+            max_depth=max_depth, _depth=_depth + 1, _visited=_visited,
+            _hint_a=ra.get('file'), _hint_b=rb.get('file'))
         print(f'{indent}[unified]   -> {callee_a}: {sub.get("status")} '
               f'{sub.get("reason", "")}')
-        if sub.get('status') in ('decision_fork', 'value_fork'):
+        if sub.get('status') == 'decision_fork' and not sub.get('weak'):
             return sub
+        if sub.get('status') == 'value_fork':
+            return sub
+        if sub.get('status') == 'decision_fork' and weak_best is None:
+            weak_best = sub
+    if weak_best:
+        return weak_best
 
     # 3) Weak decision-level fork (text rewrite / operand-value difference).
     i, diff = _find_diff(strong_only=False)
