@@ -20,19 +20,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140731092439904
+      "buf_addr": 140725400032512
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140731092439840
+      "buf_addr": 140725400032448
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140731092439760
+      "buf_addr": 140725400032368
     }
   ],
   "ref_file_reads": [
@@ -40,23 +40,33 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140722180108240
+      "buf_addr": 140736275950848
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140722180108176
+      "buf_addr": 140736275950784
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140722180108096
+      "buf_addr": 140736275950704
     }
   ],
   "chain_trace": {
-    "tag_mappings": {},
+    "tag_mappings": {
+      "269": {
+        "file_offset": 172,
+        "entry_index": 14,
+        "dp": "0x5190000006d0",
+        "dir": "0x519000000580",
+        "ifd_offset": 2,
+        "entry_size": 24,
+        "tag_name": "tag_269"
+      }
+    },
     "invocations": [
       {
         "tagid": 277,
