@@ -303,10 +303,13 @@ for d in config["dirs"]:
     except Exception:
         pass
 
-MAX_STEPS = config.get("max_steps", 100000)
-MAX_EVENTS = config.get("max_events", 50000)
+MAX_STEPS = config.get("max_steps", 200000)
+MAX_EVENTS = config.get("max_events", 100000)
 decision_lines = set(d["line"] for d in config["decisions"])
 clauses_by_line = config["clauses_by_line"]
+call_lines = config.get("call_lines", {})       # str(line) -> [callee...]
+return_lines = set(config.get("return_lines", []))
+RET_RE = re.compile(r'Value returned is \$(\d+)\s*=\s*(.+)')
 
 # NOTE: stepping happens at TOP-LEVEL python (run -> continue -> next loop).
 # Running gdb.execute("next") inside a Breakpoint.stop() callback raises
@@ -337,8 +340,8 @@ except Exception as e:
     gdb.write("##BPFAIL %s\n" % str(e))
 
 order = 0
+inv = 0
 first = True
-steps_total = 0
 while True:
     try:
         if first:
@@ -360,6 +363,8 @@ while True:
         # alive, try again — otherwise the next continue raises and ends.
         gdb.write("##STOPOTHER %s\n" % str(fn))
         continue
+    inv += 1
+    gdb.write("##ENTER %d\n" % inv)
     steps = 0
     while steps < MAX_STEPS:
         try:
@@ -368,23 +373,47 @@ while True:
         except gdb.error:
             break
         if fn != config["func"]:
-            break  # function returned -> back in the caller
+            # The previous step returned to the caller; capture a best-effort
+            # return value from the return register if we can.
+            try:
+                rv = gdb.parse_and_eval("$rax")
+                gdb.write("##RET %d %s\n" % (inv, str(rv)))
+            except Exception:
+                gdb.write("##RET %d ?\n" % inv)
+            break
         try:
             line = frame.find_sal().line
         except Exception:
             line = 0
+        if line in return_lines:
+            # At a return statement: run 'finish' so the return value is
+            # reported at the return point ($rax is still valid).
+            try:
+                text = gdb.execute("finish", to_string=True)
+                m = RET_RE.search(text)
+                if m:
+                    gdb.write("##RET %d %s\n" % (inv, m.group(2).strip()))
+                else:
+                    gdb.write("##RET %d ?\n" % inv)
+            except gdb.error as e:
+                gdb.write("##RET %d ?\n" % inv)
+            break
         if line in decision_lines and order < MAX_EVENTS:
             order += 1
             clauses = eval_clauses(line)
             gdb.write("##EVT %d %d %s\n" % (order, line, json.dumps(clauses)))
+        callees = call_lines.get(str(line))
+        if callees:
+            gdb.write("##CALL %d %d %s\n"
+                      % (inv, line, json.dumps(callees)))
         try:
             gdb.execute("next", to_string=True)
         except gdb.error:
             break
         steps += 1
-    steps_total += steps
     gdb.write("##STEPOUT %d %d\n" % (steps, order))
 gdb.write("##TOTAL %d\n" % order)
+gdb.write("##INVTOTAL %d\n" % inv)
 '''
 
 
