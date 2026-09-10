@@ -546,11 +546,14 @@ def _collect_lib_paths(binary):
 
 
 def record_decisions(binary, func, args, source_root=None, timeout=180,
-                     out_path=None, limit=100000):
+                     out_path=None, limit=100000, mode='bp'):
     """Run ``binary args`` under GDB and record the decision events of ``func``.
 
-    Returns a dict: ``{func, file, binary, run_args, decisions: [...events],
-    decision_lines: [...], stats}`` or None when the function could not be
+    ``mode``: 'bp' (breakpoints on decision/call lines — fast, default) or
+    'step' (top-level stepping — slower but captures return values).
+
+    Returns a dict: ``{func, file, binary, run_args, decision_lines,
+    events, invocations, stats}`` or None when the function could not be
     located in the sources.
     """
     real_bin = resolve_binary(binary)
@@ -579,6 +582,7 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         "clauses_by_line": clauses_by_line,
         "call_lines": {str(k): v for k, v in find_call_sites(fsrc, func).items()},
         "return_lines": sorted(find_return_lines(fsrc, func)),
+        "mode": mode,
         "max_steps": 200000,
         "max_events": 100000,
     }
@@ -743,12 +747,13 @@ def main():
     ap.add_argument('--source-root', help='version source root (searched for the function)')
     ap.add_argument('--out', help='output JSON path')
     ap.add_argument('--timeout', type=int, default=180)
+    ap.add_argument('--mode', choices=['bp', 'step'], default='bp')
     ap.add_argument('--args', nargs=argparse.REMAINDER, default=[],
                     help='program args; use -- before them')
     a = ap.parse_args()
 
     r = record_decisions(a.binary, a.func, a.args, source_root=a.source_root,
-                         timeout=a.timeout, out_path=a.out)
+                         timeout=a.timeout, out_path=a.out, mode=a.mode)
     if r is None or 'error' in r:
         sys.exit(1)
     print(json.dumps(r['stats'], indent=2))

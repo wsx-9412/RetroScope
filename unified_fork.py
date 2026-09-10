@@ -227,9 +227,25 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                 'chain': _visited_copy(_visited),
             }
 
-    # 2) All decision events identical: value-level comparison.
+    # 2) No decision-level divergence: descend into callees first — a return
+    #    difference at this level may merely reflect a deeper callee fork.
+    if n == 0:
+        return {'status': 'no_divergence',
+                'reason': 'no invocations recorded at this level'}
+    cand = _recurse_candidates(inv_a[-1], inv_b[-1], refactoring_map)
+    for callee_a, callee_b in cand[:6]:
+        sub = locate_fork_dynamically(
+            binary_a, binary_b, source_root_a, source_root_b, callee_a,
+            args, refactoring_map=refactoring_map, timeout=timeout,
+            max_depth=max_depth, _depth=_depth + 1, _visited=_visited)
+        if sub.get('status') in ('decision_fork', 'value_fork'):
+            return sub
+
+    # 3) Nothing diverged in callees: value-level comparison at this level.
     for i in range(n - 1, -1, -1):
         ra_r, rb_r = inv_a[i].get('return'), inv_b[i].get('return')
+        if ra_r in (None, '?') or rb_r in (None, '?'):
+            continue
         if not _ret_equal(ra_r, rb_r):
             return {
                 'status': 'value_fork',
@@ -247,24 +263,6 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
             'a_invocations': len(inv_a), 'b_invocations': len(inv_b),
             'chain': _visited_copy(_visited),
         }
-
-    # 3) Identical decision traces and returns at this level: the fork lives
-    #    inside a callee.  Descend into equal-count callees, nearest to the
-    #    function exit first.
-    if n == 0:
-        return {'status': 'no_divergence',
-                'reason': 'no invocations recorded at this level'}
-    cand = _recurse_candidates(inv_a[-1], inv_b[-1], refactoring_map)
-    if not cand:
-        return {'status': 'no_divergence',
-                'reason': 'no common callee candidates'}
-    for callee_a, callee_b in cand[:6]:
-        sub = locate_fork_dynamically(
-            binary_a, binary_b, source_root_a, source_root_b, callee_a,
-            args, refactoring_map=refactoring_map, timeout=timeout,
-            max_depth=max_depth, _depth=_depth + 1, _visited=_visited)
-        if sub.get('status') in ('decision_fork', 'value_fork'):
-            return sub
     return {'status': 'no_divergence',
             'reason': f'no divergence in {used_a} nor its common callees'}
 
