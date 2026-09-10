@@ -399,6 +399,32 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                 return i, diff
         return None, None
 
+    def _try_candidates():
+        """Descend into equal-count callees (decision-dense first); return
+        the strongest fork found below, or None."""
+        if n == 0:
+            return None
+        cand = _recurse_candidates(inv_a[-1], inv_b[-1], refactoring_map,
+                                   source_root_a, source_root_b)
+        print(f'{indent}[unified] candidates: '
+              + ', '.join(f'{a}|{b}' for a, b in cand[:6]))
+        weak_best = None
+        for callee_a, callee_b in cand[:6]:
+            sub = locate_fork_dynamically(
+                binary_a, binary_b, source_root_a, source_root_b, callee_a,
+                args, refactoring_map=refactoring_map, timeout=timeout,
+                max_depth=max_depth, _depth=_depth + 1, _visited=_visited,
+                _hint_a=ra.get('file'), _hint_b=rb.get('file'))
+            print(f'{indent}[unified]   -> {callee_a}: {sub.get("status")} '
+                  f'{sub.get("reason", "")}')
+            if sub.get('status') == 'decision_fork' and not sub.get('weak'):
+                return sub
+            if sub.get('status') == 'value_fork':
+                return sub
+            if sub.get('status') == 'decision_fork' and weak_best is None:
+                weak_best = sub
+        return weak_best
+
     # 1) STRONG decision-level fork (outcome / count): the path itself
     #    diverges here — report immediately (closest to crash first),
     #    unless it is a wrapper-level NULL/pointer fork whose real guard
