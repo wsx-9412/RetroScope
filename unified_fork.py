@@ -553,6 +553,11 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                 'reason': f'recursion limit reached at {func_a}'}
     _visited.add(key)
 
+    if _is_noise_func(func_a):
+        return {'status': 'no_divergence',
+                'reason': f'error/warning reporting function {func_a} '
+                          f'(excluded — not a causal fork)'}
+
     func_b = func_a
     if refactoring_map:
         func_b = refactoring_map.get(func_a, func_a)
@@ -610,6 +615,8 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                                             rb.get('file'), cnt_a, cnt_b,
                                             refactoring_map)
         order = priority + [c for c in cand if c not in priority]
+        # Drop error/warning reporting functions from the candidates.
+        order = [c for c in order if not _is_noise_func(c[0])]
         print(f'{indent}[unified] candidates: '
               + ', '.join(f'{a}|{b}' for a, b in order[:8]))
         weak_best = None
