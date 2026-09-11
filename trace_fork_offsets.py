@@ -1825,12 +1825,11 @@ def _call_site_trace_case_b(fork_points, variables, clauses=None):
 
 
 def _frame_symbols_snapshot():
-    """GDB Python snippet: dump all in-scope variables (locals + args) of the
-    innermost frames, with their values.  Used by the watchpoint chain to find
-    value-matching data sources at a write site."""
+    """GDB Python code body (no python/end wrappers): dump all in-scope
+    variables (locals + args) of the innermost frames with their values.
+    Used by the watchpoint chain to find value-matching data sources at a
+    write site."""
     return r"""
-python
-import gdb
 _frame = gdb.newest_frame()
 for _i in range(6):
     if _frame is None:
@@ -1883,7 +1882,6 @@ for _i in range(6):
         _frame = _frame.older()
     except Exception:
         break
-end
 """
 
 
