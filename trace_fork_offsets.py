@@ -4074,9 +4074,16 @@ def main():
                           or 'TIFFReadDirectoryFindFieldInfo')
         print(f'  [*] Fork function: {fork_func_name}')
 
+        _diff_b = ((df.get('diff') or {}).get('b') or {})
+        _b_clauses = _diff_b.get('clauses') or {}
+        _clause = None
+        if _b_clauses:
+            _first_key = sorted(_b_clauses, key=lambda k: int(k))[0]
+            _clause = _b_clauses[_first_key]
+
         cs_result, err = run_gdb_call_site_trace(
             binary, fork_spec, fork_func_name, variables, input_file,
-            program_args, timeout=a.timeout * 2)
+            program_args, timeout=a.timeout * 2, clauses=_clause)
 
         if err:
             print(f'  [!] Call-site trace failed: {err}')

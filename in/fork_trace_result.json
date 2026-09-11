@@ -15,19 +15,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140735645004176
+      "buf_addr": 140737318393408
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140735645004112
+      "buf_addr": 140737318393344
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140735645004032
+      "buf_addr": 140737318393264
     }
   ],
   "ref_file_reads": [
@@ -35,19 +35,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140721853788832
+      "buf_addr": 140734090282112
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140721853788768
+      "buf_addr": 140734090282048
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140721853788688
+      "buf_addr": 140734090281968
     }
   ],
   "chain_trace": {
@@ -60,18 +60,20 @@
         ]
       },
       "dp->tdir_tag": {
-        "file_offset": null,
-        "kind": null,
+        "file_offset": 148,
+        "kind": "ifd_entry",
         "values": [
-          32382
-        ]
+          262
+        ],
+        "entry_index": 12
       },
       "fii": {
-        "file_offset": null,
-        "kind": null,
+        "file_offset": 148,
+        "kind": "ifd_entry",
         "values": [
-          4294967295
-        ]
+          9
+        ],
+        "entry_index": 12
       }
     },
     "fork_points": [
