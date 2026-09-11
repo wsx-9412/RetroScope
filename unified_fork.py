@@ -670,8 +670,13 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                   f'reporting the code-change fork itself')
         else:
             print(f'{indent}[unified] scalar-operand fork at '
-                  f'{used_a}:{diff["a"].get("line")} — reporting directly '
-                  f'(operands are taintable)')
+                  f'{used_a}:{diff["a"].get("line")} — descending to find '
+                  f'the LAST fork (earlier forks may re-converge)')
+            sub = _try_candidates(null_diff=None)
+            if sub:
+                return sub
+            print(f'{indent}[unified]   no deeper fork — '
+                  f'reporting the fork itself')
         return {
             'status': 'decision_fork',
             'function_a': used_a, 'function_b': used_b,
