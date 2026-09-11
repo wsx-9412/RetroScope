@@ -1922,25 +1922,35 @@ set breakpoint pending on
 break {current_func}
 commands 1
   silent
-  printf "ENTRY_HIT depth={depth}\\n"
   python
 import gdb
-class _WB(gdb.Breakpoint):
-    def __init__(self, spec):
-        super().__init__(spec, internal=True)
-    def stop(self):
-        try:
-            _v = int(gdb.parse_and_eval('{current_var}'))
-            print("WATCH_VAL %d" % _v)
-        except Exception as e:
-            print("WATCH_ERR %s" % e)
+_g_state = {{'hits': 0, 'var': '{current_var}', 'depth': {depth}}}
+def _on_stop(ev):
+    _g_state['hits'] += 1
+    try:
+        _f = gdb.newest_frame()
+        _sal = _f.find_sal()
+        _line = _sal.line if _sal else -1
+        _name = _f.name() or '?'
+        _v = int(gdb.parse_and_eval('{current_var}'))
+        print("CB_HIT depth=%d hit=%d frame=%s line=%d val=%d" % (
+            _g_state['depth'], _g_state['hits'], _name, _line, _v))
+    except Exception as e:
+        print("CB_ERR %s" % e)
+        return
+    # First hit is usually the declaration init (e.g. `crop_buff = NULL`);
+    # skip it and keep watching for the real assignment.
+    if _g_state['hits'] == 1:
+        return
+    # Real write: snapshot in-scope variables for value matching, then quit.
 {_frame_symbols_snapshot()}
-        gdb.execute('quit')
-        return True
+    gdb.execute('quit')
+gdb.events.stop.connect(_on_stop)
 try:
     _a = int(gdb.parse_and_eval('&({current_var})'))
     print("VAR_ADDR 0x%x" % _a)
-    _WB('*0x%x' % _a)
+    gdb.execute('watch *0x%x' % _a)
+    print("WATCH_ISSUED")
 except Exception as e:
     print("VAR_ERR %s" % e)
 end
@@ -1964,29 +1974,29 @@ run {run_args}
             except: pass
 
         out = proc.stdout + proc.stderr
-        if 'WATCH_VAL' not in out:
-            chain.append({'var': current_var, 'func': current_func,
-                          'hit': False})
-            break
-
+        hit_line = None
+        hit_frame = None
         write_val = None
-        write_site = None
         syms = []
+        got_hit = False
         for line in out.splitlines():
             line = line.strip()
-            m = re.match(r'WATCH_VAL (\d+)', line)
+            m = re.match(r'CB_HIT depth=\d+ hit=\d+ frame=(\S+) line=(\d+) val=(-?\d+)', line)
             if m:
-                write_val = int(m.group(1))
+                got_hit = True
+                hit_frame = m.group(1)
+                hit_line = int(m.group(2))
+                write_val = int(m.group(4))
                 continue
             m = re.match(r'SYM (\S+) (-?\d+) (0x[0-9a-f]+)', line)
             if m:
                 syms.append({'name': m.group(1), 'val': int(m.group(2))})
                 continue
-            m = re.match(r'FRAME_END (\S+)', line)
-            if m:
-                if write_site is None:
-                    write_site = m.group(1)
-                continue
+
+        if not got_hit:
+            chain.append({'var': current_var, 'func': current_func,
+                          'hit': False})
+            break
 
         # Candidates: in-scope variables whose value equals the written value
         # (excluding the watched variable itself and loop counters).
@@ -2001,7 +2011,7 @@ run {run_args}
             candidates.append(s['name'])
 
         chain.append({'var': current_var, 'func': current_func,
-                      'write_site': write_site, 'value': write_val,
+                      'write_line': hit_line, 'value': write_val,
                       'candidates': candidates})
 
         # Next layer: recurse into the first plausible candidate.  A heap
@@ -2020,7 +2030,7 @@ run {run_args}
         # The candidate lives in the current write frame; the next layer
         # breaks at that frame's function to re-watch it.
         current_var = next_var
-        current_func = write_site or current_func
+        current_func = hit_frame or current_func
         if current_func == '?':
             break
 
