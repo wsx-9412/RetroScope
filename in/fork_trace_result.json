@@ -1,7 +1,7 @@
 {
-  "binary_target": "/tmp/fork_analysis_p2rjbn03/target/tools/.libs/tiffcrop",
-  "binary_ref": "/tmp/fork_analysis_p2rjbn03/ref/tools/.libs/tiffcrop",
-  "fork_spec": "/tmp/fork_analysis_p2rjbn03/target/libtiff/tif_dirread.c:5433",
+  "binary_target": "/tmp/fork_analysis_2zihdmcd/target/tools/.libs/tiffcrop",
+  "binary_ref": "/tmp/fork_analysis_2zihdmcd/ref/tools/.libs/tiffcrop",
+  "fork_spec": "/tmp/fork_analysis_2zihdmcd/target/libtiff/tif_dirread.c:5433",
   "variables": [
     "tif",
     "dir",
@@ -20,19 +20,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140732253483152
+      "buf_addr": 140730579141952
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140732253483088
+      "buf_addr": 140730579141888
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140732253483008
+      "buf_addr": 140730579141808
     }
   ],
   "ref_file_reads": [
@@ -40,19 +40,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140732360741344
+      "buf_addr": 140723754424048
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140732360741280
+      "buf_addr": 140723754423984
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140732360741200
+      "buf_addr": 140723754423904
     }
   ],
   "chain_trace": {
@@ -65,12 +65,12 @@
         ]
       },
       "dir": {
-        "file_offset": 232,
+        "file_offset": 3630,
         "kind": "ifd_entry",
         "values": [
-          89678917142344
+          90366111914840
         ],
-        "entry_index": 19
+        "entry_index": 281
       },
       "nstrips": {
         "file_offset": null,
@@ -104,35 +104,103 @@
         "inv": 1,
         "varvals": {
           "tif": 89678917140608,
-          "dir": 89678917142248,
+          "dir": 89335319757008,
+          "nstrips": 1,
+          "lpp": 89678917140840,
+          "dir->tdir_tag": 273
+        },
+        "diroff": 98,
+        "dp": null,
+        "dir": 89335319757008,
+        "entry": null,
+        "frame_dir": 89335319756864,
+        "entsize": 24,
+        "flags": 35593
+      },
+      {
+        "inv": 2,
+        "varvals": {
+          "tif": 89678917140608,
+          "dir": 89335319757104,
+          "nstrips": 1,
+          "lpp": 89678917140848,
+          "dir->tdir_tag": 279
+        },
+        "diroff": 98,
+        "dp": null,
+        "dir": 89335319757104,
+        "entry": null,
+        "frame_dir": 89335319756864,
+        "entsize": 24,
+        "flags": 35593
+      },
+      {
+        "inv": 3,
+        "varvals": {
+          "tif": 89678917140608,
+          "dir": 89678917143504,
           "nstrips": 1,
           "lpp": 89678917140840,
           "dir->tdir_tag": 273
         },
         "diroff": 2,
         "dp": null,
-        "dir": 89678917142248,
+        "dir": 89678917143504,
         "entry": null,
-        "frame_dir": 89678917141888,
+        "frame_dir": 89678917143168,
         "entsize": 24,
-        "flags": 35337
+        "flags": 8423705
       },
       {
-        "inv": 2,
+        "inv": 4,
         "varvals": {
           "tif": 89678917140608,
-          "dir": 89678917142344,
+          "dir": 89678917143600,
           "nstrips": 1,
           "lpp": 89678917140848,
           "dir->tdir_tag": 279
         },
         "diroff": 2,
         "dp": null,
-        "dir": 89678917142344,
+        "dir": 89678917143600,
         "entry": null,
-        "frame_dir": 89678917141888,
+        "frame_dir": 89678917143168,
         "entsize": 24,
-        "flags": 35337
+        "flags": 8423705
+      },
+      {
+        "inv": 5,
+        "varvals": {
+          "tif": 89678917140608,
+          "dir": 90366111912080,
+          "nstrips": 1,
+          "lpp": 89678917140840,
+          "dir->tdir_tag": 273
+        },
+        "diroff": 256,
+        "dp": null,
+        "dir": 90366111912080,
+        "entry": null,
+        "frame_dir": 90366111908096,
+        "entsize": 24,
+        "flags": 8423481
+      },
+      {
+        "inv": 6,
+        "varvals": {
+          "tif": 89678917140608,
+          "dir": 90366111914840,
+          "nstrips": 1,
+          "lpp": 89678917140848,
+          "dir->tdir_tag": 279
+        },
+        "diroff": 256,
+        "dp": null,
+        "dir": 90366111914840,
+        "entry": null,
+        "frame_dir": 90366111908096,
+        "entsize": 24,
+        "flags": 8423481
       }
     ],
     "pread64": []
