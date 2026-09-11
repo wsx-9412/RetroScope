@@ -4234,6 +4234,10 @@ def main():
         for _tagid, _info in chain_trace_results['tag_mappings'].items():
             if _info.get('file_offset') is not None:
                 mapped_offsets.add(_info['file_offset'])
+    if chain_trace_results and chain_trace_results.get('var_mappings'):
+        for _vname, _info in chain_trace_results['var_mappings'].items():
+            if _info.get('file_offset') is not None:
+                mapped_offsets.add(_info['file_offset'])
     if mapped_offsets:
         offset_strs = ', '.join(f'0x{o:x}' for o in sorted(mapped_offsets))
         print(f'  5. Divergence-determining bytes at input file offsets: {offset_strs}')
