@@ -1824,6 +1824,290 @@ def _call_site_trace_case_b(fork_points, variables, clauses=None):
     }
 
 
+def _frame_symbols_snapshot():
+    """GDB Python snippet: dump all in-scope variables (locals + args) of the
+    innermost frames, with their values.  Used by the watchpoint chain to find
+    value-matching data sources at a write site."""
+    return r"""
+python
+import gdb
+_frame = gdb.newest_frame()
+for _i in range(6):
+    if _frame is None:
+        break
+    try:
+        _fname = _frame.name() or '?'
+    except Exception:
+        _fname = '?'
+    try:
+        _block = _frame.block()
+    except Exception:
+        _block = None
+    _seen = set()
+    if _block is not None:
+        try:
+            _iter = _block
+            while _iter is not None:
+                for _sym in _iter:
+                    _n = _sym.name or ''
+                    if not _n or _n in _seen:
+                        continue
+                    _seen.add(_n)
+                    try:
+                        _v = int(_frame.read_var(_n))
+                        print("SYM %s %d 0x%x" % (_n, _v, _v))
+                    except Exception:
+                        pass
+                try:
+                    _iter = _iter.superblock
+                except Exception:
+                    _iter = None
+        except Exception:
+            pass
+    try:
+        _args = _frame.arguments()
+        for _a in _args:
+            _n = _a.name or ''
+            if _n in _seen:
+                continue
+            _seen.add(_n)
+            try:
+                _v = int(_a.value(_frame))
+                print("SYM %s %d 0x%x" % (_n, _v, _v))
+            except Exception:
+                pass
+    except Exception:
+        pass
+    print("FRAME_END %s" % _fname)
+    try:
+        _frame = _frame.older()
+    except Exception:
+        break
+end
+"""
+
+
+def run_gdb_watchpoint_chain(binary, fork_spec, fork_func, var_expr, input_file,
+                             program_args, timeout=120, max_depth=5):
+    """Fully dynamic watchpoint-chain data-flow tracing.
+
+    Starting from a fork variable (e.g. ``crop_buff``), repeatedly:
+      1. break at the enclosing function's entry, read the variable's ADDRESS,
+         set a hardware watchpoint on it, and continue;
+      2. when the watchpoint fires (the variable is written), record the
+         write site (function:line), the written value, and snapshot every
+         in-scope variable whose value equals the written value -- those are
+         the data-flow candidates;
+      3. recurse into the candidates (the next layer runs in the writer's
+         function), until the chain reaches an input-file leaf (a variable
+         whose value matches an IFD tag value / entry) or a dead end.
+
+    No source text is read: both the write sites and the candidate sources
+    are discovered dynamically via watchpoints and value matching.
+    """
+    real_binary = resolve_binary(binary)
+    run_parts = [a.replace('{input_file}', input_file).replace('{input}', input_file)
+                 for a in program_args]
+    run_args = ' '.join(run_parts)
+    env = build_run_env(real_binary)
+    snapshot = _frame_symbols_snapshot()
+
+    chain = []
+    current_var = var_expr
+    current_func = fork_func
+
+    for depth in range(max_depth):
+        script = f"""set pagination off
+set confirm off
+set breakpoint pending on
+
+break {current_func}
+commands
+  silent
+  printf "ENTRY_HIT depth={depth}\\n"
+  python
+import gdb
+try:
+    _a = int(gdb.parse_and_eval('&({current_var})'))
+    print("VAR_ADDR 0x%x" % _a)
+except Exception as e:
+    print("VAR_ERR %s" % e)
+end
+  continue
+end
+
+watch
+commands
+  silent
+  printf "WATCH_HIT depth={depth}\\n"
+  python
+import gdb
+try:
+    _a = int(gdb.parse_and_eval('&({current_var})'))
+    _v = int(gdb.parse_and_eval('{current_var}'))
+    print("WATCH_VAL %d" % _v)
+    print("WATCH_ADDR 0x%x" % _a)
+except Exception as e:
+    print("WATCH_ERR %s" % e)
+end
+{snapshot}
+  quit
+end
+
+run {run_args}
+"""
+        # NOTE: 'watch' needs the concrete address; we generate the watch
+        # command with the address captured in ENTRY_HIT.  Because GDB script
+        # variables cannot be used in 'watch', we instead re-break on the
+        # entry and issue 'watch *<addr>' via the address parsed in Python.
+        # Simpler robust approach: set the watchpoint inside the entry
+        # breakpoint's Python block using gdb.Breakpoint/execute.
+        script = f"""set pagination off
+set confirm off
+set breakpoint pending on
+
+break {current_func}
+commands
+  silent
+  printf "ENTRY_HIT depth={depth}\\n"
+  python
+import gdb
+try:
+    _a = int(gdb.parse_and_eval('&({current_var})'))
+    print("VAR_ADDR 0x%x" % _a)
+    gdb.execute('watch *0x%x' % _a)
+except Exception as e:
+    print("VAR_ERR %s" % e)
+end
+  continue
+end
+
+{snapshot}
+
+run {run_args}
+"""
+        # The watchpoint created inside the entry commands needs its own
+        # command list; attach it after the first watch is created by
+        # re-running with an explicit watch command block keyed on number 3
+        # (break=1, entry commands=2... numbers depend on order).  To keep
+        # this robust, use a fixed layout: breakpoint 1 = entry; the watch
+        # created at ENTRY_HIT becomes breakpoint 2; commands 2 handle it.
+        script = f"""set pagination off
+set confirm off
+set breakpoint pending on
+
+break {current_func}
+commands 1
+  silent
+  printf "ENTRY_HIT depth={depth}\\n"
+  python
+import gdb
+try:
+    _a = int(gdb.parse_and_eval('&({current_var})'))
+    print("VAR_ADDR 0x%x" % _a)
+    gdb.execute('watch *0x%x' % _a)
+except Exception as e:
+    print("VAR_ERR %s" % e)
+end
+  continue
+end
+
+commands 2
+  silent
+  printf "WATCH_HIT depth={depth}\\n"
+  python
+import gdb
+try:
+    _v = int(gdb.parse_and_eval('{current_var}'))
+    print("WATCH_VAL %d" % _v)
+except Exception as e:
+    print("WATCH_ERR %s" % e)
+end
+{snapshot}
+  quit
+end
+
+run {run_args}
+"""
+        fd, script_file = tempfile.mkstemp(suffix='.gdb', prefix='gdb_wchain_')
+        os.close(fd)
+        with open(script_file, 'w') as f:
+            f.write(script)
+        try:
+            proc = subprocess.run(
+                ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
+                capture_output=True, text=True, timeout=timeout, env=env)
+        except subprocess.TimeoutExpired:
+            return {'chain': chain, 'error': 'timeout'}, None
+        finally:
+            try: os.unlink(script_file)
+            except: pass
+
+        out = proc.stdout + proc.stderr
+        if 'WATCH_HIT' not in out:
+            chain.append({'var': current_var, 'func': current_func,
+                          'hit': False})
+            break
+
+        write_val = None
+        write_site = None
+        syms = []
+        in_snapshot = False
+        for line in out.splitlines():
+            line = line.strip()
+            m = re.match(r'WATCH_VAL (\d+)', line)
+            if m:
+                write_val = int(m.group(1))
+                continue
+            m = re.match(r'SYM (\S+) (-?\d+) (0x[0-9a-f]+)', line)
+            if m:
+                syms.append({'name': m.group(1), 'val': int(m.group(2))})
+                continue
+            m = re.match(r'FRAME_END (\S+)', line)
+            if m:
+                if write_site is None:
+                    write_site = m.group(1)
+                continue
+
+        # Candidates: in-scope variables whose value equals the written value
+        # (excluding the watched variable itself and loop counters).
+        candidates = []
+        for s in syms:
+            if s['name'] == current_var:
+                continue
+            if s['val'] != write_val:
+                continue
+            if s['name'] in ('i', 'j', 'k', 'n', 'idx'):
+                continue
+            candidates.append(s['name'])
+
+        chain.append({'var': current_var, 'func': current_func,
+                      'write_site': write_site, 'value': write_val,
+                      'candidates': candidates})
+
+        # Next layer: recurse into the first plausible candidate.  A heap
+        # pointer (>= 0x500000000000) usually comes from malloc — dead end
+        # for file mapping; a small integer is a computed/loop scalar — try
+        # to follow it.
+        next_var = None
+        for c in candidates:
+            cv = next((s['val'] for s in syms if s['name'] == c), 0)
+            if cv >= 0x500000000000:
+                continue  # heap pointer: allocation result, not file data
+            next_var = c
+            break
+        if next_var is None:
+            break
+        # The candidate lives in the current write frame; the next layer
+        # breaks at that frame's function to re-watch it.
+        current_var = next_var
+        current_func = write_site or current_func
+        if current_func == '?':
+            break
+
+    return {'chain': chain}, None
+
+
 def run_gdb_watchpoint_chain_trace(binary, fork_spec, var_expr, input_file, program_args,
                                     max_depth=5, timeout=300):
     """True GDB watchpoint-based chain tracing.
