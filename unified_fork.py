@@ -42,6 +42,25 @@ from trace_fork_offsets import extract_variables_from_statement
 
 _SEMANTIC_SUFFIXES = ('WithLimit', 'Checked', 'Safe', 'Ex', 'NoSSE', 'Array')
 
+# Cache of _record_side results: (binary, func_names, source_root, args) ->
+# (record_decisions_result, used_func_name).  Deterministic recordings are
+# replayed many times during the recursive descent; the cache avoids the
+# repeated full GDB runs without changing the outcome.
+_RECORD_CACHE = {}
+
+# Error/warning REPORTING functions: their divergences are consequences of
+# earlier state differences (the actual input-driven fork), not causes.
+# They are excluded from recursion and from the candidate set so the search
+# does not terminate on the warning/error output path.
+_NOISE_FUNC_RE = re.compile(
+    r'(TIFF(Error|Warning)(Ext)?|unix(Error|Warning)Handler|'
+    r'(Error|Warning)Handler|_TIFF(Error|Warning)|'
+    r'report|fprintf|perror)$', re.IGNORECASE)
+
+
+def _is_noise_func(name):
+    return bool(name and _NOISE_FUNC_RE.search(name))
+
 
 def _norm(text):
     return re.sub(r'[\s{};]+', '', (text or ''))
@@ -201,6 +220,13 @@ def _record_side(binary, func_names, source_root, args, timeout, source_hint=Non
     ``source_hint`` (a file path) narrows the source lookup to the caller's
     file first — same-name functions exist in several files (e.g. _TIFFmemcpy
     in tif_unix.c vs a fake match in tif_dir.c).
+
+    Results are cached per (binary, function, source root, args): the same
+    function is recorded many times during the recursive descent (from
+    different parents / depths), and record_decisions is a full GDB run of
+    the whole program — replaying it is pure waste.  The recording is
+    deterministic (same binary + input + function => same decision events),
+    so the cache does not change the result.
     """
     root_eff = source_root
     if source_hint:
@@ -210,6 +236,9 @@ def _record_side(binary, func_names, source_root, args, timeout, source_hint=Non
                 root_eff = hint_dir
         except Exception:
             pass
+    key = (binary, tuple(func_names), root_eff, tuple(args))
+    if key in _RECORD_CACHE:
+        return _RECORD_CACHE[key]
     for fname in func_names:
         try:
             r = record_decisions(binary, fname, args, source_root=root_eff,
@@ -217,9 +246,12 @@ def _record_side(binary, func_names, source_root, args, timeout, source_hint=Non
         except Exception as e:
             r = {'error': f'record failed: {e}'}
         if r and not r.get('error') and not r.get('bp_fail'):
+            _RECORD_CACHE[key] = (r, fname)
             return r, fname
         if r and r.get('error'):
+            _RECORD_CACHE[key] = (r, None)
             return r, None
+    _RECORD_CACHE[key] = (None, None)
     return None, None
 
 
@@ -540,6 +572,11 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                 'reason': f'recursion limit reached at {func_a}'}
     _visited.add(key)
 
+    if _is_noise_func(func_a):
+        return {'status': 'no_divergence',
+                'reason': f'error/warning reporting function {func_a} '
+                          f'(excluded — not a causal fork)'}
+
     func_b = func_a
     if refactoring_map:
         func_b = refactoring_map.get(func_a, func_a)
@@ -548,12 +585,19 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
     print(f'{indent}[unified] level {_depth}: {func_a} '
           f'(B side tried: {try_names_b})')
 
-    ra, used_a = _record_side(binary_a, [func_a], source_root_a, args, timeout,
-                              source_hint=_hint_a)
+    # Record both sides in parallel (two independent GDB runs; the
+    # recordings are independent and deterministic, so this halves the
+    # GDB time without changing the result).
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=2) as _ex:
+        _fa = _ex.submit(_record_side, binary_a, [func_a], source_root_a,
+                         args, timeout, _hint_a)
+        _fb = _ex.submit(_record_side, binary_b, try_names_b, source_root_b,
+                         args, timeout, _hint_b)
+        ra, used_a = _fa.result()
+        rb, used_b = _fb.result()
     if ra is None:
         return {'status': 'record_failed', 'side': 'a', 'func': func_a}
-    rb, used_b = _record_side(binary_b, try_names_b, source_root_b, args,
-                              timeout, source_hint=_hint_b)
     if rb is None:
         return {'status': 'record_failed', 'side': 'b', 'func': func_b}
     print(f'{indent}[unified] recorded A={len(ra.get("invocations") or [])} '
@@ -597,10 +641,14 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                                             rb.get('file'), cnt_a, cnt_b,
                                             refactoring_map)
         order = priority + [c for c in cand if c not in priority]
+        # Drop error/warning reporting functions from the candidates.
+        order = [c for c in order if not _is_noise_func(c[0])]
         print(f'{indent}[unified] candidates: '
               + ', '.join(f'{a}|{b}' for a, b in order[:8]))
         weak_best = None
         absorbed_best = None
+        last_nonabsorbed = None
+        last_order = -1
         for callee_a, callee_b in order[:8]:
             sub = locate_fork_dynamically(
                 binary_a, binary_b, source_root_a, source_root_b, callee_a,
@@ -609,6 +657,14 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                 _hint_a=ra.get('file'), _hint_b=rb.get('file'))
             print(f'{indent}[unified]   -> {callee_a}: {sub.get("status")} '
                   f'{sub.get("reason", "")}')
+            # The callee's LAST call position in the parent's execution:
+            # among non-absorbed forks we want the one executed LAST on the
+            # trajectory (earlier forks usually re-converge).
+            callee_order = -1
+            for _c in ia_last.get('calls') or []:
+                if any(_name_pair(_nn, callee_a, refactoring_map)
+                       for _nn in _c.get('callees') or []):
+                    callee_order = max(callee_order, _c.get('order', 0))
             # A callee-level count fork is usually an ABSORBED divergence
             # (extra/removed statements that do not change the caller's
             # later behavior) — only outcome/value/text forks are decisive.
@@ -623,7 +679,10 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                         sub['absorbed'] = True
                         absorbed_best = sub
                     continue
-                return sub
+                if callee_order >= last_order:
+                    last_order = callee_order
+                    last_nonabsorbed = sub
+                continue
             if sub.get('status') == 'value_fork':
                 if _is_absorbed(sub, ia_last, ib_last, refactoring_map):
                     print(f'{indent}[unified]     !! absorbed value fork — '
@@ -632,10 +691,19 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                         sub['absorbed'] = True
                         absorbed_best = sub
                     continue
-                return sub
+                if callee_order >= last_order:
+                    last_order = callee_order
+                    last_nonabsorbed = sub
+                continue
             if sub.get('status') == 'decision_fork' and sub.get('weak') \
                     and weak_best is None:
                 weak_best = sub
+        if last_nonabsorbed:
+            print(f'{indent}[unified]   -> LAST non-absorbed fork: '
+                  f'{last_nonabsorbed.get("function_a", "?")}:'
+                  f'{last_nonabsorbed.get("diff", {}).get("b", {}).get("line", "?")} '
+                  f'(order {last_order})')
+            return last_nonabsorbed
         if absorbed_best:
             print(f'{indent}[unified]   no non-absorbed fork found — '
                   f'reporting the best absorbed one')
@@ -670,8 +738,13 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                   f'reporting the code-change fork itself')
         else:
             print(f'{indent}[unified] scalar-operand fork at '
-                  f'{used_a}:{diff["a"].get("line")} — reporting directly '
-                  f'(operands are taintable)')
+                  f'{used_a}:{diff["a"].get("line")} — descending to find '
+                  f'the LAST fork (earlier forks may re-converge)')
+            sub = _try_candidates(null_diff=None)
+            if sub:
+                return sub
+            print(f'{indent}[unified]   no deeper fork — '
+                  f'reporting the fork itself')
         return {
             'status': 'decision_fork',
             'function_a': used_a, 'function_b': used_b,
