@@ -1920,109 +1920,31 @@ set confirm off
 set breakpoint pending on
 
 break {current_func}
-commands
-  silent
-  printf "ENTRY_HIT depth={depth}\\n"
-  python
-import gdb
-try:
-    _a = int(gdb.parse_and_eval('&({current_var})'))
-    print("VAR_ADDR 0x%x" % _a)
-except Exception as e:
-    print("VAR_ERR %s" % e)
-end
-  continue
-end
-
-watch
-commands
-  silent
-  printf "WATCH_HIT depth={depth}\\n"
-  python
-import gdb
-try:
-    _a = int(gdb.parse_and_eval('&({current_var})'))
-    _v = int(gdb.parse_and_eval('{current_var}'))
-    print("WATCH_VAL %d" % _v)
-    print("WATCH_ADDR 0x%x" % _a)
-except Exception as e:
-    print("WATCH_ERR %s" % e)
-end
-{snapshot}
-  quit
-end
-
-run {run_args}
-"""
-        # NOTE: 'watch' needs the concrete address; we generate the watch
-        # command with the address captured in ENTRY_HIT.  Because GDB script
-        # variables cannot be used in 'watch', we instead re-break on the
-        # entry and issue 'watch *<addr>' via the address parsed in Python.
-        # Simpler robust approach: set the watchpoint inside the entry
-        # breakpoint's Python block using gdb.Breakpoint/execute.
-        script = f"""set pagination off
-set confirm off
-set breakpoint pending on
-
-break {current_func}
-commands
-  silent
-  printf "ENTRY_HIT depth={depth}\\n"
-  python
-import gdb
-try:
-    _a = int(gdb.parse_and_eval('&({current_var})'))
-    print("VAR_ADDR 0x%x" % _a)
-    gdb.execute('watch *0x%x' % _a)
-except Exception as e:
-    print("VAR_ERR %s" % e)
-end
-  continue
-end
-
-{snapshot}
-
-run {run_args}
-"""
-        # The watchpoint created inside the entry commands needs its own
-        # command list; attach it after the first watch is created by
-        # re-running with an explicit watch command block keyed on number 3
-        # (break=1, entry commands=2... numbers depend on order).  To keep
-        # this robust, use a fixed layout: breakpoint 1 = entry; the watch
-        # created at ENTRY_HIT becomes breakpoint 2; commands 2 handle it.
-        script = f"""set pagination off
-set confirm off
-set breakpoint pending on
-
-break {current_func}
 commands 1
   silent
   printf "ENTRY_HIT depth={depth}\\n"
   python
 import gdb
+class _WB(gdb.Breakpoint):
+    def __init__(self, spec):
+        super().__init__(spec, internal=True)
+    def stop(self):
+        try:
+            _v = int(gdb.parse_and_eval('{current_var}'))
+            print("WATCH_VAL %d" % _v)
+        except Exception as e:
+            print("WATCH_ERR %s" % e)
+{_frame_symbols_snapshot()}
+        gdb.execute('quit')
+        return True
 try:
     _a = int(gdb.parse_and_eval('&({current_var})'))
     print("VAR_ADDR 0x%x" % _a)
-    gdb.execute('watch *0x%x' % _a)
+    _WB('*0x%x' % _a)
 except Exception as e:
     print("VAR_ERR %s" % e)
 end
   continue
-end
-
-commands 2
-  silent
-  printf "WATCH_HIT depth={depth}\\n"
-  python
-import gdb
-try:
-    _v = int(gdb.parse_and_eval('{current_var}'))
-    print("WATCH_VAL %d" % _v)
-except Exception as e:
-    print("WATCH_ERR %s" % e)
-end
-{snapshot}
-  quit
 end
 
 run {run_args}
@@ -2042,7 +1964,7 @@ run {run_args}
             except: pass
 
         out = proc.stdout + proc.stderr
-        if 'WATCH_HIT' not in out:
+        if 'WATCH_VAL' not in out:
             chain.append({'var': current_var, 'func': current_func,
                           'hit': False})
             break
@@ -2050,7 +1972,6 @@ run {run_args}
         write_val = None
         write_site = None
         syms = []
-        in_snapshot = False
         for line in out.splitlines():
             line = line.strip()
             m = re.match(r'WATCH_VAL (\d+)', line)
