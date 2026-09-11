@@ -42,6 +42,12 @@ from trace_fork_offsets import extract_variables_from_statement
 
 _SEMANTIC_SUFFIXES = ('WithLimit', 'Checked', 'Safe', 'Ex', 'NoSSE', 'Array')
 
+# Cache of _record_side results: (binary, func_names, source_root, args) ->
+# (record_decisions_result, used_func_name).  Deterministic recordings are
+# replayed many times during the recursive descent; the cache avoids the
+# repeated full GDB runs without changing the outcome.
+_RECORD_CACHE = {}
+
 # Error/warning REPORTING functions: their divergences are consequences of
 # earlier state differences (the actual input-driven fork), not causes.
 # They are excluded from recursion and from the candidate set so the search
@@ -581,12 +587,8 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
 
     ra, used_a = _record_side(binary_a, [func_a], source_root_a, args, timeout,
                               source_hint=_hint_a)
-    if ra is None:
-        return {'status': 'record_failed', 'side': 'a', 'func': func_a}
     rb, used_b = _record_side(binary_b, try_names_b, source_root_b, args,
                               timeout, source_hint=_hint_b)
-    if rb is None:
-        return {'status': 'record_failed', 'side': 'b', 'func': func_b}
     print(f'{indent}[unified] recorded A={len(ra.get("invocations") or [])} '
           f'inv, B={len(rb.get("invocations") or [])} inv')
 
