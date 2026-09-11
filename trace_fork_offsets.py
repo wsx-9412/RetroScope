@@ -1391,7 +1391,7 @@ run {' '.join(run_parts)}
 
 
 def run_gdb_call_site_trace(binary, fork_spec, fork_func, variables, input_file,
-                            program_args, timeout=120):
+                            program_args, timeout=120, clauses=None):
     """Fully dynamic call-site / fork-context back-tracing (no static analysis).
 
     Dispatches on the fork function:
