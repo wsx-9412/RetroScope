@@ -4030,51 +4030,68 @@ def main():
                 print(f'    offset=0x{offset:04x} size={size} -- within file boundary')
 
     # ================================================================
-    # Step 4.5: GDB call-site argument trace (fully dynamic)
+    # Step 4.5: GDB call-site / fork-context trace (fully dynamic)
     # ================================================================
     chain_trace_results = {}
     if binary and fork_spec and input_file:
         print(f'\n{"="*60}')
-        print(f'  Step 4.5: GDB call-site argument trace (fully dynamic)')
+        print(f'  Step 4.5: GDB call-site / fork-context trace (fully dynamic)')
         print(f'{"="*60}')
 
-        # Fully dynamic: chain pread64(IFD buffer) -> dir -> dp -> dp->tdir_tag
-        fork_func_name = 'TIFFReadDirectoryFindFieldInfo'
+        # Fork function comes from the divergence result; variables are the
+        # fork-statement operands captured by the divergence analysis.
+        df = config.get('dynamic_fork') or {}
+        fork_func_name = (df.get('function_b')
+                          or config.get('root_cause_function')
+                          or 'TIFFReadDirectoryFindFieldInfo')
+        print(f'  [*] Fork function: {fork_func_name}')
+
         cs_result, err = run_gdb_call_site_trace(
-            binary, fork_spec, fork_func_name, input_file, program_args,
-            timeout=a.timeout * 2)
+            binary, fork_spec, fork_func_name, variables, input_file,
+            program_args, timeout=a.timeout * 2)
 
         if err:
             print(f'  [!] Call-site trace failed: {err}')
         elif cs_result:
             chain_trace_results = cs_result
+            fork_points = cs_result.get('fork_points', [])
             mappings = cs_result.get('tag_mappings', {})
-            invocations = cs_result.get('invocations', [])
+            var_mappings = cs_result.get('var_mappings', {})
 
-            if invocations:
-                print(f'  [*] Fork-point invocations ({len(invocations)}):')
-                shown = invocations[:3]
-                for inv in shown:
-                    print(f'      tagid={inv["tagid"]} mb={inv["mb"]} '
-                          f'field_tag={inv["field_tag"]}')
-                if len(invocations) > 3:
-                    print(f'      ... (+{len(invocations)-3} more)')
+            if fork_points:
+                print(f'  [*] Fork-point executions ({len(fork_points)}):')
+                for fp in fork_points[:3]:
+                    vals = ' '.join(f'{k}={v}' for k, v in fp['varvals'].items())
+                    print(f'      inv={fp["inv"]}: {vals}')
+                if len(fork_points) > 3:
+                    print(f'      ... (+{len(fork_points)-3} more)')
 
-            print(f'\n  [*] Call-site actual arguments (dp->tdir_tag) -> file offsets:')
-            if not mappings:
-                print(f'      (no call-site mapping captured)')
-            for tagid, info in mappings.items():
-                name = info.get('tag_name', f'tag_{tagid}')
-                if info.get('file_offset') is not None:
-                    print(f'      tagid={tagid} ({name}):')
-                    print(f'        dp={info["dp"]}  dir={info["dir"]}')
-                    print(f'        IFD at file offset '
-                          f'0x{info["ifd_offset"]:x} (tif->tif_diroff)')
-                    print(f'        entry index {info["entry_index"]} '
-                          f'-> tdir_tag at file offset '
-                          f'0x{info["file_offset"]:x}')
-                else:
-                    print(f'      tagid={tagid} ({name}): no IFD buffer match')
+            if mappings:
+                print(f'\n  [*] Call-site actual arguments (dp->tdir_tag) -> file offsets:')
+                for tagid, info in mappings.items():
+                    name = info.get('tag_name', f'tag_{tagid}')
+                    if info.get('file_offset') is not None:
+                        print(f'      tagid={tagid} ({name}):')
+                        print(f'        dp={info["dp"]}  dir={info["dir"]}')
+                        print(f'        IFD at file offset '
+                              f'0x{info["ifd_offset"]:x} (tif->tif_diroff)')
+                        print(f'        entry index {info["entry_index"]} '
+                              f'-> tdir_tag at file offset '
+                              f'0x{info["file_offset"]:x}')
+                    else:
+                        print(f'      tagid={tagid} ({name}): no IFD buffer match')
+            elif var_mappings:
+                print(f'\n  [*] Fork-variable sources (fork-point context):')
+                fp = fork_points[-1] if fork_points else {}
+                diroff = fp.get('diroff')
+                for vname, info in var_mappings.items():
+                    if info.get('file_offset') is not None:
+                        print(f'      {vname}:')
+                        print(f'        kind={info["kind"]} -> file offset '
+                              f'0x{info["file_offset"]:x} '
+                              f'(tif->tif_diroff=0x{diroff:x})')
+                    else:
+                        print(f'      {vname}: no IFD mapping')
 
     # ================================================================
     # Step 5: Fork-variable → file offset mapping (fully dynamic)
