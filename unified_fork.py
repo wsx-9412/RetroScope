@@ -42,6 +42,19 @@ from trace_fork_offsets import extract_variables_from_statement
 
 _SEMANTIC_SUFFIXES = ('WithLimit', 'Checked', 'Safe', 'Ex', 'NoSSE', 'Array')
 
+# Error/warning REPORTING functions: their divergences are consequences of
+# earlier state differences (the actual input-driven fork), not causes.
+# They are excluded from recursion and from the candidate set so the search
+# does not terminate on the warning/error output path.
+_NOISE_FUNC_RE = re.compile(
+    r'(TIFF(Error|Warning)|unix(Error|Warning)Handler|'
+    r'(Error|Warning)Handler|_TIFF(Error|Warning)|'
+    r'report|fprintf|perror)$', re.IGNORECASE)
+
+
+def _is_noise_func(name):
+    return bool(name and _NOISE_FUNC_RE.search(name))
+
 
 def _norm(text):
     return re.sub(r'[\s{};]+', '', (text or ''))
@@ -601,6 +614,8 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
               + ', '.join(f'{a}|{b}' for a, b in order[:8]))
         weak_best = None
         absorbed_best = None
+        last_nonabsorbed = None
+        last_order = -1
         for callee_a, callee_b in order[:8]:
             sub = locate_fork_dynamically(
                 binary_a, binary_b, source_root_a, source_root_b, callee_a,
@@ -609,6 +624,14 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                 _hint_a=ra.get('file'), _hint_b=rb.get('file'))
             print(f'{indent}[unified]   -> {callee_a}: {sub.get("status")} '
                   f'{sub.get("reason", "")}')
+            # The callee's LAST call position in the parent's execution:
+            # among non-absorbed forks we want the one executed LAST on the
+            # trajectory (earlier forks usually re-converge).
+            callee_order = -1
+            for _c in ia_last.get('calls') or []:
+                if any(_name_pair(_nn, callee_a, refactoring_map)
+                       for _nn in _c.get('callees') or []):
+                    callee_order = max(callee_order, _c.get('order', 0))
             # A callee-level count fork is usually an ABSORBED divergence
             # (extra/removed statements that do not change the caller's
             # later behavior) — only outcome/value/text forks are decisive.
@@ -623,7 +646,10 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                         sub['absorbed'] = True
                         absorbed_best = sub
                     continue
-                return sub
+                if callee_order >= last_order:
+                    last_order = callee_order
+                    last_nonabsorbed = sub
+                continue
             if sub.get('status') == 'value_fork':
                 if _is_absorbed(sub, ia_last, ib_last, refactoring_map):
                     print(f'{indent}[unified]     !! absorbed value fork — '
@@ -632,10 +658,19 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
                         sub['absorbed'] = True
                         absorbed_best = sub
                     continue
-                return sub
+                if callee_order >= last_order:
+                    last_order = callee_order
+                    last_nonabsorbed = sub
+                continue
             if sub.get('status') == 'decision_fork' and sub.get('weak') \
                     and weak_best is None:
                 weak_best = sub
+        if last_nonabsorbed:
+            print(f'{indent}[unified]   -> LAST non-absorbed fork: '
+                  f'{last_nonabsorbed.get("function_a", "?")}:'
+                  f'{last_nonabsorbed.get("diff", {}).get("b", {}).get("line", "?")} '
+                  f'(order {last_order})')
+            return last_nonabsorbed
         if absorbed_best:
             print(f'{indent}[unified]   no non-absorbed fork found — '
                   f'reporting the best absorbed one')
