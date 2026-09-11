@@ -47,7 +47,7 @@ _SEMANTIC_SUFFIXES = ('WithLimit', 'Checked', 'Safe', 'Ex', 'NoSSE', 'Array')
 # They are excluded from recursion and from the candidate set so the search
 # does not terminate on the warning/error output path.
 _NOISE_FUNC_RE = re.compile(
-    r'(TIFF(Error|Warning)|unix(Error|Warning)Handler|'
+    r'(TIFF(Error|Warning)(Ext)?|unix(Error|Warning)Handler|'
     r'(Error|Warning)Handler|_TIFF(Error|Warning)|'
     r'report|fprintf|perror)$', re.IGNORECASE)
 
