@@ -4115,10 +4115,26 @@ def main():
                 fork_tagid = int(_c.get('rhs'))
                 break
 
+    # Identify the DIVERGING invocation's tagid from the divergence result:
+    # the fork statement's comparison clauses record the runtime operand
+    # values (e.g. `field_tag < tagid` with lhs=270, rhs=269), so the
+    # diverging call-site argument is the rhs of the first clause.
+    fork_tagid = None
+    df = config.get('dynamic_fork') or {}
+    diff_b = ((df.get('diff') or {}).get('b') or {})
+    b_clauses = diff_b.get('clauses') or {}
+    if b_clauses:
+        for _k in sorted(b_clauses, key=lambda k: int(k)):
+            _c = b_clauses[_k]
+            if _c.get('rhs') is not None:
+                fork_tagid = int(_c.get('rhs'))
+                break
+
+    print(f'\n  GDB call-site trace summary (fully dynamic):')
     if chain_trace_results and chain_trace_results.get('tag_mappings'):
+        # Case A (classic): dp->tdir_tag argument mapping, filtered to the
+        # diverging invocation's tagid.
         all_mappings = chain_trace_results['tag_mappings']
-        # Only the diverging invocation's actual argument matters; the rest
-        # are other calls in the run and are unrelated to the fork.
         if fork_tagid is not None:
             key = fork_tagid
             selected = {key: all_mappings[key]} if key in all_mappings else {}
@@ -4126,9 +4142,8 @@ def main():
             selected = dict(all_mappings)
 
         if fork_tagid is not None:
-            print(f'\n  [*] Diverging invocation: tagid={fork_tagid} '
+            print(f'  [*] Diverging invocation: tagid={fork_tagid} '
                   f'(from divergence clauses rhs)')
-        print(f'\n  GDB call-site trace summary (fully dynamic):')
         if not selected:
             print(f'    (no mapping for the diverging call-site argument)')
         for tagid, info in selected.items():
@@ -4145,6 +4160,19 @@ def main():
 
         # Keep only the diverging mapping in the saved result.
         chain_trace_results['tag_mappings'] = selected
+    elif chain_trace_results and chain_trace_results.get('var_mappings'):
+        # Case B (generic): fork-variable sources from the fork-point context.
+        fp = chain_trace_results.get('fork_points') or []
+        fp = fp[-1] if fp else {}
+        for vname, info in chain_trace_results['var_mappings'].items():
+            if info.get('file_offset') is not None:
+                print(f'    {vname} ({info["kind"]})')
+                print(f'      ← at file offset 0x{info["file_offset"]:x}')
+                if fp.get('diroff') is not None:
+                    print(f'      ← IFD at file offset '
+                          f'0x{fp["diroff"]:x} (tif->tif_diroff)')
+            else:
+                print(f'    {vname}: no file mapping')
 
     # ================================================================
     # Summary — dynamic, based on analysis results
