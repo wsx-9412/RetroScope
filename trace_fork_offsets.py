@@ -1469,6 +1469,21 @@ try:
 except Exception:
     pass
 try:
+    f = gdb.newest_frame().older()
+    while f is not None:
+        try:
+            d = int(f.read_var('dir'))
+            print("FRAME_DIR 0x%x " % d + (f.name() or ''))
+            break
+        except Exception:
+            pass
+        try:
+            f = f.older()
+        except Exception:
+            break
+except Exception:
+    pass
+try:
     print("ENTSIZE %d" % int(gdb.parse_and_eval('sizeof(TIFFDirEntry)')))
 except Exception:
     pass
