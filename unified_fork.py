@@ -84,28 +84,13 @@ def compare_invocations(inv_a, inv_b):
 
     Diff kinds (strong to weak):
       * 'outcome' (STRONG) — the two sides reached different outcomes at the
-        same decision position AND the condition text is semantically
-        equivalent (modulo type aliases such as uint32/uint32_t): the path
-        itself diverges here;
+        same decision position: the path itself diverges here;
       * 'count'   (STRONG) — one side took extra decisions: path shortening /
         an added guard;
       * 'text'    (WEAK)   — condition text rewritten (semantic pair); path
         may still be equivalent;
       * 'value'   (WEAK)   — same outcome but different operand values
         (downstream state difference; NOT causal by itself).
-
-    Outcome divergences whose condition texts are NOT semantically equivalent
-    are treated as rewrites (weak 'text') — they are usually alignment
-    artifacts of large refactorings (e.g. an error path ``if (dir)`` aligned
-    against a rewritten loop guard ``if (!dp->tdir_ignore)``), not the same
-    decision taken differently.
-
-    When several (semantically-equivalent) outcome divergences exist inside
-    one invocation, the LAST one whose effects are NOT re-converged is
-    reported (the causal fork): an earlier divergence is skipped when every
-    later decision matches again (the two paths re-converged -> absorbed).
-    Only when every outcome divergence re-converges does the report fall
-    back to the FIRST one.
 
     The caller must report strong diffs before recursing, and only fall back
     to weak diffs when no deeper divergence exists.
@@ -123,63 +108,25 @@ def compare_invocations(inv_a, inv_b):
                       'clauses': eb.get('clauses', {}), 'outcome': db,
                       'exprs': eb.get('exprs', [])}}
 
-    def _semantic_norm(t):
-        # Collapse type aliases: uint32 <-> uint32_t, uint16 <-> uint16_t, ...
-        t = _norm(t)
-        return re.sub(
-            r'\b((?:u?int|u?char|float|double|bool|size|ssize|ptrdiff)'
-            r'(?:8|16|32|64)?)_t\b',
-            r'\1', t)
-
-    def _semantically_equal(ta, tb):
-        return _semantic_norm(ta) == _semantic_norm(tb)
-
-    def _same_after(k):
-        """True when the decision sequences re-converge after position k:
-        every later decision (semantically-equivalent text AND outcome) matches
-        on both sides and the total decision counts are equal."""
-        if len(ev_a) != len(ev_b):
-            return False
-        for j in range(k + 1, n):
-            ea, eb = ev_a[j], ev_b[j]
-            if not _semantically_equal(ea.get('text', ''), eb.get('text', '')):
-                return False
-            if ea.get('outcome') != eb.get('outcome'):
-                return False
-        return True
-
-    outcome_diffs = []
+    strong = None
     weak = None
     for k in range(n):
         ea, eb = ev_a[k], ev_b[k]
         da, db = ea.get('outcome'), eb.get('outcome')
-        ta, tb = _norm(ea.get('text', '')), _norm(eb.get('text', ''))
         if da != db and da is not None and db is not None:
-            if _semantically_equal(ta, tb):
-                # Same decision, different outcome: a real path divergence.
-                outcome_diffs.append(k)
-            elif ta and tb and ta != tb and weak is None:
-                # Rewritten / misaligned conditions: not the same decision.
-                weak = _mk('text', False, k, ea, eb, da, db)
+            strong = strong or _mk('outcome', True, k, ea, eb, da, db)
             continue
+        if len(ev_a) != len(ev_b) and strong is None:
+            pass
+        ta, tb = _norm(ea.get('text', '')), _norm(eb.get('text', ''))
         va, vb = _value_tuple(ea.get('clauses') or {}), \
             _value_tuple(eb.get('clauses') or {})
         if ta and tb and ta != tb and weak is None:
             weak = _mk('text', False, k, ea, eb, da, db)
         elif va and vb and va != vb and weak is None:
             weak = _mk('value', False, k, ea, eb, da, db)
-
-    if outcome_diffs:
-        # Causal fork: the LAST outcome divergence whose suffix does NOT
-        # re-converge; earlier re-converged divergences are absorbed.
-        for k in reversed(outcome_diffs):
-            if not _same_after(k):
-                return _mk('outcome', True, k, ev_a[k], ev_b[k],
-                           ev_a[k].get('outcome'), ev_b[k].get('outcome'))
-        # Every outcome divergence re-converged: report the first one.
-        k = outcome_diffs[0]
-        return _mk('outcome', True, k, ev_a[k], ev_b[k],
-                   ev_a[k].get('outcome'), ev_b[k].get('outcome'))
+    if strong:
+        return strong
     if weak:
         return weak
     if len(ev_a) != len(ev_b):
