@@ -1540,7 +1540,7 @@ run {run_args}
         return _call_site_trace_case_a(
             real_binary, fork_spec, fork_func, run_args, env,
             fork_points, timeout), None
-    return _call_site_trace_case_b(fork_points, variables), None
+    return _call_site_trace_case_b(fork_points, variables, clauses), None
 
 
 def _call_site_trace_case_a(real_binary, fork_spec, fork_func, run_args, env,
@@ -1701,13 +1701,19 @@ run {run_args}
     }
 
 
-def _call_site_trace_case_b(fork_points, variables):
+def _call_site_trace_case_b(fork_points, variables, clauses=None):
     """Generic path: map fork variables from the fork-point context.
 
-    A variable whose value IS the IFD buffer base (``dir``) maps to
-    ``tif_diroff + count_size``; an entry pointer (``direntry``/``dp``)
-    maps to the entry's file offset when both the entry pointer and the
-    buffer base are known.
+    The diverging fork point is selected by matching the divergence
+    clauses' lhs/rhs operand values against the recorded variable values
+    (fallback: the LAST recorded fork point).  Variables are then mapped:
+
+      * a variable equal to the IFD buffer base (``dir``) or an entry
+        pointer (``dp``/``direntry``) -> the buffer/entry file offset;
+      * a variable that is an IFD entry field (e.g. ``dp->tdir_tag``) or a
+        scalar derived from the current entry (e.g. ``fii``, driven by
+        ``dp->tdir_tag``) -> the current entry's file offset, computed from
+        the fork-point context (``dp``-``dir`` + ``tif_diroff``).
     """
     var_mappings = {}
     for v in variables:
@@ -1717,15 +1723,38 @@ def _call_site_trace_case_b(fork_points, variables):
             'values': [],
         }
 
-    # Only the diverging fork point matters; prefer the LAST recorded one
-    # (the deep fork usually happens on the last invocation of the run).
-    fp = fork_points[-1]
+    # Select the diverging fork point via the clauses' operand values.
+    fp = None
+    if clauses:
+        target_vals = [v for v in (clauses.get('lhs'), clauses.get('rhs'))
+                       if isinstance(v, int)]
+        for cand in fork_points:
+            vals = cand.get('varvals') or {}
+            if any(val in target_vals for val in vals.values()):
+                fp = cand
+                break
+    if fp is None:
+        fp = fork_points[-1]
+
     diroff = fp.get('diroff')
     flags = fp.get('flags')
     bigtiff = flags is not None and bool(flags & 0x80000)
     count_size = 8 if bigtiff else 2
     disk_esz = 20 if bigtiff else 12
     esz = fp.get('entsize') or 12
+    dp = fp.get('dp')
+    dir_base = fp.get('dir')
+
+    def _entry_offset(entry_ptr):
+        if diroff is None or dir_base is None or entry_ptr is None \
+                or entry_ptr < dir_base:
+            return None, None
+        idx = (entry_ptr - dir_base) // esz
+        return diroff + count_size + idx * disk_esz, idx
+
+    # Entry pointer of the current iteration: prefer dp (in scope at the
+    # fork point inside TIFFReadDirectory's loop).
+    entry_ptr = dp
 
     for v in variables:
         val = fp['varvals'].get(v)
@@ -1734,29 +1763,28 @@ def _call_site_trace_case_b(fork_points, variables):
             mapping['values'] = [val]
         low = v.lower()
 
-        # dir -> IFD entries base
-        if (diroff is not None and fp.get('dir') is not None
-                and (low == 'dir' or (val is not None and val == fp['dir']))):
+        if (diroff is not None and dir_base is not None
+                and (low == 'dir' or (isinstance(val, int) and val == dir_base))):
             mapping['file_offset'] = diroff + count_size
             mapping['kind'] = 'ifd_entries_base'
             continue
-        # direntry / dp -> entry offset
-        if diroff is not None and val is not None and isinstance(val, int):
-            entry_ptr = fp.get('entry')
-            if low in ('dp', 'direntry') or (entry_ptr is not None and val == entry_ptr):
-                if fp.get('dir') is not None and entry_ptr is not None \
-                        and entry_ptr >= fp['dir']:
-                    idx = (entry_ptr - fp['dir']) // esz
-                    mapping['file_offset'] = diroff + count_size + idx * disk_esz
-                    mapping['kind'] = 'ifd_entry'
-                elif fp.get('dp') is not None and fp.get('dir') is not None \
-                        and fp['dp'] >= fp['dir']:
-                    idx = (fp['dp'] - fp['dir']) // esz
-                    mapping['file_offset'] = diroff + count_size + idx * disk_esz
-                    mapping['kind'] = 'ifd_entry'
-                else:
-                    mapping['file_offset'] = diroff + count_size
-                    mapping['kind'] = 'ifd_entries_base'
+        if low in ('dp', 'direntry') or (isinstance(val, int)
+                                         and val == entry_ptr):
+            off, idx = _entry_offset(val if isinstance(val, int) else entry_ptr)
+            if off is not None:
+                mapping['file_offset'] = off
+                mapping['kind'] = 'ifd_entry'
+            continue
+        # IFD entry field expression (e.g. dp->tdir_tag) or a scalar whose
+        # value is driven by the current entry (fii, tdir_*): map to the
+        # current entry's file offset.
+        if ('tdir_' in v or 'tdir' in low or low in ('fii', 'err', 'tagid')) \
+                and entry_ptr is not None:
+            off, idx = _entry_offset(entry_ptr)
+            if off is not None:
+                mapping['file_offset'] = off
+                mapping['kind'] = 'ifd_entry'
+                mapping['entry_index'] = idx
 
     return {
         'var_mappings': var_mappings,
