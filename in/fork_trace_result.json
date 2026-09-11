@@ -1,31 +1,33 @@
 {
-  "binary_target": "/tmp/fork_analysis_ihjhhc9x/target/tools/.libs/tiffcrop",
-  "binary_ref": "/tmp/fork_analysis_ihjhhc9x/ref/tools/.libs/tiffcrop",
-  "fork_spec": "/tmp/fork_analysis_ihjhhc9x/target/libtiff/tif_dirread.c:4120",
+  "binary_target": "/tmp/fork_analysis_sapa9qfd/target/tools/.libs/tiffcrop",
+  "binary_ref": "/tmp/fork_analysis_sapa9qfd/ref/tools/.libs/tiffcrop",
+  "fork_spec": "/tmp/fork_analysis_sapa9qfd/target/libtiff/tif_dirread.c:3531",
   "variables": [
-    "dir"
+    "tif",
+    "dp->tdir_tag",
+    "fii"
   ],
   "differing_variables": [
-    "dir"
+    "tif"
   ],
   "target_file_reads": [
     {
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140729605305904
+      "buf_addr": 140735645004176
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140729605305840
+      "buf_addr": 140735645004112
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140729605305760
+      "buf_addr": 140735645004032
     }
   ],
   "ref_file_reads": [
@@ -33,28 +35,42 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140732491812080
+      "buf_addr": 140721853788832
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140732491812016
+      "buf_addr": 140721853788768
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140732491811936
+      "buf_addr": 140721853788688
     }
   ],
   "chain_trace": {
     "var_mappings": {
-      "dir": {
-        "file_offset": 4,
-        "kind": "ifd_entries_base",
+      "tif": {
+        "file_offset": null,
+        "kind": null,
         "values": [
-          89678917141888
+          89678917140608
+        ]
+      },
+      "dp->tdir_tag": {
+        "file_offset": null,
+        "kind": null,
+        "values": [
+          32382
+        ]
+      },
+      "fii": {
+        "file_offset": null,
+        "kind": null,
+        "values": [
+          4294967295
         ]
       }
     },
@@ -62,10 +78,320 @@
       {
         "inv": 1,
         "varvals": {
-          "dir": 89678917141888
+          "tif": 89678917140608,
+          "dp->tdir_tag": 2,
+          "fii": 4294967295
+        },
+        "diroff": 2,
+        "dp": 89678917141888,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 48,
+          "fii": 4294967295
+        },
+        "diroff": 2,
+        "dp": 89678917141912,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 8832,
+          "fii": 4294967295
+        },
+        "diroff": 2,
+        "dp": 89678917141936,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 6400,
+          "fii": 4294967295
+        },
+        "diroff": 2,
+        "dp": 89678917141960,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 62085,
+          "fii": 4294967295
+        },
+        "diroff": 2,
+        "dp": 89678917141984,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 65484,
+          "fii": 4294967295
+        },
+        "diroff": 2,
+        "dp": 89678917142056,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 256,
+          "fii": 4
+        },
+        "diroff": 2,
+        "dp": 89678917142080,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 257,
+          "fii": 5
+        },
+        "diroff": 2,
+        "dp": 89678917142104,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 1,
+          "fii": 4294967295
+        },
+        "diroff": 2,
+        "dp": 89678917142128,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 258,
+          "fii": 7
+        },
+        "diroff": 2,
+        "dp": 89678917142152,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 262,
+          "fii": 9
+        },
+        "diroff": 2,
+        "dp": 89678917142176,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 15626,
+          "fii": 4294967295
+        },
+        "diroff": 2,
+        "dp": 89678917142200,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 269,
+          "fii": 14
+        },
+        "diroff": 2,
+        "dp": 89678917142224,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 273,
+          "fii": 18
+        },
+        "diroff": 2,
+        "dp": 89678917142248,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 265,
+          "fii": 12
+        },
+        "diroff": 2,
+        "dp": 89678917142272,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 278,
+          "fii": 21
+        },
+        "diroff": 2,
+        "dp": 89678917142320,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 279,
+          "fii": 22
         },
         "diroff": 2,
         "dp": 89678917142344,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 282,
+          "fii": 25
+        },
+        "diroff": 2,
+        "dp": 89678917142368,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 283,
+          "fii": 26
+        },
+        "diroff": 2,
+        "dp": 89678917142392,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 296,
+          "fii": 35
+        },
+        "diroff": 2,
+        "dp": 89678917142440,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 41,
+          "fii": 4294967295
+        },
+        "diroff": 2,
+        "dp": 89678917142464,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 320,
+          "fii": 46
+        },
+        "diroff": 2,
+        "dp": 89678917142488,
+        "dir": 89678917141888,
+        "entry": null,
+        "entsize": 24,
+        "flags": 35337
+      },
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "dp->tdir_tag": 32382,
+          "fii": 4294967295
+        },
+        "diroff": 2,
+        "dp": 89678917142512,
         "dir": 89678917141888,
         "entry": null,
         "entsize": 24,
