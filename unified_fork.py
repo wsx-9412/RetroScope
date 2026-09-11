@@ -585,10 +585,21 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
     print(f'{indent}[unified] level {_depth}: {func_a} '
           f'(B side tried: {try_names_b})')
 
-    ra, used_a = _record_side(binary_a, [func_a], source_root_a, args, timeout,
-                              source_hint=_hint_a)
-    rb, used_b = _record_side(binary_b, try_names_b, source_root_b, args,
-                              timeout, source_hint=_hint_b)
+    # Record both sides in parallel (two independent GDB runs; the
+    # recordings are independent and deterministic, so this halves the
+    # GDB time without changing the result).
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=2) as _ex:
+        _fa = _ex.submit(_record_side, binary_a, [func_a], source_root_a,
+                         args, timeout, _hint_a)
+        _fb = _ex.submit(_record_side, binary_b, try_names_b, source_root_b,
+                         args, timeout, _hint_b)
+        ra, used_a = _fa.result()
+        rb, used_b = _fb.result()
+    if ra is None:
+        return {'status': 'record_failed', 'side': 'a', 'func': func_a}
+    if rb is None:
+        return {'status': 'record_failed', 'side': 'b', 'func': func_b}
     print(f'{indent}[unified] recorded A={len(ra.get("invocations") or [])} '
           f'inv, B={len(rb.get("invocations") or [])} inv')
 
