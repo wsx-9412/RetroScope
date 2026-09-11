@@ -1523,7 +1523,7 @@ run {run_args}
         if m:
             cur = {'inv': int(m.group(1)), 'varvals': {},
                    'diroff': None, 'dp': None, 'dir': None, 'entry': None,
-                   'entsize': None, 'flags': None}
+                   'frame_dir': None, 'entsize': None, 'flags': None}
             fork_points.append(cur)
             continue
         if cur is None:
@@ -1540,6 +1540,8 @@ run {run_args}
         if m: cur['dir'] = int(m.group(1), 16); continue
         m = re.match(r'CUR_ENTRY (0x[0-9a-f]+)', line)
         if m: cur['entry'] = int(m.group(1), 16); continue
+        m = re.match(r'FRAME_DIR (0x[0-9a-f]+) (\S+)', line)
+        if m: cur['frame_dir'] = int(m.group(1), 16); continue
         m = re.match(r'ENTSIZE (\d+)', line)
         if m: cur['entsize'] = int(m.group(1)); continue
         m = re.match(r'FLAGS (\d+)', line)
@@ -1760,11 +1762,12 @@ def _call_site_trace_case_b(fork_points, variables, clauses=None):
     dp = fp.get('dp')
     dir_base = fp.get('dir')
 
-    def _entry_offset(entry_ptr):
-        if diroff is None or dir_base is None or entry_ptr is None \
-                or entry_ptr < dir_base:
+    def _entry_offset(entry_ptr, base=None):
+        base = base if base is not None else dir_base
+        if diroff is None or base is None or entry_ptr is None \
+                or entry_ptr < base:
             return None, None
-        idx = (entry_ptr - dir_base) // esz
+        idx = (entry_ptr - base) // esz
         return diroff + count_size + idx * disk_esz, idx
 
     # Entry pointer of the current iteration: prefer dp (in scope at the
@@ -1780,6 +1783,19 @@ def _call_site_trace_case_b(fork_points, variables, clauses=None):
 
         if (diroff is not None and dir_base is not None
                 and (low == 'dir' or (isinstance(val, int) and val == dir_base))):
+            # 'dir' may be the IFD buffer base (TIFFReadDirectory) or an
+            # entry pointer (TIFFFetchStripThing's parameter).  When the
+            # caller frame's dir (FRAME_DIR) differs and lies below it, the
+            # fork-point 'dir' is an ENTRY pointer -> map to the entry offset.
+            base = fp.get('frame_dir')
+            if (base is not None and dir_base is not None
+                    and dir_base > base and low == 'dir'):
+                off, idx = _entry_offset(dir_base, base)
+                if off is not None:
+                    mapping['file_offset'] = off
+                    mapping['kind'] = 'ifd_entry'
+                    mapping['entry_index'] = idx
+                    continue
             mapping['file_offset'] = diroff + count_size
             mapping['kind'] = 'ifd_entries_base'
             continue
