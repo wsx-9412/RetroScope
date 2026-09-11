@@ -214,6 +214,13 @@ def _record_side(binary, func_names, source_root, args, timeout, source_hint=Non
     ``source_hint`` (a file path) narrows the source lookup to the caller's
     file first — same-name functions exist in several files (e.g. _TIFFmemcpy
     in tif_unix.c vs a fake match in tif_dir.c).
+
+    Results are cached per (binary, function, source root, args): the same
+    function is recorded many times during the recursive descent (from
+    different parents / depths), and record_decisions is a full GDB run of
+    the whole program — replaying it is pure waste.  The recording is
+    deterministic (same binary + input + function => same decision events),
+    so the cache does not change the result.
     """
     root_eff = source_root
     if source_hint:
@@ -223,6 +230,9 @@ def _record_side(binary, func_names, source_root, args, timeout, source_hint=Non
                 root_eff = hint_dir
         except Exception:
             pass
+    key = (binary, tuple(func_names), root_eff, tuple(args))
+    if key in _RECORD_CACHE:
+        return _RECORD_CACHE[key]
     for fname in func_names:
         try:
             r = record_decisions(binary, fname, args, source_root=root_eff,
@@ -230,9 +240,12 @@ def _record_side(binary, func_names, source_root, args, timeout, source_hint=Non
         except Exception as e:
             r = {'error': f'record failed: {e}'}
         if r and not r.get('error') and not r.get('bp_fail'):
+            _RECORD_CACHE[key] = (r, fname)
             return r, fname
         if r and r.get('error'):
+            _RECORD_CACHE[key] = (r, None)
             return r, None
+    _RECORD_CACHE[key] = (None, None)
     return None, None
 
 
