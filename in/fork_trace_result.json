@@ -20,19 +20,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140733288746640
+      "buf_addr": 140729991470464
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140733288746576
+      "buf_addr": 140729991470400
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140733288746496
+      "buf_addr": 140729991470320
     }
   ],
   "ref_file_reads": [
@@ -40,19 +40,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140737387139552
+      "buf_addr": 140734310911328
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140737387139488
+      "buf_addr": 140734310911264
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140737387139408
+      "buf_addr": 140734310911184
     }
   ],
   "chain_trace": {
@@ -65,11 +65,12 @@
         ]
       },
       "dir": {
-        "file_offset": 4,
-        "kind": "ifd_entries_base",
+        "file_offset": 232,
+        "kind": "ifd_entry",
         "values": [
           89678917142344
-        ]
+        ],
+        "entry_index": 19
       },
       "nstrips": {
         "file_offset": null,
@@ -112,6 +113,7 @@
         "dp": null,
         "dir": 89678917142248,
         "entry": null,
+        "frame_dir": 89678917141888,
         "entsize": 24,
         "flags": 35337
       },
@@ -128,6 +130,7 @@
         "dp": null,
         "dir": 89678917142344,
         "entry": null,
+        "frame_dir": 89678917141888,
         "entsize": 24,
         "flags": 35337
       }
