@@ -3759,7 +3759,7 @@ def _alloc_size_expr(rhs):
     if not args:
         return None
     # realloc(p, size): size is the LAST argument; others: first argument.
-    if m.group(0).lstrip('_').startswith('realloc'):
+    if m.group(0).rstrip('(').endswith('realloc'):
         return args[-1].strip()
     return args[0].strip()
 
