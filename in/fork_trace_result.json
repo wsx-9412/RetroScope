@@ -16,19 +16,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140734156854736
+      "buf_addr": 140730086980672
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140734156854672
+      "buf_addr": 140730086980608
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140734156854592
+      "buf_addr": 140730086980528
     }
   ],
   "ref_file_reads": [
@@ -36,19 +36,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140722431946800
+      "buf_addr": 140723783900448
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140722431946736
+      "buf_addr": 140723783900384
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140722431946656
+      "buf_addr": 140723783900304
     }
   ],
   "chain_trace": {
@@ -391,7 +391,7 @@
         ],
         "cli_leaves": [],
         "node_count": 31,
-        "allocator": "crop_buff"
+        "allocator": "cropsize"
       }
     },
     "explanation": {
@@ -448,33 +448,35 @@
         "            crop->corners[i].Y1 [GDB: 0] -> unknown"
       ],
       "next_buff": [
-        "next_buff = _TIFFrealloc(crop_buff, cropsize)  [allocator crop_buff: NULL <=> size==0 / OOM]",
+        "next_buff = _TIFFrealloc(crop_buff, cropsize)  [allocator cropsize: NULL <=> size==0 / OOM]",
+        "  cropsize [GDB: 0] <- crop->bufftotal  (line 7485)",
+        "    crop->bufftotal [GDB: 0] <- buffsize  (line 5571)",
+        "      buffsize <- (uint32) (((zwidth * image->bps * image->spp + 7 ) / 8) * (zlength + 1))  (line 5179)",
+        "        zwidth <- crop->regionlist[i].x2 - crop->regionlist[i].x1 + 1  (line 5160)",
+        "          crop->regionlist[i].x2 [GDB: 6] <- (uint32) (x2 - 1)  (line 5159)",
+        "            image->width [GDB: 32] -> ImageWidth(256) @ file 0xaa [GDB-confirmed]",
+        "            x2 <- (uint32) (crop->corners[i].X2)  (line 5147)",
+        "              crop->corners[i].X2 [GDB: 0] -> unknown",
+        "              scale <- 2.54  (line 5125)",
+        "              xres <- image->xres  (line 5112)",
+        "                image->xres [GDB: 0] -> TIFF tag (no IFD entry found)",
+        "          crop->regionlist[i].x1 [GDB: 7] <- (uint32) (x1 - 1)  (line 5154)",
+        "            x1 <- (uint32) (crop->corners[i].X1)  (line 5146)",
+        "              crop->corners[i].X1 [GDB: 0] -> unknown",
+        "        image->bps [GDB: 1] -> TIFF tag (no IFD entry found)",
+        "        image->spp [GDB: 1] -> SamplesPerPixel(277) @ file 0x12e [GDB-confirmed]",
+        "        zlength <- crop->regionlist[i].y2 - crop->regionlist[i].y1 + 1  (line 5172)",
+        "          crop->regionlist[i].y2 [GDB: 2079] <- (uint32) (y2 - 1)  (line 5170)",
+        "            image->length [GDB: 2080] -> ImageLength(257) @ file 0xb6 [GDB-confirmed]",
+        "            y2 <- (uint32) (crop->corners[i].Y2)  (line 5149)",
+        "              crop->corners[i].Y2 [GDB: 0] -> unknown",
+        "              yres <- image->yres  (line 5113)",
+        "                image->yres [GDB: 0] -> TIFF tag (no IFD entry found)",
+        "          crop->regionlist[i].y1 [GDB: 0] <- (uint32) (y1 - 1)  (line 5165)",
+        "            y1 <- (uint32) (crop->corners[i].Y1)  (line 5148)",
+        "              crop->corners[i].Y1 [GDB: 0] -> unknown",
         "  crop_buff [GDB: 0] <- next_buff  (line 7501)",
         "    seg_buffs[0].buffer [GDB: 0] <- crop_buff  (line 7475)",
-        "    cropsize [GDB: 0] <- crop->bufftotal  (line 7485)",
-        "      crop->bufftotal [GDB: 0] <- buffsize  (line 5571)",
-        "        buffsize <- (uint32) (((zwidth * image->bps * image->spp + 7 ) / 8) * (zlength + 1))  (line 5179)",
-        "          zwidth <- crop->regionlist[i].x2 - crop->regionlist[i].x1 + 1  (line 5160)",
-        "            crop->regionlist[i].x2 [GDB: 6] <- (uint32) (x2 - 1)  (line 5159)",
-        "              image->width [GDB: 32] -> ImageWidth(256) @ file 0xaa [GDB-confirmed]",
-        "              x2 <- (uint32) (crop->corners[i].X2)  (line 5147)",
-        "                crop->corners[i].X2 [GDB: 0] -> unknown",
-        "                scale <- 2.54  (line 5125)",
-        "                xres <- image->xres  (line 5112)",
-        "            crop->regionlist[i].x1 [GDB: 7] <- (uint32) (x1 - 1)  (line 5154)",
-        "              x1 <- (uint32) (crop->corners[i].X1)  (line 5146)",
-        "                crop->corners[i].X1 [GDB: 0] -> unknown",
-        "          image->bps [GDB: 1] -> TIFF tag (no IFD entry found)",
-        "          image->spp [GDB: 1] -> SamplesPerPixel(277) @ file 0x12e [GDB-confirmed]",
-        "          zlength <- crop->regionlist[i].y2 - crop->regionlist[i].y1 + 1  (line 5172)",
-        "            crop->regionlist[i].y2 [GDB: 2079] <- (uint32) (y2 - 1)  (line 5170)",
-        "              image->length [GDB: 2080] -> ImageLength(257) @ file 0xb6 [GDB-confirmed]",
-        "              y2 <- (uint32) (crop->corners[i].Y2)  (line 5149)",
-        "                crop->corners[i].Y2 [GDB: 0] -> unknown",
-        "                yres <- image->yres  (line 5113)",
-        "            crop->regionlist[i].y1 [GDB: 0] <- (uint32) (y1 - 1)  (line 5165)",
-        "              y1 <- (uint32) (crop->corners[i].Y1)  (line 5148)",
-        "                crop->corners[i].Y1 [GDB: 0] -> unknown",
         "    next_buff [GDB: 0] <- _TIFFrealloc(crop_buff, cropsize)  (line 7494)",
         "    seg_buffs[i].buffer [GDB: 0] <- crop_buff  (line 7585)"
       ]
