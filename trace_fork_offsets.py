@@ -3999,13 +3999,16 @@ def arithmetic_backtrace(binary, fork_file, fork_line, variables, fork_vals,
         node = nodes.get(start)
         if not node:
             return buf
-        if (node['kind'] == 'assign'
-                and _alloc_size_expr(node.get('rhs', ''))):
-            buf.append(f'{start} = {node["rhs"]}  '
-                       f'[allocator: NULL <=> size==0 / OOM]')
+        rv = rvals.get(start)
+        rv_s = f' [GDB: {rv}]' if rv is not None else ''
+        if node.get('alloc_size'):
+            buf.append(f'{start} = {node.get("rhs", "")}  '
+                       f'[allocator {node["alloc_size"]}: '
+                       f'NULL <=> size==0 / OOM]')
+        elif node['kind'] == 'assign':
+            buf.append(f'{start}{rv_s} <- {node.get("rhs", "")}  '
+                       f'(line {node.get("line")})')
         else:
-            rv = rvals.get(start)
-            rv_s = f' [GDB: {rv}]' if rv is not None else ''
             buf.append(f'{start}{rv_s}')
         for d, _ln, _edge in node['deps']:
             _explain(d, 1, buf, seen)
