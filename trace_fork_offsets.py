@@ -3756,7 +3756,12 @@ def _alloc_size_expr(rhs):
             cur += ch
     if cur.strip():
         args.append(cur.strip())
-    return args[0].strip() if args else None
+    if not args:
+        return None
+    # realloc(p, size): size is the LAST argument; others: first argument.
+    if m.group(0).lstrip('_').startswith('realloc'):
+        return args[-1].strip()
+    return args[0].strip()
 
 
 def arithmetic_backtrace(binary, fork_file, fork_line, variables, fork_vals,
