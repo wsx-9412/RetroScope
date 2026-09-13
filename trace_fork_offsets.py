@@ -3831,6 +3831,7 @@ def arithmetic_backtrace(binary, fork_file, fork_line, variables, fork_vals,
             assigns = find_assignments(src, key)  # struct fields: file-wide
 
         deps, kept = [], []
+        alloc_size = None
         for op, rhs, ln in assigns:
             if _is_trivial_rhs(rhs):
                 continue
@@ -3838,6 +3839,8 @@ def arithmetic_backtrace(binary, fork_file, fork_line, variables, fork_vals,
             sz = _alloc_size_expr(rhs)
             if sz:
                 deps.append((sz, ln, 'alloc'))
+                if alloc_size is None:
+                    alloc_size = sz
             for ref in extract_variables_from_statement(rhs):
                 if ref == key:
                     continue
@@ -3851,6 +3854,8 @@ def arithmetic_backtrace(binary, fork_file, fork_line, variables, fork_vals,
                 seen_d.add(d)
                 uniq.append((d, ln, edge))
         _add_node(key, 'assign', uniq, kept[-1][2], kept[-1][1])
+        if alloc_size is not None:
+            nodes[key]['alloc_size'] = alloc_size
         for d, ln, edge in uniq:
             _walk(d, ln, depth + 1)
 
