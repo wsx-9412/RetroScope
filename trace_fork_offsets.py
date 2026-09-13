@@ -3729,8 +3729,8 @@ def _alloc_size_expr(rhs):
     m = _ALLOC_RE.search(rhs or '')
     if not m:
         return None
-    start = m.end()
-    depth = 0
+    start = m.end()   # match includes the opening '('
+    depth = 1
     end = -1
     for i in range(start, len(rhs)):
         ch = rhs[i]
