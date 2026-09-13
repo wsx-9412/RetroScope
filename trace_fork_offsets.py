@@ -3711,6 +3711,377 @@ def analyze_offsets(parsed, input_file, variables, tiff_tags, tiff_tags_all=None
 
 
 # ---------------------------------------------------------------------------
+# Arithmetic backtrace: allocator summary + def-use chain → input offsets
+# ---------------------------------------------------------------------------
+
+_ALLOC_RE = re.compile(
+    r'\b(?:_TIFF|TIFF)?(?:malloc|calloc|realloc|limitMalloc)\s*\(')
+
+_CLI_LEAF_MARKERS = ('zonelist', 'edge_ref', 'crop_mode', 'exp_mode',
+                     'img_mode', 'selections', 'zones', 'regions')
+
+
+def _alloc_size_expr(rhs):
+    """Return the first argument expression of an allocator call in rhs.
+
+    e.g. '(unsigned char *)_TIFFmalloc(cropsize)' -> 'cropsize'.
+    """
+    m = _ALLOC_RE.search(rhs or '')
+    if not m:
+        return None
+    start = m.end()
+    depth = 0
+    end = -1
+    for i in range(start, len(rhs)):
+        ch = rhs[i]
+        if ch == '(':
+            depth += 1
+        elif ch == ')':
+            depth -= 1
+            if depth == 0:
+                end = i
+                break
+    if end < 0:
+        return None
+    args, cur, d = [], '', 0
+    for ch in rhs[start:end]:
+        if ch == '(':
+            d += 1
+        elif ch == ')':
+            d -= 1
+        if ch == ',' and d == 0:
+            args.append(cur.strip())
+            cur = ''
+        else:
+            cur += ch
+    if cur.strip():
+        args.append(cur.strip())
+    return args[0].strip() if args else None
+
+
+def arithmetic_backtrace(binary, fork_file, fork_line, variables, fork_vals,
+                         input_file, program_args, timeout=60):
+    """Backward def-use trace with allocator summaries.
+
+    Fork variables that are allocator returns
+    (``crop_buff = _TIFFmalloc(cropsize)``) are traced through their *size*
+    argument; plain variables are traced through their assignment chain
+    (``find_assignments`` + ``extract_variables_from_statement``).  Leaves:
+
+      * ``image.<field>``                  -> TIFF tag value field (file offset)
+      * ``crop->zonelist/edge_ref/...``    -> command-line option (no offset)
+      * constants / no assignment found    -> dead end
+
+    Runtime values of every chain expression are captured from the target
+    binary at the fork point (GDB) and used to validate tag matches.
+    """
+    src = fork_file
+    if not src or not os.path.isfile(src):
+        vroot = find_version_root(binary) if binary else None
+        if vroot:
+            cand = os.path.join(vroot, 'tools',
+                                os.path.basename(fork_file or 'tiffcrop.c'))
+            if os.path.isfile(cand):
+                src = cand
+    if not src or not os.path.isfile(src):
+        return None
+
+    tags = {}
+    if input_file and os.path.isfile(input_file):
+        tags = parse_tiff_ifd(input_file) or {}
+
+    nodes = {}   # expr -> {'kind','deps':[(expr,line,edge)],'line','rhs'}
+    _MAX_DEPTH = 12
+    _MAX_NODES = 90
+
+    def _add_node(key, kind, deps, line=None, rhs=None):
+        if key in nodes:
+            existing = {d for d, _, _ in nodes[key]['deps']}
+            for d, ln, edge in deps:
+                if d not in existing:
+                    nodes[key]['deps'].append((d, ln, edge))
+                    existing.add(d)
+            return
+        nodes[key] = {'kind': kind, 'deps': list(deps), 'line': line,
+                      'rhs': rhs}
+
+    def _walk(expr, context_line, depth):
+        key = (expr or '').strip()
+        if depth > _MAX_DEPTH or len(nodes) > _MAX_NODES or not key:
+            return
+        if key in nodes:
+            return
+        root, fields, _idx = parse_var_expr(key)
+
+        # TIFF-tag leaf: image.<field>
+        if root == 'image' and fields and fields[-1] in IMAGE_FIELD_TO_TAG:
+            _add_node(key, 'tag', [], context_line)
+            return
+        # command-line leaf
+        if root == 'crop' and any(m in key for m in _CLI_LEAF_MARKERS):
+            _add_node(key, 'cli', [], context_line)
+            return
+        if _is_trivial_rhs(key):
+            _add_node(key, 'const', [], context_line)
+            return
+
+        rng = find_function_body_range(src, context_line) if context_line else None
+        assigns = find_assignments(src, key, search_range=rng)
+        if not assigns and fields:
+            assigns = find_assignments(src, key)  # struct fields: file-wide
+
+        deps, kept = [], []
+        for op, rhs, ln in assigns:
+            if _is_trivial_rhs(rhs):
+                continue
+            kept.append((op, rhs, ln))
+            sz = _alloc_size_expr(rhs)
+            if sz:
+                deps.append((sz, ln, 'alloc'))
+            for ref in extract_variables_from_statement(rhs):
+                if ref == key:
+                    continue
+                deps.append((ref, ln, 'assign'))
+        if not kept:
+            _add_node(key, 'unknown', [], context_line)
+            return
+        seen_d, uniq = set(), []
+        for d, ln, edge in deps:
+            if d not in seen_d:
+                seen_d.add(d)
+                uniq.append((d, ln, edge))
+        _add_node(key, 'assign', uniq, kept[-1][2], kept[-1][1])
+        for d, ln, edge in uniq:
+            _walk(d, ln, depth + 1)
+
+    for v in (variables or []):
+        _walk(v, fork_line, 0)
+
+    # ---- Runtime value pass: evaluate every chain expr at the fork point ----
+    exprs = list(nodes.keys())
+    for v in (variables or []):
+        if v not in exprs:
+            exprs.append(v)
+    rvals = dict(fork_vals or {})
+    if exprs and binary and os.path.isfile(resolve_binary(binary)):
+        run_parts = [a.replace('{input_file}', input_file)
+                     .replace('{input}', input_file)
+                     for a in (program_args or [])]
+        run_args = ' '.join(run_parts)
+        script = (
+            'set pagination off\nset confirm off\nset breakpoint pending on\n'
+            f'break {src}:{fork_line}\n'
+            'commands\n  silent\n  python\n'
+            'import gdb\n'
+            f'_exprs = {json.dumps(exprs)}\n'
+            'for _e in _exprs:\n'
+            '    try:\n'
+            '        _v = int(gdb.parse_and_eval(_e))\n'
+            '        print("BACKVAL " + _e + " " + str(_v))\n'
+            '    except Exception:\n'
+            '        pass\n'
+            '  end\n  continue\nend\n'
+            f'run {run_args}\n')
+        fd, script_file = tempfile.mkstemp(suffix='.gdb', prefix='gdb_backtrace_')
+        os.close(fd)
+        with open(script_file, 'w') as f:
+            f.write(script)
+        try:
+            proc = subprocess.run(
+                ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--',
+                 resolve_binary(binary)],
+                capture_output=True, text=True, timeout=timeout,
+                env=build_run_env(binary))
+        except subprocess.TimeoutExpired:
+            proc = None
+        finally:
+            try:
+                os.unlink(script_file)
+            except Exception:
+                pass
+        if proc:
+            for line in (proc.stdout + proc.stderr).splitlines():
+                m = re.match(r'BACKVAL (.+?) (-?\d+)$', line.strip())
+                if m:
+                    rvals[m.group(1)] = int(m.group(2))
+
+    # ---- Tag leaves → input file offsets ----
+    tag_info = {}
+    for e, node in nodes.items():
+        if node['kind'] != 'tag':
+            continue
+        root, fields, _ = parse_var_expr(e)
+        tag_id = IMAGE_FIELD_TO_TAG[fields[-1]]
+        t = tags.get(tag_id)
+        if not t:
+            continue
+        off = t.get('value_offset_in_file')
+        if off is None:
+            continue
+        tv = t.get('value')
+        if isinstance(tv, tuple):
+            tv = tv[0] if tv else 0
+        rv = rvals.get(e)
+        tag_info[e] = {
+            'file_offset': off,
+            'tag_name': t.get('name'),
+            'tag_id': tag_id,
+            'tag_value': tv,
+            'runtime': rv,
+            'confirmed': (rv is not None and tv is not None and rv == tv),
+        }
+
+    # ---- Per-fork-variable reachable tag/CLI leaves ----
+    chains = {}
+    for v in (variables or []):
+        if v not in nodes:
+            continue
+        reach, stack = set(), [v]
+        while stack:
+            n = stack.pop()
+            node = nodes.get(n)
+            if not node:
+                continue
+            for d, _ln, _edge in node['deps']:
+                if d not in reach:
+                    reach.add(d)
+                    stack.append(d)
+        if v in tag_info:
+            reach.add(v)
+        chains[v] = {
+            'kind': nodes[v]['kind'],
+            'tag_offsets': [tag_info[e] for e in sorted(reach) if e in tag_info],
+            'cli_leaves': sorted(e for e in reach
+                                 if nodes.get(e, {}).get('kind') == 'cli'),
+            'node_count': len(reach) + 1,
+        }
+        if (nodes[v]['kind'] == 'assign'
+                and _alloc_size_expr(nodes[v].get('rhs', ''))):
+            chains[v]['allocator'] = _alloc_size_expr(nodes[v]['rhs'])
+
+    # ---- Explanation tree ----
+    def _explain(e, depth, buf, seen):
+        node = nodes.get(e)
+        if not node or e in seen or depth > 8:
+            return
+        seen.add(e)
+        pad = '  ' * depth
+        rv = rvals.get(e)
+        rv_s = f' [GDB: {rv}]' if rv is not None else ''
+        if node['kind'] == 'tag':
+            ti = tag_info.get(e)
+            if ti:
+                conf = ('GDB-confirmed' if ti['confirmed']
+                        else f'tag-value={ti["tag_value"]}')
+                buf.append(f'{pad}{e}{rv_s} -> {ti["tag_name"]}({ti["tag_id"]}) '
+                           f'@ file 0x{ti["file_offset"]:x} [{conf}]')
+            else:
+                buf.append(f'{pad}{e}{rv_s} -> TIFF tag (no IFD entry found)')
+            return
+        if node['kind'] == 'cli':
+            buf.append(f'{pad}{e}{rv_s} -> command-line option '
+                       f'(not file-derived)')
+            return
+        if node['kind'] in ('const', 'unknown'):
+            buf.append(f'{pad}{e}{rv_s} -> {node["kind"]}')
+            return
+        rhs_short = (node.get('rhs') or '')[:90]
+        buf.append(f'{pad}{e}{rv_s} <- {rhs_short}  (line {node["line"]})')
+        for d, _ln, _edge in node['deps']:
+            _explain(d, depth + 1, buf, seen)
+
+    def _build_explanation(start):
+        buf, seen = [], set()
+        node = nodes.get(start)
+        if not node:
+            return buf
+        if (node['kind'] == 'assign'
+                and _alloc_size_expr(node.get('rhs', ''))):
+            buf.append(f'{start} = {node["rhs"]}  '
+                       f'[allocator: NULL <=> size==0 / OOM]')
+        else:
+            rv = rvals.get(start)
+            rv_s = f' [GDB: {rv}]' if rv is not None else ''
+            buf.append(f'{start}{rv_s}')
+        for d, _ln, _edge in node['deps']:
+            _explain(d, 1, buf, seen)
+        return buf
+
+    return {
+        'source': src,
+        'fork_line': fork_line,
+        'nodes': {e: {'kind': n['kind'], 'line': n['line'], 'rhs': n['rhs']}
+                  for e, n in nodes.items()},
+        'runtime_values': rvals,
+        'tag_mappings': tag_info,
+        'chains': chains,
+        'explanation': {v: _build_explanation(v) for v in chains},
+    }
+
+
+def fork_flip_probe(binary, input_file, program_args, offsets, fork_marker,
+                    timeout=30):
+    """Cheap fork-outcome validation: mutate each mapped offset with a few
+    byte values and check whether the target's fork outcome changes.
+
+    ``fork_marker`` is a substring that appears in the target's output exactly
+    when the fork condition is taken (e.g. the 'Unable to allocate' message).
+    """
+    results = {}
+    if not (binary and input_file and os.path.isfile(input_file)):
+        return results
+    with open(input_file, 'rb') as f:
+        orig = bytearray(f.read())
+    run_parts = [a.replace('{input_file}', '{IN}').replace('{input}', '{IN}')
+                 for a in (program_args or [])]
+
+    def _run(data):
+        fd, tmp = tempfile.mkstemp(suffix='.tif', prefix='probe_')
+        os.close(fd)
+        with open(tmp, 'wb') as f:
+            f.write(data)
+        try:
+            cmd = [resolve_binary(binary)]
+            for a in run_parts:
+                if '{IN}' in a:
+                    cmd.append(a.replace('{IN}', tmp))
+                elif a == input_file:
+                    cmd.append(tmp)
+                else:
+                    cmd.append(a)
+            proc = subprocess.run(cmd, capture_output=True, text=True,
+                                  timeout=timeout, env=build_run_env(binary))
+            return proc.stdout + proc.stderr
+        except Exception:
+            return ''
+        finally:
+            try:
+                os.unlink(tmp)
+            except Exception:
+                pass
+
+    base_out = _run(orig)
+    base_flip = fork_marker in base_out
+    for off in sorted(offsets):
+        if off >= len(orig):
+            continue
+        trials = {}
+        for v in (0x01, 0x32, 0x63, 0x64, 0xFF):
+            if v == orig[off]:
+                continue
+            m = bytearray(orig)
+            m[off] = v
+            out = _run(m)
+            trials[v] = fork_marker in out
+        results[off] = {
+            'original_byte': orig[off],
+            'original_fork_taken': base_flip,
+            'trials': trials,
+        }
+    return results
+
+
+# ---------------------------------------------------------------------------
 # Byte mutation crash testing
 # ---------------------------------------------------------------------------
 
