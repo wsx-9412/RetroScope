@@ -4744,6 +4744,65 @@ def main():
                         print(f'      {vname}: no IFD mapping')
 
     # ================================================================
+    # Step 4.6: Arithmetic backtrace (allocator summary + def-use chain)
+    # ================================================================
+    arith_result = None
+    _fork_points = (chain_trace_results or {}).get('fork_points') or []
+    if _fork_points and fork_file and fork_line:
+        fork_vals = _fork_points[-1].get('varvals') or {}
+        print(f'\n{"="*60}')
+        print(f'  Step 4.6: Arithmetic backtrace (allocator summary)')
+        print(f'{"="*60}')
+        try:
+            arith_result = arithmetic_backtrace(
+                binary, fork_file, fork_line, list(fork_vals.keys()),
+                fork_vals, input_file, program_args, timeout=a.timeout * 2)
+        except Exception as exc:
+            print(f'  [!] Arithmetic backtrace failed: {exc}')
+            arith_result = None
+        if arith_result:
+            chains = arith_result.get('chains') or {}
+            expl = arith_result.get('explanation') or {}
+            for v in list(fork_vals.keys()):
+                ch = chains.get(v)
+                lines = expl.get(v)
+                if not ch or not lines:
+                    continue
+                head = f'  [*] {v}'
+                if ch.get('allocator'):
+                    head += (f'  (allocator {ch["allocator"]}: '
+                             f'NULL <=> size==0 / OOM)')
+                print(head)
+                for ln in lines:
+                    print(f'      {ln}')
+                if ch['tag_offsets']:
+                    tos = ', '.join(f'0x{t["file_offset"]:x}({t["tag_name"]})'
+                                    for t in ch['tag_offsets'])
+                    print(f'      -> input file offsets: {tos}')
+                if ch['cli_leaves']:
+                    print(f'      -> command-line contributors: '
+                          f'{", ".join(ch["cli_leaves"])}')
+            probe_offsets = sorted({
+                t['file_offset']
+                for ch in chains.values()
+                for t in ch.get('tag_offsets', [])})
+            if probe_offsets:
+                print(f'\n  [*] Fork-flip probe (mutate mapped offsets, '
+                      f'check if the fork outcome changes):')
+                probe = fork_flip_probe(
+                    binary, input_file, program_args, probe_offsets,
+                    'Unable to allocate/reallocate crop buffer',
+                    timeout=a.timeout)
+                for off in sorted(probe):
+                    info = probe[off]
+                    flips = [
+                        f'0x{v:02x}:{"FLIP" if not flipped else "no-flip"}'
+                        for v, flipped in sorted(info['trials'].items())]
+                    print(f'      offset 0x{off:x} (orig=0x{info["original_byte"]:02x}): '
+                          f'fork-taken={info["original_fork_taken"]}; '
+                          + ', '.join(flips))
+
+    # ================================================================
     # Step 5: Fork-variable → file offset mapping (fully dynamic)
     # ================================================================
     print(f'\n{"="*60}')
