@@ -4951,6 +4951,20 @@ def main():
         offset_strs = ', '.join(f'0x{o:x}' for o in sorted(mapped_offsets))
         print(f'  5. Divergence-determining bytes at input file offsets: {offset_strs}')
 
+    # 5b. Offsets found by the arithmetic backtrace (already probe-validated).
+    arith_offsets = set()
+    if arith_result:
+        for _ch in (arith_result.get('chains') or {}).values():
+            for _t in _ch.get('tag_offsets', []):
+                arith_offsets.add(_t['file_offset'])
+    if arith_offsets:
+        arith_strs = ', '.join(f'0x{o:x}' for o in sorted(arith_offsets))
+        print(f'  5b. Arithmetic-backtrace offsets (fork-controlling bytes): '
+              f'{arith_strs}')
+        print(f'      (validated by the Step 4.6 fork-flip probe; pass '
+              f'--test-offsets {arith_strs} to run the full 255-value '
+              f'crash sweep on them)')
+
     # 6. Byte mutation crash testing
     # Collect offsets from the dynamic call-site trace
     all_offsets = set(mapped_offsets)
