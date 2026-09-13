@@ -16,19 +16,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140720490763824
+      "buf_addr": 140736294710992
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140720490763760
+      "buf_addr": 140736294710928
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140720490763680
+      "buf_addr": 140736294710848
     }
   ],
   "ref_file_reads": [
@@ -36,19 +36,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140732410280416
+      "buf_addr": 140731974376592
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140732410280352
+      "buf_addr": 140731974376528
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140732410280272
+      "buf_addr": 140731974376448
     }
   ],
   "chain_trace": {
@@ -394,7 +394,7 @@
     },
     "explanation": {
       "crop_buff": [
-        "crop_buff [GDB: 0]",
+        "crop_buff [GDB: 0] <- next_buff  (line 7501)",
         "  seg_buffs[0].buffer [GDB: 0] <- crop_buff  (line 7475)",
         "    crop_buff [GDB: 0] <- next_buff  (line 7501)",
         "      cropsize [GDB: 0] <- crop->bufftotal  (line 7485)",
@@ -418,7 +418,7 @@
         "      seg_buffs[i].buffer [GDB: 0] <- crop_buff  (line 7585)"
       ],
       "cropsize": [
-        "cropsize [GDB: 0]",
+        "cropsize [GDB: 0] <- crop->bufftotal  (line 7485)",
         "  crop->bufftotal [GDB: 0] <- buffsize  (line 5571)",
         "    buffsize <- (uint32) (((zwidth * image->bps * image->spp + 7 ) / 8) * (zlength + 1))  (line 5179)",
         "      zwidth <- crop->regionlist[i].x2 - crop->regionlist[i].x1 + 1  (line 5160)",
@@ -446,7 +446,7 @@
         "            crop->corners[i].Y1 [GDB: 0] -> unknown"
       ],
       "next_buff": [
-        "next_buff [GDB: 0]",
+        "next_buff [GDB: 0] <- _TIFFrealloc(crop_buff, cropsize)  (line 7494)",
         "  crop_buff [GDB: 0] <- next_buff  (line 7501)",
         "    seg_buffs[0].buffer [GDB: 0] <- crop_buff  (line 7475)",
         "    cropsize [GDB: 0] <- crop->bufftotal  (line 7485)",
