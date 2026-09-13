@@ -5017,6 +5017,7 @@ def main():
         'target_file_reads': positioned_b,
         'ref_file_reads': positioned_a,
         'chain_trace': chain_trace_results,
+        'arithmetic_backtrace': arith_result,
     }
     out_path = os.path.join(os.path.dirname(input_file) if input_file else '.', 'fork_trace_result.json')
     with open(out_path, 'w') as f:
