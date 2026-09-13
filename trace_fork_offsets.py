@@ -3960,9 +3960,8 @@ def arithmetic_backtrace(binary, fork_file, fork_line, variables, fork_vals,
                                  if nodes.get(e, {}).get('kind') == 'cli'),
             'node_count': len(reach) + 1,
         }
-        if (nodes[v]['kind'] == 'assign'
-                and _alloc_size_expr(nodes[v].get('rhs', ''))):
-            chains[v]['allocator'] = _alloc_size_expr(nodes[v]['rhs'])
+        if nodes[v].get('alloc_size'):
+            chains[v]['allocator'] = nodes[v]['alloc_size']
 
     # ---- Explanation tree ----
     def _explain(e, depth, buf, seen):
