@@ -1,7 +1,7 @@
 {
-  "binary_target": "/tmp/fork_analysis_zovd_wq7/target/tools/.libs/tiffcrop",
-  "binary_ref": "/tmp/fork_analysis_zovd_wq7/ref/tools/.libs/tiffcrop",
-  "fork_spec": "/tmp/fork_analysis_zovd_wq7/target/libtiff/tif_dirread.c:5433",
+  "binary_target": "/tmp/fork_analysis_081xebx1/target/tools/.libs/tiffcrop",
+  "binary_ref": "/tmp/fork_analysis_081xebx1/ref/tools/.libs/tiffcrop",
+  "fork_spec": "/tmp/fork_analysis_081xebx1/target/libtiff/tif_dirread.c:5433",
   "variables": [
     "tif",
     "dir",
@@ -20,19 +20,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140722194702880
+      "buf_addr": 140722830715568
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140722194702816
+      "buf_addr": 140722830715504
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140722194702736
+      "buf_addr": 140722830715424
     }
   ],
   "ref_file_reads": [
@@ -40,19 +40,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140735235039248
+      "buf_addr": 140723744098128
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140735235039184
+      "buf_addr": 140723744098064
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140735235039104
+      "buf_addr": 140723744097984
     }
   ],
   "chain_trace": {
@@ -65,12 +65,12 @@
         ]
       },
       "dir": {
-        "file_offset": 3630,
+        "file_offset": 196,
         "kind": "ifd_entry",
         "values": [
-          90366111914840
+          89678917142272
         ],
-        "entry_index": 281
+        "entry_index": 16
       },
       "nstrips": {
         "file_offset": null,
@@ -104,109 +104,41 @@
         "inv": 1,
         "varvals": {
           "tif": 89678917140608,
-          "dir": 89335319757008,
+          "dir": 89678917142248,
           "nstrips": 1,
           "lpp": 89678917140840,
           "dir->tdir_tag": 273
         },
-        "diroff": 98,
+        "diroff": 2,
         "dp": null,
-        "dir": 89335319757008,
+        "dir": 89678917142248,
         "entry": null,
-        "frame_dir": 89335319756864,
+        "frame_dir": 89678917141888,
         "entsize": 24,
-        "flags": 35593
+        "flags": 35337
       },
       {
         "inv": 2,
         "varvals": {
           "tif": 89678917140608,
-          "dir": 89335319757104,
-          "nstrips": 1,
-          "lpp": 89678917140848,
-          "dir->tdir_tag": 279
-        },
-        "diroff": 98,
-        "dp": null,
-        "dir": 89335319757104,
-        "entry": null,
-        "frame_dir": 89335319756864,
-        "entsize": 24,
-        "flags": 35593
-      },
-      {
-        "inv": 3,
-        "varvals": {
-          "tif": 89678917140608,
-          "dir": 89678917143504,
-          "nstrips": 1,
-          "lpp": 89678917140840,
-          "dir->tdir_tag": 273
-        },
-        "diroff": 2,
-        "dp": null,
-        "dir": 89678917143504,
-        "entry": null,
-        "frame_dir": 89678917143168,
-        "entsize": 24,
-        "flags": 8423705
-      },
-      {
-        "inv": 4,
-        "varvals": {
-          "tif": 89678917140608,
-          "dir": 89678917143600,
+          "dir": 89678917142272,
           "nstrips": 1,
           "lpp": 89678917140848,
           "dir->tdir_tag": 279
         },
         "diroff": 2,
         "dp": null,
-        "dir": 89678917143600,
+        "dir": 89678917142272,
         "entry": null,
-        "frame_dir": 89678917143168,
+        "frame_dir": 89678917141888,
         "entsize": 24,
-        "flags": 8423705
-      },
-      {
-        "inv": 5,
-        "varvals": {
-          "tif": 89678917140608,
-          "dir": 90366111912080,
-          "nstrips": 1,
-          "lpp": 89678917140840,
-          "dir->tdir_tag": 273
-        },
-        "diroff": 256,
-        "dp": null,
-        "dir": 90366111912080,
-        "entry": null,
-        "frame_dir": 90366111908096,
-        "entsize": 24,
-        "flags": 8423481
-      },
-      {
-        "inv": 6,
-        "varvals": {
-          "tif": 89678917140608,
-          "dir": 90366111914840,
-          "nstrips": 1,
-          "lpp": 89678917140848,
-          "dir->tdir_tag": 279
-        },
-        "diroff": 256,
-        "dp": null,
-        "dir": 90366111914840,
-        "entry": null,
-        "frame_dir": 90366111908096,
-        "entsize": 24,
-        "flags": 8423481
+        "flags": 35337
       }
     ],
     "pread64": []
   },
   "arithmetic_backtrace": {
-    "source": "/tmp/fork_analysis_zovd_wq7/target/libtiff/tif_dirread.c",
+    "source": "/tmp/fork_analysis_081xebx1/target/libtiff/tif_dirread.c",
     "fork_line": 5433,
     "nodes": {
       "tif": {
@@ -237,7 +169,7 @@
     },
     "runtime_values": {
       "tif": 89678917140608,
-      "dir": 90366111914840,
+      "dir": 89678917142272,
       "nstrips": 1,
       "lpp": 89678917140848,
       "dir->tdir_tag": 279
@@ -280,7 +212,7 @@
         "tif [GDB: 89678917140608]"
       ],
       "dir": [
-        "dir [GDB: 90366111914840]"
+        "dir [GDB: 89678917142272]"
       ],
       "nstrips": [
         "nstrips [GDB: 1]"
