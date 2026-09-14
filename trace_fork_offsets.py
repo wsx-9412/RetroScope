@@ -4973,13 +4973,12 @@ def main():
         arith_strs = ', '.join(f'0x{o:x}' for o in sorted(arith_offsets))
         print(f'  5b. Arithmetic-backtrace offsets (fork-controlling bytes): '
               f'{arith_strs}')
-        print(f'      (validated by the Step 4.6 fork-flip probe; pass '
-              f'--test-offsets {arith_strs} to run the full 255-value '
-              f'crash sweep on them)')
+        print(f'      (validated by the Step 4.6 fork-flip probe; the full '
+              f'255-value crash-reproduction sweep runs below)')
 
     # 6. Byte mutation crash testing
-    # Collect offsets from the dynamic call-site trace
-    all_offsets = set(mapped_offsets)
+    # Collect offsets from the dynamic call-site trace + arithmetic backtrace.
+    all_offsets = set(mapped_offsets) | arith_offsets
 
     # Also include user-specified offsets
     if a.test_offsets:
