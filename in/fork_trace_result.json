@@ -1,7 +1,7 @@
 {
-  "binary_target": "/tmp/fork_analysis_kirlzb98/target/tools/.libs/tiffcrop",
-  "binary_ref": "/tmp/fork_analysis_kirlzb98/ref/tools/.libs/tiffcrop",
-  "fork_spec": "/tmp/fork_analysis_kirlzb98/target/libtiff/tif_dirread.c:5433",
+  "binary_target": "/tmp/fork_analysis__rogmzuk/target/tools/.libs/tiffcrop",
+  "binary_ref": "/tmp/fork_analysis__rogmzuk/ref/tools/.libs/tiffcrop",
+  "fork_spec": "/tmp/fork_analysis__rogmzuk/target/libtiff/tif_dirread.c:5433",
   "variables": [
     "tif",
     "dir",
@@ -20,19 +20,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140733632431168
+      "buf_addr": 140732180697312
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140733632431104
+      "buf_addr": 140732180697248
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140733632431024
+      "buf_addr": 140732180697168
     }
   ],
   "ref_file_reads": [
@@ -40,19 +40,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140727681817824
+      "buf_addr": 140722036337280
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140727681817760
+      "buf_addr": 140722036337216
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140727681817680
+      "buf_addr": 140722036337136
     }
   ],
   "chain_trace": {
@@ -138,7 +138,7 @@
     "pread64": []
   },
   "arithmetic_backtrace": {
-    "source": "/tmp/fork_analysis_kirlzb98/target/libtiff/tif_dirread.c",
+    "source": "/tmp/fork_analysis__rogmzuk/target/libtiff/tif_dirread.c",
     "fork_line": 5433,
     "nodes": {
       "tif": {
