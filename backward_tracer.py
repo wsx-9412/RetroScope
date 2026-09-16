@@ -872,6 +872,11 @@ def _extract_assign_calls(source_file, func_name):
 
 def run_gdb_batch(binary, commands, env=None, timeout=120):
     """Run GDB in batch mode and return stdout."""
+    try:
+        import stage_timing
+        stage_timing.count_gdb()
+    except Exception:
+        pass
     gdb_cmds = ["gdb", "-batch", "-ex", "set pagination off",
                 "-ex", "set confirm off",
                 "-ex", "set breakpoint pending on"]
@@ -931,6 +936,11 @@ quit
     with open(script_path, 'w') as f:
         f.write(script)
 
+    try:
+        import stage_timing
+        stage_timing.count_gdb()
+    except Exception:
+        pass
     env = _make_env(lib_path)
     gdb_cmds = ["gdb", "-batch", "-x", script_path, str(binary)]
     try:

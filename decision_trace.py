@@ -1030,6 +1030,11 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
                '-ex', f"python exec(open({script!r}).read())",
                str(real_bin)]
     try:
+        import stage_timing
+        stage_timing.count_gdb()
+    except Exception:
+        pass
+    try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
                            env=env)
     except subprocess.TimeoutExpired:

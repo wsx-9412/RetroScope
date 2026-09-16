@@ -731,8 +731,8 @@ def main():
         )
         _div_secs = time.time() - _t_div_start
         try:
-            import divergence_analyzer as _da
-            _gdb_count = _da._GDB_RUN_STATS.get("count", 0)
+            import stage_timing as _st
+            _gdb_count = _st.gdb_runs()
         except Exception:
             _gdb_count = 0
         print(f"  [GDB] 寻找分叉语句期间共启动 GDB 进程 {_gdb_count} 次"

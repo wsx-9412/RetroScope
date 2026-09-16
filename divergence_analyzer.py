@@ -69,12 +69,9 @@ def resolve_real_binary(binpath):
     return binpath
 
 
-_GDB_RUN_STATS = {"count": 0}
-
-
 def _count_gdb_run(binary=None):
     """Count every GDB subprocess launch (for timing diagnostics)."""
-    _GDB_RUN_STATS["count"] += 1
+    stage_timing.count_gdb()
 
 
 def run_gdb_batch(binary, commands, env=None, timeout=120):
@@ -5372,7 +5369,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
     # ========================================================
     last_common = _find_last_common_entry_function(matches)
     if last_common:
-print(f"\n=== Unified backward tracer from: {last_common} ===")
+        print(f"\n=== Unified backward tracer from: {last_common} ===")
     try:
         _t_bt = time.time()
         bt_result = _run_backward_tracer(
