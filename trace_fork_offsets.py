@@ -4319,6 +4319,10 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
     }
     observed = {}      # verdict -> count across all mutations
     total_tests = 0
+    n_workers = min(8, max(2, os.cpu_count() or 2))
+
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+
     for offset in sorted(offsets):
         if offset >= len(original_data):
             print(f'  [!] Offset 0x{offset:x} beyond file size, skipping')
@@ -4327,52 +4331,69 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
         results[offset] = {'original': orig_byte, 'matches': {}}
         print(f'\n  [*] Testing offset 0x{offset:x} (original=0x{orig_byte:02x})...')
 
+        # All 255 byte values are independent subprocess runs: sweep them in
+        # parallel (one process pool per offset).
+        tasks = []
         for byte_val in range(256):
             if byte_val == orig_byte:
                 continue
             modified = bytearray(original_data)
             modified[offset] = byte_val
-            _t_mut = time.time()
-            out, rc = _run(real_target, modified)
-            _t_mut = time.time() - _t_mut
-            total_tests += 1
-            sig = extract_crash_signature(out)
-            if sig is None:
-                continue
-            verdict, diff = compare_crash_signatures(ref_sig, sig)
-            crash = sig["crash_frames"][0] if sig["crash_frames"] else {}
-            # ``same_func`` or better = the target reproduces the reference
-            # crash; ``same_type`` only = a same-kind crash at another site.
-            if verdict in ('same_func', 'same_site'):
-                results[offset]['matches'][byte_val] = {
-                    'verdict': verdict,
-                    'type': sig['type'],
-                    'function': crash.get('function'),
-                    'file': _path_basename(crash.get('file')),
-                    'line': crash.get('line'),
-                    'rc': rc,
-                }
-                try:
-                    import stage_timing
-                    stage_timing.record(
-                        f"变异成功 offset=0x{offset:x} byte=0x{byte_val:02x}",
-                        _t_mut)
-                except Exception:
-                    pass
-                print(f'    0x{byte_val:02x} -> MATCHES ref crash '
-                      f'({verdict}: {diff})  [用时 {_t_mut:.3f}s]')
-            else:
-                observed.setdefault(verdict or 'no_crash', 0)
-                observed[verdict or 'no_crash'] += 1
-                if verdict == 'same_type':
-                    # Near-miss: same ASan kind but a different crash site —
-                    # valuable signal that the mutation steers the path but
-                    # not (yet) to the reference's site.
-                    observed.setdefault('same_type_sites', {})
-                    sites = observed['same_type_sites']
-                    key = f"{crash.get('function')}:{_path_basename(crash.get('file'))}:{crash.get('line')}"
-                    sites.setdefault(key, 0)
-                    sites[key] += 1
+            tasks.append((byte_val, bytes(modified)))
+
+        if len(tasks) <= 1:
+            pass
+        else:
+            with ProcessPoolExecutor(max_workers=n_workers) as ex:
+                futures = {}
+                for byte_val, data in tasks:
+                    fut = ex.submit(_run_mutation_worker,
+                                    (real_target, data, program_args,
+                                     input_file, timeout))
+                    futures[fut] = (byte_val, time.time())
+                for fut in as_completed(futures):
+                    byte_val, t_submit = futures[fut]
+                    out, rc = fut.result()
+                    _t_mut = time.time() - t_submit
+                    total_tests += 1
+                    sig = extract_crash_signature(out)
+                    if sig is None:
+                        continue
+                    verdict, diff = compare_crash_signatures(ref_sig, sig)
+                    crash = sig["crash_frames"][0] if sig["crash_frames"] else {}
+                    # ``same_func`` or better = the target reproduces the
+                    # reference crash; ``same_type`` only = a same-kind crash
+                    # at another site.
+                    if verdict in ('same_func', 'same_site'):
+                        results[offset]['matches'][byte_val] = {
+                            'verdict': verdict,
+                            'type': sig['type'],
+                            'function': crash.get('function'),
+                            'file': _path_basename(crash.get('file')),
+                            'line': crash.get('line'),
+                            'rc': rc,
+                        }
+                        try:
+                            import stage_timing
+                            stage_timing.record(
+                                f"变异成功 offset=0x{offset:x} byte=0x{byte_val:02x}",
+                                _t_mut)
+                        except Exception:
+                            pass
+                        print(f'    0x{byte_val:02x} -> MATCHES ref crash '
+                              f'({verdict}: {diff})  [用时 {_t_mut:.3f}s]')
+                    else:
+                        observed.setdefault(verdict or 'no_crash', 0)
+                        observed[verdict or 'no_crash'] += 1
+                        if verdict == 'same_type':
+                            # Near-miss: same ASan kind but a different crash
+                            # site — valuable signal that the mutation steers
+                            # the path but not (yet) to the reference's site.
+                            observed.setdefault('same_type_sites', {})
+                            sites = observed['same_type_sites']
+                            key = f"{crash.get('function')}:{_path_basename(crash.get('file'))}:{crash.get('line')}"
+                            sites.setdefault(key, 0)
+                            sites[key] += 1
 
         n = len(results[offset]['matches'])
         verdicts = {}
