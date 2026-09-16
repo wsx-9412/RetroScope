@@ -68,6 +68,7 @@ def resolve_real_binary(binpath):
 
 def run_gdb_batch(binary, commands, env=None, timeout=120):
     """Run GDB in batch mode with the given commands and return stdout."""
+    _count_gdb_run(binary)
     gdb_cmds = ["gdb", "-batch", "-ex", "set pagination off",
                 "-ex", "set confirm off"]
     for cmd in commands:
