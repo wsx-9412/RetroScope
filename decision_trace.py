@@ -1029,10 +1029,9 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
     if not fsrc:
         print(f'  [!] source for {func} not found under {source_root or real_bin}')
         return None
-    gsrc = _gdb_resolve_function_source(real_bin, func, source_root, args)
+    gsrc, gbody, g_entry0 = _gdb_metadata(real_bin, func, source_root, args)
     if gsrc:
         fsrc = gsrc
-    gbody = _gdb_function_range(real_bin, func, source_root, args)
     decisions = find_function_decisions(fsrc, func, body=gbody)
     if not decisions:
         print(f'  [!] no decision lines found for {func} in {fsrc}')
@@ -1041,8 +1040,6 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
     # Effective-line mapping: one breakpoint per instruction address.
     call_lines_src = find_call_sites(fsrc, func, body=gbody)
     then_lines_src = _compute_then_lines(fsrc, decisions)
-    g_entry0, _ = _gdb_effective_lines(real_bin, func, source_root, args,
-                                       fsrc, set())
     if g_entry0 is None:
         g_entry0 = _compute_entry_line(fsrc, gbody)
     role_lines = set(d['line'] for d in decisions) \
