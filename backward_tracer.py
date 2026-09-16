@@ -547,6 +547,9 @@ def _count_braces_in_segment(seg):
     return delta
 
 
+_FUNC_SOURCE_CACHE = {}
+
+
 def _find_function_source(func_name, source_dirs):
     """Find the source file containing func_name's definition.
 
@@ -556,7 +559,14 @@ def _find_function_source(func_name, source_dirs):
     When a function is defined in both a platform-specific file (e.g.
     ``tif_win32.c``) and a generic one (``tif_unix.c``), prefer the file that
     matches the current OS (on Linux, avoid ``*win32*`` files).
+
+    Results are cached: this helper is called thousands of times per run
+    (semantic-variant lookups), and each cold call re-reads the whole source
+    tree.
     """
+    key = (str(func_name), str(source_dirs))
+    if key in _FUNC_SOURCE_CACHE:
+        return _FUNC_SOURCE_CACHE[key]
     if isinstance(source_dirs, (str, os.PathLike)):
         source_dirs = [source_dirs]
     matches = []
@@ -571,6 +581,7 @@ def _find_function_source(func_name, source_dirs):
                 if re.search(pattern, content):
                     matches.append(str(path))
     if not matches:
+        _FUNC_SOURCE_CACHE[key] = None
         return None
 
     # Prefer the main library directory over auxiliary trees.  libtiff keeps
@@ -590,6 +601,7 @@ def _find_function_source(func_name, source_dirs):
         matches = [p for p in matches if 'win32' not in p.lower()] or matches
 
     matches.sort(key=_rank)
+    _FUNC_SOURCE_CACHE[key] = matches[0]
     return matches[0]
 
 
