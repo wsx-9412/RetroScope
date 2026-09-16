@@ -945,6 +945,73 @@ def _gdb_resolve_function_source(binary, func, source_root, args):
     return None
 
 
+def _gdb_metadata(binary, func, source_root, args):
+    """Resolve (executed source file, function line range, entry line) for
+    ``func`` in a SINGLE GDB session.
+
+    Merges three previously separate sessions — ``_gdb_resolve_function_source``
+    (``info line func``), ``_gdb_function_range`` (``disassemble /m func``) and
+    the entry-line part of ``_gdb_effective_lines`` (``break func`` +
+    ``info breakpoints``) — into one ``gdb start`` run.  The program is started
+    only once; all three answers come from the same debug-info session.
+
+    Returns (gsrc, gbody, entry); each may be None when unresolvable.
+    """
+    try:
+        libs = _collect_lib_paths(binary)
+        env = os.environ.copy()
+        env['ASAN_OPTIONS'] = 'detect_leaks=0'
+        if libs:
+            env['LD_LIBRARY_PATH'] = ':'.join(libs + [env.get('LD_LIBRARY_PATH', '')])
+        cmds = ['gdb', '-batch', '-q', '-ex', 'start',
+                '-ex', f'info line {func}',
+                '-ex', f'disassemble /m {func}',
+                '-ex', f'break {func}', '-ex', 'info breakpoints',
+                '--args', str(resolve_binary(binary))] + [str(a) for a in args]
+        try:
+            import stage_timing
+            stage_timing.count_gdb()
+        except Exception:
+            pass
+        r = subprocess.run(cmds, capture_output=True, text=True, timeout=120,
+                           env=env)
+    except Exception:
+        return None, None, None
+    out = r.stdout + r.stderr
+
+    # Source file of the EXECUTED function (first "Line N of FILE" report).
+    gsrc = None
+    m = re.search(r'Line \d+ of "([^"]+)"', out)
+    if m:
+        path = m.group(1).strip()
+        if os.path.isabs(path) and Path(path).exists():
+            gsrc = path
+        else:
+            candidate = Path(source_root or '.') / path
+            if candidate.exists():
+                gsrc = str(candidate)
+            else:
+                for f in Path(source_root or '.').rglob(Path(path).name):
+                    gsrc = str(f)
+                    break
+
+    # Function source line range from the debug line table (disassemble /m).
+    gbody = None
+    m = re.search(r'Dump of assembler code for function .*?\n(.*?)'
+                  r'End of assembler dump\.', out, re.S)
+    if m:
+        nums = [int(x) for x in re.findall(r'^\s*(\d+)\s+', m.group(1), re.M)]
+        if nums:
+            gbody = (min(nums), max(nums))
+
+    # Entry line: where gdb actually places the function breakpoint.
+    entry = None
+    m = re.search(rf'in {re.escape(func)} at \S+?:(\d+)', out)
+    if m:
+        entry = int(m.group(1))
+    return gsrc, gbody, entry
+
+
 def record_decisions(binary, func, args, source_root=None, timeout=180,
                      out_path=None, limit=100000, mode='bp'):
     """Run ``binary args`` under GDB and record the decision events of ``func``.

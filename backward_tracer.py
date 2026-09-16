@@ -1330,6 +1330,9 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
             except OSError:
                 pass
 
+        # Probe every callee's return values in ONE GDB session per binary
+        # (previously one session per callee).
+        callee_pairs = []
         for callee in callees:
             # Skip utility callees whose return values differ only due to
             # ASLR (function pointers) or are not behavioral (error handlers).
@@ -1341,11 +1344,14 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
             callee_src_b = _find_function_source(callee, src_dir_b if func_name_a == func_name_b else src_dir_a)
             if not callee_src_a or not callee_src_b:
                 continue
-            callee_ret = compare_return_values(
-                binary_a, binary_b, callee, callee,
-                callee_src_a, callee_src_b,
-                input_file, run_args, lib_path_a, lib_path_b, timeout
-            )
+            callee_pairs.append((callee, callee, callee_src_a, callee_src_b))
+        batch_ret = _compare_return_values_batch(
+            binary_a, binary_b, callee_pairs,
+            input_file, run_args, lib_path_a, lib_path_b, timeout)
+        for callee in callees:
+            if callee in _UTILITY_CALLEES or callee not in batch_ret:
+                continue
+            callee_ret = batch_ret[callee]
             if callee_ret:
                 print(f"{indent}  Callee '{callee}' returns DIFFERENTLY "
                       f"(A={callee_ret['val_a']:#x}, B={callee_ret['val_b']:#x}); recursing")
@@ -1588,18 +1594,16 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
     if depth < max_depth:
         primary = []    # same-length value differences (genuine fork)
         secondary = []  # length differences (early-abort consequence)
-        for callee in unique_candidates:
-            probed = _probe_callee_pair(
-                callee, binary_a, binary_b, src_dir_a, src_dir_b,
-                input_file, run_args, lib_path_a, lib_path_b, timeout
-            )
-            if not probed:
-                continue
-            ca, cb, sub_ret = probed
-            if sub_ret.get('diff_kind') == 'same_len_diff_value':
-                primary.append((ca, cb, sub_ret))
-            else:
-                secondary.append((ca, cb, sub_ret))
+        # Probe ALL candidates (with semantic variants) in ONE GDB session
+        # per binary (previously one session per candidate).
+        if unique_candidates:
+            for ca, cb, sub_ret in _probe_callee_pairs_batch(
+                    unique_candidates, binary_a, binary_b, src_dir_a, src_dir_b,
+                    input_file, run_args, lib_path_a, lib_path_b, timeout):
+                if sub_ret.get('diff_kind') == 'same_len_diff_value':
+                    primary.append((ca, cb, sub_ret))
+                else:
+                    secondary.append((ca, cb, sub_ret))
 
         # Among primaries, prefer callees that have a semantic variant in the
         # other version (e.g. TIFFReadDirEntryArray vs WithLimit) — these are
