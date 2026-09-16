@@ -4219,6 +4219,35 @@ def compare_crash_signatures(ref_sig, tgt_sig):
                          f"target {tfile}:{tf.get('line')})")
 
 
+def _run_mutation_worker(task):
+    """Run one byte-mutation through ``binary`` in a subprocess (worker for the
+    parallel mutation sweep).  ``task`` = (binary, data, program_args,
+    input_file, timeout).  Returns (stdout+stderr, returncode).
+    """
+    binary, data, program_args, input_file, timeout = task
+    fd, tmp_path = tempfile.mkstemp(suffix='.tif', prefix='mutate_')
+    os.close(fd)
+    try:
+        with open(tmp_path, 'wb') as f:
+            f.write(data)
+        cmd = [binary] + [a.replace('{input_file}', tmp_path).replace('{input}', tmp_path)
+                          if '{' in a else (tmp_path if a == input_file else a)
+                          for a in program_args]
+        env = build_run_env(binary)
+        proc = subprocess.run(cmd, capture_output=True, text=True,
+                              timeout=timeout, env=env)
+        return proc.stdout + proc.stderr, proc.returncode
+    except subprocess.TimeoutExpired:
+        return '', -1
+    except Exception:
+        return '', -2
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+
+
 def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                 program_args, offsets, timeout=10):
     """Mutate each byte at each offset and check whether the *target* binary
