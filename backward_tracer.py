@@ -1014,6 +1014,7 @@ try:
         seen_entry.add(first_fn)
 except Exception:
     pass
+counts = dict()
 while True:
     try:
         gdb.execute("continue")
@@ -1033,6 +1034,9 @@ while True:
         if is_entry and nm not in seen_entry:
             seen_entry.add(nm)
             continue
+        if counts.get(nm, 0) >= {max_calls}:
+            continue
+        counts[nm] = counts.get(nm, 0) + 1
         sal = gdb.find_pc_line(pc)
         fname = sal.symtab.filename if sal and sal.symtab else ''
         ln = sal.line if sal else 0
