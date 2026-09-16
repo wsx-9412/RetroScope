@@ -5405,10 +5405,12 @@ print(f"\n=== Unified backward tracer from: {last_common} ===")
     # crash point may BE the fork statement.
     # ========================================================
     print("\nChecking for crash-based divergence...")
+    _t_crash = time.time()
     crash_a = _detect_crash_point(binary_a, args_a, lib_path_a,
                                   source_dirs_a, gdb_timeout)
     crash_b = _detect_crash_point(binary_b, args_b, lib_path_b,
                                   source_dirs_b, gdb_timeout)
+    stage_timing.record("寻找分叉语句-崩溃检测", time.time() - _t_crash)
 
     if crash_a:
         print(f"  Reference CRASH: {crash_a.get('signal')} in "
@@ -5525,6 +5527,7 @@ print(f"\n=== Unified backward tracer from: {last_common} ===")
             print("\n  >> Target did not reach the crash point — "
                   "crash-anchored fork selection.")
             fork_meta = None
+            _t_anchor = time.time()
             try:
                 from fork_chain import select_fork_anchor
                 anchor_func, anchor_a, anchor_b, fork_meta = \
@@ -5534,6 +5537,8 @@ print(f"\n=== Unified backward tracer from: {last_common} ===")
                 print(f"  [crash-anchor] failed: {e}")
                 anchor_func, anchor_a, anchor_b, fork_meta = \
                     None, -1, -1, None
+            stage_timing.record("寻找分叉语句-崩溃锚点选择",
+                                time.time() - _t_anchor)
             if anchor_func:
                 if fork_meta and isinstance(fork_meta, dict):
                     try:
@@ -5558,11 +5563,14 @@ print(f"\n=== Unified backward tracer from: {last_common} ===")
                                               build_dynamic_result)
                     dyn_root_a = (source_dirs_a or [None])[0]
                     dyn_root_b = (source_dirs_b or [None])[0]
+                    _t_dyn = time.time()
                     dyn = locate_fork_dynamically(
                         binary_a, binary_b, dyn_root_a, dyn_root_b,
                         anchor_func, args_b,
                         refactoring_map=refactoring_map,
                         timeout=max(gdb_timeout, 240))
+                    stage_timing.record("寻找分叉语句-动态决策定位",
+                                        time.time() - _t_dyn)
                     if dyn.get('status') in ('decision_fork', 'value_fork'):
                         print(f"\n  [unified-dynamic] {dyn['status']} "
                               f"in {dyn.get('function_a')}/"
@@ -5638,12 +5646,14 @@ print(f"\n=== Unified backward tracer from: {last_common} ===")
                     elif new_name == common_func:
                         cause_a = new_name
                         break
+            _t_step = time.time()
             div_loc = _find_diverging_source_line(
                 binary_a, binary_b, cause_a, cause_b,
                 args_a, args_b, lib_path_a, lib_path_b,
                 source_dirs_a, source_dirs_b, gdb_timeout,
                 refactoring_map=refactoring_map, gaps=gaps,
             )
+            stage_timing.record("寻找分叉语句-单步定位", time.time() - _t_step)
             bogus = _is_spurious_step_divergence(div_loc)
             if not bogus:
                 result = {
