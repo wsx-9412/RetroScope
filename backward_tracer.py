@@ -996,7 +996,7 @@ for nm in names:
     for line in out.split("\\n"):
         m = re.search(r'(0x[0-9a-f]+)\\s*<[^>]*>:\\s*ret', line)
         if m:
-            addr2func[m.group(1)] = nm
+            addr2func[int(m.group(1), 16)] = nm
             try:
                 gdb.execute("break *" + m.group(1))
             except Exception:
