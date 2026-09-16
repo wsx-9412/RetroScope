@@ -20,6 +20,7 @@ import sys
 import json
 import struct
 import argparse
+import time
 from pathlib import Path
 
 
@@ -4302,7 +4303,9 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                 continue
             modified = bytearray(original_data)
             modified[offset] = byte_val
+            _t_mut = time.time()
             out, rc = _run(real_target, modified)
+            _t_mut = time.time() - _t_mut
             total_tests += 1
             sig = extract_crash_signature(out)
             if sig is None:
@@ -4320,8 +4323,15 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                     'line': crash.get('line'),
                     'rc': rc,
                 }
+                try:
+                    import stage_timing
+                    stage_timing.record(
+                        f"变异成功 offset=0x{offset:x} byte=0x{byte_val:02x}",
+                        _t_mut)
+                except Exception:
+                    pass
                 print(f'    0x{byte_val:02x} -> MATCHES ref crash '
-                      f'({verdict}: {diff})')
+                      f'({verdict}: {diff})  [用时 {_t_mut:.3f}s]')
             else:
                 observed.setdefault(verdict or 'no_crash', 0)
                 observed[verdict or 'no_crash'] += 1
@@ -4987,6 +4997,11 @@ def main():
     if a.test_offsets:
         for h in a.test_offsets:
             all_offsets.add(int(h, 16))
+
+    # End of the offset-localization phase (GDB tracing / mapping above);
+    # what follows is the byte-mutation crash testing.
+    stage_timing.record("确定分叉语句处变量对应输入文件偏移位置",
+                        time.time() - _t_main_start)
 
     if all_offsets and input_file and os.path.isfile(input_file) and binary:
         print(f'\n{"="*60}')
