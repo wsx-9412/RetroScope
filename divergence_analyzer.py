@@ -66,6 +66,14 @@ def resolve_real_binary(binpath):
     return binpath
 
 
+_GDB_RUN_STATS = {"count": 0}
+
+
+def _count_gdb_run(binary=None):
+    """Count every GDB subprocess launch (for timing diagnostics)."""
+    _GDB_RUN_STATS["count"] += 1
+
+
 def run_gdb_batch(binary, commands, env=None, timeout=120):
     """Run GDB in batch mode with the given commands and return stdout."""
     _count_gdb_run(binary)
@@ -83,6 +91,7 @@ def run_gdb_batch(binary, commands, env=None, timeout=120):
 
 def run_gdb_with_source(binary, source_dirs, commands, lib_path=None, timeout=120):
     """Run GDB with source directory and library path configured."""
+    _count_gdb_run(binary)
     env = os.environ.copy()
     env["ASAN_OPTIONS"] = "detect_leaks=0"
     if lib_path:
@@ -1174,6 +1183,7 @@ quit
     with open(script_path, 'w') as f:
         f.write(script)
 
+    _count_gdb_run(binary)
     env = os.environ.copy()
     env["ASAN_OPTIONS"] = "detect_leaks=0"
     if lib_path:
