@@ -1388,6 +1388,7 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
         batch_ret = _compare_return_values_batch(
             binary_a, binary_b, callee_pairs,
             input_file, run_args, lib_path_a, lib_path_b, timeout)
+        print(f"{indent}  [t] callee batch: {_time.time()-_t_level:.1f}s")
         for callee in callees:
             if callee in _UTILITY_CALLEES or callee not in batch_ret:
                 continue
