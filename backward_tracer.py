@@ -965,6 +965,170 @@ quit
     return returns
 
 
+def probe_returns_many(binary, func_names, input_file, run_args, lib_path=None,
+                       timeout=120, max_calls=30):
+    """Probe the returns of MANY functions in ONE GDB session.
+
+    The program runs once; a breakpoint is set on every ``ret`` instruction of
+    every function (vs. one full GDB run per function in ``probe_returns``).
+    Returns {func_name: [{"value", "file", "line"}, ...]} — same per-function
+    format as ``probe_returns``.
+    """
+    names = list(dict.fromkeys(func_names))
+    if not names:
+        return {}
+    script = (f'''set pagination off
+set confirm off
+set breakpoint pending on
+set env ASAN_OPTIONS=detect_leaks=0
+''' + "\n".join(f"break {n}" for n in names) + f'''
+run {run_args}
+python
+import gdb
+import re
+import json
+names = json.loads({json.dumps(names)!r})
+addr2func = dict()
+for nm in names:
+    try:
+        out = gdb.execute("disassemble " + nm, to_string=True)
+    except Exception:
+        continue
+    for line in out.split("\\n"):
+        m = re.search(r'(0x[0-9a-f]+)\\s*<[^>]*>:\\s*ret', line)
+        if m:
+            addr2func[m.group(1)] = nm
+            try:
+                gdb.execute("break *" + m.group(1))
+            except Exception:
+                pass
+while True:
+    try:
+        gdb.execute("continue")
+    except Exception:
+        break
+    try:
+        rax = int(gdb.parse_and_eval("$rax"))
+    except Exception:
+        break
+    try:
+        pc = gdb.selected_frame().pc()
+        sal = gdb.find_pc_line(pc)
+        fname = sal.symtab.filename if sal and sal.symtab else ''
+        ln = sal.line if sal else 0
+    except Exception:
+        fname, ln = '', 0
+    print("RET_HIT:" + addr2func.get(pc, '?') + ":" + str(rax) + ":" + fname + ":" + str(ln))
+end
+quit
+''')
+
+    script_path = f"/tmp/ret_probe_many_{os.getpid()}.gdb"
+    with open(script_path, 'w') as f:
+        f.write(script)
+
+    try:
+        import stage_timing
+        stage_timing.count_gdb()
+    except Exception:
+        pass
+    env = _make_env(lib_path)
+    gdb_cmds = ["gdb", "-batch", "-x", script_path, str(binary)]
+    try:
+        result = subprocess.run(gdb_cmds, capture_output=True, text=True,
+                                timeout=timeout, env=env)
+        output = result.stdout + result.stderr
+    finally:
+        try:
+            os.unlink(script_path)
+        except Exception:
+            pass
+
+    results = {}
+    for line in output.split('\n'):
+        m = re.search(r'RET_HIT:([^:]+):(-?\d+):(.+):(\d+)', line)
+        if m:
+            name, val, fname, ln = m.group(1), m.group(2), m.group(3), m.group(4)
+            results.setdefault(name, []).append({
+                'value': int(val),
+                'file': fname.strip(),
+                'line': int(ln),
+            })
+    return results
+
+
+def _compare_return_values_batch(binary_a, binary_b, pairs, input_file, run_args,
+                                 lib_path_a=None, lib_path_b=None, timeout=120):
+    """Compare the return values of several (name_a, name_b, src_a, src_b) pairs.
+
+    All A-side functions are probed in ONE GDB session, all B-side in another
+    (vs. one session per pair).  Returns {name_a: sub_ret | None} — the same
+    per-pair dict ``compare_return_values`` would produce.
+    """
+    if not pairs:
+        return {}
+    names_a = [p[0] for p in pairs]
+    names_b = [p[1] for p in pairs]
+    rets_a = probe_returns_many(binary_a, names_a, input_file, run_args,
+                                lib_path_a, timeout)
+    rets_b = probe_returns_many(binary_b, names_b, input_file, run_args,
+                                lib_path_b, timeout)
+    out = {}
+    for name_a, name_b, src_a, src_b in pairs:
+        ra = rets_a.get(name_a)
+        rb = rets_b.get(name_b)
+        if not ra or not rb:
+            out[name_a] = None
+            continue
+        out[name_a] = _diff_return_sequences(ra, rb, src_a, src_b, name_a, name_b)
+    return out
+
+
+def _probe_callee_pairs_batch(callees, binary_a, binary_b, src_dir_a, src_dir_b,
+                              input_file, run_args, lib_path_a, lib_path_b,
+                              timeout):
+    """Probe the return values of many candidate callees in ONE GDB session
+    per binary (same semantics as ``_probe_callee_pair`` applied to each).
+
+    The A side probes ``callee``; the B side probes the first existing name in
+    [callee, callee+WithLimit, callee+Checked, ...] (same preference order as
+    ``_probe_callee_pair``).  Returns a list of (callee, callee_b, sub_ret) for
+    the pairs whose return values differ, in ``callees`` order.
+    """
+    pairs = []
+    for c in callees:
+        cb, sb = None, None
+        for cand in [c] + [c + s for s in _SEMANTIC_SUFFIXES]:
+            found = _find_function_source(cand, src_dir_b)
+            if found:
+                cb, sb = cand, found
+                break
+        if cb is None:
+            continue
+        pairs.append((c, cb, sb))
+    if not pairs:
+        return []
+    rets_a = probe_returns_many(binary_a, [p[0] for p in pairs],
+                                input_file, run_args, lib_path_a, timeout)
+    rets_b = probe_returns_many(binary_b, [p[1] for p in pairs],
+                                input_file, run_args, lib_path_b, timeout)
+    out = []
+    for c, cb, sb in pairs:
+        ra = rets_a.get(c)
+        if not ra:
+            continue
+        rb = rets_b.get(cb)
+        if not rb:
+            continue
+        sa = _find_function_source(c, src_dir_a)
+        if not sa:
+            continue
+        sub_ret = _diff_return_sequences(ra, rb, sa, sb, c, cb)
+        if sub_ret:
+            out.append((c, cb, sub_ret))
+    return out
+
+
 def compare_return_values(binary_a, binary_b, func_name_a, func_name_b,
                           source_a, source_b, input_file, run_args,
                           lib_path_a=None, lib_path_b=None,
