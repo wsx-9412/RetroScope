@@ -548,6 +548,26 @@ def _count_braces_in_segment(seg):
 
 
 _FUNC_SOURCE_CACHE = {}
+_DIR_CONTENT_CACHE = {}
+
+
+def _dir_contents(d):
+    """Return {path: content} for every .c/.cpp file under ``d``, cached.
+
+    ``_find_function_source`` is called thousands of times per run; without
+    this cache each call re-reads the whole source tree from disk.
+    """
+    if d not in _DIR_CONTENT_CACHE:
+        contents = {}
+        for ext in ('.c', '.cpp'):
+            for path in Path(d).rglob(f'*{ext}'):
+                try:
+                    contents[str(path)] = path.read_text(
+                        encoding='utf-8', errors='replace')
+                except OSError:
+                    continue
+        _DIR_CONTENT_CACHE[d] = contents
+    return _DIR_CONTENT_CACHE[d]
 
 
 def _find_function_source(func_name, source_dirs):
@@ -571,15 +591,10 @@ def _find_function_source(func_name, source_dirs):
         source_dirs = [source_dirs]
     matches = []
     for d in source_dirs:
-        for ext in ('.c', '.cpp'):
-            for path in Path(d).rglob(f'*{ext}'):
-                try:
-                    content = path.read_text(encoding='utf-8', errors='replace')
-                except OSError:
-                    continue
-                pattern = rf'(?:static\s+)?(?:\w+\s+)*\b{re.escape(func_name)}\s*\([^)]*\)\s*\{{'
-                if re.search(pattern, content):
-                    matches.append(str(path))
+        for path, content in _dir_contents(d).items():
+            pattern = rf'(?:static\s+)?(?:\w+\s+)*\b{re.escape(func_name)}\s*\([^)]*\)\s*\{{'
+            if re.search(pattern, content):
+                matches.append(str(path))
     if not matches:
         _FUNC_SOURCE_CACHE[key] = None
         return None
@@ -1645,6 +1660,7 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                     primary.append((ca, cb, sub_ret))
                 else:
                     secondary.append((ca, cb, sub_ret))
+            print(f"{indent}  [t] candidate batch: {_time.time()-_t_level:.1f}s")
 
         # Among primaries, prefer callees that have a semantic variant in the
         # other version (e.g. TIFFReadDirEntryArray vs WithLimit) — these are
