@@ -1340,7 +1340,6 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
     ``TIFFReadDirEntryLong8Array`` vs ``TIFFReadDirEntryLong8ArrayWithLimit``).
     """
     import time as _time
-    _t_level = _time.time()
     indent = "  " * depth
     label = func_name_a if func_name_a == func_name_b else f"{func_name_a} vs {func_name_b}"
     print(f"\n{indent}[depth {depth}] Analyzing function: {label}")
@@ -1356,7 +1355,6 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
     else:
         src_a = _find_function_source(func_name_a, src_dir_a)
         src_b = _find_function_source(func_name_b, src_dir_b)
-    print(f"{indent}  [t] src find: {_time.time()-_t_level:.1f}s")
     if not src_a or not src_b:
         print(f"{indent}  Source not found for {label} "
               f"(a={src_a}, b={src_b})")
