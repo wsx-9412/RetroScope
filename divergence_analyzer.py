@@ -15,7 +15,10 @@ import os
 import re
 import subprocess
 import tempfile
+import time
 from pathlib import Path
+
+import stage_timing
 
 
 def find_version_root(binary):
