@@ -13,6 +13,18 @@ import os
 import time
 from pathlib import Path
 
+_GDB_RUNS = 0
+
+
+def count_gdb():
+    """Increment the shared GDB subprocess counter."""
+    global _GDB_RUNS
+    _GDB_RUNS += 1
+
+
+def gdb_runs():
+    return _GDB_RUNS
+
 
 def timings_path() -> Path:
     return Path(os.environ.get("RETRO_TIMINGS", "results/timings.json"))

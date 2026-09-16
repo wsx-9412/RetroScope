@@ -729,7 +729,15 @@ def main():
             config=config_module,
             skip_polytracker=args.no_polytracker,
         )
-        stage_timing.record("寻找分叉语句", time.time() - _t_div_start)
+        _div_secs = time.time() - _t_div_start
+        try:
+            import divergence_analyzer as _da
+            _gdb_count = _da._GDB_RUN_STATS.get("count", 0)
+        except Exception:
+            _gdb_count = 0
+        print(f"  [GDB] 寻找分叉语句期间共启动 GDB 进程 {_gdb_count} 次"
+              f"（平均每次 {_div_secs / max(_gdb_count, 1):.2f}s）")
+        stage_timing.record("寻找分叉语句", _div_secs)
 
         # Ensure the divergence result carries the info trace_fork_offsets.py
         # needs: binary/args for the target and the input file.
