@@ -4342,7 +4342,43 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
             tasks.append((byte_val, bytes(modified)))
 
         if len(tasks) <= 1:
-            pass
+            for byte_val, data in tasks:
+                out, rc = _run_mutation_worker(
+                    (real_target, data, program_args, input_file, timeout))
+                _t_mut = 0.0
+                total_tests += 1
+                sig = extract_crash_signature(out)
+                if sig is None:
+                    continue
+                verdict, diff = compare_crash_signatures(ref_sig, sig)
+                crash = sig["crash_frames"][0] if sig["crash_frames"] else {}
+                if verdict in ('same_func', 'same_site'):
+                    results[offset]['matches'][byte_val] = {
+                        'verdict': verdict,
+                        'type': sig['type'],
+                        'function': crash.get('function'),
+                        'file': _path_basename(crash.get('file')),
+                        'line': crash.get('line'),
+                        'rc': rc,
+                    }
+                    try:
+                        import stage_timing
+                        stage_timing.record(
+                            f"变异成功 offset=0x{offset:x} byte=0x{byte_val:02x}",
+                            _t_mut)
+                    except Exception:
+                        pass
+                    print(f'    0x{byte_val:02x} -> MATCHES ref crash '
+                          f'({verdict}: {diff})  [用时 {_t_mut:.3f}s]')
+                else:
+                    observed.setdefault(verdict or 'no_crash', 0)
+                    observed[verdict or 'no_crash'] += 1
+                    if verdict == 'same_type':
+                        observed.setdefault('same_type_sites', {})
+                        sites = observed['same_type_sites']
+                        key = f"{crash.get('function')}:{_path_basename(crash.get('file'))}:{crash.get('line')}"
+                        sites.setdefault(key, 0)
+                        sites[key] += 1
         else:
             with ProcessPoolExecutor(max_workers=n_workers) as ex:
                 futures = {}

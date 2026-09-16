@@ -986,8 +986,7 @@ run {run_args}
 python
 import gdb
 import re
-import json
-names = json.loads({json.dumps(names)!r})
+names = {names!r}
 addr2func = dict()
 for nm in names:
     try:
