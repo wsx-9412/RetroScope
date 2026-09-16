@@ -98,6 +98,7 @@ fi
 
 RESULT_FILE="results/${PROJECT_NAME}_fork_result.json"
 mkdir -p results
+export RETRO_TIMINGS="results/${CVE_ID}_timings.json"
 
 echo "=== ${PROJECT_NAME} fork-point analysis ==="
 echo "CVE:           $CVE_ID"
@@ -195,7 +196,7 @@ if [ "$POLYTRACKER_MODE" = true ] || [ "$FULL_MODE" = true ]; then
     fi
 
     python3 -u -c "
-import sys
+import sys, time
 sys.path.insert(0, '.')
 from polytracker_offsets import locate_offsets
 import json, os
@@ -211,6 +212,7 @@ pt_file = div.get('poly_track_file') or div.get('root_cause_file_b', div.get('ro
 pt_line = div.get('poly_track_line') or div.get('root_cause_line_b', div.get('root_cause_line'))
 pt_stmt = div.get('poly_track_statement') or div.get('root_cause_statement_b', '')
 
+_t_loc = time.time()
 result = locate_offsets(
     source_dir=div.get('source_dir', '$TARGET_VERSION_PATH'),
     program_name=div.get('program_name', 'tiffcrop'),
@@ -222,6 +224,12 @@ result = locate_offsets(
     fork_statement=pt_stmt,
     full_args=div.get('args_b', div.get('args_a')),
 )
+_t_loc = time.time() - _t_loc
+try:
+    import stage_timing
+    stage_timing.record('确定分叉语句处变量对应输入文件偏移位置(PolyTracker)', _t_loc)
+except Exception:
+    print(f'[时间] 确定分叉语句处变量对应输入文件偏移位置(PolyTracker): 用时 {_t_loc:.3f}s')
 
 output_path = 'results/${CVE_ID}_polytracker_offsets.json'
 
@@ -274,3 +282,18 @@ print(f'PolyTracker results saved to: {output_path}')
 fi
 
 echo -e "\n=== Analysis completed ==="
+echo ""
+echo "=== Timing summary (since compilation finished) ==="
+python3 -c "
+import json, time
+try:
+    d = json.load(open('$RETRO_TIMINGS'))
+    print(f'总用时(编译后): {time.time() - d[\"t0\"]:.3f}s')
+    print('各阶段:')
+    for s in d['stages']:
+        extra = f' (用时 {s[\"duration\"]:.3f}s)' if 'duration' in s else ''
+        print(f'  {s[\"stage\"]}: 累计 {s[\"elapsed\"]:.3f}s{extra}')
+    print(f'明细保存在: $RETRO_TIMINGS')
+except Exception as e:
+    print(f'无法读取计时文件 $RETRO_TIMINGS: {e}')
+"
