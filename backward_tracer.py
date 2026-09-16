@@ -1365,7 +1365,6 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
         binary_a, binary_b, func_name_a, func_name_b, src_a, src_b,
         input_file, run_args, lib_path_a, lib_path_b, timeout
     )
-    print(f"{indent}  [t] compare returns: {_time.time()-_t_level:.1f}s")
     if not ret:
         # Entry function returns the same value.  The fork is caused by a
         # CALLEE whose return value differs.  Find it by checking each
@@ -1402,7 +1401,6 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
         batch_ret = _compare_return_values_batch(
             binary_a, binary_b, callee_pairs,
             input_file, run_args, lib_path_a, lib_path_b, timeout)
-        print(f"{indent}  [t] callee batch: {_time.time()-_t_level:.1f}s")
         for callee in callees:
             if callee in _UTILITY_CALLEES or callee not in batch_ret:
                 continue
