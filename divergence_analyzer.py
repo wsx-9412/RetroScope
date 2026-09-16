@@ -1404,6 +1404,7 @@ quit
     with open(script_path, 'w') as f:
         f.write(script)
 
+    _count_gdb_run(binary)
     env = os.environ.copy()
     env["ASAN_OPTIONS"] = "detect_leaks=0"
     if lib_path:
@@ -4190,6 +4191,7 @@ def _detect_crash_point(binary, args, lib_path, source_dirs, timeout=120):
 
     Returns dict with crash info (function, file, line, signal) or None if no crash.
     """
+    _count_gdb_run(binary)
     env = os.environ.copy()
     env["ASAN_OPTIONS"] = "detect_leaks=0"
 
@@ -5367,14 +5369,16 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
     # ========================================================
     last_common = _find_last_common_entry_function(matches)
     if last_common:
-        print(f"\n=== Unified backward tracer from: {last_common} ===")
-        try:
-            bt_result = _run_backward_tracer(
-                last_common, binary_a, binary_b, source_dirs_a, source_dirs_b,
-                lib_path_a, lib_path_b, input_file, args_b, gdb_timeout)
-        except Exception as e:
-            print(f"  [Backward tracer] failed: {e}")
-            bt_result = {"status": "error", "error": str(e)}
+print(f"\n=== Unified backward tracer from: {last_common} ===")
+    try:
+        _t_bt = time.time()
+        bt_result = _run_backward_tracer(
+            last_common, binary_a, binary_b, source_dirs_a, source_dirs_b,
+            lib_path_a, lib_path_b, input_file, args_b, gdb_timeout)
+        stage_timing.record("寻找分叉语句-向后追踪器", time.time() - _t_bt)
+    except Exception as e:
+        print(f"  [Backward tracer] failed: {e}")
+        bt_result = {"status": "error", "error": str(e)}
 
         if bt_result.get("status") == "found" and bt_result.get("fork_statement"):
             print(f"\n  Backward tracer located the fork statement.")
