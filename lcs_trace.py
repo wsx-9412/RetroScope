@@ -544,7 +544,10 @@ def main():
             tgt_trace_funcs=[n.name for n in seq_b],
             threshold=args.rename_threshold,
         )
+        import stage_timing
+        _t_ref_start = time.time()
         refactor_mappings = detector.detect()
+        stage_timing.record("检测函数重构重命名", time.time() - _t_ref_start)
         rename_map = refactor_mappings.all_renames()
 
         if rename_map:
@@ -713,6 +716,7 @@ def main():
             config_module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(config_module)
 
+        _t_div_start = time.time()
         div_result = analyze_lcs_result(
             str(result_path),
             binary_a=str(real_a) if cross else str(real_a),
@@ -725,6 +729,7 @@ def main():
             config=config_module,
             skip_polytracker=args.no_polytracker,
         )
+        stage_timing.record("寻找分叉语句", time.time() - _t_div_start)
 
         # Ensure the divergence result carries the info trace_fork_offsets.py
         # needs: binary/args for the target and the input file.

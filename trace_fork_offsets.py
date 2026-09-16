@@ -4378,6 +4378,9 @@ def main():
 
     a = ap.parse_args()
 
+    import stage_timing
+    _t_main_start = time.time()
+
     config = {}
     if a.trace_json:
         config = read_trace_json(a.trace_json) or {}
