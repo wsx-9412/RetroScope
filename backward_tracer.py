@@ -1339,7 +1339,6 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
     ``func_name_a`` and ``func_name_b`` may differ (a semantic rename such as
     ``TIFFReadDirEntryLong8Array`` vs ``TIFFReadDirEntryLong8ArrayWithLimit``).
     """
-    import time as _time
     indent = "  " * depth
     label = func_name_a if func_name_a == func_name_b else f"{func_name_a} vs {func_name_b}"
     print(f"\n{indent}[depth {depth}] Analyzing function: {label}")
@@ -1657,7 +1656,6 @@ def _find_fork_recursive(func_name_a, func_name_b, binary_a, binary_b,
                     primary.append((ca, cb, sub_ret))
                 else:
                     secondary.append((ca, cb, sub_ret))
-            print(f"{indent}  [t] candidate batch: {_time.time()-_t_level:.1f}s")
 
         # Among primaries, prefer callees that have a semantic variant in the
         # other version (e.g. TIFFReadDirEntryArray vs WithLimit) — these are
