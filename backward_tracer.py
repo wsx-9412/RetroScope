@@ -993,7 +993,6 @@ for nm in names:
         out = gdb.execute("disassemble " + nm, to_string=True)
     except Exception:
         continue
-    starts = []
     for line in out.split("\\n"):
         m = re.search(r'(0x[0-9a-f]+)\\s*<[^>]*>:\\s*ret', line)
         if m:
@@ -1002,13 +1001,15 @@ for nm in names:
                 gdb.execute("break *" + m.group(1))
             except Exception:
                 pass
-        m2 = re.search(r'(0x[0-9a-f]+)\\s*<[^>]+>:', line)
-        if m2:
-            starts.append(int(m2.group(1), 16))
-    if starts:
-        # Function entry: the entry breakpoint also stops here (recording a
-        # stale $rax), matching the per-function probe's behavior.
-        addr2func[min(starts)] = nm
+# Map the entry breakpoints to their functions using their RESOLVED
+# addresses (``break name`` may land at a prologue/PLT address that differs
+# from the disassembly start).
+for bp in gdb.breakpoints():
+    try:
+        if bp.address is not None and bp.location in names:
+            addr2func[int(bp.address)] = bp.location
+    except Exception:
+        pass
 while True:
     try:
         gdb.execute("continue")
