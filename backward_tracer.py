@@ -1004,12 +1004,25 @@ for nm in names:
 # Map the entry breakpoints to their functions using their RESOLVED
 # addresses (``break name`` may land at a prologue/PLT address that differs
 # from the disassembly start).
+entry_addrs = set()
 for bp in gdb.breakpoints():
     try:
         if bp.address is not None and bp.location in names:
+            entry_addrs.add(int(bp.address))
             addr2func[int(bp.address)] = bp.location
     except Exception:
         pass
+# The per-function probe consumed the FIRST entry stop (the one ``run``
+# stopped at) during setup, so the first entry stop of every other function
+# in this batch must be skipped too — otherwise each probed function gains a
+# spurious stale-$rax entry hit.
+seen_entry = set()
+try:
+    first_fn = gdb.selected_frame().name() or ''
+    if first_fn in names:
+        seen_entry.add(first_fn)
+except Exception:
+    pass
 while True:
     try:
         gdb.execute("continue")
@@ -1021,12 +1034,19 @@ while True:
         break
     try:
         pc = gdb.selected_frame().pc()
+        nm = addr2func.get(pc)
+        if nm is None:
+            # Entry breakpoint stop: attribute it to the entered function.
+            nm = gdb.selected_frame().name() or '?'
+        if pc in entry_addrs and nm not in seen_entry:
+            seen_entry.add(nm)
+            continue
         sal = gdb.find_pc_line(pc)
         fname = sal.symtab.filename if sal and sal.symtab else ''
         ln = sal.line if sal else 0
     except Exception:
-        fname, ln = '', 0
-    print("RET_HIT:" + addr2func.get(pc, '?') + ":" + str(rax) + ":" + fname + ":" + str(ln))
+        nm, fname, ln = '?', '', 0
+    print("RET_HIT:" + nm + ":" + str(rax) + ":" + fname + ":" + str(ln))
 end
 quit
 ''')
