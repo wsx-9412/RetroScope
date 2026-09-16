@@ -218,6 +218,10 @@ def main():
         ref_bin = existing_ref
         tgt_bin = existing_tgt
 
+    # Start the analysis clock after compilation finishes.
+    import stage_timing
+    stage_timing.init()
+
     if ref_bin is None or tgt_bin is None:
         print(f"ERROR: cannot locate binary. ref={ref_bin}, target={tgt_bin}")
         sys.exit(1)
