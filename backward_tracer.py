@@ -548,26 +548,30 @@ def _count_braces_in_segment(seg):
 
 
 _FUNC_SOURCE_CACHE = {}
-_DIR_CONTENT_CACHE = {}
+_DIR_NAME_INDEX = {}
 
 
-def _dir_contents(d):
-    """Return {path: content} for every .c/.cpp file under ``d``, cached.
+def _dir_name_index(d):
+    """Return {function_name: [file paths]} for every .c/.cpp file under ``d``.
 
-    ``_find_function_source`` is called thousands of times per run; without
-    this cache each call re-reads the whole source tree from disk.
+    Built once per directory: one regex pass per file collects all
+    definition-style ``name(...) {`` tokens.  ``_find_function_source`` is
+    called thousands of times per run (semantic-variant lookups); without this
+    index every lookup would re-scan the whole source tree.
     """
-    if d not in _DIR_CONTENT_CACHE:
-        contents = {}
+    if d not in _DIR_NAME_INDEX:
+        index = {}
         for ext in ('.c', '.cpp'):
             for path in Path(d).rglob(f'*{ext}'):
                 try:
-                    contents[str(path)] = path.read_text(
-                        encoding='utf-8', errors='replace')
+                    content = path.read_text(encoding='utf-8', errors='replace')
                 except OSError:
                     continue
-        _DIR_CONTENT_CACHE[d] = contents
-    return _DIR_CONTENT_CACHE[d]
+                for m in re.finditer(r'(?:\w+\s+)*\b(\w+)\s*\([^)]*\)\s*\{',
+                                     content):
+                    index.setdefault(m.group(1), []).append(str(path))
+        _DIR_NAME_INDEX[d] = index
+    return _DIR_NAME_INDEX[d]
 
 
 def _find_function_source(func_name, source_dirs):
@@ -591,10 +595,7 @@ def _find_function_source(func_name, source_dirs):
         source_dirs = [source_dirs]
     matches = []
     for d in source_dirs:
-        for path, content in _dir_contents(d).items():
-            pattern = rf'(?:static\s+)?(?:\w+\s+)*\b{re.escape(func_name)}\s*\([^)]*\)\s*\{{'
-            if re.search(pattern, content):
-                matches.append(str(path))
+        matches.extend(_dir_name_index(d).get(func_name, []))
     if not matches:
         _FUNC_SOURCE_CACHE[key] = None
         return None
