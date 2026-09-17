@@ -243,6 +243,10 @@ def main():
         "--trace-diverge",
         "--gdb-timeout", str(args.gdb_timeout),
         "--config", str(Path(args.config).resolve()),
+        # Version display labels: the binaries may live in a temp build
+        # tree (compiled in place), so their paths carry no version name.
+        "--ref-label", str(Path(args.ref).resolve().name),
+        "--target-label", str(Path(args.target).resolve().name),
     ]
     
     # Pass --no-polytracker to skip polytracker inside divergence_analyzer
