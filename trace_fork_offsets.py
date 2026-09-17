@@ -4473,13 +4473,13 @@ def test_value_level_mutations(binary_target, binary_ref, input_file,
                 f.write(data)
             cmd_args = [_replace_input_arg(a, tmp_path, input_file)
                         for a in program_args]
-            var_lines = '\n'.join(
-                f'    print("FORK_VAL %d %s" % (i, str(gdb.parse_and_eval('
-                f'"{v}"))))' for i, v in enumerate(fork_variables))
             var_code = ('\n'.join(
-                f'    i = {i}\n    try:\n        v = gdb.parse_and_eval('
-                f'"{v}")\n        print("FORK_VAL %d %s" % (i, str(v)))\n'
-                f'    except Exception:\n        pass'
+                f'i = {i}\n'
+                f'try:\n'
+                f'    v = gdb.parse_and_eval("{v}")\n'
+                f'    print("FORK_VAL %d %s" % (i, str(v)))\n'
+                f'except Exception:\n'
+                f'    pass'
                 for i, v in enumerate(fork_variables)))
             script = (
                 'set pagination off\n'
@@ -5516,29 +5516,42 @@ def main():
                 value_level_results = test_value_level_mutations(
                     binary, binary_ref, input_file, program_args,
                     var_offsets, fork_spec_b, _cond_text,
-                    timeout=a.timeout)
+                    timeout=a.timeout, fork_variables=variables)
             except Exception as _e:
                 print(f'  [!] value-level mutation failed: {_e}')
             if value_level_results:
                 for _off, _r in sorted(value_level_results.items()):
                     _flips = [v for v, t in _r['trials'].items()
                               if t.get('outcome_flip')]
+                    _vchg = [v for v, t in _r['trials'].items()
+                             if t.get('val_changed')]
                     _crashes = [v for v, t in _r['trials'].items()
                                 if t.get('crash') in ('same_func', 'same_site')]
+                    _bvals = ', '.join(
+                        f'{variables[i]}={v}' for i, v in
+                        sorted((_r.get('baseline_vals') or {}).items()))
+                    _rvals = ', '.join(
+                        f'{variables[i]}={v}' for i, v in
+                        sorted((_r.get('ref_vals') or {}).items()))
                     print(f'\n  Offset 0x{_off:x} ({_r["var"]}, '
-                          f'{_r["width"]}B, original=0x{_r["original"]:x}, '
-                          f'baseline target outcome='
-                          f'{_r["baseline_outcome"]}, ref='
-                          f'{_r["ref_outcome"]}):')
+                          f'{_r["width"]}B, original=0x{_r["original"]:x}):')
+                    print(f'    baseline target: outcome='
+                          f'{_r["baseline_outcome"]}, {_bvals}')
+                    if _r.get('ref_outcome') is not None or _r.get('ref_vals'):
+                        print(f'    reference:       outcome='
+                              f'{_r["ref_outcome"]}, {_rvals}')
                     if _flips:
-                        print(f'    fork-flipping values: '
+                        print(f'    fork-outcome-flipping values: '
                               + ', '.join(f'0x{v:x}' for v in _flips[:12]))
+                    if _vchg:
+                        print(f'    fork-variable-value-changing values: '
+                              + ', '.join(f'0x{v:x}' for v in _vchg[:12]))
                     if _crashes:
                         print(f'    crash-reproducing values: '
                               + ', '.join(f'0x{v:x}' for v in _crashes[:12]))
-                    if not _flips and not _crashes:
-                        print('    no value flips the fork outcome or '
-                              'reproduces the reference crash')
+                    if not _flips and not _vchg and not _crashes:
+                        print('    no tested value changes the fork '
+                              'variables or reproduces the reference crash')
             else:
                 print('  (no value-level results)')
 
