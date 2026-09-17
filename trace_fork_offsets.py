@@ -2731,12 +2731,16 @@ def parse_gdb_log(log_text):
         # Parse I/O operations (legacy catch syscall output)
         # Format: "IO fd=3 offset=-1 size=832" (read) or "IO fd=3 offset=64 size=784" (pread64)
         if line.startswith('IO fd='):
-            m = re.match(r'IO fd=(\d+) offset=(-?\d+) size=(\d+)', line)
+            m = re.match(r'IO fd=(\d+) offset=(-?\d+) size=(\d+)'
+                         r'(?: buf=(0x[0-9a-f]+))?', line)
             if m:
                 fd = int(m.group(1))
                 offset = int(m.group(2))
                 size = int(m.group(3))
-                file_reads.append({'fd': fd, 'offset': offset, 'size': size})
+                rec = {'fd': fd, 'offset': offset, 'size': size}
+                if m.group(4):
+                    rec['buf_addr'] = int(m.group(4), 16)
+                file_reads.append(rec)
             continue
 
         # Legacy format (backward compat)
