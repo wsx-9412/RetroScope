@@ -434,7 +434,9 @@ def find_function_decisions(source_file, func_name, body=None):
 # candidate callees in parallel; without a bound, every worker thread would
 # spawn its own GDB subprocess (each ~200-400MB with ASAN binaries) and
 # exhaust the machine.  A permit is held while a GDB session runs.
-_GDB_SEM = threading.BoundedSemaphore(3)
+# Override with RETRO_GDB_PARALLELISM (e.g. 4 on a box with spare memory).
+_GDB_SEM = threading.BoundedSemaphore(
+    max(1, int(os.environ.get('RETRO_GDB_PARALLELISM', '3'))))
 
 
 # --------------------------------------------------------------------------
