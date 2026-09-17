@@ -1,0 +1,313 @@
+{
+  "binary_target": "/tmp/fork_analysis_hzpdia8p/target/tools/.libs/tiffcrop",
+  "binary_ref": "/tmp/fork_analysis_hzpdia8p/ref/tools/.libs/tiffcrop",
+  "fork_spec": "/tmp/fork_analysis_hzpdia8p/target/libtiff/tif_strip.c:111",
+  "variables": [
+    "tif",
+    "nrows",
+    "td",
+    "tif->tif_dir",
+    "td->td_imagelength"
+  ],
+  "differing_variables": [
+    "tif",
+    "nrows",
+    "td",
+    "tif->tif_dir",
+    "td->td_imagelength"
+  ],
+  "target_file_reads": [
+    {
+      "fd": 3,
+      "offset": 64,
+      "size": 784,
+      "buf_addr": 140730201055024
+    },
+    {
+      "fd": 3,
+      "offset": 848,
+      "size": 48,
+      "buf_addr": 140730201054960
+    },
+    {
+      "fd": 3,
+      "offset": 896,
+      "size": 68,
+      "buf_addr": 140730201054880
+    }
+  ],
+  "ref_file_reads": [
+    {
+      "fd": 3,
+      "offset": 64,
+      "size": 784,
+      "buf_addr": 140734103288400
+    },
+    {
+      "fd": 3,
+      "offset": 848,
+      "size": 48,
+      "buf_addr": 140734103288336
+    },
+    {
+      "fd": 3,
+      "offset": 896,
+      "size": 68,
+      "buf_addr": 140734103288256
+    }
+  ],
+  "chain_trace": {
+    "var_mappings": {
+      "tif": {
+        "file_offset": null,
+        "kind": null,
+        "values": [
+          89678917140608
+        ]
+      },
+      "nrows": {
+        "file_offset": null,
+        "kind": null,
+        "values": [
+          2048
+        ]
+      },
+      "td": {
+        "file_offset": null,
+        "kind": null,
+        "values": [
+          89678917140656
+        ]
+      },
+      "tif->tif_dir": {
+        "file_offset": null,
+        "kind": null,
+        "values": []
+      },
+      "td->td_imagelength": {
+        "file_offset": null,
+        "kind": null,
+        "values": [
+          2049
+        ]
+      }
+    },
+    "fork_points": [
+      {
+        "inv": 1,
+        "varvals": {
+          "tif": 89678917140608,
+          "nrows": 2048,
+          "td": 89678917140656,
+          "td->td_imagelength": 2049
+        },
+        "diroff": 12,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": 0,
+        "entsize": 12,
+        "flags": 35337
+      },
+      {
+        "inv": 2,
+        "varvals": {
+          "tif": 89678917140608,
+          "nrows": 2048,
+          "td": 89678917140656,
+          "td->td_imagelength": 2049
+        },
+        "diroff": 12,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": 12,
+        "flags": 35353
+      },
+      {
+        "inv": 3,
+        "varvals": {
+          "tif": 89678917140608,
+          "nrows": 2048,
+          "td": 89678917140656,
+          "td->td_imagelength": 2049
+        },
+        "diroff": 12,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": 12,
+        "flags": 35353
+      },
+      {
+        "inv": 4,
+        "varvals": {
+          "tif": 89678917140608,
+          "nrows": 2048,
+          "td": 89678917140656,
+          "td->td_imagelength": 2049
+        },
+        "diroff": 12,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": 12,
+        "flags": 35353
+      },
+      {
+        "inv": 5,
+        "varvals": {
+          "tif": 89678917140608,
+          "nrows": 1,
+          "td": 89678917140656,
+          "td->td_imagelength": 2049
+        },
+        "diroff": 12,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": 12,
+        "flags": 34873
+      },
+      {
+        "inv": 6,
+        "varvals": {
+          "tif": 89678917141888,
+          "nrows": 2048,
+          "td": 89678917141936,
+          "td->td_imagelength": 2049
+        },
+        "diroff": 0,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": 12,
+        "flags": 9
+      },
+      {
+        "inv": 7,
+        "varvals": {
+          "tif": 89678917141888,
+          "nrows": 2048,
+          "td": 89678917141936,
+          "td->td_imagelength": 2049
+        },
+        "diroff": 0,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": 12,
+        "flags": 73
+      },
+      {
+        "inv": 8,
+        "varvals": {
+          "tif": 89678917141888,
+          "nrows": 1,
+          "td": 89678917141936,
+          "td->td_imagelength": 2049
+        },
+        "diroff": 0,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": 12,
+        "flags": 633
+      }
+    ],
+    "pread64": []
+  },
+  "arithmetic_backtrace": {
+    "source": "/tmp/fork_analysis_hzpdia8p/target/libtiff/tif_strip.c",
+    "fork_line": 111,
+    "nodes": {
+      "tif": {
+        "kind": "unknown",
+        "line": 111,
+        "rhs": null
+      },
+      "nrows": {
+        "kind": "assign",
+        "line": 141,
+        "rhs": "TIFFroundup(nrows, ycbcrsubsampling[1])"
+      },
+      "td->td_imagelength": {
+        "kind": "unknown",
+        "line": 112,
+        "rhs": null
+      },
+      "ycbcrsubsampling[1]": {
+        "kind": "unknown",
+        "line": 141,
+        "rhs": null
+      },
+      "td": {
+        "kind": "assign",
+        "line": 109,
+        "rhs": "&tif->tif_dir"
+      },
+      "tif->tif_dir": {
+        "kind": "unknown",
+        "line": 109,
+        "rhs": null
+      }
+    },
+    "runtime_values": {
+      "tif": 89678917141888,
+      "nrows": 1,
+      "td": 89678917141936,
+      "td->td_imagelength": 2049
+    },
+    "tag_mappings": {},
+    "chains": {
+      "tif": {
+        "kind": "unknown",
+        "tag_offsets": [],
+        "cli_leaves": [],
+        "node_count": 1
+      },
+      "nrows": {
+        "kind": "assign",
+        "tag_offsets": [],
+        "cli_leaves": [],
+        "node_count": 3
+      },
+      "td": {
+        "kind": "assign",
+        "tag_offsets": [],
+        "cli_leaves": [],
+        "node_count": 2
+      },
+      "td->td_imagelength": {
+        "kind": "unknown",
+        "tag_offsets": [],
+        "cli_leaves": [],
+        "node_count": 1
+      }
+    },
+    "explanation": {
+      "tif": [
+        "tif [GDB: 89678917141888]"
+      ],
+      "nrows": [
+        "nrows [GDB: 1] <- TIFFroundup(nrows, ycbcrsubsampling[1])  (line 141)",
+        "  td->td_imagelength [GDB: 2049] -> unknown",
+        "  ycbcrsubsampling[1] -> unknown"
+      ],
+      "td": [
+        "td [GDB: 89678917141936] <- &tif->tif_dir  (line 109)",
+        "  tif->tif_dir -> unknown"
+      ],
+      "td->td_imagelength": [
+        "td->td_imagelength [GDB: 2049]"
+      ]
+    }
+  }
+}
