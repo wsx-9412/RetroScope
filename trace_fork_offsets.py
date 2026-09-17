@@ -505,6 +505,83 @@ _TIFF_TAG_NAMES = {
     317: 'Predictor', 330: 'SubIFDs', 339: 'SampleFormat',
 }
 
+def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
+    """Dynamic fork-variable -> input file offset mapping (generic).
+
+    For every fork variable captured at the breakpoint (name/value/size):
+
+      * pointer values — if the VALUE points inside a recorded read buffer
+        (``buf_addr .. buf_addr+size``), the variable points straight into
+        bytes read from the input; file offset =
+        ``read_offset + (value - buf_addr)``;
+      * scalar values — search the input bytes that the program actually
+        read for the value's byte encoding (4/2/8-byte, little/big
+        endian): the variable's value was parsed from those bytes.
+
+    No file-format knowledge is used.  Returns
+    ``{var: [{'offset', 'width', 'method'}, ...]}``.
+    """
+    out = {}
+    if not variables:
+        return out
+    ranges = [(r['offset'], r['offset'] + r['size'])
+              for r in reads
+              if r.get('offset') is not None and r['offset'] >= 0
+              and r.get('size')]
+
+    for var in variables:
+        name = var.get('name')
+        val = var.get('val')
+        if name is None or val is None:
+            continue
+        hits = []
+
+        # 1) Pointer value inside a recorded read buffer.
+        for r in reads:
+            b = r.get('buf_addr')
+            if (b is None or not r.get('size') or r.get('offset') is None
+                    or r['offset'] < 0):
+                continue
+            if b <= val < b + r['size']:
+                hits.append({'offset': r['offset'] + (val - b),
+                             'width': 0,
+                             'method': 'points_into_read_buffer'})
+
+        # 2) Scalar value byte pattern inside the actually-read regions.
+        #    4-byte little-endian first (C ints dominate), then wider
+        #    widths; 1-byte last (noisy for small values).
+        if not hits and file_data:
+            for width, endian in ((4, 'little'), (8, 'little'),
+                                  (2, 'little'), (4, 'big'), (2, 'big'),
+                                  (1, 'little')):
+                if val < 0 or val >= (1 << (8 * width)):
+                    continue
+                if width == 1 and val < 16:
+                    continue  # a byte 0x00-0x0f matches everywhere
+                try:
+                    pat = val.to_bytes(width, endian)
+                except OverflowError:
+                    continue
+                for (rs, re_) in ranges:
+                    seg = file_data[rs:re_]
+                    pos = seg.find(pat)
+                    while pos != -1:
+                        off = rs + pos
+                        if all(h['offset'] != off for h in hits):
+                            hits.append({'offset': off, 'width': width,
+                                         'method': f'value_bytes_{endian}'})
+                        if len(hits) >= max_hits:
+                            break
+                        pos = seg.find(pat, pos + 1)
+                    if len(hits) >= max_hits:
+                        break
+                if hits:
+                    break  # narrowest meaningful encoding wins
+        if hits:
+            out[name] = hits
+    return out
+
+
 def parse_tiff_ifd(filepath):
     """Parse TIFF IFD and return tag info with file offsets.
 
@@ -5183,11 +5260,48 @@ def main():
             if _info.get('file_offset') is not None:
                 mapped_offsets.add(_info['file_offset'])
 
-    # GENERIC dynamic candidates: every input byte the program actually read
+    # 5. Fork-variable -> input file offset mapping (dynamic, generic).
+    # Every fork variable captured at the breakpoint (value/address) is
+    # traced back to the input bytes: pointer values that land inside a
+    # recorded read buffer map exactly; scalar values are located by their
+    # byte encoding within the regions the program actually read.
+    var_offsets = {}
+    if parsed_b and input_file and os.path.isfile(input_file):
+        try:
+            with open(input_file, 'rb') as _f:
+                _fdata = _f.read()
+            var_offsets = map_fork_variables_to_offsets(
+                parsed_b.get('variables', []), file_reads_b, _fdata)
+        except Exception as _e:
+            print(f'  [!] variable->offset mapping failed: {_e}')
+
+    mapped_offsets = set()
+    if var_offsets:
+        print(f'\n  5. Fork variables -> input file offsets (dynamic):')
+        for _vname, _hits in var_offsets.items():
+            _hstr = ', '.join(
+                f'0x{h["offset"]:x} ({h["method"]}{", w"+str(h["width"]) if h["width"] else ""})'
+                for h in _hits[:8])
+            print(f'     {_vname} -> {_hstr}')
+        for _hits in var_offsets.values():
+            for _h in _hits:
+                mapped_offsets.add(_h['offset'])
+
+    if chain_trace_results and chain_trace_results.get('tag_mappings'):
+        for _tagid, _info in chain_trace_results['tag_mappings'].items():
+            if _info.get('file_offset') is not None:
+                mapped_offsets.add(_info['file_offset'])
+    if chain_trace_results and chain_trace_results.get('var_mappings'):
+        for _vname, _info in chain_trace_results['var_mappings'].items():
+            if _info.get('file_offset') is not None:
+                mapped_offsets.add(_info['file_offset'])
+
+    # GENERIC dynamic fallback: every input byte the program actually read
     # during execution (read/pread64 with tracked file positions, bounded by
-    # the input size).  No file-format knowledge is needed — the read bytes
-    # are the only input that can possibly influence the fork, and the
-    # mutation validation below decides which of them really matter.
+    # the input size).  Used for the validation sweep when the variable
+    # mapping yields nothing (or to catch downstream bytes such as the
+    # StripByteCounts offset field that steer the crash but are not the
+    # fork variable's own origin).
     read_candidates = set()
     if input_file and os.path.isfile(input_file):
         _fsize = os.path.getsize(input_file)
@@ -5198,16 +5312,14 @@ def main():
             if _off < _fsize:
                 for _o in range(_off, min(_off + _sz, _fsize)):
                     read_candidates.add(_o)
-        if read_candidates:
-            print(f'\n  Generic read-region candidates: '
-                  f'{len(read_candidates)} input byte(s) read by the program '
-                  f'({", ".join(f"0x{o:x}" for o in sorted(read_candidates)[:12])}'
-                  f'{"..." if len(read_candidates) > 12 else ""})')
+    if not mapped_offsets and read_candidates:
+        print(f'\n  (variable mapping empty — falling back to the '
+              f'{len(read_candidates)} input bytes the program read)')
     mapped_offsets |= read_candidates
 
     if mapped_offsets:
         offset_strs = ', '.join(f'0x{o:x}' for o in sorted(mapped_offsets))
-        print(f'  5. Divergence-determining bytes at input file offsets: {offset_strs}')
+        print(f'  Validation candidates at input file offsets: {offset_strs}')
 
     # 5b. Offsets found by the arithmetic backtrace (already probe-validated).
     arith_offsets = set()
