@@ -505,12 +505,6 @@ _TIFF_TAG_NAMES = {
     317: 'Predictor', 330: 'SubIFDs', 339: 'SampleFormat',
 }
 
-# TIFFDirectory field name (td_<field>) -> TIFF tag id.  Used to map
-# fork variables like ``td->td_imagelength`` straight to the IFD entry
-# that stores the value in the input file (parse_tiff_ifd).
-_TD_FIELD_TO_TAG = {}
-
-
 def parse_tiff_ifd(filepath):
     """Parse TIFF IFD and return tag info with file offsets.
 
