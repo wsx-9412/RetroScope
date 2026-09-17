@@ -4841,7 +4841,7 @@ def main():
             if only_target or only_ref:
                 print(f'\n  I/O differences between versions:')
                 if only_target:
-                    print(f'    Only in target (tiff-4.0.8):')
+                    print(f'    Only in target ({config.get("version_b", "target")}):')
                     for off, sz in sorted(only_target):
                         print(f'      offset=0x{off:04x} size={sz}')
                 if only_ref:
