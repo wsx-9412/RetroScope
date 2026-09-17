@@ -5309,9 +5309,10 @@ def _build_result_from_backward_tracer(bt_result, func_name, a_idx, b_idx):
 
 
 def analyze_lcs_result(result_json_path, binary_a, binary_b,
-                        args_a=None, args_b=None, input_file=None,
-                        gdb_timeout=120, refactoring_map=None,
-                        config=None, skip_polytracker=False):
+                       args_a=None, args_b=None, input_file=None,
+                       gdb_timeout=120, refactoring_map=None, config=None,
+                       skip_polytracker=False, ref_label=None,
+                       target_label=None):
     """Analyze the LCS result and trace the divergence cause.
 
     This is the main entry point for the divergence analysis.
