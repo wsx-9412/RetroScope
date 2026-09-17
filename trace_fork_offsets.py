@@ -1821,7 +1821,8 @@ run {run_args}
     }
 
 
-def _call_site_trace_case_b(fork_points, variables, clauses=None):
+def _call_site_trace_case_b(fork_points, variables, clauses=None,
+                            input_file=None):
     """Generic path: map fork variables from the fork-point context.
 
     The diverging fork point is selected by matching the divergence
@@ -1919,6 +1920,23 @@ def _call_site_trace_case_b(fork_points, variables, clauses=None):
                 mapping['file_offset'] = off
                 mapping['kind'] = 'ifd_entry'
                 mapping['entry_index'] = idx
+            continue
+        # TIFFDirectory field (e.g. ``td->td_imagelength``): the field is
+        # loaded from a TIFF tag whose value lives in the input file's IFD
+        # entry — map it straight to that entry's file offset by parsing
+        # the input file (pure GDB+static; no polytracker needed).
+        m_td = re.match(r'(?:td->)?td_([a-z0-9_]+)$', low)
+        if m_td:
+            tagid = _TD_FIELD_TO_TAG.get(m_td.group(1))
+            if tagid is not None and input_file:
+                ifds = parse_tiff_ifd(input_file)
+                if ifds and tagid in ifds:
+                    mapping['file_offset'] = ifds[tagid].get('entry_offset')
+                    mapping['kind'] = 'ifd_tag_field'
+                    mapping['tag_id'] = tagid
+                    mapping['tag_name'] = _TIFF_TAG_NAMES.get(
+                        tagid, f'tag_{tagid}')
+                    continue
 
     return {
         'var_mappings': var_mappings,

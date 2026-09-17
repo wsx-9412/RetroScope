@@ -21,19 +21,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140727122056112
+      "buf_addr": 140734057484960
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140727122056048
+      "buf_addr": 140734057484896
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140727122055968
+      "buf_addr": 140734057484816
     }
   ],
   "ref_file_reads": [
@@ -41,19 +41,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140735917115760
+      "buf_addr": 140734852513456
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140735917115696
+      "buf_addr": 140734852513392
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140735917115616
+      "buf_addr": 140734852513312
     }
   ],
   "chain_trace": {
@@ -85,11 +85,13 @@
         "values": []
       },
       "td->td_imagelength": {
-        "file_offset": null,
-        "kind": null,
+        "file_offset": 26,
+        "kind": "ifd_tag_field",
         "values": [
           2049
-        ]
+        ],
+        "tag_id": 257,
+        "tag_name": "ImageLength"
       }
     },
     "fork_points": [
