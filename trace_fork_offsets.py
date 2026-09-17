@@ -4434,31 +4434,37 @@ def _fork_condition_expr(stmt_text):
 
 def test_value_level_mutations(binary_target, binary_ref, input_file,
                               program_args, var_origins, fork_spec,
-                              fork_cond, timeout=60):
+                              fork_cond, timeout=60, fork_variables=None):
     """Value-level mutation of fork-variable origin offsets (generic).
 
     The single-byte sweep proves which *byte* steers the crash; this tests
     the whole *value* at the variable's origin (e.g. the 4-byte RowsPerStrip
     value at 0x76): for a set of replacement values it re-runs the target
-    under GDB, evaluates the fork guard's outcome AT the fork statement, and
-    records whether the outcome flips and/or the reference crash is
-    reproduced.
+    under GDB, evaluates the fork guard's outcome AND the fork variables'
+    values AT the fork statement, and records:
+
+      * outcome flips — the guard evaluates differently than baseline;
+      * variable value changes — the fork variables read different values
+        (the guard may be normalized upstream, e.g. rowsperstrip==-1 is
+        substituted with imagelength before the guard is reached);
+      * crash reproduction — the reference ASan crash signature appears.
 
     ``var_origins`` = {var: [{'offset','width','method'}, ...]} (the output
     of map_fork_variables_to_offsets).  Returns
-    ``{offset: {'width', 'original', 'trials': {value: {'outcome_flip': bool,
-    'outcome': bool, 'crash': verdict}}}}``.
+    ``{offset: {'width', 'original', 'baseline_outcome', 'baseline_vals',
+    'trials': {value: {'outcome', 'outcome_flip', 'val_changed',
+    'crash'}}}}``.
     """
     real_target = resolve_binary(binary_target)
     real_ref = resolve_binary(binary_ref)
     cond = _fork_condition_expr(fork_cond)
     if not cond or not real_target or not real_ref:
         return {}
+    fork_variables = list(fork_variables or [])
 
     with open(input_file, 'rb') as f:
         original_data = bytearray(f.read())
 
-    # Baseline: the fork outcome on the ORIGINAL input.
     def _run_outcome(binary, data):
         fd, tmp_path = tempfile.mkstemp(suffix='.tif', prefix='valmut_')
         os.close(fd)
@@ -4467,6 +4473,14 @@ def test_value_level_mutations(binary_target, binary_ref, input_file,
                 f.write(data)
             cmd_args = [_replace_input_arg(a, tmp_path, input_file)
                         for a in program_args]
+            var_lines = '\n'.join(
+                f'    print("FORK_VAL %d %s" % (i, str(gdb.parse_and_eval('
+                f'"{v}"))))' for i, v in enumerate(fork_variables))
+            var_code = ('\n'.join(
+                f'    i = {i}\n    try:\n        v = gdb.parse_and_eval('
+                f'"{v}")\n        print("FORK_VAL %d %s" % (i, str(v)))\n'
+                f'    except Exception:\n        pass'
+                for i, v in enumerate(fork_variables)))
             script = (
                 'set pagination off\n'
                 'set confirm off\n'
@@ -4481,6 +4495,7 @@ def test_value_level_mutations(binary_target, binary_ref, input_file,
                 f'"{cond}") else 0))\n'
                 'except Exception as e:\n'
                 '    print("FORK_OUTCOME_ERR %s" % e)\n'
+                + var_code +
                 'end\n'
                 '  continue\n'
                 'end\n'
@@ -4496,27 +4511,32 @@ def test_value_level_mutations(binary_target, binary_ref, input_file,
                      '--', binary],
                     capture_output=True, text=True, timeout=timeout, env=env)
                 out = proc.stdout + proc.stderr
+                rc = proc.returncode
             finally:
                 try:
                     os.unlink(script_file)
                 except Exception:
                     pass
             outcome = None
+            vals = {}
             for ln in out.splitlines():
                 m = re.match(r'FORK_OUTCOME (\d+)', ln.strip())
                 if m:
                     outcome = bool(int(m.group(1)))
-                    break
+                    continue
+                m = re.match(r'FORK_VAL (\d+) (.+)', ln.strip())
+                if m:
+                    vals[int(m.group(1))] = m.group(2)
             sig = extract_crash_signature(out)
-            return outcome, sig
+            return outcome, vals, sig, rc
         finally:
             try:
                 os.unlink(tmp_path)
             except Exception:
                 pass
 
-    base_out, _ = _run_outcome(real_target, original_data)
-    ref_out, ref_sig = _run_outcome(real_ref, original_data)
+    base_out, base_vals, _, _ = _run_outcome(real_target, original_data)
+    ref_out, ref_vals, ref_sig, _ = _run_outcome(real_ref, original_data)
 
     # Candidate replacement values: corner values, value-range flips, and
     # the values that matter for size guards (-1 / 0 / 1 / huge).
@@ -4544,22 +4564,29 @@ def test_value_level_mutations(binary_target, binary_ref, input_file,
                     continue
                 data = bytearray(original_data)
                 data[off:off + width] = int(v).to_bytes(width, 'little')
-                outcome, sig = _run_outcome(real_target, data)
+                outcome, vals, sig, _ = _run_outcome(real_target, data)
                 verdict = None
                 if sig is not None and ref_sig is not None:
                     verdict, _ = compare_crash_signatures(ref_sig, sig)
+                val_changed = bool(
+                    vals and base_vals
+                    and any(vals.get(i) != base_vals.get(i)
+                            for i in set(vals) | set(base_vals)))
                 trials[v] = {
                     'outcome': outcome,
                     'outcome_flip': (outcome is not None
                                      and base_out is not None
                                      and outcome != base_out),
+                    'val_changed': val_changed,
                     'crash': verdict,
                 }
             results[key] = {
                 'width': width,
                 'original': orig_val,
                 'baseline_outcome': base_out,
+                'baseline_vals': base_vals,
                 'ref_outcome': ref_out,
+                'ref_vals': ref_vals,
                 'var': var,
                 'trials': trials,
             }
