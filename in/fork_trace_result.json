@@ -1,105 +1,39 @@
 {
-  "binary_target": "/tmp/fork_analysis_8jo8du03/target/tools/.libs/tiffcrop",
-  "binary_ref": "/tmp/fork_analysis_8jo8du03/ref/tools/.libs/tiffcrop",
-  "fork_spec": "/tmp/fork_analysis_8jo8du03/target/libtiff/tif_strip.c:111",
+  "binary_target": "/tmp/fork_analysis_0vbbuxfy/target/tools/.libs/tiffcrop",
+  "binary_ref": "/tmp/fork_analysis_0vbbuxfy/ref/tools/.libs/tiffcrop",
+  "fork_spec": "/tmp/fork_analysis_0vbbuxfy/target/libtiff/tif_strip.c:111",
   "variables": [
     "tif",
     "nrows",
     "td",
     "tif->tif_dir",
-    "td->td_imagelength",
-    "td->td_planarconfig",
-    "td->td_photometric",
-    "contain",
-    "one",
-    "every",
-    "values",
-    "also",
-    "roundup",
-    "width",
-    "and",
-    "height",
-    "when",
-    "calculating",
-    "since",
-    "images",
-    "that",
-    "are",
-    "not",
-    "a",
-    "multiple",
-    "of",
-    "the",
-    "horizontal",
-    "vertical",
-    "subsampling",
-    "area",
-    "include",
-    "extended",
-    "image",
-    "ycbcrsubsampling[2]",
-    "w",
-    "scanline",
-    "samplingarea"
+    "td->td_imagelength"
   ],
   "differing_variables": [
     "tif",
     "nrows",
     "td",
     "tif->tif_dir",
-    "td->td_imagelength",
-    "td->td_planarconfig",
-    "td->td_photometric",
-    "contain",
-    "one",
-    "every",
-    "values",
-    "also",
-    "roundup",
-    "width",
-    "and",
-    "height",
-    "when",
-    "calculating",
-    "since",
-    "images",
-    "that",
-    "are",
-    "not",
-    "a",
-    "multiple",
-    "of",
-    "the",
-    "horizontal",
-    "vertical",
-    "subsampling",
-    "area",
-    "include",
-    "extended",
-    "image",
-    "ycbcrsubsampling[2]",
-    "w",
-    "scanline",
-    "samplingarea"
+    "td->td_imagelength"
   ],
   "target_file_reads": [
     {
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140733191261568
+      "buf_addr": 140726417512624
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140733191261504
+      "buf_addr": 140726417512560
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140733191261424
+      "buf_addr": 140726417512480
     }
   ],
   "ref_file_reads": [
@@ -107,19 +41,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140735309129200
+      "buf_addr": 140724716786144
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140735309129136
+      "buf_addr": 140724716786080
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140735309129056
+      "buf_addr": 140724716786000
     }
   ],
   "chain_trace": {
@@ -156,177 +90,6 @@
         "values": [
           2049
         ]
-      },
-      "td->td_planarconfig": {
-        "file_offset": null,
-        "kind": null,
-        "values": [
-          1
-        ]
-      },
-      "td->td_photometric": {
-        "file_offset": null,
-        "kind": null,
-        "values": [
-          2
-        ]
-      },
-      "contain": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "one": {
-        "file_offset": null,
-        "kind": null,
-        "values": [
-          1
-        ]
-      },
-      "every": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "values": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "also": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "roundup": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "width": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "and": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "height": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "when": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "calculating": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "since": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "images": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "that": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "are": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "not": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "a": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "multiple": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "of": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "the": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "horizontal": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "vertical": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "subsampling": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "area": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "include": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "extended": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "image": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "ycbcrsubsampling[2]": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "w": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "scanline": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
-      },
-      "samplingarea": {
-        "file_offset": null,
-        "kind": null,
-        "values": []
       }
     },
     "fork_points": [
@@ -336,10 +99,7 @@
           "tif": 89678917140608,
           "nrows": 2048,
           "td": 89678917140656,
-          "td->td_imagelength": 2049,
-          "td->td_planarconfig": 1,
-          "td->td_photometric": 2,
-          "one": 1
+          "td->td_imagelength": 2049
         },
         "diroff": 12,
         "dp": null,
@@ -355,10 +115,7 @@
           "tif": 89678917140608,
           "nrows": 2048,
           "td": 89678917140656,
-          "td->td_imagelength": 2049,
-          "td->td_planarconfig": 1,
-          "td->td_photometric": 2,
-          "one": 1
+          "td->td_imagelength": 2049
         },
         "diroff": 12,
         "dp": null,
@@ -374,10 +131,7 @@
           "tif": 89678917140608,
           "nrows": 2048,
           "td": 89678917140656,
-          "td->td_imagelength": 2049,
-          "td->td_planarconfig": 1,
-          "td->td_photometric": 2,
-          "one": 1
+          "td->td_imagelength": 2049
         },
         "diroff": 12,
         "dp": null,
@@ -393,10 +147,7 @@
           "tif": 89678917140608,
           "nrows": 2048,
           "td": 89678917140656,
-          "td->td_imagelength": 2049,
-          "td->td_planarconfig": 1,
-          "td->td_photometric": 2,
-          "one": 1
+          "td->td_imagelength": 2049
         },
         "diroff": 12,
         "dp": null,
@@ -412,10 +163,7 @@
           "tif": 89678917140608,
           "nrows": 1,
           "td": 89678917140656,
-          "td->td_imagelength": 2049,
-          "td->td_planarconfig": 1,
-          "td->td_photometric": 2,
-          "one": 1
+          "td->td_imagelength": 2049
         },
         "diroff": 12,
         "dp": null,
@@ -431,10 +179,7 @@
           "tif": 89678917141888,
           "nrows": 2048,
           "td": 89678917141936,
-          "td->td_imagelength": 2049,
-          "td->td_planarconfig": 1,
-          "td->td_photometric": 2,
-          "one": 1
+          "td->td_imagelength": 2049
         },
         "diroff": 0,
         "dp": null,
@@ -450,10 +195,7 @@
           "tif": 89678917141888,
           "nrows": 2048,
           "td": 89678917141936,
-          "td->td_imagelength": 2049,
-          "td->td_planarconfig": 1,
-          "td->td_photometric": 2,
-          "one": 1
+          "td->td_imagelength": 2049
         },
         "diroff": 0,
         "dp": null,
@@ -469,10 +211,7 @@
           "tif": 89678917141888,
           "nrows": 1,
           "td": 89678917141936,
-          "td->td_imagelength": 2049,
-          "td->td_planarconfig": 1,
-          "td->td_photometric": 2,
-          "one": 1
+          "td->td_imagelength": 2049
         },
         "diroff": 0,
         "dp": null,
@@ -486,7 +225,7 @@
     "pread64": []
   },
   "arithmetic_backtrace": {
-    "source": "/tmp/fork_analysis_8jo8du03/target/libtiff/tif_strip.c",
+    "source": "/tmp/fork_analysis_0vbbuxfy/target/libtiff/tif_strip.c",
     "fork_line": 111,
     "nodes": {
       "tif": {
@@ -518,31 +257,13 @@
         "kind": "unknown",
         "line": 109,
         "rhs": null
-      },
-      "td->td_planarconfig": {
-        "kind": "unknown",
-        "line": 111,
-        "rhs": null
-      },
-      "td->td_photometric": {
-        "kind": "unknown",
-        "line": 111,
-        "rhs": null
-      },
-      "one": {
-        "kind": "unknown",
-        "line": 111,
-        "rhs": null
       }
     },
     "runtime_values": {
       "tif": 89678917141888,
       "nrows": 1,
       "td": 89678917141936,
-      "td->td_imagelength": 2049,
-      "td->td_planarconfig": 1,
-      "td->td_photometric": 2,
-      "one": 1
+      "td->td_imagelength": 2049
     },
     "tag_mappings": {},
     "chains": {
@@ -569,24 +290,6 @@
         "tag_offsets": [],
         "cli_leaves": [],
         "node_count": 1
-      },
-      "td->td_planarconfig": {
-        "kind": "unknown",
-        "tag_offsets": [],
-        "cli_leaves": [],
-        "node_count": 1
-      },
-      "td->td_photometric": {
-        "kind": "unknown",
-        "tag_offsets": [],
-        "cli_leaves": [],
-        "node_count": 1
-      },
-      "one": {
-        "kind": "unknown",
-        "tag_offsets": [],
-        "cli_leaves": [],
-        "node_count": 1
       }
     },
     "explanation": {
@@ -604,15 +307,6 @@
       ],
       "td->td_imagelength": [
         "td->td_imagelength [GDB: 2049]"
-      ],
-      "td->td_planarconfig": [
-        "td->td_planarconfig [GDB: 1]"
-      ],
-      "td->td_photometric": [
-        "td->td_photometric [GDB: 2]"
-      ],
-      "one": [
-        "one [GDB: 1]"
       ]
     }
   }

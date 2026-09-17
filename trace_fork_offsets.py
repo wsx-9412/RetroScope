@@ -304,6 +304,12 @@ def read_source_fork_statement(source_file, target_line, target_binary=None, sea
             if stripped.startswith('#') and not stripped.startswith('#if') and not stripped.startswith('#else') and not stripped.startswith('#endif'):
                 start = i + 1
                 break
+            # A comment block above the fork line ends the enclosing
+            # statement — never start the span inside one.
+            if stripped.startswith('/*') or stripped.startswith('//') \
+                    or '*/' in stripped:
+                start = i + 1
+                break
             start = i
     else:
         # Regular statement — use just this line (don't expand backward)
@@ -314,7 +320,13 @@ def read_source_fork_statement(source_file, target_line, target_binary=None, sea
     depth = 0
     # Find the end of the statement
     if is_if_like:
-        # Look forward for break/return/next case
+        # Look forward for break/return/next case.  The statement ends at
+        # the first depth-0 line that terminates it: a comment block (the
+        # fork span must never swallow comment words), a `;`/`{` terminator
+        # (the if's body opens), or the pre-existing break/goto/return/case
+        # stops.  Paren balance is NOT tracked here (matching the original
+        # behavior), so multi-line conditions still scan past continuation
+        # lines.
         end = target_line
         depth = 0
         for i in range(target_line - 1, min(n, target_line + search_range)):
@@ -324,6 +336,13 @@ def read_source_fork_statement(source_file, target_line, target_binary=None, sea
             elif stripped.startswith('#endif'):
                 depth -= 1
             if depth == 0:
+                if stripped.startswith('/*') or stripped.startswith('//') \
+                        or '*/' in stripped:
+                    end = i
+                    break
+                if stripped.endswith(';') or stripped.endswith('{'):
+                    end = i + 1
+                    break
                 if stripped.startswith('break;') or stripped.startswith('goto ') or stripped.startswith('return'):
                     end = i + 1
                     break
