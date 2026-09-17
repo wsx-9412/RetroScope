@@ -4432,6 +4432,69 @@ def _fork_condition_expr(stmt_text):
     return None
 
 
+def run_byte_mutation_stage(binary, binary_ref, input_file, program_args,
+                            offsets, timeout, title='Byte mutation crash testing'):
+    """Run the screening + full-sweep crash-reproduction validation for a
+    set of input offsets and print the match summary.
+
+    Returns ``(crash_results, any_match)``.
+    """
+    if not offsets or not input_file or not os.path.isfile(input_file) \
+            or not binary:
+        return {}, False
+    offsets = sorted(set(offsets))
+    print(f'\n{"="*60}')
+    print(f'  {title}')
+    print(f'{"="*60}')
+    print(f'  Input file: {input_file}')
+    print(f'  Target binary: {resolve_binary(binary)}')
+    print(f'  Reference binary: {resolve_binary(binary_ref)}')
+    print(f'  Offsets to test: {", ".join(f"0x{o:x}" for o in offsets)}')
+
+    if len(offsets) > 4:
+        _probe = (0x00, 0x01, 0x02, 0x04, 0x08, 0x7f, 0x80, 0xfe, 0xff)
+        print(f'\n  Screening {len(offsets)} offsets with '
+              f'{len(_probe)} probe values each ...')
+        screen = test_byte_mutations_compare(
+            binary, binary_ref, input_file, program_args,
+            offsets, timeout=timeout, probe_values=_probe)
+        promising = sorted(
+            o for o, info in screen.items()
+            if isinstance(o, int) and info.get('matches'))
+        print(f'  Screening done: {len(promising)} offset(s) show '
+              f'crash-reproducing mutations: '
+              f'{", ".join(f"0x{o:x}" for o in promising)}')
+        if not promising:
+            print(f'\n  No byte value reproduces the reference crash')
+            return screen, False
+        print(f'\n  Full 255-value sweep on the promising offsets ...')
+        crash_results = test_byte_mutations_compare(
+            binary, binary_ref, input_file, program_args,
+            promising, timeout=timeout)
+    else:
+        crash_results = test_byte_mutations_compare(
+            binary, binary_ref, input_file, program_args,
+            offsets, timeout=timeout)
+
+    any_match = False
+    for offset, info in sorted((k, v) for k, v in crash_results.items()
+                               if isinstance(k, int)):
+        if info.get('matches'):
+            if not any_match:
+                print(f'\n  {"="*60}')
+                print(f'  MATCH SUMMARY (target reproduces '
+                      f'reference crash)')
+                print(f'  {"="*60}')
+                any_match = True
+            print(f'\n  Offset 0x{offset:x} '
+                  f'(original=0x{info["original"]:02x}):')
+            for byte_val, m in sorted(info['matches'].items()):
+                print(f'    0x{byte_val:02x} -> {m}')
+    if not any_match:
+        print(f'\n  No byte value reproduces the reference crash')
+    return crash_results, any_match
+
+
 def test_value_level_mutations(binary_target, binary_ref, input_file,
                               program_args, var_origins, fork_spec,
                               fork_cond, timeout=60, fork_variables=None):
