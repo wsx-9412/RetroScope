@@ -4399,7 +4399,8 @@ def _run_mutation_worker(task):
 
 
 def test_byte_mutations_compare(binary_target, binary_ref, input_file,
-                                program_args, offsets, timeout=10):
+                                program_args, offsets, timeout=10,
+                                probe_values=None):
     """Mutate each byte at each offset and check whether the *target* binary
     (e.g. 4.0.8) reproduces the *reference* binary's (4.4.0) crash type.
 
@@ -4481,10 +4482,14 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
         print(f'\n  [*] Testing offset 0x{offset:x} (original=0x{orig_byte:02x})...')
 
         # All 255 byte values are independent subprocess runs: sweep them in
-        # parallel (one process pool per offset).
+        # parallel (one process pool per offset).  With ``probe_values`` only
+        # that subset is tested (a cheap screening pass that filters which
+        # offsets deserve the full 255-value sweep).
         tasks = []
         for byte_val in range(256):
             if byte_val == orig_byte:
+                continue
+            if probe_values is not None and byte_val not in probe_values:
                 continue
             modified = bytearray(original_data)
             modified[offset] = byte_val
