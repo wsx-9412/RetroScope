@@ -4480,7 +4480,7 @@ def test_value_level_mutations(binary_target, binary_ref, input_file,
                 f'    print("FORK_VAL %d %s" % (i, str(v)))\n'
                 f'except Exception:\n'
                 f'    pass'
-                for i, v in enumerate(fork_variables)))
+                for i, v in enumerate(fork_variables))) + '\n'
             script = (
                 'set pagination off\n'
                 'set confirm off\n'
