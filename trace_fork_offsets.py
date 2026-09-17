@@ -5207,6 +5207,44 @@ def main():
         for _vname, _info in chain_trace_results['var_mappings'].items():
             if _info.get('file_offset') is not None:
                 mapped_offsets.add(_info['file_offset'])
+            # Value / data-area / full-entry bytes of IFD-tag-field mappings.
+            if _info.get('value_offset') is not None:
+                mapped_offsets.add(_info['value_offset'])
+            for _off in (_info.get('data_offsets') or []):
+                mapped_offsets.add(_off)
+            for _off in (_info.get('entry_range') or []):
+                mapped_offsets.add(_off)
+
+    # Strip-geometry family expansion: when the fork reads strip-size fields
+    # (td_imagelength/td_rowsperstrip/nrows...), the crash-relevant bytes may
+    # live in ANY of the strip-geometry entries (StripOffsets/StripByteCounts
+    # etc.) — e.g. the StripByteCounts entry's offset field that redirects
+    # where the byte counts are read.  Add the full 12-byte record of every
+    # such entry present in the input file.
+    _strip_geom_tags = {256, 257, 273, 278, 279}
+    if input_file and os.path.isfile(input_file):
+        _has_geom_field = any(
+            _info.get('kind') == 'ifd_tag_field'
+            and _info.get('tag_id') in _strip_geom_tags
+            for _info in (chain_trace_results or {}).get('var_mappings', {}).values())
+        if _has_geom_field:
+            _ifds = parse_tiff_ifd(input_file)
+            if _ifds:
+                for _tagid in _strip_geom_tags:
+                    if _tagid in _ifds:
+                        _entry = _ifds[_tagid].get('entry_offset')
+                        if _entry is not None:
+                            for _off in range(_entry, _entry + 12):
+                                mapped_offsets.add(_off)
+                            _tsz = _TIFF_TYPE_SIZES.get(_ifds[_tagid].get('type'), 0)
+                            _total = _tsz * (_ifds[_tagid].get('count') or 0)
+                            if _total > 4 and isinstance(
+                                    _ifds[_tagid].get('value'), int):
+                                _vo = _ifds[_tagid].get('value_offset_in_file')
+                                if _vo is not None:
+                                    for _off in range(_vo, _vo + _total):
+                                        mapped_offsets.add(_off)
+
     if mapped_offsets:
         offset_strs = ', '.join(f'0x{o:x}' for o in sorted(mapped_offsets))
         print(f'  5. Divergence-determining bytes at input file offsets: {offset_strs}')
