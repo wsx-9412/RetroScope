@@ -681,8 +681,9 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
 
         # Candidate subtrees are independent GDB-heavy searches (each one
         # runs both binaries to completion under breakpoints).  Descend into
-        # them in parallel down to depth 3 — the fork search's WIDE levels
-        # (a caller with 5-8 candidate callees) sit at depth 3-4, and the
+        # them in parallel down to depth 4 — the fork search's WIDE levels
+        # (a caller with 5-8 candidate callees) sit at depth 4-5 (e.g.
+        # TIFFReadDirectory's callees when the anchor is `main`), and the
         # global GDB semaphore in decision_trace caps the actual concurrent
         # GDB subprocesses to the machine's core/memory budget.  Deeper
         # levels run sequentially inside the workers.  Shared
@@ -690,7 +691,7 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
         # duplicate recording is benign.
         candidates = order[:8]
         subs = []
-        if _depth <= 3 and len(candidates) > 1:
+        if _depth <= 4 and len(candidates) > 1:
             from concurrent.futures import ThreadPoolExecutor
             with ThreadPoolExecutor(max_workers=min(3, len(candidates))) as _ex:
                 _futs = {_ex.submit(_descend, a, b): (a, b)
