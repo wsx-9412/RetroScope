@@ -1941,40 +1941,6 @@ def _call_site_trace_case_b(fork_points, variables, clauses=None,
                 mapping['file_offset'] = off
                 mapping['kind'] = 'ifd_entry'
                 mapping['entry_index'] = idx
-            continue
-        # TIFFDirectory field (e.g. ``td->td_imagelength``): the field is
-        # loaded from a TIFF tag whose value lives in the input file's IFD
-        # entry — map it straight to that entry's file offset by parsing
-        # the input file (pure GDB+static; no polytracker needed).
-        m_td = re.match(r'(?:td->)?td_([a-z0-9_]+)$', low)
-        if m_td:
-            tagid = _TD_FIELD_TO_TAG.get(m_td.group(1))
-            if tagid is not None and input_file:
-                ifds = parse_tiff_ifd(input_file)
-                if ifds and tagid in ifds:
-                    info = ifds[tagid]
-                    entry = info.get('entry_offset')
-                    tsz = _TIFF_TYPE_SIZES.get(info.get('type'), 0)
-                    total = tsz * (info.get('count') or 0)
-                    mapping['file_offset'] = entry
-                    mapping['kind'] = 'ifd_tag_field'
-                    mapping['tag_id'] = tagid
-                    mapping['tag_name'] = _TIFF_TAG_NAMES.get(
-                        tagid, f'tag_{tagid}')
-                    # The mutation-relevant bytes go BEYOND the entry start:
-                    # the inline value field (entry+8), the out-of-line data
-                    # area (for arrays), and the whole 12-byte entry record
-                    # (its tag-id/type/count/offset-field bytes redirect
-                    # where values are read from — e.g. StripByteCounts'
-                    # offset field, which is what steers strip-size forks).
-                    mapping['value_offset'] = entry + 8 if entry is not None else None
-                    if total > 4 and isinstance(info.get('value'), int):
-                        vo = info.get('value_offset_in_file')
-                        if vo is not None:
-                            mapping['data_offsets'] = list(range(vo, vo + total))
-                    if entry is not None:
-                        mapping['entry_range'] = list(range(entry, entry + 12))
-                    continue
 
     return {
         'var_mappings': var_mappings,
