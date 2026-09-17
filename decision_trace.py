@@ -1146,11 +1146,11 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         except subprocess.TimeoutExpired:
             print(f'  [!] gdb timeout after {timeout}s for {func}')
             return {'error': 'timeout'}
-    finally:
-        try:
-            os.unlink(script)
-        except Exception:
-            pass
+        finally:
+            try:
+                os.unlink(script)
+            except Exception:
+                pass
 
     out = r.stdout or ''
     err = r.stderr or ''
