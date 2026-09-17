@@ -1639,7 +1639,8 @@ run {run_args}
         return _call_site_trace_case_a(
             real_binary, fork_spec, fork_func, run_args, env,
             fork_points, timeout), None
-    return _call_site_trace_case_b(fork_points, variables, clauses), None
+    return _call_site_trace_case_b(fork_points, variables, clauses,
+                                   input_file), None
 
 
 def _call_site_trace_case_a(real_binary, fork_spec, fork_func, run_args, env,
