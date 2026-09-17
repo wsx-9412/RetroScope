@@ -824,7 +824,28 @@ end
 commands 1
   silent
   if $rdi >= 3 && $rdx > 0 && $rdx < 100000
-    printf "IO fd=%d offset=-1 size=%d\n", $rdi, $rdx
+    python
+import gdb
+try:
+    pid = gdb.selected_inferior().pid
+    fd = int(gdb.parse_and_eval("$rdi"))
+    sz = int(gdb.parse_and_eval("$rdx"))
+    buf = int(gdb.parse_and_eval("$rsi"))
+    pos = -1
+    try:
+        # At the syscall-entry catchpoint the fd position has not advanced
+        # yet — /proc/<pid>/fdinfo/<fd> reports where this read() starts.
+        with open("/proc/%d/fdinfo/%d" % (pid, fd)) as f:
+            for ln in f:
+                if ln.startswith("pos:"):
+                    pos = int(ln.split()[1])
+                    break
+    except Exception:
+        pass
+    print("IO fd=%d offset=%d size=%d buf=0x%x" % (fd, pos, sz, buf))
+except Exception:
+    pass
+end
   end
   continue
 end
