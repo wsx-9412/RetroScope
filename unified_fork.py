@@ -199,13 +199,16 @@ def _recurse_candidates(inv_a, inv_b, refactoring_map, source_a=None,
     def _static_decisions(name, source_root):
         if not source_root:
             return 0
+        key = (name, str(source_root))
+        if key in _DECISION_DENSITY_CACHE:
+            return _DECISION_DENSITY_CACHE[key]
         try:
             fsrc = _locate_function_source(name, source_root)
-            if not fsrc:
-                return 0
-            return len(find_function_decisions(fsrc, name))
+            n = len(find_function_decisions(fsrc, name)) if fsrc else 0
         except Exception:
-            return 0
+            n = 0
+        _DECISION_DENSITY_CACHE[key] = n
+        return n
 
     pairs = []
     for name_a, ca in cnt_a.items():
@@ -668,12 +671,34 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
         absorbed_best = None
         last_nonabsorbed = None
         last_order = -1
-        for callee_a, callee_b in order[:8]:
-            sub = locate_fork_dynamically(
+
+        def _descend(callee_a, callee_b):
+            return locate_fork_dynamically(
                 binary_a, binary_b, source_root_a, source_root_b, callee_a,
                 args, refactoring_map=refactoring_map, timeout=timeout,
                 max_depth=max_depth, _depth=_depth + 1, _visited=_visited,
                 _hint_a=ra.get('file'), _hint_b=rb.get('file'))
+
+        # Candidate subtrees are independent GDB-heavy searches (each one
+        # runs both binaries to completion under breakpoints).  Descend into
+        # them in parallel at the TOP level only — deeper levels run
+        # sequentially inside the workers, bounding GDB concurrency to the
+        # machine's core/memory budget.  Shared _visited/_RECORD_CACHE are
+        # GIL-safe (set/dict writes); a rare duplicate recording is benign.
+        candidates = order[:8]
+        subs = []
+        if _depth == 0 and len(candidates) > 1:
+            from concurrent.futures import ThreadPoolExecutor
+            with ThreadPoolExecutor(max_workers=min(3, len(candidates))) as _ex:
+                _futs = {_ex.submit(_descend, a, b): (a, b)
+                         for a, b in candidates}
+                for _fut in _futs:
+                    _ca, _cb = _futs[_fut]
+                    subs.append((_ca, _cb, _fut.result()))
+        else:
+            subs = [(a, b, _descend(a, b)) for a, b in candidates]
+
+        for callee_a, callee_b, sub in subs:
             print(f'{indent}[unified]   -> {callee_a}: {sub.get("status")} '
                   f'{sub.get("reason", "")}')
             # The callee's LAST call position in the parent's execution:
