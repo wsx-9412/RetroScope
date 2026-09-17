@@ -430,6 +430,13 @@ def find_function_decisions(source_file, func_name, body=None):
     return decisions
 
 
+# Global GDB concurrency cap.  The unified fork locator descends into
+# candidate callees in parallel; without a bound, every worker thread would
+# spawn its own GDB subprocess (each ~200-400MB with ASAN binaries) and
+# exhaust the machine.  A permit is held while a GDB session runs.
+_GDB_SEM = threading.BoundedSemaphore(3)
+
+
 # --------------------------------------------------------------------------
 # GDB embedded script
 # --------------------------------------------------------------------------
@@ -1021,8 +1028,9 @@ def _gdb_metadata_effective(binary, func, source_root, args):
                 stage_timing.count_gdb()
             except Exception:
                 pass
-            r = subprocess.run(cmd, capture_output=True, text=True,
-                               timeout=120, env=env)
+            with _GDB_SEM:
+                r = subprocess.run(cmd, capture_output=True, text=True,
+                                   timeout=120, env=env)
         except Exception:
             return None, None, None, []
     finally:
@@ -1057,6 +1065,13 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
                                    binary=real_bin)
     if not fsrc:
         print(f'  [!] source for {func} not found under {source_root or real_bin}')
+        return None
+    # Cheap static pre-check: functions whose body cannot be located
+    # statically (macros, static-inline wrappers resolved by the compiler)
+    # never produce decision events.  Skip the GDB metadata session entirely
+    # — every failed function previously burned two full `gdb start` runs.
+    if not find_function_decisions(fsrc, func):
+        print(f'  [!] no decision lines found for {func} in {fsrc}')
         return None
     gsrc, gbody, g_entry0, code_lines = _gdb_metadata_effective(
         real_bin, func, source_root, args)
@@ -1124,12 +1139,13 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         stage_timing.count_gdb()
     except Exception:
         pass
-    try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
-                           env=env)
-    except subprocess.TimeoutExpired:
-        print(f'  [!] gdb timeout after {timeout}s for {func}')
-        return {'error': 'timeout'}
+    with _GDB_SEM:
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True,
+                               timeout=timeout, env=env)
+        except subprocess.TimeoutExpired:
+            print(f'  [!] gdb timeout after {timeout}s for {func}')
+            return {'error': 'timeout'}
     finally:
         try:
             os.unlink(script)
