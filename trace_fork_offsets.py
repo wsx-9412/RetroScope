@@ -4403,13 +4403,153 @@ def compare_crash_signatures(ref_sig, tgt_sig):
                          f"target {tfile}:{tf.get('line')})")
 
 
-def _replace_input_arg(arg, tmp_path, input_file):
-    """Map a program argument to the mutated temp file.
+def _fork_condition_expr(stmt_text):
+    """Turn a recorded fork statement into a GDB-evaluable boolean condition.
 
-    The arg may reference the input via ``{input_file}``/``{input}``
-    placeholders, the exact input path, or a relative spelling of it —
-    all must be rewritten or the mutation silently runs the ORIGINAL file.
+    ``if (nrows == (uint32) -1)`` -> ``((nrows == (uint32) -1))``.
+    Falls back to None when no condition can be extracted.
     """
+    s = (stmt_text or '').strip()
+    m = re.match(r'^\s*if\s*\((.*)\)\s*$', s, re.S)
+    if m:
+        cond = m.group(1).strip()
+        if cond:
+            return f'(({cond}))'
+    return None
+
+
+def test_value_level_mutations(binary_target, binary_ref, input_file,
+                              program_args, var_origins, fork_spec,
+                              fork_cond, timeout=60):
+    """Value-level mutation of fork-variable origin offsets (generic).
+
+    The single-byte sweep proves which *byte* steers the crash; this tests
+    the whole *value* at the variable's origin (e.g. the 4-byte RowsPerStrip
+    value at 0x76): for a set of replacement values it re-runs the target
+    under GDB, evaluates the fork guard's outcome AT the fork statement, and
+    records whether the outcome flips and/or the reference crash is
+    reproduced.
+
+    ``var_origins`` = {var: [{'offset','width','method'}, ...]} (the output
+    of map_fork_variables_to_offsets).  Returns
+    ``{offset: {'width', 'original', 'trials': {value: {'outcome_flip': bool,
+    'outcome': bool, 'crash': verdict}}}}``.
+    """
+    real_target = resolve_binary(binary_target)
+    real_ref = resolve_binary(binary_ref)
+    cond = _fork_condition_expr(fork_cond)
+    if not cond or not real_target or not real_ref:
+        return {}
+
+    with open(input_file, 'rb') as f:
+        original_data = bytearray(f.read())
+
+    # Baseline: the fork outcome on the ORIGINAL input.
+    def _run_outcome(binary, data):
+        fd, tmp_path = tempfile.mkstemp(suffix='.tif', prefix='valmut_')
+        os.close(fd)
+        try:
+            with open(tmp_path, 'wb') as f:
+                f.write(data)
+            cmd_args = [_replace_input_arg(a, tmp_path, input_file)
+                        for a in program_args]
+            script = (
+                'set pagination off\n'
+                'set confirm off\n'
+                'set breakpoint pending on\n'
+                f'break {fork_spec}\n'
+                'commands\n'
+                '  silent\n'
+                '  python\n'
+                'import gdb\n'
+                'try:\n'
+                f'    print("FORK_OUTCOME %d" % (1 if gdb.parse_and_eval('
+                f'"{cond}") else 0))\n'
+                'except Exception as e:\n'
+                '    print("FORK_OUTCOME_ERR %s" % e)\n'
+                'end\n'
+                '  continue\n'
+                'end\n'
+                f'run {" ".join(str(c) for c in cmd_args)}\n')
+            fd2, script_file = tempfile.mkstemp(suffix='.gdb')
+            os.close(fd2)
+            with open(script_file, 'w') as f:
+                f.write(script)
+            try:
+                env = build_run_env(binary)
+                proc = subprocess.run(
+                    ['gdb', '-batch', '-nx', '-q', '-x', script_file,
+                     '--', binary],
+                    capture_output=True, text=True, timeout=timeout, env=env)
+                out = proc.stdout + proc.stderr
+            finally:
+                try:
+                    os.unlink(script_file)
+                except Exception:
+                    pass
+            outcome = None
+            for ln in out.splitlines():
+                m = re.match(r'FORK_OUTCOME (\d+)', ln.strip())
+                if m:
+                    outcome = bool(int(m.group(1)))
+                    break
+            sig = extract_crash_signature(out)
+            return outcome, sig
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+
+    base_out, _ = _run_outcome(real_target, original_data)
+    ref_out, ref_sig = _run_outcome(real_ref, original_data)
+
+    # Candidate replacement values: corner values, value-range flips, and
+    # the values that matter for size guards (-1 / 0 / 1 / huge).
+    trial_values = [0, 1, 2, 0x100, 0x7ff, 0x800, 0x801, 0xfff, 0x1000,
+                    0x7fff, 0xffff, 0x10000, 0x7fffffff, 0x80000000,
+                    0xfffffffe, 0xffffffff]
+
+    results = {}
+    for var, hits in var_origins.items():
+        for hit in hits:
+            off = hit['offset']
+            width = hit['width']
+            if not width or width not in (2, 4, 8):
+                continue
+            if off + width > len(original_data):
+                continue
+            key = off
+            if key in results:
+                continue
+            orig_val = int.from_bytes(
+                original_data[off:off + width], 'little')
+            trials = {}
+            for v in trial_values:
+                if v == orig_val:
+                    continue
+                data = bytearray(original_data)
+                data[off:off + width] = int(v).to_bytes(width, 'little')
+                outcome, sig = _run_outcome(real_target, data)
+                verdict = None
+                if sig is not None and ref_sig is not None:
+                    verdict, _ = compare_crash_signatures(ref_sig, sig)
+                trials[v] = {
+                    'outcome': outcome,
+                    'outcome_flip': (outcome is not None
+                                     and base_out is not None
+                                     and outcome != base_out),
+                    'crash': verdict,
+                }
+            results[key] = {
+                'width': width,
+                'original': orig_val,
+                'baseline_outcome': base_out,
+                'ref_outcome': ref_out,
+                'var': var,
+                'trials': trials,
+            }
+    return results
     if '{' in arg:
         return arg.replace('{input_file}', tmp_path).replace('{input}', tmp_path)
     if arg == input_file or os.path.abspath(arg) == os.path.abspath(input_file):
