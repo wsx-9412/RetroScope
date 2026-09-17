@@ -701,6 +701,7 @@ def main():
         print("=" * 70)
 
         from divergence_analyzer import analyze_lcs_result
+        import divergence_analyzer as _div_mod
 
         diverge_args_a = args.args.replace(
             "{input}", str(Path(input_a).resolve())).split()

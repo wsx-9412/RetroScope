@@ -5337,6 +5337,10 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
     binary_a = resolve_real_binary(binary_a)
     binary_b = resolve_real_binary(binary_b)
 
+    global _LABEL_A, _LABEL_B
+    _LABEL_A = _version_label(binary_a) or "reference"
+    _LABEL_B = _version_label(binary_b) or "target"
+
     with open(result_json_path) as f:
         data = json.load(f)
 
