@@ -691,7 +691,7 @@ def locate_fork_dynamically(binary_a, binary_b, source_root_a, source_root_b,
         # duplicate recording is benign.
         candidates = order[:8]
         subs = []
-        if _depth <= 4 and len(candidates) > 1:
+        if len(candidates) > 1:
             from concurrent.futures import ThreadPoolExecutor
             with ThreadPoolExecutor(max_workers=min(3, len(candidates))) as _ex:
                 _futs = {_ex.submit(_descend, a, b): (a, b)
