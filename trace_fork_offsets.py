@@ -5289,28 +5289,80 @@ def main():
         print(f'  Target binary: {resolve_binary(binary)}')
         print(f'  Reference binary: {resolve_binary(binary_ref)}')
         print(f'  Offsets to test: {", ".join(f"0x{o:x}" for o in sorted(all_offsets))}')
-        print(f'  Total mutations per offset: 255 (all byte values except original)')
 
-        crash_results = test_byte_mutations_compare(
-            binary, binary_ref, input_file, program_args,
-            sorted(all_offsets), timeout=a.timeout)
-
-        # Print match summary
-        any_match = False
-        for offset, info in sorted((k, v) for k, v in crash_results.items()
-                                   if isinstance(k, int)):
-            if info['matches']:
+        # Screening pass: the candidate set may include full IFD entry
+        # records (strip-geometry expansion) — probing a small value set per
+        # offset first keeps the full 255-value sweep for the ones that can
+        # actually steer the crash.
+        if len(all_offsets) > 4:
+            _probe = (0x00, 0x01, 0x02, 0x04, 0x08, 0x7f, 0x80, 0xfe, 0xff)
+            print(f'\n  Screening {len(all_offsets)} offsets with '
+                  f'{len(_probe)} probe values each ...')
+            screen = test_byte_mutations_compare(
+                binary, binary_ref, input_file, program_args,
+                sorted(all_offsets), timeout=a.timeout, probe_values=_probe)
+            promising = sorted(
+                o for o, info in screen.items()
+                if isinstance(o, int) and info.get('matches'))
+            print(f'  Screening done: {len(promising)} offset(s) show '
+                  f'crash-reproducing mutations: '
+                  f'{", ".join(f"0x{o:x}" for o in promising)}')
+            if not promising:
+                crash_results = screen
+                any_match = False
+                for offset, info in sorted(screen.items()):
+                    if isinstance(offset, int) and info.get('matches'):
+                        any_match = True
+                        break
+                print(f'\n  No byte value reproduces the reference crash')
+                print(f'{"="*60}')
+                # keep going to save results
+            else:
+                print(f'\n  Full 255-value sweep on the promising offsets ...')
+                crash_results = test_byte_mutations_compare(
+                    binary, binary_ref, input_file, program_args,
+                    promising, timeout=a.timeout)
+                any_match = False
+                for offset, info in sorted(crash_results.items()):
+                    if isinstance(offset, int) and info.get('matches'):
+                        if not any_match:
+                            print(f'\n  {"="*60}')
+                            print(f'  MATCH SUMMARY (target reproduces '
+                                  f'reference crash)')
+                            print(f'  {"="*60}')
+                            any_match = True
+                        print(f'\n  Offset 0x{offset:x} '
+                              f'(original=0x{info["original"]:02x}):')
+                        for byte_val, m in sorted(info['matches'].items()):
+                            print(f'    0x{byte_val:02x} -> {m}')
                 if not any_match:
-                    print(f'\n  {"="*60}')
-                    print(f'  MATCH SUMMARY (target reproduces reference crash)')
-                    print(f'  {"="*60}')
-                    any_match = True
-                print(f'\n  Offset 0x{offset:x} (original=0x{info["original"]:02x}):')
-                for byte_val, m in sorted(info['matches'].items()):
-                    print(f'    0x{byte_val:02x} -> {m}')
+                    print(f'\n  No byte value reproduces the reference crash')
+        else:
+            crash_results = test_byte_mutations_compare(
+                binary, binary_ref, input_file, program_args,
+                sorted(all_offsets), timeout=a.timeout)
 
-        if not any_match:
-            print(f'\n  No byte value reproduces the reference crash')
+            # Print match summary
+            any_match = False
+            for offset, info in sorted(crash_results.items()
+                                       if isinstance(crash_results, dict)
+                                       else []):
+                if not isinstance(offset, int):
+                    continue
+                if info.get('matches'):
+                    if not any_match:
+                        print(f'\n  {"="*60}')
+                        print(f'  MATCH SUMMARY (target reproduces '
+                              f'reference crash)')
+                        print(f'  {"="*60}')
+                        any_match = True
+                    print(f'\n  Offset 0x{offset:x} '
+                          f'(original=0x{info["original"]:02x}):')
+                    for byte_val, m in sorted(info['matches'].items()):
+                        print(f'    0x{byte_val:02x} -> {m}')
+
+            if not any_match:
+                print(f'\n  No byte value reproduces the reference crash')
 
     print(f'{"="*60}')
 
