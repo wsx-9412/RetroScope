@@ -710,44 +710,21 @@ def _compute_entry_line(fsrc, gbody):
     return gbody[0]
 
 
-def _gdb_effective_lines(binary, func, source_root, args, fsrc, role_lines):
-    """Map every role source line to its EFFECTIVE line (the line gdb
-    attributes to the first instruction at/after it).
+def _derive_effective_lines(role_lines, code_lines):
+    """Map every role line to the line where gdb will actually stop.
 
-    Declaration/brace-only lines have no code: breakpoints on them are
-    silently relocated by gdb to the next instruction's line, creating
-    duplicate breakpoints at the same address that swallow each other.
-    Grouping roles by effective line guarantees ONE breakpoint per address.
-    Returns (entry_line, {role_line: effective_line}).
+    Declaration/brace-only lines emit no code; a breakpoint on them is
+    silently relocated by gdb to the next instruction's line.  The
+    ``disassemble /m`` code-line set is exactly the line-table lines with
+    code, so the effective line of ``role_line`` is the first code line at
+    or after it (identity when beyond the last code line).
     """
-    try:
-        libs = _collect_lib_paths(binary)
-        env = os.environ.copy()
-        env['ASAN_OPTIONS'] = 'detect_leaks=0'
-        if libs:
-            env['LD_LIBRARY_PATH'] = ':'.join(libs + [env.get('LD_LIBRARY_PATH', '')])
-        cmds = ['gdb', '-batch', '-q', '-ex', 'start']
-        # The function's TRUE first-instruction line: resolve a breakpoint on
-        # the symbol and read where gdb actually places it (``info line``
-        # reports the declaration line instead — 224 vs the real 229).
-        cmds += ['-ex', f'break {func}', '-ex', 'info breakpoints']
-        for ln in sorted(set(role_lines)):
-            cmds += ['-ex', f'info line {fsrc}:{ln}']
-        cmds += ['--args', str(resolve_binary(binary))] + [str(a) for a in args]
-        r = subprocess.run(cmds, capture_output=True, text=True, timeout=120,
-                           env=env)
-    except Exception:
-        return None, {}
-    out = r.stdout + r.stderr
-    m = re.search(rf'in {re.escape(func)} at \S+?:(\d+)', out)
-    entry = int(m.group(1)) if m else None
-    lines_out = re.findall(r'Line (\d+) of "[^"]+"', out)
-    if len(lines_out) != len(role_lines):
-        return entry, {}
+    code_lines = sorted(code_lines)
     eff = {}
-    for ln in sorted(set(role_lines)):
-        eff[ln] = int(lines_out[sorted(set(role_lines)).index(ln)])
-    return entry, eff
+    for ln in role_lines:
+        i = bisect.bisect_left(code_lines, ln)
+        eff[ln] = code_lines[i] if i < len(code_lines) else ln
+    return eff
 
 def _compute_then_lines(fsrc, decisions):
     """Decision line -> first EXECUTABLE line of its then-region.
