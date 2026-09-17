@@ -48,6 +48,11 @@ _SEMANTIC_SUFFIXES = ('WithLimit', 'Checked', 'Safe', 'Ex', 'NoSSE', 'Array')
 # repeated full GDB runs without changing the outcome.
 _RECORD_CACHE = {}
 
+# Static decision-density cache for _recurse_candidates: (func, source_root)
+# -> decision count.  The density ranking re-reads and re-parses the same
+# functions for every candidate pair.
+_DECISION_DENSITY_CACHE = {}
+
 # Error/warning REPORTING functions: their divergences are consequences of
 # earlier state differences (the actual input-driven fork), not causes.
 # They are excluded from recursion and from the candidate set so the search
@@ -236,6 +241,14 @@ def _record_side(binary, func_names, source_root, args, timeout, source_hint=Non
                 root_eff = hint_dir
         except Exception:
             pass
+    # The hint only narrows the STATIC source lookup — the authoritative
+    # file comes from GDB debug info, so the recording is identical either
+    # way.  Check the hint-free key first: the same callee descended from
+    # different parents (different hints) previously got different cache
+    # keys and re-ran the whole recording for each parent.
+    base_key = (binary, tuple(func_names), source_root, tuple(args))
+    if base_key in _RECORD_CACHE:
+        return _RECORD_CACHE[base_key]
     key = (binary, tuple(func_names), root_eff, tuple(args))
     if key in _RECORD_CACHE:
         return _RECORD_CACHE[key]
@@ -247,11 +260,17 @@ def _record_side(binary, func_names, source_root, args, timeout, source_hint=Non
             r = {'error': f'record failed: {e}'}
         if r and not r.get('error') and not r.get('bp_fail'):
             _RECORD_CACHE[key] = (r, fname)
+            if key != base_key:
+                _RECORD_CACHE[base_key] = (r, fname)
             return r, fname
         if r and r.get('error'):
             _RECORD_CACHE[key] = (r, None)
+            if key != base_key:
+                _RECORD_CACHE[base_key] = (r, None)
             return r, None
     _RECORD_CACHE[key] = (None, None)
+    if key != base_key:
+        _RECORD_CACHE[base_key] = (None, None)
     return None, None
 
 
