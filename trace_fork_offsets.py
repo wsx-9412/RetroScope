@@ -505,6 +505,26 @@ _TIFF_TAG_NAMES = {
     317: 'Predictor', 330: 'SubIFDs', 339: 'SampleFormat',
 }
 
+# TIFFDirectory field name (td_<field>) -> TIFF tag id.  Used to map
+# fork variables like ``td->td_imagelength`` straight to the IFD entry
+# that stores the value in the input file (parse_tiff_ifd).
+_TD_FIELD_TO_TAG = {
+    'imagewidth': 256, 'imagelength': 257, 'bitspersample': 258,
+    'compression': 259, 'photometric': 262, 'fillorder': 266,
+    'stripoffset': 273, 'orientation': 274, 'samplesperpixel': 277,
+    'rowsperstrip': 278, 'stripbytecount': 279, 'minsamplevalue': 280,
+    'maxsamplevalue': 281, 'xresolution': 282, 'yresolution': 283,
+    'planarconfig': 284, 'xposition': 286, 'yposition': 287,
+    'resolutionunit': 296, 'pagecount': 298, 'halftonehints': 321,
+    'tilewidth': 322, 'tilelength': 323, 'tileoffset': 324,
+    'tilebytecount': 325, 'subifd': 330, 'inkset': 332,
+    'inknames': 333, 'numberofinks': 334, 'dotrange': 336,
+    'targetprinter': 337, 'extrasamples': 338, 'sampleformat': 339,
+    'ycbcrsubsampling': 530, 'ycbcrpositioning': 531,
+    'group3options': 292, 'group4options': 293, 'predictor': 317,
+    'jpegtablesmode': 515, 'matteing': 329,
+}
+
 
 def parse_tiff_ifd(filepath):
     """Parse TIFF IFD and return tag info with file offsets.
