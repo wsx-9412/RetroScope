@@ -5520,6 +5520,7 @@ def main():
             except Exception as _e:
                 print(f'  [!] value-level mutation failed: {_e}')
             if value_level_results:
+                _NUM = re.compile(r'^-?\d+$')
                 for _off, _r in sorted(value_level_results.items()):
                     _flips = [v for v, t in _r['trials'].items()
                               if t.get('outcome_flip')]
@@ -5527,17 +5528,20 @@ def main():
                              if t.get('val_changed')]
                     _crashes = [v for v, t in _r['trials'].items()
                                 if t.get('crash') in ('same_func', 'same_site')]
-                    _bvals = ', '.join(
-                        f'{variables[i]}={v}' for i, v in
-                        sorted((_r.get('baseline_vals') or {}).items()))
-                    _rvals = ', '.join(
-                        f'{variables[i]}={v}' for i, v in
-                        sorted((_r.get('ref_vals') or {}).items()))
+                    # Display only numeric-valued fork variables (skip
+                    # pointer/struct dumps).
+                    def _fmt(vals):
+                        return ', '.join(
+                            f'{variables[i]}={v}' for i, v in
+                            sorted((vals or {}).items())
+                            if _NUM.match(str(v)))
+                    _bvals = _fmt(_r.get('baseline_vals'))
+                    _rvals = _fmt(_r.get('ref_vals'))
                     print(f'\n  Offset 0x{_off:x} ({_r["var"]}, '
                           f'{_r["width"]}B, original=0x{_r["original"]:x}):')
                     print(f'    baseline target: outcome='
                           f'{_r["baseline_outcome"]}, {_bvals}')
-                    if _r.get('ref_outcome') is not None or _r.get('ref_vals'):
+                    if _r.get('ref_outcome') is not None or _rvals:
                         print(f'    reference:       outcome='
                               f'{_r["ref_outcome"]}, {_rvals}')
                     if _flips:
