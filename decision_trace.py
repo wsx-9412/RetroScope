@@ -1066,11 +1066,15 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
     if not fsrc:
         print(f'  [!] source for {func} not found under {source_root or real_bin}')
         return None
-    # Cheap static pre-check: functions whose body cannot be located
-    # statically (macros, static-inline wrappers resolved by the compiler)
-    # never produce decision events.  Skip the GDB metadata session entirely
-    # — every failed function previously burned two full `gdb start` runs.
-    if not find_function_decisions(fsrc, func):
+    # Cheap static pre-check: when the statically located body is a valid
+    # balanced span containing no decision lines, the GDB line range (a
+    # subset of that same source) cannot contain any either — skip the GDB
+    # metadata session entirely.  Functions whose body cannot be located
+    # statically (multi-line signatures, brace-unbalanced files like
+    # tif_open.c) are NOT skipped: GDB's debug line table resolves those.
+    body0 = _function_body(fsrc, func)
+    if body0 is not None and not find_function_decisions(fsrc, func,
+                                                         body=body0):
         print(f'  [!] no decision lines found for {func} in {fsrc}')
         return None
     gsrc, gbody, g_entry0, code_lines = _gdb_metadata_effective(
