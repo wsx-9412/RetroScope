@@ -484,6 +484,8 @@ def read_trace_json(json_path):
         'dynamic_fork': div.get('dynamic_fork'),
         'root_cause_statement_a': div.get('root_cause_statement_a', ''),
         'root_cause_statement_b': div.get('root_cause_statement_b', ''),
+        'version_a': div.get('version_a', ''),
+        'version_b': div.get('version_b', ''),
     }
 
 
