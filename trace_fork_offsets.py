@@ -5296,12 +5296,10 @@ def main():
             if _info.get('file_offset') is not None:
                 mapped_offsets.add(_info['file_offset'])
 
-    # GENERIC dynamic fallback: every input byte the program actually read
-    # during execution (read/pread64 with tracked file positions, bounded by
-    # the input size).  Used for the validation sweep when the variable
-    # mapping yields nothing (or to catch downstream bytes such as the
-    # StripByteCounts offset field that steer the crash but are not the
-    # fork variable's own origin).
+    # GENERIC dynamic fallback: only when the fork-variable mapping (and the
+    # call-site pointer mapping) found NOTHING do we fall back to scanning
+    # every input byte the program actually read.  Otherwise the validation
+    # candidates are exactly the offsets derived from the fork variables.
     read_candidates = set()
     if input_file and os.path.isfile(input_file):
         _fsize = os.path.getsize(input_file)
@@ -5313,13 +5311,14 @@ def main():
                 for _o in range(_off, min(_off + _sz, _fsize)):
                     read_candidates.add(_o)
     if not mapped_offsets and read_candidates:
-        print(f'\n  (variable mapping empty — falling back to the '
+        print(f'\n  (no fork-variable mapping — falling back to the '
               f'{len(read_candidates)} input bytes the program read)')
-    mapped_offsets |= read_candidates
+        mapped_offsets |= read_candidates
 
     if mapped_offsets:
         offset_strs = ', '.join(f'0x{o:x}' for o in sorted(mapped_offsets))
-        print(f'  Validation candidates at input file offsets: {offset_strs}')
+        print(f'  Validation candidates (from fork variables) at input file '
+              f'offsets: {offset_strs}')
 
     # 5b. Offsets found by the arithmetic backtrace (already probe-validated).
     arith_offsets = set()
