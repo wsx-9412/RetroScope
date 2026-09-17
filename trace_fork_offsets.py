@@ -4339,6 +4339,20 @@ def compare_crash_signatures(ref_sig, tgt_sig):
                          f"target {tfile}:{tf.get('line')})")
 
 
+def _replace_input_arg(arg, tmp_path, input_file):
+    """Map a program argument to the mutated temp file.
+
+    The arg may reference the input via ``{input_file}``/``{input}``
+    placeholders, the exact input path, or a relative spelling of it —
+    all must be rewritten or the mutation silently runs the ORIGINAL file.
+    """
+    if '{' in arg:
+        return arg.replace('{input_file}', tmp_path).replace('{input}', tmp_path)
+    if arg == input_file or os.path.abspath(arg) == os.path.abspath(input_file):
+        return tmp_path
+    return arg
+
+
 def _run_mutation_worker(task):
     """Run one byte-mutation through ``binary`` in a subprocess (worker for the
     parallel mutation sweep).  ``task`` = (binary, data, program_args,
@@ -4350,8 +4364,7 @@ def _run_mutation_worker(task):
     try:
         with open(tmp_path, 'wb') as f:
             f.write(data)
-        cmd = [binary] + [a.replace('{input_file}', tmp_path).replace('{input}', tmp_path)
-                          if '{' in a else (tmp_path if a == input_file else a)
+        cmd = [binary] + [_replace_input_arg(a, tmp_path, input_file)
                           for a in program_args]
         env = build_run_env(binary)
         proc = subprocess.run(cmd, capture_output=True, text=True,
