@@ -4412,8 +4412,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
         try:
             with open(tmp_path, 'wb') as f:
                 f.write(data)
-            cmd = [binary] + [a.replace('{input_file}', tmp_path).replace('{input}', tmp_path)
-                              if '{' in a else (tmp_path if a == input_file else a)
+            cmd = [binary] + [_replace_input_arg(a, tmp_path, input_file)
                               for a in program_args]
             env = build_run_env(binary)
             proc = subprocess.run(cmd, capture_output=True, text=True,
