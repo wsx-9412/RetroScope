@@ -4816,7 +4816,7 @@ def main():
         print(f'\n  Input file: {input_file} ({file_size} bytes)')
 
         # Show target version I/O
-        print(f'\n  Target version (tiff-4.0.8) pread64 calls:')
+        print(f'\n  Target version ({config.get("version_b", "target")}) pread64 calls:')
         if positioned_b:
             for r in positioned_b:
                 beyond = ' ** BEYOND FILE **' if r['offset'] >= file_size else ''
@@ -4826,7 +4826,7 @@ def main():
 
         # Show reference version I/O
         if positioned_a:
-            print(f'\n  Reference version (tiff-4.4.0) pread64 calls:')
+            print(f'\n  Reference version ({config.get("version_a", "reference")}) pread64 calls:')
             for r in positioned_a:
                 beyond = ' ** BEYOND FILE **' if r['offset'] >= file_size else ''
                 print(f'    offset=0x{r["offset"]:04x} ({r["offset"]})  size={r["size"]}  [{r["offset"]:04x}-{r["offset"]+r["size"]:04x}){beyond}')
