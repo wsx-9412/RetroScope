@@ -1057,7 +1057,8 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
     if not fsrc:
         print(f'  [!] source for {func} not found under {source_root or real_bin}')
         return None
-    gsrc, gbody, g_entry0 = _gdb_metadata(real_bin, func, source_root, args)
+    gsrc, gbody, g_entry0, code_lines = _gdb_metadata_effective(
+        real_bin, func, source_root, args)
     if gsrc:
         fsrc = gsrc
     decisions = find_function_decisions(fsrc, func, body=gbody)
@@ -1073,13 +1074,9 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
     role_lines = set(d['line'] for d in decisions) \
         | set(int(k) for k in call_lines_src) \
         | set(then_lines_src.values()) | {g_entry0}
-    g_entry, eff_lines = _gdb_effective_lines(
-        real_bin, func, source_root, args, fsrc, role_lines)
-    if eff_lines:
-        entry_line = g_entry or g_entry0
-    else:
-        entry_line = g_entry0
-        eff_lines = {ln: ln for ln in role_lines}
+    entry_line = g_entry0
+    eff_lines = (_derive_effective_lines(role_lines, code_lines) if code_lines
+                 else {ln: ln for ln in role_lines})
 
     clauses_by_line = {}
     for d in decisions:
