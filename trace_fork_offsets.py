@@ -5323,7 +5323,9 @@ def main():
                     binary, binary_ref, input_file, program_args,
                     promising, timeout=a.timeout)
                 any_match = False
-                for offset, info in sorted(crash_results.items()):
+                for offset, info in sorted(
+                        (k, v) for k, v in crash_results.items()
+                        if isinstance(k, int)):
                     if isinstance(offset, int) and info.get('matches'):
                         if not any_match:
                             print(f'\n  {"="*60}')
