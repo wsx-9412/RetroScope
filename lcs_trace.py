@@ -735,6 +735,8 @@ def main():
             refactoring_map=rename_map if rename_map else None,
             config=config_module,
             skip_polytracker=args.no_polytracker,
+            ref_label=args.ref_label,
+            target_label=args.target_label,
         )
         _div_secs = time.time() - _t_div_start
         try:
