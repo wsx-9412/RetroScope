@@ -76,6 +76,9 @@ def _extract_condition(text, start):
     return text[start + 1:end - 1].strip()
 
 
+_FUNC_SRC_CACHE = {}
+
+
 def _locate_function_source(func, source_root, binary=None):
     """Find the source file defining ``func`` under ``source_root``.
 
@@ -83,21 +86,35 @@ def _locate_function_source(func, source_root, binary=None):
     and contrib/pds' copy), prefer the file under the project's main library
     directory (heuristically: a path containing ``libtiff``/``lib``), then the
     shortest path.
+
+    Results are cached per (func, source_root): the recursive fork search
+    re-resolves the same functions dozens of times, and each miss is a full
+    ``rglob *.c`` sweep with a regex scan of every file.
     """
     if not source_root:
         return None
+    key = (func, str(source_root))
+    if key in _FUNC_SRC_CACHE:
+        return _FUNC_SRC_CACHE[key]
     candidates = []
     for f in Path(source_root).rglob('*.c'):
         if is_function_definition(str(f), func):
             candidates.append(f)
     if not candidates:
+        _FUNC_SRC_CACHE[key] = None
         return None
     if len(candidates) == 1:
-        return str(candidates[0])
+        res = str(candidates[0])
+        _FUNC_SRC_CACHE[key] = res
+        return res
     lib = [c for c in candidates if '/libtiff/' in c.as_posix()]
     if lib:
-        return str(lib[0])
-    return str(min(candidates, key=lambda c: len(c.parts)))
+        res = str(lib[0])
+        _FUNC_SRC_CACHE[key] = res
+        return res
+    res = str(min(candidates, key=lambda c: len(c.parts)))
+    _FUNC_SRC_CACHE[key] = res
+    return res
 
 
 def _normalize_operand(expr):
