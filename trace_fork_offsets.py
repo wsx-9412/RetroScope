@@ -5554,10 +5554,6 @@ def main():
             if _off < _fsize:
                 for _o in range(_off, min(_off + _sz, _fsize)):
                     read_candidates.add(_o)
-    if not mapped_offsets and read_candidates:
-        print(f'\n  (no fork-variable mapping — falling back to the '
-              f'{len(read_candidates)} input bytes the program read)')
-        mapped_offsets |= read_candidates
 
     if mapped_offsets:
         offset_strs = ', '.join(f'0x{o:x}' for o in sorted(mapped_offsets))
@@ -5635,102 +5631,47 @@ def main():
         print(f'      (validated by the Step 4.6 fork-flip probe; the full '
               f'255-value crash-reproduction sweep runs below)')
 
-    # 6. Byte mutation crash testing
-    # Collect offsets from the dynamic call-site trace + arithmetic backtrace.
-    all_offsets = set(mapped_offsets) | arith_offsets
-
-    # Also include user-specified offsets
+    # 6. Byte mutation crash testing — STAGE 1: the fork-variable-derived
+    # offsets (and arithmetic-backtrace offsets).  Collect them now.
+    stage1_offsets = set(mapped_offsets) | arith_offsets
     if a.test_offsets:
         for h in a.test_offsets:
-            all_offsets.add(int(h, 16))
+            stage1_offsets.add(int(h, 16))
 
     # End of the offset-localization phase (GDB tracing / mapping above);
     # what follows is the byte-mutation crash testing.
     stage_timing.record("确定分叉语句处变量对应输入文件偏移位置",
                         time.time() - _t_main_start)
 
-    if all_offsets and input_file and os.path.isfile(input_file) and binary:
-        print(f'\n{"="*60}')
-        print(f'  Step 6: Byte mutation crash testing')
-        print(f'{"="*60}')
-        print(f'  Input file: {input_file}')
-        print(f'  Target binary: {resolve_binary(binary)}')
-        print(f'  Reference binary: {resolve_binary(binary_ref)}')
-        print(f'  Offsets to test: {", ".join(f"0x{o:x}" for o in sorted(all_offsets))}')
+    crash_results = {}
+    any_match = False
+    if stage1_offsets:
+        crash_results, any_match = run_byte_mutation_stage(
+            binary, binary_ref, input_file, program_args,
+            sorted(stage1_offsets), a.timeout,
+            title='Step 6: Byte mutation crash testing '
+                  '(fork-variable offsets)')
 
-        # Screening pass: the candidate set may include full IFD entry
-        # records (strip-geometry expansion) — probing a small value set per
-        # offset first keeps the full 255-value sweep for the ones that can
-        # actually steer the crash.
-        if len(all_offsets) > 4:
-            _probe = (0x00, 0x01, 0x02, 0x04, 0x08, 0x7f, 0x80, 0xfe, 0xff)
-            print(f'\n  Screening {len(all_offsets)} offsets with '
-                  f'{len(_probe)} probe values each ...')
-            screen = test_byte_mutations_compare(
-                binary, binary_ref, input_file, program_args,
-                sorted(all_offsets), timeout=a.timeout, probe_values=_probe)
-            promising = sorted(
-                o for o, info in screen.items()
-                if isinstance(o, int) and info.get('matches'))
-            print(f'  Screening done: {len(promising)} offset(s) show '
-                  f'crash-reproducing mutations: '
-                  f'{", ".join(f"0x{o:x}" for o in promising)}')
-            if not promising:
-                crash_results = screen
-                any_match = False
-                for offset, info in sorted(screen.items()):
-                    if isinstance(offset, int) and info.get('matches'):
-                        any_match = True
-                        break
-                print(f'\n  No byte value reproduces the reference crash')
-                print(f'{"="*60}')
-                # keep going to save results
-            else:
-                print(f'\n  Full 255-value sweep on the promising offsets ...')
-                crash_results = test_byte_mutations_compare(
-                    binary, binary_ref, input_file, program_args,
-                    promising, timeout=a.timeout)
-                any_match = False
-                for offset, info in sorted(
-                        (k, v) for k, v in crash_results.items()
-                        if isinstance(k, int)):
-                    if isinstance(offset, int) and info.get('matches'):
-                        if not any_match:
-                            print(f'\n  {"="*60}')
-                            print(f'  MATCH SUMMARY (target reproduces '
-                                  f'reference crash)')
-                            print(f'  {"="*60}')
-                            any_match = True
-                        print(f'\n  Offset 0x{offset:x} '
-                              f'(original=0x{info["original"]:02x}):')
-                        for byte_val, m in sorted(info['matches'].items()):
-                            print(f'    0x{byte_val:02x} -> {m}')
-                if not any_match:
-                    print(f'\n  No byte value reproduces the reference crash')
-        else:
-            crash_results = test_byte_mutations_compare(
-                binary, binary_ref, input_file, program_args,
-                sorted(all_offsets), timeout=a.timeout)
-
-            # Print match summary
-            any_match = False
-            for offset, info in sorted(
-                    (k, v) for k, v in crash_results.items()
-                    if isinstance(k, int)):
-                if info.get('matches'):
-                    if not any_match:
-                        print(f'\n  {"="*60}')
-                        print(f'  MATCH SUMMARY (target reproduces '
-                              f'reference crash)')
-                        print(f'  {"="*60}')
-                        any_match = True
-                    print(f'\n  Offset 0x{offset:x} '
-                          f'(original=0x{info["original"]:02x}):')
-                    for byte_val, m in sorted(info['matches'].items()):
-                        print(f'    0x{byte_val:02x} -> {m}')
-
-            if not any_match:
-                print(f'\n  No byte value reproduces the reference crash')
+    # STAGE 2: the variable-derived offsets did not reproduce the reference
+    # crash — the crash may be driven DOWNSTREAM of the fork variables (e.g.
+    # the StripByteCounts offset field at 0x30).  Expand to every additional
+    # input byte the program actually read, clearly labeled as the
+    # crash-driving-byte search.
+    if not any_match and read_candidates:
+        _extra = sorted(read_candidates - stage1_offsets)
+        if _extra:
+            print(f'\n  Stage 1 (fork-variable offsets) reproduced no '
+                  f'reference crash — expanding to the {len(_extra)} '
+                  f'input bytes the program read (crash-driving bytes '
+                  f'downstream of the fork variables).')
+            crash_results2, any_match2 = run_byte_mutation_stage(
+                binary, binary_ref, input_file, program_args, _extra,
+                a.timeout,
+                title='Step 6b: Byte mutation crash testing '
+                      '(read-region expansion)')
+            if any_match2:
+                crash_results = crash_results2
+                any_match = True
 
     print(f'{"="*60}')
 
