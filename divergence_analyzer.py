@@ -2188,8 +2188,8 @@ def _compare_execution_traces(lines_a, lines_b):
                 return {
                     "file": ln_b["file"],
                     "line": ln_b["line"],
-                    "line_text_a": f"v4.4.0 calls {name_a}() at line {ln_a['line']}",
-                    "line_text_b": f"v4.0.8 calls {name_b}() at line {ln_b['line']}",
+                    "line_text_a": f"{_LABEL_A} calls {name_a}() at line {ln_a['line']}",
+                    "line_text_b": f"{_LABEL_B} calls {name_b}() at line {ln_b['line']}",
                     "note": f"First divergence: different functions at position {i}",
                     "diverging_call_a": name_a,
                     "diverging_call_b": name_b,
@@ -2199,18 +2199,18 @@ def _compare_execution_traces(lines_a, lines_b):
                 return {
                     "file": ln_b["file"],
                     "line": ln_b["line"],
-                    "line_text_a": f"v4.4.0 calls {name_a}() at line {ln_a['line']}",
-                    "line_text_b": f"v4.0.8 does not call {name_a}()",
-                    "note": f"v4.4.0 has additional function call at position {i}",
+                    "line_text_a": f"{_LABEL_A} calls {name_a}() at line {ln_a['line']}",
+                    "line_text_b": f"{_LABEL_B} does not call {name_a}()",
+                    "note": f"{_LABEL_A} has additional function call at position {i}",
                 }
             elif name_b in only_b:
                 # Only B has this function — A doesn't call it
                 return {
                     "file": ln_b["file"],
                     "line": ln_b["line"],
-                    "line_text_a": f"v4.4.0 does not call {name_b}()",
-                    "line_text_b": f"v4.0.8 calls {name_b}() at line {ln_b['line']}",
-                    "note": f"v4.0.8 has additional function call at position {i}",
+                    "line_text_a": f"{_LABEL_A} does not call {name_b}()",
+                    "line_text_b": f"{_LABEL_B} calls {name_b}() at line {ln_b['line']}",
+                    "note": f"{_LABEL_B} has additional function call at position {i}",
                 }
             else:
                 # Both call different functions — neither is unique
@@ -2218,8 +2218,8 @@ def _compare_execution_traces(lines_a, lines_b):
                 return {
                     "file": ln_b["file"],
                     "line": ln_b["line"],
-                    "line_text_a": f"v4.4.0 calls {name_a}() at line {ln_a['line']}",
-                    "line_text_b": f"v4.0.8 calls {name_b}() at line {ln_b['line']}",
+                    "line_text_a": f"{_LABEL_A} calls {name_a}() at line {ln_a['line']}",
+                    "line_text_b": f"{_LABEL_B} calls {name_b}() at line {ln_b['line']}",
                     "note": f"Different functions at position {i}: {name_a} vs {name_b}",
                     "diverging_call_a": name_a,
                     "diverging_call_b": name_b,
@@ -2233,18 +2233,18 @@ def _compare_execution_traces(lines_a, lines_b):
             return {
                 "file": calls_b[-1][1]["file"],
                 "line": calls_b[-1][1]["line"],
-                "line_text_a": f"v4.4.0 continues with {next_call}() at line {next_ln['line']}",
-                "line_text_b": f"v4.0.8 stops after {len(calls_b)} operations",
-                "note": f"v4.0.8 takes early-return/error path after {len(calls_b)} operations",
+                "line_text_a": f"{_LABEL_A} continues with {next_call}() at line {next_ln['line']}",
+                "line_text_b": f"{_LABEL_B} stops after {len(calls_b)} operations",
+                "note": f"{_LABEL_B} takes early-return/error path after {len(calls_b)} operations",
             }
         else:
             next_call, next_ln = calls_b[len(calls_a)]
             return {
                 "file": calls_a[-1][1]["file"],
                 "line": calls_a[-1][1]["line"],
-                "line_text_a": f"v4.4.0 stops after {len(calls_a)} operations",
-                "line_text_b": f"v4.0.8 continues with {next_call}() at line {next_ln['line']}",
-                "note": f"v4.4.0 takes early-return path after {len(calls_a)} operations",
+                "line_text_a": f"{_LABEL_A} stops after {len(calls_a)} operations",
+                "line_text_b": f"{_LABEL_B} continues with {next_call}() at line {next_ln['line']}",
+                "note": f"{_LABEL_A} takes early-return path after {len(calls_a)} operations",
             }
 
     return None
@@ -2296,8 +2296,8 @@ def _first_real_call_divergence(lines_a, lines_b):
             return {
                 "file": ln_b["file"],
                 "line": ln_b["line"],
-                "line_text_a": f"v4.4.0 calls {name_a}() at line {ln_a['line']}",
-                "line_text_b": f"v4.0.8 calls {name_b}() at line {ln_b['line']}",
+                "line_text_a": f"{_LABEL_A} calls {name_a}() at line {ln_a['line']}",
+                "line_text_b": f"{_LABEL_B} calls {name_b}() at line {ln_b['line']}",
                 "note": f"Different functions at aligned position: {name_a} vs {name_b}",
                 "diverging_call_a": name_a,
                 "diverging_call_b": name_b,
@@ -2311,9 +2311,9 @@ def _first_real_call_divergence(lines_a, lines_b):
             return {
                 "file": ln_b["file"],
                 "line": ln_b["line"],
-                "line_text_a": f"v4.4.0 never calls {name_b}() (no error path)",
-                "line_text_b": f"v4.0.8 calls {name_b}() at line {ln_b['line']}",
-                "note": "v4.0.8-only call — error/early-exit path",
+                "line_text_a": f"{_LABEL_A} never calls {name_b}() (no error path)",
+                "line_text_b": f"{_LABEL_B} calls {name_b}() at line {ln_b['line']}",
+                "note": f"{_LABEL_B}-only call — error/early-exit path",
                 "diverging_call_b": name_b,
             }
         # 'delete': 4.4.0-only extra calls (wrappers/logging) — benign, skip.
@@ -2325,17 +2325,17 @@ def _first_real_call_divergence(lines_a, lines_b):
             return {
                 "file": calls_b[-1][1]["file"],
                 "line": calls_b[-1][1]["line"],
-                "line_text_a": f"v4.4.0 continues with {next_call}() at line {next_ln['line']}",
-                "line_text_b": f"v4.0.8 stops after {len(calls_b)} operations",
-                "note": f"v4.0.8 takes early-return/error path after {len(calls_b)} operations",
+                "line_text_a": f"{_LABEL_A} continues with {next_call}() at line {next_ln['line']}",
+                "line_text_b": f"{_LABEL_B} stops after {len(calls_b)} operations",
+                "note": f"{_LABEL_B} takes early-return/error path after {len(calls_b)} operations",
             }
         next_call, next_ln = calls_b[len(calls_a)]
         return {
             "file": calls_a[-1][1]["file"],
             "line": calls_a[-1][1]["line"],
-            "line_text_a": f"v4.4.0 stops after {len(calls_a)} operations",
-            "line_text_b": f"v4.0.8 continues with {next_call}() at line {next_ln['line']}",
-            "note": f"v4.4.0 takes early-return path after {len(calls_a)} operations",
+            "line_text_a": f"{_LABEL_A} stops after {len(calls_a)} operations",
+            "line_text_b": f"{_LABEL_B} continues with {next_call}() at line {next_ln['line']}",
+            "note": f"{_LABEL_A} takes early-return path after {len(calls_a)} operations",
         }
 
     return None
@@ -3720,8 +3720,8 @@ def _trace_from_common_ancestor(matches, gaps, trace_a, trace_b,
         "description": (
             f"Common ancestor: {func_name}\n"
             f"Last divergence at step {div['step']}:\n"
-            f"  v4.4.0: {a_text.strip()}  ({a_file}:{a_line})\n"
-            f"  v4.0.8: {b_text.strip()}  ({b_file}:{b_line})"
+            f"  {_LABEL_A}: {a_text.strip()}  ({a_file}:{a_line})\n"
+            f"  {_LABEL_B}: {b_text.strip()}  ({b_file}:{b_line})"
         ),
         "note": f"Step trace last divergence at step {div['step']}",
     }
@@ -3812,8 +3812,8 @@ def _trace_subfunction_divergence(func_name, binary_a, binary_b,
             "root_cause_line": None,
             "description": (
                 f"Function {func_name} called in one version but not the other.\n"
-                f"  v4.4.0: {len(step_trace_a)} lines\n"
-                f"  v4.0.8: {len(step_trace_b)} lines"
+                f"  {_LABEL_A}: {len(step_trace_a)} lines\n"
+                f"  {_LABEL_B}: {len(step_trace_b)} lines"
             ),
             "note": "Asymmetric function call",
         }
@@ -3845,8 +3845,8 @@ def _trace_subfunction_divergence(func_name, binary_a, binary_b,
         "description": (
             f"Sub-function: {func_name}\n"
             f"Divergence at step {div['step']}:\n"
-            f"  v4.4.0: {a_text.strip()}  ({a_file}:{a_line})\n"
-            f"  v4.0.8: {b_text.strip()}  ({b_file}:{b_line})"
+            f"  {_LABEL_A}: {a_text.strip()}  ({a_file}:{a_line})\n"
+            f"  {_LABEL_B}: {b_text.strip()}  ({b_file}:{b_line})"
         ),
         "note": f"Sub-function trace of {func_name}",
     }
@@ -4126,7 +4126,7 @@ def _find_divergence_in_function_body(func_name, frame0, b_first, binary_a, bina
                     f"Control statement '{ctrl_b['full_line'].strip()}' in "
                     f"{func_name}() guards the divergent call {b_first}() — the "
                     f"condition differs between versions "
-                    f"(v4.0.8 vs v4.4.0)"
+                    f"({_LABEL_B} vs {_LABEL_A})"
                 ),
                 "diverging_call_a": a_first,
                 "diverging_call_b": b_first_call,
@@ -4641,9 +4641,9 @@ def _trace_gap_divergence(binary_a, binary_b, trace_a, trace_b, gaps,
             "line_a": gline,
             "line_text_b": _read_source_line(gfile, gline, source_dirs_a) or "",
             "line_text_a": _read_source_line(gfile, gline, source_dirs_a) or "",
-            "note": (f"GDB disassembly: v4.4.0's control statement guarding "
+            "note": (f"GDB disassembly: {_LABEL_A}'s control statement guarding "
                      f"{a_first}() in {func_a}() ({gfile}:{gline}); "
-                     f"v4.0.8 stopped before this point"),
+                     f"{_LABEL_B} stopped before this point"),
             "diverging_call_a": a_first,
             "diverging_call_b": None,
         }
@@ -4714,9 +4714,9 @@ def _trace_gap_divergence(binary_a, binary_b, trace_a, trace_b, gaps,
         "line_text_b": _read_source_line(g_b["guard_file"], g_b["guard_line"], source_dirs_b) or "",
         "line_text_a": _read_source_line(g_a["guard_file"], g_a["guard_line"], source_dirs_a) or "",
         "note": (
-            f"GDB disassembly: v4.0.8's control statement guarding {b_first}() "
+            f"GDB disassembly: {_LABEL_B}'s control statement guarding {b_first}() "
             f"in {func_b}() ({g_b['guard_file']}:{g_b['guard_line']}); "
-            f"v4.4.0's guarding {a_first or 'no call'}() in {func_a}() "
+            f"{_LABEL_A}'s guarding {a_first or 'no call'}() in {func_a}() "
             f"({g_a['guard_file']}:{g_a['guard_line']})"
         ),
         "diverging_call_a": a_first,
@@ -4740,8 +4740,8 @@ def _is_control_statement(text):
 def _is_spurious_step_divergence(div_loc):
     """Return True if a step-trace divergence is a benign call asymmetry.
 
-    The execution-trace comparison reports "v4.4.0 calls X() at line N" /
-    "v4.0.8 does not call X()" when one version has an extra debug/logging
+    The execution-trace comparison reports f"{_LABEL_A} calls X() at line N" /
+    f"{_LABEL_B} does not call X()" when one version has an extra debug/logging
     call (e.g. TIFFFileName) that the other dropped.  That is a cosmetic
     difference, not the vulnerability fork, so it must fall back to the
     gap-based analysis (which locates the actual code-change / control-flow
@@ -4749,7 +4749,7 @@ def _is_spurious_step_divergence(div_loc):
 
     Direction matters for the length-based reports: "v4.4.0 stops after N
     operations" is the reference's crash point (not the fork), but
-    "v4.0.8 stops after N operations" means the target took an
+    f"{_LABEL_B} stops after N operations" means the target took an
     early-return/error path — which IS the fork when the reference crashed.
     """
     if not div_loc:
@@ -5669,8 +5669,8 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                         f"Divergence function: {func_name}\n"
                         f"Root cause function: {div_loc.get('root_cause_function', common_func)}\n"
                         f"Root cause: {div_loc.get('note', '')}\n"
-                        f"  v4.4.0: {div_loc.get('line_text_a', '')}\n"
-                        f"  v4.0.8: {div_loc.get('line_text_b', '')}\n"
+                        f"  {_LABEL_A}: {div_loc.get('line_text_a', '')}\n"
+                        f"  {_LABEL_B}: {div_loc.get('line_text_b', '')}\n"
                         f"Source: {div_loc['file']}:{div_loc['line']}"
                     ),
                 }
@@ -5750,7 +5750,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                                                            if v not in cond_vars]
                     else:
                         # line_text_b is a synthetic trace description
-                        # ("v4.0.8 calls X() at line N"), not C source:
+                        # (f"{_LABEL_B} calls X() at line N"), not C source:
                         # extracting variables from it yields English words
                         # (v4/calls/at/line) that break the PolyTracker source
                         # instrumentation.  Read the real statement at the
@@ -5990,8 +5990,8 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 f"Divergence function: {func_name}\n"
                 f"Root cause function: {gap_result['root_cause_function']}\n"
                 f"Root cause: {gap_result.get('note', '')}\n"
-                f"  v4.4.0: {gap_result['line_text_a']}  ({a_file}:{a_line})\n"
-                f"  v4.0.8: {gap_result['line_text_b']}  ({gap_result['file']}:{gap_result['line']})"
+                f"  {_LABEL_A}: {gap_result['line_text_a']}  ({a_file}:{a_line})\n"
+                f"  {_LABEL_B}: {gap_result['line_text_b']}  ({gap_result['file']}:{gap_result['line']})"
             ),
         }
         if gap_result.get("diverging_call_a") or gap_result.get("diverging_call_b"):
@@ -6175,8 +6175,8 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 f"Divergence function: {func_name}\n"
                 f"Root cause function: {result['root_cause_function']}\n"
                 f"Root cause: {div_loc.get('note', '')}\n"
-                f"  v4.4.0: {result['root_cause_statement_a']}\n"
-                f"  v4.0.8: {result['root_cause_statement_b']}\n"
+                f"  {_LABEL_A}: {result['root_cause_statement_a']}\n"
+                f"  {_LABEL_B}: {result['root_cause_statement_b']}\n"
                 f"Source: {div_loc['file']}:{div_loc['line']}"
             )
         else:
@@ -6237,12 +6237,12 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
 
                 print(f"  After {func_name}():")
                 if a_ops and b_ops:
-                    print(f"    v4.4.0 calls: {', '.join(a_ops[:3])}")
-                    print(f"    v4.0.8 calls: {', '.join(b_ops[:3])}")
+                    print(f"    {_LABEL_A} calls: {', '.join(a_ops[:3])}")
+                    print(f"    {_LABEL_B} calls: {', '.join(b_ops[:3])}")
                 elif a_ops:
-                    print(f"    v4.4.0 calls: {', '.join(a_ops[:3])}")
+                    print(f"    {_LABEL_A} calls: {', '.join(a_ops[:3])}")
                 elif b_ops:
-                    print(f"    v4.0.8 calls: {', '.join(b_ops[:3])}")
+                    print(f"    {_LABEL_B} calls: {', '.join(b_ops[:3])}")
 
                 # Use GDB stepping inside the CALLER to find exact divergence
                 cause_func_a2 = cause_func
@@ -6286,8 +6286,8 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                             f"Divergence function: {func_name}\n"
                             f"Root cause function: {cause_func}\n"
                             f"Root cause: {caller_gdb_result.get('note', '')}\n"
-                            f"  v4.4.0: {caller_gdb_result.get('line_text_a', '')}\n"
-                            f"  v4.0.8: {caller_gdb_result.get('line_text_b', '')}\n"
+                            f"  {_LABEL_A}: {caller_gdb_result.get('line_text_a', '')}\n"
+                            f"  {_LABEL_B}: {caller_gdb_result.get('line_text_b', '')}\n"
                             f"Source: {caller_gdb_result['file']}:{caller_gdb_result['line']}"
                             f"{cond_info}"
                         )
@@ -6309,8 +6309,8 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                             f"Divergence function: {func_name}\n"
                             f"Root cause function: {cause_func}\n"
                             f"Root cause: {div_loc.get('note', '')}\n"
-                            f"  v4.4.0: {div_loc.get('line_text_a', '')}\n"
-                            f"  v4.0.8: {div_loc.get('line_text_b', '')}\n"
+                            f"  {_LABEL_A}: {div_loc.get('line_text_a', '')}\n"
+                            f"  {_LABEL_B}: {div_loc.get('line_text_b', '')}\n"
                             f"Source: {div_loc['file']}:{div_loc['line']}"
                         )
         else:
@@ -6335,8 +6335,8 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                     f"Divergence function: {func_name}\n"
                     f"Root cause function: {func_name}\n"
                     f"Root cause: {div_loc.get('note', '')}\n"
-                    f"  v4.4.0: {div_loc.get('line_text_a', '')}\n"
-                    f"  v4.0.8: {div_loc.get('line_text_b', '')}\n"
+                    f"  {_LABEL_A}: {div_loc.get('line_text_a', '')}\n"
+                    f"  {_LABEL_B}: {div_loc.get('line_text_b', '')}\n"
                     f"Source: {div_loc['file']}:{div_loc['line']}"
                     f"{cond_info}"
                 )
@@ -6348,13 +6348,13 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
             )
 
     # Final fallback: if the analysis did not produce a concrete source statement
-    # in v4.0.8 (e.g. it only reports "v4.0.8 stops after N operations"), locate
+    # in v4.0.8 (e.g. it only reports f"{_LABEL_B} stops after N operations"), locate
     # the caller of the first differing function call in the LCS gap via GDB.
     stmt_b = (result.get("root_cause_statement_b") or "").strip()
     if (not result.get("root_cause_file")
             or not stmt_b
-            or stmt_b.startswith("v4.0.8")
-            or stmt_b.startswith("v4.4.0")):
+            or stmt_b.startswith(f"{_LABEL_B}")
+            or stmt_b.startswith(f"{_LABEL_A}")):
         gap_loc = _trace_gap_divergence(
             binary_a, binary_b, trace_a, trace_b, gaps,
             a_idx, b_idx, args_a, args_b,
@@ -6377,8 +6377,8 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 f"Divergence function: {func_name}\n"
                 f"Root cause function: {gap_loc['root_cause_function']}\n"
                 f"Root cause: {gap_loc.get('note', '')}\n"
-                f"  v4.4.0: {gap_loc['line_text_a']}\n"
-                f"  v4.0.8: {gap_loc['line_text_b']}\n"
+                f"  {_LABEL_A}: {gap_loc['line_text_a']}\n"
+                f"  {_LABEL_B}: {gap_loc['line_text_b']}\n"
                 f"Source: {gap_loc['file']}:{gap_loc['line']}"
             )
 
@@ -6443,12 +6443,12 @@ def _find_pattern_in_source(func_name_a, func_name_b, ops_a, ops_b,
                     # Determine file name from source path
                     file_name = src_b.split('/')[-1] if src_b else "unknown"
 
-                    desc_a = f"v4.4.0 does not call {op}()" if ops_a else "different code path"
+                    desc_a = f"{_LABEL_A} does not call {op}()" if ops_a else "different code path"
                     return {
                         "file": file_name,
                         "line": line_num,
                         "line_text_a": desc_a,
-                        "line_text_b": f"v4.0.8 calls {op}() here: {line_text}",
+                        "line_text_b": f"{_LABEL_B} calls {op}() here: {line_text}",
                         "note": f"Source pattern match: {op} found in {func_name_b}()",
                     }
         except (FileNotFoundError, UnicodeDecodeError):
@@ -6479,11 +6479,11 @@ def _find_pattern_in_source(func_name_a, func_name_b, ops_a, ops_b,
 
                     file_name = src_a.split('/')[-1] if src_a else "unknown"
 
-                    desc_b = f"v4.0.8 does not call {op}()" if ops_b else "different code path"
+                    desc_b = f"{_LABEL_B} does not call {op}()" if ops_b else "different code path"
                     return {
                         "file": file_name,
                         "line": line_num,
-                        "line_text_a": f"v4.4.0 calls {op}() here: {line_text}",
+                        "line_text_a": f"{_LABEL_A} calls {op}() here: {line_text}",
                         "line_text_b": desc_b,
                         "note": f"Source pattern match: {op} found in {func_name_a}()",
                     }
@@ -6547,13 +6547,13 @@ def _find_pattern_divergence(func_name, trace_a, trace_b, a_idx, b_idx,
                     # Build description
                     if a_names and b_names:
                         if a_names[0] != b_names[0]:
-                            desc = f"v4.4.0 calls {a_names[0]}(), v4.0.8 calls {b_names[0]}()"
+                            desc = f"{_LABEL_A} calls {a_names[0]}(), {_LABEL_B} calls {b_names[0]}()"
                         else:
                             desc = f"Both call {a_names[0]}() but with different context"
                     elif a_names:
-                        desc = f"v4.4.0 calls {a_names[0]}(), v4.0.8 does not"
+                        desc = f"{_LABEL_A} calls {a_names[0]}(), {_LABEL_B} does not"
                     elif b_names:
-                        desc = f"v4.0.8 calls {b_names[0]}(), v4.4.0 does not"
+                        desc = f"{_LABEL_B} calls {b_names[0]}(), {_LABEL_A} does not"
                     else:
                         desc = "Different operations"
 
@@ -6691,8 +6691,8 @@ def _extract_variables_from_expression(expr):
     if not expr:
         return []
 
-    # Reject synthetic trace descriptions ("v4.0.8 calls X() at line N",
-    # "v4.4.0 stops after N operations") — English prose produced by the
+    # Reject synthetic trace descriptions (f"{_LABEL_B} calls X() at line N",
+    # f"{_LABEL_A} stops after N operations") — English prose produced by the
     # execution-trace comparison, not C source.  Extracting identifiers from
     # them yields words like v4/calls/at/line that break source
     # instrumentation downstream.
