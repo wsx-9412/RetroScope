@@ -72,6 +72,61 @@ def build_run_env(binary):
     return env
 
 
+def _strip_c_comments(text):
+    """Remove C block/line comments and string/char literals from source text.
+
+    ``{'/'}`` inside comments or strings must not corrupt the token scan.
+    """
+    out = []
+    i, n = 0, len(text)
+    in_block = in_str = in_char = False
+    while i < n:
+        c = text[i]
+        nxt = text[i + 1] if i + 1 < n else ''
+        if in_block:
+            if c == '*' and nxt == '/':
+                in_block = False
+                i += 2
+                continue
+            i += 1
+            continue
+        if in_str:
+            if c == '\\':
+                i += 2
+                continue
+            if c == '"':
+                in_str = False
+            i += 1
+            continue
+        if in_char:
+            if c == '\\':
+                i += 2
+                continue
+            if c == "'":
+                in_char = False
+            i += 1
+            continue
+        if c == '/' and nxt == '/':
+            while i < n and text[i] != '\n':
+                i += 1
+            continue
+        if c == '/' and nxt == '*':
+            in_block = True
+            i += 2
+            continue
+        if c == '"':
+            in_str = True
+            i += 1
+            continue
+        if c == "'":
+            in_char = True
+            i += 1
+            continue
+        out.append(c)
+        i += 1
+    return ''.join(out)
+
+
 def extract_variables_from_statement(stmt):
     """Extract C variable expressions from a fork statement.
 
@@ -80,7 +135,12 @@ def extract_variables_from_statement(stmt):
     if not stmt:
         return []
 
-    cleaned = re.sub(r'"[^"]*"', '', stmt)
+    # Strip comments FIRST: the fork-statement span may include function
+    # header comments (e.g. tif_strip.c's "YCbCr data contain one Cb+Cr for
+    # every ... roundup width and height"), whose words must never become
+    # "variables" (they then fail GDB evaluation and report no file mapping).
+    cleaned = _strip_c_comments(stmt)
+    cleaned = re.sub(r'"[^"]*"', '', cleaned)
     cleaned = re.sub(r"'[^']*'", '', cleaned)
     cleaned = re.sub(r'\bsizeof\s*\([^()]*\)', '', cleaned)
     # Remove preprocessor directives
