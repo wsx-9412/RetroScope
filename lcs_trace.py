@@ -759,8 +759,8 @@ def main():
         a_line = div_result.get('root_cause_line_a', div_result.get('root_cause_line', 'N/A'))
         b_file = div_result.get('root_cause_file_b', div_result.get('root_cause_file', 'N/A'))
         b_line = div_result.get('root_cause_line_b', div_result.get('root_cause_line', 'N/A'))
-        print(f"  {_LABEL_A}: {stmt_a}  ({a_file}:{a_line})")
-        print(f"  {_LABEL_B}: {stmt_b}  ({b_file}:{b_line})")
+        print(f"  {_div_mod._LABEL_A}: {stmt_a}  ({a_file}:{a_line})")
+        print(f"  {_div_mod._LABEL_B}: {stmt_b}  ({b_file}:{b_line})")
 
         # Save divergence result
         div_out = Path(result_path).with_suffix(".diverge.json")
