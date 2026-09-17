@@ -1,7 +1,7 @@
 {
-  "binary_target": "/tmp/fork_analysis_16gjl_fn/target/tools/.libs/tiffcrop",
-  "binary_ref": "/tmp/fork_analysis_16gjl_fn/ref/tools/.libs/tiffcrop",
-  "fork_spec": "/tmp/fork_analysis_16gjl_fn/target/libtiff/tif_strip.c:111",
+  "binary_target": "/tmp/fork_analysis_gijzg0xi/target/tools/.libs/tiffcrop",
+  "binary_ref": "/tmp/fork_analysis_gijzg0xi/ref/tools/.libs/tiffcrop",
+  "fork_spec": "/tmp/fork_analysis_gijzg0xi/target/libtiff/tif_strip.c:111",
   "variables": [
     "tif",
     "nrows",
@@ -21,19 +21,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140730045498352
+      "buf_addr": 140723086583904
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140730045498288
+      "buf_addr": 140723086583840
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140730045498208
+      "buf_addr": 140723086583760
     }
   ],
   "ref_file_reads": [
@@ -41,19 +41,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140730066567776
+      "buf_addr": 140727602560768
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140730066567712
+      "buf_addr": 140727602560704
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140730066567632
+      "buf_addr": 140727602560624
     }
   ],
   "chain_trace": {
@@ -227,7 +227,7 @@
     "pread64": []
   },
   "arithmetic_backtrace": {
-    "source": "/tmp/fork_analysis_16gjl_fn/target/libtiff/tif_strip.c",
+    "source": "/tmp/fork_analysis_gijzg0xi/target/libtiff/tif_strip.c",
     "fork_line": 111,
     "nodes": {
       "tif": {
