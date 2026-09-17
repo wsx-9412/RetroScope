@@ -460,6 +460,12 @@ def main():
                     help="Path to config module for PolyTracker analysis")
     ap.add_argument("--gdb-timeout", type=int, default=120,
                      help="timeout for GDB operations in seconds (default 120)")
+    ap.add_argument("--ref-label", default=None,
+                    help="display label for the reference version "
+                         "(e.g. tiff-4.0.6)")
+    ap.add_argument("--target-label", default=None,
+                    help="display label for the target version "
+                         "(e.g. tiff-3.9.5)")
     args = ap.parse_args()
 
     cross = bool(args.binary_a and args.binary_b)
