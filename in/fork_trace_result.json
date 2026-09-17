@@ -19,41 +19,281 @@
   "target_file_reads": [
     {
       "fd": 3,
+      "offset": 0,
+      "size": 832
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 4096
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 8192
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 8
+    },
+    {
+      "fd": 3,
+      "offset": 8,
+      "size": 8
+    },
+    {
+      "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140720502783392
+      "buf_addr": 140725210759040
+    },
+    {
+      "fd": 3,
+      "offset": 114,
+      "size": 4096
+    },
+    {
+      "fd": 3,
+      "offset": 114,
+      "size": 3982
+    },
+    {
+      "fd": 3,
+      "offset": 832,
+      "size": 832
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140720502783328
+      "buf_addr": 140725210758976
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140720502783248
+      "buf_addr": 140725210758896
+    },
+    {
+      "fd": 3,
+      "offset": 3376,
+      "size": 4096
+    },
+    {
+      "fd": 3,
+      "offset": 3376,
+      "size": 720
+    },
+    {
+      "fd": 3,
+      "offset": 3997,
+      "size": 4096
+    },
+    {
+      "fd": 3,
+      "offset": 3997,
+      "size": 99
+    },
+    {
+      "fd": 3,
+      "offset": 3997,
+      "size": 8192
+    },
+    {
+      "fd": 3,
+      "offset": 3997,
+      "size": 4195
+    },
+    {
+      "fd": 3,
+      "offset": 4007,
+      "size": 4096
+    },
+    {
+      "fd": 3,
+      "offset": 4007,
+      "size": 89
+    },
+    {
+      "fd": 3,
+      "offset": 4007,
+      "size": 8192
+    },
+    {
+      "fd": 3,
+      "offset": 4007,
+      "size": 4185
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 89
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 99
+    },
+    {
+      "fd": 3,
+      "offset": 5989,
+      "size": 4185
+    },
+    {
+      "fd": 3,
+      "offset": 5989,
+      "size": 2203
+    },
+    {
+      "fd": 3,
+      "offset": 6318,
+      "size": 4195
+    },
+    {
+      "fd": 3,
+      "offset": 6318,
+      "size": 1874
     }
   ],
   "ref_file_reads": [
     {
       "fd": 3,
+      "offset": 0,
+      "size": 832
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 4096
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 8192
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 8
+    },
+    {
+      "fd": 3,
+      "offset": 8,
+      "size": 8
+    },
+    {
+      "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140737228865440
+      "buf_addr": 140731500824464
+    },
+    {
+      "fd": 3,
+      "offset": 111,
+      "size": 4096
+    },
+    {
+      "fd": 3,
+      "offset": 111,
+      "size": 3985
+    },
+    {
+      "fd": 3,
+      "offset": 832,
+      "size": 832
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140737228865376
+      "buf_addr": 140731500824400
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140737228865296
+      "buf_addr": 140731500824320
+    },
+    {
+      "fd": 3,
+      "offset": 3373,
+      "size": 4096
+    },
+    {
+      "fd": 3,
+      "offset": 3373,
+      "size": 723
+    },
+    {
+      "fd": 3,
+      "offset": 4028,
+      "size": 4096
+    },
+    {
+      "fd": 3,
+      "offset": 4028,
+      "size": 68
+    },
+    {
+      "fd": 3,
+      "offset": 4028,
+      "size": 8192
+    },
+    {
+      "fd": 3,
+      "offset": 4028,
+      "size": 4164
+    },
+    {
+      "fd": 3,
+      "offset": 4038,
+      "size": 4096
+    },
+    {
+      "fd": 3,
+      "offset": 4038,
+      "size": 58
+    },
+    {
+      "fd": 3,
+      "offset": 4038,
+      "size": 8192
+    },
+    {
+      "fd": 3,
+      "offset": 4038,
+      "size": 4154
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 58
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 68
+    },
+    {
+      "fd": 3,
+      "offset": 5907,
+      "size": 4154
+    },
+    {
+      "fd": 3,
+      "offset": 5907,
+      "size": 2285
+    },
+    {
+      "fd": 3,
+      "offset": 6236,
+      "size": 4164
+    },
+    {
+      "fd": 3,
+      "offset": 6236,
+      "size": 1956
     }
   ],
   "chain_trace": {
@@ -85,27 +325,10 @@
         "values": []
       },
       "td->td_imagelength": {
-        "file_offset": 26,
-        "kind": "ifd_tag_field",
+        "file_offset": null,
+        "kind": null,
         "values": [
           2049
-        ],
-        "tag_id": 257,
-        "tag_name": "ImageLength",
-        "value_offset": 34,
-        "entry_range": [
-          26,
-          27,
-          28,
-          29,
-          30,
-          31,
-          32,
-          33,
-          34,
-          35,
-          36,
-          37
         ]
       }
     },
