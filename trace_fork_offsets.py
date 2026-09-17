@@ -4845,7 +4845,7 @@ def main():
                     for off, sz in sorted(only_target):
                         print(f'      offset=0x{off:04x} size={sz}')
                 if only_ref:
-                    print(f'    Only in reference (tiff-4.4.0):')
+                    print(f'    Only in reference ({config.get("version_a", "reference")}):')
                     for off, sz in sorted(only_ref):
                         print(f'      offset=0x{off:04x} size={sz}')
             else:
