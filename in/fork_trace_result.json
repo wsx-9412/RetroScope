@@ -21,19 +21,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140723086583904
+      "buf_addr": 140733664427360
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140723086583840
+      "buf_addr": 140733664427296
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140723086583760
+      "buf_addr": 140733664427216
     }
   ],
   "ref_file_reads": [
@@ -41,19 +41,19 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140727602560768
+      "buf_addr": 140721966020512
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140727602560704
+      "buf_addr": 140721966020448
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140727602560624
+      "buf_addr": 140721966020368
     }
   ],
   "chain_trace": {
@@ -91,7 +91,22 @@
           2049
         ],
         "tag_id": 257,
-        "tag_name": "ImageLength"
+        "tag_name": "ImageLength",
+        "value_offset": 34,
+        "entry_range": [
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37
+        ]
       }
     },
     "fork_points": [
