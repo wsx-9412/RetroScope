@@ -20,6 +20,25 @@ from pathlib import Path
 
 import stage_timing
 
+# Display labels for the two versions under analysis.  The pipeline supports
+# ARBITRARY reference/target version pairs (e.g. tiff-4.0.6 vs tiff-3.9.5),
+# so the legacy hardcoded "v4.4.0"/"v4.0.8" labels are replaced by the real
+# version directory names, set by analyze_lcs_result from the binaries.
+_LABEL_A = "reference"
+_LABEL_B = "target"
+
+
+def _version_label(binary):
+    """Return a short display label for a binary (its version dir name)."""
+    try:
+        root = find_version_root(binary)
+        name = Path(root).name
+        if name and not name.startswith(('.', '/')):
+            return name
+    except Exception:
+        pass
+    return None
+
 
 def find_version_root(binary):
     """Walk up from the binary to find the version root directory."""
