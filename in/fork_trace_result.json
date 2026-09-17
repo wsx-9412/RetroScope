@@ -1,7 +1,7 @@
 {
-  "binary_target": "/tmp/fork_analysis_klzilisy/target/tools/.libs/tiffcrop",
-  "binary_ref": "/tmp/fork_analysis_klzilisy/ref/tools/.libs/tiffcrop",
-  "fork_spec": "/tmp/fork_analysis_klzilisy/target/libtiff/tif_strip.c:111",
+  "binary_target": "/tmp/fork_analysis_j_gpv77_/target/tools/.libs/tiffcrop",
+  "binary_ref": "/tmp/fork_analysis_j_gpv77_/ref/tools/.libs/tiffcrop",
+  "fork_spec": "/tmp/fork_analysis_j_gpv77_/target/libtiff/tif_strip.c:111",
   "variables": [
     "tif",
     "nrows",
@@ -46,7 +46,7 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140733927683536
+      "buf_addr": 140721912156976
     },
     {
       "fd": 3,
@@ -67,78 +67,78 @@
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140733927683472
+      "buf_addr": 140721912156912
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140733927683392
+      "buf_addr": 140721912156832
     },
     {
       "fd": 3,
-      "offset": 3461,
+      "offset": 3503,
       "size": 4096
     },
     {
       "fd": 3,
-      "offset": 3461,
-      "size": 635
+      "offset": 3503,
+      "size": 593
     },
     {
       "fd": 3,
-      "offset": 4070,
+      "offset": 3997,
       "size": 4096
     },
     {
       "fd": 3,
-      "offset": 4070,
-      "size": 26
+      "offset": 3997,
+      "size": 99
     },
     {
       "fd": 3,
-      "offset": 4070,
+      "offset": 3997,
       "size": 8192
     },
     {
       "fd": 3,
-      "offset": 4070,
-      "size": 4122
+      "offset": 3997,
+      "size": 4195
     },
     {
       "fd": 3,
-      "offset": 4083,
+      "offset": 4007,
       "size": 4096
     },
     {
       "fd": 3,
-      "offset": 4083,
-      "size": 13
+      "offset": 4007,
+      "size": 89
     },
     {
       "fd": 3,
-      "offset": 4083,
+      "offset": 4007,
       "size": 8192
     },
     {
       "fd": 3,
-      "offset": 4083,
-      "size": 4109
+      "offset": 4007,
+      "size": 4185
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 13
+      "size": 89
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 26
+      "size": 99
     },
     {
       "fd": 3,
       "offset": 5989,
-      "size": 4109
+      "size": 4185
     },
     {
       "fd": 3,
@@ -148,7 +148,7 @@
     {
       "fd": 3,
       "offset": 6318,
-      "size": 4122
+      "size": 4195
     },
     {
       "fd": 3,
@@ -186,7 +186,7 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140726830974880
+      "buf_addr": 140732175646192
     },
     {
       "fd": 3,
@@ -207,78 +207,78 @@
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140726830974816
+      "buf_addr": 140732175646128
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140726830974736
+      "buf_addr": 140732175646048
     },
     {
       "fd": 3,
-      "offset": 3458,
+      "offset": 3500,
       "size": 4096
     },
     {
       "fd": 3,
-      "offset": 3458,
-      "size": 638
+      "offset": 3500,
+      "size": 596
     },
     {
       "fd": 3,
-      "offset": 4042,
+      "offset": 3962,
       "size": 4096
     },
     {
       "fd": 3,
-      "offset": 4042,
-      "size": 54
+      "offset": 3962,
+      "size": 134
     },
     {
       "fd": 3,
-      "offset": 4042,
+      "offset": 3962,
       "size": 8192
     },
     {
       "fd": 3,
-      "offset": 4042,
-      "size": 4150
+      "offset": 3962,
+      "size": 4230
     },
     {
       "fd": 3,
-      "offset": 4093,
+      "offset": 4041,
       "size": 4096
     },
     {
       "fd": 3,
-      "offset": 4093,
-      "size": 3
+      "offset": 4041,
+      "size": 55
     },
     {
       "fd": 3,
-      "offset": 4093,
+      "offset": 4041,
       "size": 8192
     },
     {
       "fd": 3,
-      "offset": 4093,
-      "size": 4099
+      "offset": 4041,
+      "size": 4151
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 54
+      "size": 55
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 3
+      "size": 134
     },
     {
       "fd": 3,
       "offset": 5858,
-      "size": 4150
+      "size": 4151
     },
     {
       "fd": 3,
@@ -287,13 +287,13 @@
     },
     {
       "fd": 3,
-      "offset": 6236,
-      "size": 4099
+      "offset": 6187,
+      "size": 4230
     },
     {
       "fd": 3,
-      "offset": 6236,
-      "size": 1956
+      "offset": 6187,
+      "size": 2005
     }
   ],
   "chain_trace": {
@@ -465,7 +465,7 @@
     "pread64": []
   },
   "arithmetic_backtrace": {
-    "source": "/tmp/fork_analysis_klzilisy/target/libtiff/tif_strip.c",
+    "source": "/tmp/fork_analysis_j_gpv77_/target/libtiff/tif_strip.c",
     "fork_line": 111,
     "nodes": {
       "tif": {
