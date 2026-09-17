@@ -4403,6 +4403,20 @@ def compare_crash_signatures(ref_sig, tgt_sig):
                          f"target {tfile}:{tf.get('line')})")
 
 
+def _replace_input_arg(arg, tmp_path, input_file):
+    """Map a program argument to the mutated temp file.
+
+    The arg may reference the input via ``{input_file}``/``{input}``
+    placeholders, the exact input path, or a relative spelling of it —
+    all must be rewritten or the mutation silently runs the ORIGINAL file.
+    """
+    if '{' in arg:
+        return arg.replace('{input_file}', tmp_path).replace('{input}', tmp_path)
+    if arg == input_file or os.path.abspath(arg) == os.path.abspath(input_file):
+        return tmp_path
+    return arg
+
+
 def _fork_condition_expr(stmt_text):
     """Turn a recorded fork statement into a GDB-evaluable boolean condition.
 
@@ -5459,6 +5473,47 @@ def main():
         offset_strs = ', '.join(f'0x{o:x}' for o in sorted(mapped_offsets))
         print(f'  Validation candidates (from fork variables) at input file '
               f'offsets: {offset_strs}')
+
+    # 5c. Value-level mutation of the fork-variable origins: rewrite the
+    #     whole value at each origin (e.g. the 4-byte ImageLength value at
+    #     0x22) and check at the fork statement whether the guard's outcome
+    #     flips — "change the value, not the byte".
+    value_level_results = None
+    if var_offsets and binary and fork_spec_b and input_file:
+        _df = config.get('dynamic_fork') or {}
+        _cond_text = (((_df.get('diff') or {}).get('b') or {}).get('text')
+                      or config.get('root_cause_statement_b', ''))
+        if _fork_condition_expr(_cond_text):
+            print(f'\n  Step 5c: Value-level mutation of fork-variable origins')
+            try:
+                value_level_results = test_value_level_mutations(
+                    binary, binary_ref, input_file, program_args,
+                    var_offsets, fork_spec_b, _cond_text,
+                    timeout=a.timeout)
+            except Exception as _e:
+                print(f'  [!] value-level mutation failed: {_e}')
+            if value_level_results:
+                for _off, _r in sorted(value_level_results.items()):
+                    _flips = [v for v, t in _r['trials'].items()
+                              if t.get('outcome_flip')]
+                    _crashes = [v for v, t in _r['trials'].items()
+                                if t.get('crash') in ('same_func', 'same_site')]
+                    print(f'\n  Offset 0x{_off:x} ({_r["var"]}, '
+                          f'{_r["width"]}B, original=0x{_r["original"]:x}, '
+                          f'baseline target outcome='
+                          f'{_r["baseline_outcome"]}, ref='
+                          f'{_r["ref_outcome"]}):')
+                    if _flips:
+                        print(f'    fork-flipping values: '
+                              + ', '.join(f'0x{v:x}' for v in _flips[:12]))
+                    if _crashes:
+                        print(f'    crash-reproducing values: '
+                              + ', '.join(f'0x{v:x}' for v in _crashes[:12]))
+                    if not _flips and not _crashes:
+                        print('    no value flips the fork outcome or '
+                              'reproduces the reference crash')
+            else:
+                print('  (no value-level results)')
 
     # 5b. Offsets found by the arithmetic backtrace (already probe-validated).
     arith_offsets = set()
