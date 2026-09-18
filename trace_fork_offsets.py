@@ -4926,8 +4926,10 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
             verdicts[v['verdict']] = verdicts.get(v['verdict'], 0) + 1
         _nc = len(results[offset]['no_crash'])
         _st = sum(len(v) for v in results[offset]['same_type'].values())
+        _dt = len(results[offset]['different_type'])
         print(f'    => {n} matching value(s) (target reproduces ref crash) '
-              f'{verdicts}; no_crash={_nc}, same_type(其他崩溃点)={_st}')
+              f'{verdicts}; no_crash={_nc}, same_type(其他崩溃点)={_st}, '
+              f'different_type={_dt}')
         if _nc:
             print(f'       crash-dodging values: '
                   f'{[f"0x{v:02x}" for v in results[offset]["no_crash"][:40]]}')
