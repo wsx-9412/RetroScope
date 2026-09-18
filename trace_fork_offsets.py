@@ -656,7 +656,12 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
                     if len(hits) >= max_hits:
                         break
                 if hits:
-                    break  # narrowest meaningful encoding wins
+                    # Positive values: the minimal-width match is the precise
+                    # field — stop.  Negative values: keep going until the
+                    # full field width (min_w+2, e.g. the 4-byte slot holding
+                    # a negative sample rate) so the sign bytes are covered.
+                    if val >= 0 or width >= min_w + 2:
+                        break
         if hits:
             out[name] = hits
     return out
