@@ -5284,7 +5284,8 @@ def main():
             size = r['size']
             if offset >= file_size:
                 print(f'    offset=0x{offset:04x} size={size} -- BEYOND FILE BOUNDARY')
-                print(f'      This read accesses invalid data, causing TIFFOpen to return NULL')
+                print(f'      This read accesses invalid data beyond the file '
+                      f'end (short read / IO error)')
             else:
                 print(f'    offset=0x{offset:04x} size={size} -- within file boundary')
 
@@ -5309,8 +5310,16 @@ def main():
             # from the fork source file.
             try:
                 from backward_tracer import _find_function_containing_line
+                _src = Path(fork_file)
+                if not _src.is_absolute():
+                    _root = Path(resolve_binary(binary)).resolve()
+                    for _par in [_root] + list(_root.parents):
+                        _cand = _par / _src.name
+                        if _cand.is_file():
+                            _src = _cand
+                            break
                 fork_func_name = _find_function_containing_line(
-                    fork_file, fork_line)
+                    str(_src), fork_line) or ''
             except Exception:
                 fork_func_name = ''
         if not fork_func_name:
