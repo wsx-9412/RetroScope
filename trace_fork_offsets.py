@@ -1045,7 +1045,7 @@ def build_var_dump_block(variables):
     return f"""  python
 import gdb
 _vars = [{var_list}]
-_roots = set({var_list})
+_roots = set(_vars)
 def _dump_var(_v, _depth=0):
     try:
         _val = gdb.parse_and_eval(_v)
