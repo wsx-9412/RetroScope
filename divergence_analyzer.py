@@ -4922,9 +4922,15 @@ quit
         m = re.search(r'RETVAL\s+(.+)', line)
         if m:
             try:
-                return int(m.group(1), 0)
+                v = int(m.group(1), 0)
             except ValueError:
                 return None
+            # GDB may print a 32-bit int error code (e.g. -6) as its
+            # unsigned form (0xFFFFFFFA = 4294967290) when rax is
+            # zero-extended.  Normalize so `return -6` source matching works.
+            if v > 0x7FFFFFFF:
+                v -= 0x100000000
+            return v
     return None
 
 

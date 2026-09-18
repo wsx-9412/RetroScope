@@ -1,5 +1,14 @@
 # config_lame.py
 
+# =====================================================
+# CVE configuration: change this section for each CVE
+# =====================================================
+CVE_ID = "CVE-2017-15045"            # CVE number
+INPUT_FILE = "in/CVE-2017-15045"     # input file path (relative to RetroScope/)
+OUTPUT_FILE = "/dev/null"            # program output file
+# Program arguments template: {program_path}, {input_file}, {output_file}
+COMMAND_FORMAT = "{program_path} -f -V 9 {input_file} {output_file}"
+
 COMPILE_COMMANDS = {
     "reference": {
         "pre_build": [
