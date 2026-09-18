@@ -5652,10 +5652,10 @@ def main():
                         if info.get('file_offset') is not None:
                             print(f'      {vname}:')
                             print(f'        kind={info["kind"]} -> file offset '
-                              f'0x{info["file_offset"]:x} '
-                              f'(tif->tif_diroff=0x{diroff:x})')
-                    else:
-                        print(f'      {vname}: no IFD mapping')
+                                  f'0x{info["file_offset"]:x} '
+                                  f'(tif->tif_diroff=0x{diroff:x})')
+                        else:
+                            print(f'      {vname}: no IFD mapping')
 
     # ================================================================
     # Step 4.6: Arithmetic backtrace (allocator summary + def-use chain)
