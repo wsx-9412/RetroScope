@@ -581,6 +581,8 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
                 if val < 0 and val < -(1 << (8 * width - 1)):
                     continue
                 enc = val & ((1 << (8 * width)) - 1)
+                if enc == 0:
+                    continue  # a zero value matches every zero byte — no signal
                 if width == 1 and enc < 16:
                     continue  # a byte 0x00-0x0f matches everywhere
                 try:
