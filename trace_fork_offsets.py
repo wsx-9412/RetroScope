@@ -4990,8 +4990,6 @@ def _build_mutation_pairs(offsets, var_spans, max_pairs=60):
     seen = set()
 
     def _add(a, b):
-        if a == b or a >= len(open_pairs_dummy) if False else False:
-            pass
         if a == b:
             return
         key = (min(a, b), max(a, b))
