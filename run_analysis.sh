@@ -57,7 +57,7 @@ case "$PROJECT_NAME" in
     "lame")
         REFERENCE_VERSION_PATH="$BASE_DIR/lame-versions/lame-3.98.4"
         TARGET_VERSION_PATH="$BASE_DIR/lame-versions/lame-3.97"
-        DEFAULT_INPUT="$INPUT_FILE_DIR/test.wav"
+        DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2017-15045"
         EXTRA_ARGS=()
         ;;
     "audiofile")
