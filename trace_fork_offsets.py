@@ -5302,19 +5302,35 @@ def main():
         df = config.get('dynamic_fork') or {}
         fork_func_name = (df.get('function_b')
                           or config.get('root_cause_function')
-                          or 'TIFFReadDirectoryFindFieldInfo')
-        print(f'  [*] Fork function: {fork_func_name}')
+                          or config.get('poly_track_function')
+                          or '')
+        if not fork_func_name:
+            # Last resort: derive the enclosing function of the fork line
+            # from the fork source file.
+            try:
+                from backward_tracer import _find_function_containing_line
+                fork_func_name = _find_function_containing_line(
+                    fork_file, fork_line)
+            except Exception:
+                fork_func_name = ''
+        if not fork_func_name:
+            print('  [!] No fork function available — skipping call-site '
+                  'trace (the fork statement location is used directly).')
+            chain_trace_results = {}
+            cs_result, err = None, None
+        else:
+            print(f'  [*] Fork function: {fork_func_name}')
 
-        _diff_b = ((df.get('diff') or {}).get('b') or {})
-        _b_clauses = _diff_b.get('clauses') or {}
-        _clause = None
-        if _b_clauses:
-            _first_key = sorted(_b_clauses, key=lambda k: int(k))[0]
-            _clause = _b_clauses[_first_key]
+            _diff_b = ((df.get('diff') or {}).get('b') or {})
+            _b_clauses = _diff_b.get('clauses') or {}
+            _clause = None
+            if _b_clauses:
+                _first_key = sorted(_b_clauses, key=lambda k: int(k))[0]
+                _clause = _b_clauses[_first_key]
 
-        cs_result, err = run_gdb_call_site_trace(
-            binary, fork_spec, fork_func_name, variables, input_file,
-            program_args, timeout=a.timeout * 2, clauses=_clause)
+            cs_result, err = run_gdb_call_site_trace(
+                binary, fork_spec, fork_func_name, variables, input_file,
+                program_args, timeout=a.timeout * 2, clauses=_clause)
 
         if err:
             print(f'  [!] Call-site trace failed: {err}')
