@@ -610,9 +610,22 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
         #    0x18..0x1b) so byte-mutation sweeps the whole field, including
         #    the sign byte.
         if not hits and file_data:
-            for width, endian in ((4, 'little'), (8, 'little'),
-                                  (2, 'little'), (4, 'big'), (2, 'big'),
-                                  (1, 'little')):
+            # Try the value's MINIMAL encoding width first (a 4-byte "01 00
+            # 00 00" pattern for value 1 matches zero padding everywhere; the
+            # natural width is far more specific), then one byte wider as a
+            # fallback for fields stored in a larger slot.
+            if val >= 0:
+                min_w = max(1, (val.bit_length() + 7) // 8)
+            else:
+                min_w = 2
+                while min_w <= 8 and val < -(1 << (8 * min_w - 1)):
+                    min_w += 1
+            for width, endian in (
+                    (min_w, 'little'), (min_w, 'big'),
+                    (min_w + 1, 'little'), (min_w + 1, 'big'),
+                    (min_w + 2, 'little'), (min_w + 2, 'big')):
+                if width > 8:
+                    continue
                 if val >= 0 and val >= (1 << (8 * width)):
                     continue
                 if val < 0 and val < -(1 << (8 * width - 1)):
