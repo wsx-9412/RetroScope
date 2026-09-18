@@ -5084,6 +5084,14 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
           f'({_path_basename(ref_crash.get("file"))}:'
           f'{ref_crash.get("line")}, rc={ref_rc})')
 
+    # Baseline target outcome on the ORIGINAL file (for fork-flip detection).
+    base_tgt_out, base_tgt_rc = _run_mutation_worker(
+        (real_target, bytes(original_data), program_args, input_file, timeout))
+    base_tgt_sig = extract_crash_signature(base_tgt_out)
+    print(f'  Target baseline (original file): rc={base_tgt_rc}'
+          + (f', crash={base_tgt_sig["type"]}'
+             if base_tgt_sig else ', no crash (unchanged if rc matches)'))
+
     probe = probe_values or PAIRWISE_PROBE
     results = {
         'ref_signature': {
@@ -5091,6 +5099,10 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
             'crash_frame': {k: ref_crash.get(k)
                             for k in ('function', 'file', 'line')},
             'summary': ref_sig['summary'],
+        },
+        'baseline_target': {
+            'rc': base_tgt_rc,
+            'crash': base_tgt_sig['type'] if base_tgt_sig else None,
         },
     }
     observed = {}
@@ -5106,8 +5118,8 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
         oa, ob = original_data[offA], original_data[offB]
         key = f'0x{offA:x}+0x{offB:x}'
         results[key] = {'original': [oa, ob], 'matches': {},
-                        'no_crash': [], 'same_type': {},
-                        'different_type': []}
+                        'no_crash': [], 'fork_flip': [],
+                        'same_type': {}, 'different_type': []}
         print(f'\n  [*] Testing pair {key} '
               f'(original={oa:02x},{ob:02x})...')
 
@@ -5134,7 +5146,10 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                 total_tests += 1
                 sig = extract_crash_signature(out)
                 if sig is None:
-                    results[key]['no_crash'].append((va, vb))
+                    if base_tgt_rc is not None and rc != base_tgt_rc:
+                        results[key]['fork_flip'].append((va, vb))
+                    else:
+                        results[key]['no_crash'].append((va, vb))
                     continue
                 verdict, diff = compare_crash_signatures(ref_sig, sig)
                 crash = sig["crash_frames"][0] if sig["crash_frames"] else {}
@@ -5166,13 +5181,15 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
 
         n = len(results[key]['matches'])
         _nc = len(results[key]['no_crash'])
+        _ff = len(results[key]['fork_flip'])
         _st = sum(len(v) for v in results[key]['same_type'].values())
         _dt = len(results[key]['different_type'])
         print(f'    => {n} matching combo(s) (target reproduces ref crash); '
-              f'no_crash={_nc}, same_type={_st}, different_type={_dt}')
-        if _nc and _nc <= 40:
-            print(f'       crash-dodging combos: '
-                  f'{[(f"0x{a:02x}", f"0x{b:02x}") for a, b in results[key]["no_crash"]]}')
+              f'no_crash(不变)={_nc}, fork_flip(行为改变)={_ff}, '
+              f'same_type={_st}, different_type={_dt}')
+        if _ff and _ff <= 60:
+            print(f'       fork-flipping combos (target outcome changed): '
+                  f'{[(f"0x{a:02x}", f"0x{b:02x}") for a, b in results[key]["fork_flip"]]}')
 
     results['pairwise_target_crash_summary'] = observed
     print(f'\n  [*] Total pairwise mutations tested: {total_tests}')
