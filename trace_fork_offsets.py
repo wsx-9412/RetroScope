@@ -4741,7 +4741,8 @@ def _run_mutation_worker(task):
     input_file, timeout).  Returns (stdout+stderr, returncode).
     """
     binary, data, program_args, input_file, timeout = task
-    fd, tmp_path = tempfile.mkstemp(suffix='.tif', prefix='mutate_')
+    _ext = os.path.splitext(input_file)[1] if input_file else '.bin'
+        fd, tmp_path = tempfile.mkstemp(suffix=_ext, prefix='mutate_')
     os.close(fd)
     try:
         with open(tmp_path, 'wb') as f:
@@ -4790,7 +4791,8 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
         original_data = bytearray(f.read())
 
     def _run(binary, data):
-        fd, tmp_path = tempfile.mkstemp(suffix='.tif', prefix='mutate_')
+        _ext = os.path.splitext(input_file)[1] if input_file else '.bin'
+        fd, tmp_path = tempfile.mkstemp(suffix=_ext, prefix='mutate_')
         os.close(fd)
         try:
             with open(tmp_path, 'wb') as f:
