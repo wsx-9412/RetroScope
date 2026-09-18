@@ -5956,6 +5956,19 @@ def main():
             title='Step 6: Byte mutation crash testing '
                   '(fork-variable offsets)')
 
+    # Step 6b: two-offset combined mutation — single-byte sweeps miss
+    # interactions that need TWO bytes changed (e.g. the sign byte AND the
+    # low byte of a corrupt sample-rate field).
+    pairwise_results = {}
+    if len(stage1_offsets) >= 2:
+        _var_spans = {v: [h['offset'] for h in hits]
+                      for v, hits in (var_offsets or {}).items()}
+        pairwise_results = run_pairwise_mutation_stage(
+            binary, binary_ref, input_file, program_args,
+            sorted(stage1_offsets), _var_spans, a.timeout,
+            title='Step 6b: Two-offset combined byte mutation '
+                  '(pairwise)')
+
     print(f'{"="*60}')
 
     # Save results
