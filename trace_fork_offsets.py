@@ -1029,6 +1029,14 @@ def build_var_dump_block(variables):
     the divisor of a division-by-zero) are expanded into their scalar fields
     (``track->f.channelCount``, ``track->f.sampleWidth``, ...) so the exact
     input-derived bytes are traced instead of dropping the whole struct.
+
+    Pointer variables are dereferenced one level, but ONLY into fields that
+    the fork variables reference (e.g. ``tif`` is only expanded to
+    ``tif->tif_dir`` when the fork variables include ``tif->tif_dir``) —
+    otherwise the whole handle's internal state (``tif->tif_header``,
+    ``tif->tif_row``, ...) would produce value matches at structurally
+    unrelated file offsets.  Pointers with no referenced fields (e.g. lame's
+    ``gf``) are expanded fully.
     """
     if not variables:
         return ''
@@ -1037,6 +1045,7 @@ def build_var_dump_block(variables):
     return f"""  python
 import gdb
 _vars = [{var_list}]
+_roots = set({var_list})
 def _dump_var(_v, _depth=0):
     try:
         _val = gdb.parse_and_eval(_v)
@@ -1071,14 +1080,20 @@ def _dump_var(_v, _depth=0):
             return
         if _dt.code not in (gdb.TYPE_CODE_STRUCT, gdb.TYPE_CODE_UNION):
             return
+        _referenced = [_r for _r in _roots if _r.startswith(_v + '->')]
         _nf = 0
         for _fld in _dt.fields():
             if _nf >= 32:  # cap per pointee to limit noise
                 break
             if getattr(_fld, 'is_static', False) or getattr(_fld, 'artificial', False):
                 continue
+            _fname = _v + '->' + _fld.name
+            if _referenced and not any(_r == _fname or _r.startswith(_fname + '->')
+                                       or _r.startswith(_fname + '.')
+                                       for _r in _referenced):
+                continue  # not on the fork's data path
             try:
-                _dump_var(_v + '->' + _fld.name, _depth + 1)
+                _dump_var(_fname, _depth + 1)
             except Exception:
                 continue
             _nf += 1
