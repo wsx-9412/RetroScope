@@ -4825,6 +4825,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                 total_tests += 1
                 sig = extract_crash_signature(out)
                 if sig is None:
+                    results[offset]['no_crash'].append(byte_val)
                     continue
                 verdict, diff = compare_crash_signatures(ref_sig, sig)
                 crash = sig["crash_frames"][0] if sig["crash_frames"] else {}
@@ -4855,6 +4856,8 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                         key = f"{crash.get('function')}:{_path_basename(crash.get('file'))}:{crash.get('line')}"
                         sites.setdefault(key, 0)
                         sites[key] += 1
+                        results[offset]['same_type'].setdefault(key, [])
+                        results[offset]['same_type'][key].append(byte_val)
         else:
             with ProcessPoolExecutor(max_workers=n_workers) as ex:
                 futures = {}
@@ -4870,6 +4873,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                     total_tests += 1
                     sig = extract_crash_signature(out)
                     if sig is None:
+                        results[offset]['no_crash'].append(byte_val)
                         continue
                     verdict, diff = compare_crash_signatures(ref_sig, sig)
                     crash = sig["crash_frames"][0] if sig["crash_frames"] else {}
@@ -4906,13 +4910,24 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                             key = f"{crash.get('function')}:{_path_basename(crash.get('file'))}:{crash.get('line')}"
                             sites.setdefault(key, 0)
                             sites[key] += 1
+                            results[offset]['same_type'].setdefault(key, [])
+                            results[offset]['same_type'][key].append(byte_val)
 
         n = len(results[offset]['matches'])
         verdicts = {}
         for v in results[offset]['matches'].values():
             verdicts[v['verdict']] = verdicts.get(v['verdict'], 0) + 1
+        _nc = len(results[offset]['no_crash'])
+        _st = sum(len(v) for v in results[offset]['same_type'].values())
         print(f'    => {n} matching value(s) (target reproduces ref crash) '
-              f'{verdicts}')
+              f'{verdicts}; no_crash={_nc}, same_type(其他崩溃点)={_st}')
+        if _nc:
+            print(f'       crash-dodging values: '
+                  f'{[f"0x{v:02x}" for v in results[offset]["no_crash"][:40]]}')
+        if _st:
+            _sites = ', '.join(f'{k}:{len(v)}' for k, v in
+                               results[offset]['same_type'].items())
+            print(f'       same-type crash sites: {_sites}')
 
     results['target_crash_summary'] = observed
     print(f'\n  [*] Total mutations tested: {total_tests}')
