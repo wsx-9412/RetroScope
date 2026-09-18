@@ -4915,7 +4915,10 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                     total_tests += 1
                     sig = extract_crash_signature(out)
                     if sig is None:
-                        results[offset]['no_crash'].append(byte_val)
+                        if base_tgt_rc is not None and rc != base_tgt_rc:
+                            results[offset]['fork_flip'].append(byte_val)
+                        else:
+                            results[offset]['no_crash'].append(byte_val)
                         continue
                     verdict, diff = compare_crash_signatures(ref_sig, sig)
                     crash = sig["crash_frames"][0] if sig["crash_frames"] else {}
@@ -4963,13 +4966,17 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
         for v in results[offset]['matches'].values():
             verdicts[v['verdict']] = verdicts.get(v['verdict'], 0) + 1
         _nc = len(results[offset]['no_crash'])
+        _ff = len(results[offset]['fork_flip'])
         _st = sum(len(v) for v in results[offset]['same_type'].values())
         _dt = len(results[offset]['different_type'])
         print(f'    => {n} matching value(s) (target reproduces ref crash) '
-              f'{verdicts}; no_crash={_nc}, same_type(其他崩溃点)={_st}, '
-              f'different_type={_dt}')
+              f'{verdicts}; no_crash(不变)={_nc}, fork_flip(行为改变)={_ff}, '
+              f'same_type(其他崩溃点)={_st}, different_type={_dt}')
+        if _ff:
+            print(f'       fork-flipping values (target outcome changed): '
+                  f'{[f"0x{v:02x}" for v in results[offset]["fork_flip"][:40]]}')
         if _nc:
-            print(f'       crash-dodging values: '
+            print(f'       unchanged (same as baseline) values: '
                   f'{[f"0x{v:02x}" for v in results[offset]["no_crash"][:40]]}')
         if _st:
             _sites = ', '.join(f'{k}:{len(v)}' for k, v in
