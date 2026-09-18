@@ -4284,9 +4284,11 @@ def _detect_crash_point(binary, args, lib_path, source_dirs, timeout=120):
     frames = []
 
     # (1) ASan backtrace frames: "#N 0x... in <func> <file>:<line>"
+    #     (newer ASan omits the "at" between function and file; older
+    #     formats use "in <func> at <file>:<line>")
     for line in output.split('\n'):
         m = re.search(
-            r'#(\d+)\s+0x[0-9a-fA-F]+\s+in\s+(.+?)\s+(\S+):(\d+)\s*$',
+            r'#(\d+)\s+0x[0-9a-fA-F]+\s+in\s+(.+?)\s+(?:at\s+)?(\S+):(\d+)\s*$',
             line)
         if m:
             frames.append({
