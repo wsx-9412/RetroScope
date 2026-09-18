@@ -566,17 +566,22 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
 
         # 2) Scalar value byte pattern inside the actually-read regions.
         #    4-byte little-endian first (C ints dominate), then wider
-        #    widths; 1-byte last (noisy for small values).
+        #    widths; 1-byte last (noisy for small values).  Negative ints
+        #    (e.g. a corrupt -21692 Hz sample-rate field) are matched by
+        #    their two's-complement encoding.
         if not hits and file_data:
             for width, endian in ((4, 'little'), (8, 'little'),
                                   (2, 'little'), (4, 'big'), (2, 'big'),
                                   (1, 'little')):
-                if val < 0 or val >= (1 << (8 * width)):
+                if val >= 0 and val >= (1 << (8 * width)):
                     continue
-                if width == 1 and val < 16:
+                if val < 0 and val < -(1 << (8 * width - 1)):
+                    continue
+                enc = val & ((1 << (8 * width)) - 1)
+                if width == 1 and enc < 16:
                     continue  # a byte 0x00-0x0f matches everywhere
                 try:
-                    pat = val.to_bytes(width, endian)
+                    pat = enc.to_bytes(width, endian)
                 except OverflowError:
                     continue
                 for (rs, re_) in ranges:
