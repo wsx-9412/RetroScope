@@ -5529,7 +5529,8 @@ def main():
             print(f'  4. Critical file reads (beyond file boundary, size={file_size}):')
             for r in critical_reads:
                 print(f'     pread64 offset=0x{r["offset"]:x} size={r["size"]} — BEYOND FILE')
-            print(f'     These reads cause IO errors, leading to TIFFOpen returning NULL')
+            print(f'     These reads cause IO errors, leading to early error/abort paths '
+                  f'(e.g. a NULL handle) before the fork point')
     else:
         print(f'  3. Root cause: see detailed analysis above')
 
