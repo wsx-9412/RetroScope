@@ -966,28 +966,28 @@ def _dump_var(_v, _depth=0):
     except Exception:
         return
     _t = _val.type
+    # Resolve typedefs (e.g. AFframecount -> unsigned long, or a typedef'd
+    # struct) so code checks see the underlying type.
+    try:
+        _t = _t.strip_typedefs()
+    except Exception:
+        pass
     if _t.code in (gdb.TYPE_CODE_STRUCT, gdb.TYPE_CODE_UNION):
         if _depth >= 2:
             return
         for _fld in _t.fields():
-            if _fld.is_static or getattr(_fld, 'artificial', False):
+            if getattr(_fld, 'is_static', False) or getattr(_fld, 'artificial', False):
                 continue
             try:
                 _dump_var(_v + '.' + _fld.name, _depth + 1)
             except Exception:
                 continue
         return
-    # Resolve typedefs (e.g. AFframecount -> unsigned long) so the scalar
-    # type check below sees the underlying type code.
-    try:
-        _t = _t.strip_typedefs()
-    except Exception:
-        pass
-    _scalar_codes = {getattr(gdb, 'TYPE_CODE_INT', None),
+    _scalar_codes = {{getattr(gdb, 'TYPE_CODE_INT', None),
                      getattr(gdb, 'TYPE_CODE_ENUM', None),
                      getattr(gdb, 'TYPE_CODE_FLOAT', None),
                      getattr(gdb, 'TYPE_CODE_FLT', None),
-                     getattr(gdb, 'TYPE_CODE_BOOL', None)}
+                     getattr(gdb, 'TYPE_CODE_BOOL', None)}}
     if _t.code not in _scalar_codes:
         return
     try:
