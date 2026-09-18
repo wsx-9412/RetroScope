@@ -535,6 +535,12 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
         read for the value's byte encoding (4/2/8-byte, little/big
         endian): the variable's value was parsed from those bytes.
 
+    Small values (e.g. 1, 2) encode as zero-heavy patterns ("01 00 00 00")
+    that occur in many places of any real file, so a rarity filter rejects
+    patterns whose total occurrence count in the read regions exceeds
+    ``MAX_PATTERN_OCCURRENCES`` — only distinctive values (real field
+    contents like a sample rate or data size) produce candidate offsets.
+
     No file-format knowledge is used.  Returns
     ``{var: [{'offset', 'width', 'method'}, ...]}``.
     """
@@ -545,6 +551,22 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
               for r in reads
               if r.get('offset') is not None and r['offset'] >= 0
               and r.get('size')]
+    if not ranges:
+        return out
+
+    # Pattern occurrence counts (per encoding), used by the rarity filter.
+    occ_cache = {}
+
+    def _pattern_occurrences(pat):
+        if pat in occ_cache:
+            return occ_cache[pat]
+        occ = 0
+        for (rs, re_) in ranges:
+            if rs >= len(file_data):
+                continue
+            occ += file_data[rs:min(re_, len(file_data))].count(pat)
+        occ_cache[pat] = occ
+        return occ
 
     for var in variables:
         name = var.get('name')
