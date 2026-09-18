@@ -159,6 +159,11 @@ def main():
     ap.add_argument("--gdb-timeout", type=int, default=300)
     ap.add_argument("--include-exits", action="store_true")
     ap.add_argument("--max-trace-size", type=int, default=50000)
+    ap.add_argument("--match-level", choices=["name", "depth", "path"],
+                    default=None,
+                    help="LCS match level (default: path). Use 'name' when "
+                         "the two versions were heavily restructured (e.g. "
+                         "lame 3.98 -> 3.99) so full call paths never align.")
     ap.add_argument("--refactor-detect", action="store_true")
     ap.add_argument("--rename-threshold", type=float, default=0.7)
     ap.add_argument("--no-compile", action="store_true",
