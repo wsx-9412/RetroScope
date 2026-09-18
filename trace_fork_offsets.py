@@ -4859,6 +4859,9 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                         sites[key] += 1
                         results[offset]['same_type'].setdefault(key, [])
                         results[offset]['same_type'][key].append(byte_val)
+                    else:
+                        results[offset]['different_type'].append(
+                            (byte_val, sig['type']))
         else:
             with ProcessPoolExecutor(max_workers=n_workers) as ex:
                 futures = {}
@@ -4913,6 +4916,9 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                             sites[key] += 1
                             results[offset]['same_type'].setdefault(key, [])
                             results[offset]['same_type'][key].append(byte_val)
+                        else:
+                            results[offset]['different_type'].append(
+                                (byte_val, sig['type']))
 
         n = len(results[offset]['matches'])
         verdicts = {}
