@@ -4971,6 +4971,221 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
     return results
 
 
+# Pairwise (two-offset) probe values.  A full 255x255 sweep per pair is
+# usually prohibitive; these boundary/corner values capture the meaningful
+# two-byte interactions (e.g. flipping the sign byte AND the low byte of a
+# corrupt sample-rate field).
+PAIRWISE_PROBE = (0x00, 0x01, 0x02, 0x04, 0x08, 0x7f, 0x80, 0xfe, 0xff)
+
+
+def _build_mutation_pairs(offsets, var_spans, max_pairs=60):
+    """Build (offA, offB) pairs for the combined two-offset mutation.
+
+    Prioritizes pairs WITHIN a single fork variable's matched span (multi-byte
+    value manipulation — e.g. the four bytes of a corrupt sample-rate field),
+    then neighbouring cross-variable pairs, then generic pairs (bounded).
+    """
+    offsets = sorted(set(offsets))
+    pairs = []
+    seen = set()
+
+    def _add(a, b):
+        if a == b or a >= len(open_pairs_dummy) if False else False:
+            pass
+        if a == b:
+            return
+        key = (min(a, b), max(a, b))
+        if key not in seen:
+            seen.add(key)
+            pairs.append(key)
+
+    # 1) within-span pairs (each variable's multi-byte value bytes).
+    for offs in var_spans.values():
+        offs = sorted(set(offs))
+        if len(offs) > 8:
+            offs = offs[:8]
+        for i in range(len(offs)):
+            for j in range(i + 1, len(offs)):
+                _add(offs[i], offs[j])
+        if len(pairs) >= max_pairs:
+            return pairs[:max_pairs]
+
+    # 2) neighbouring cross-variable pairs.
+    for i in range(len(offsets)):
+        for j in range(i + 1, len(offsets)):
+            if offsets[j] - offsets[i] <= 2:
+                _add(offsets[i], offsets[j])
+        if len(pairs) >= max_pairs:
+            return pairs[:max_pairs]
+
+    # 3) generic pairs (only when the total offset set is small).
+    if len(offsets) <= 16:
+        for i in range(len(offsets)):
+            for j in range(i + 1, len(offsets)):
+                _add(offsets[i], offsets[j])
+                if len(pairs) >= max_pairs:
+                    return pairs[:max_pairs]
+    return pairs[:max_pairs]
+
+
+def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
+                                    program_args, pairs, timeout=10,
+                                    probe_values=None):
+    """Two-offset combined byte mutation.
+
+    For every (offA, offB) pair, mutate BOTH bytes simultaneously (sweeping a
+    bounded probe-value set on each) and check whether the combined mutation
+    makes the target reproduce the reference's crash — or produces a new
+    outcome that neither single-byte mutation alone achieves.
+    """
+    real_target = resolve_binary(binary_target)
+    real_ref = resolve_binary(binary_ref)
+    if not (real_target and real_ref
+            and os.path.isfile(real_target) and os.path.isfile(real_ref)):
+        print(f'  [!] Binary not found: target={binary_target} ref={binary_ref}')
+        return {}
+
+    with open(input_file, 'rb') as f:
+        original_data = bytearray(f.read())
+
+    ref_out, ref_rc = _run_mutation_worker(
+        (real_ref, bytes(original_data), program_args, input_file, timeout))
+    ref_sig = extract_crash_signature(ref_out)
+    if ref_sig is None:
+        print(f'  [!] Reference binary did not produce an ASan crash '
+              f'(rc={ref_rc}); cannot compare.')
+        return {}
+    ref_crash = ref_sig["crash_frames"][0] if ref_sig["crash_frames"] else {}
+    print(f'  Reference crash: {ref_sig["type"]} in '
+          f'{ref_crash.get("function")} '
+          f'({_path_basename(ref_crash.get("file"))}:'
+          f'{ref_crash.get("line")}, rc={ref_rc})')
+
+    probe = probe_values or PAIRWISE_PROBE
+    results = {
+        'ref_signature': {
+            'type': ref_sig['type'],
+            'crash_frame': {k: ref_crash.get(k)
+                            for k in ('function', 'file', 'line')},
+            'summary': ref_sig['summary'],
+        },
+    }
+    observed = {}
+    total_tests = 0
+    n_workers = min(8, max(2, os.cpu_count() or 2))
+
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+
+    for offA, offB in sorted(pairs):
+        if offA >= len(original_data) or offB >= len(original_data):
+            print(f'  [!] Pair 0x{offA:x}/0x{offB:x} beyond file size, skipping')
+            continue
+        oa, ob = original_data[offA], original_data[offB]
+        key = f'0x{offA:x}+0x{offB:x}'
+        results[key] = {'original': [oa, ob], 'matches': {},
+                        'no_crash': [], 'same_type': {},
+                        'different_type': []}
+        print(f'\n  [*] Testing pair {key} '
+              f'(original={oa:02x},{ob:02x})...')
+
+        tasks = []
+        for va in probe:
+            for vb in probe:
+                modified = bytearray(original_data)
+                modified[offA] = va
+                modified[offB] = vb
+                if bytes(modified) == bytes(original_data):
+                    continue
+                tasks.append(((va, vb), bytes(modified)))
+
+        with ProcessPoolExecutor(max_workers=n_workers) as ex:
+            futures = {}
+            for combo, data in tasks:
+                fut = ex.submit(_run_mutation_worker,
+                                (real_target, data, program_args,
+                                 input_file, timeout))
+                futures[fut] = combo
+            for fut in as_completed(futures):
+                va, vb = futures[fut]
+                out, rc = fut.result()
+                total_tests += 1
+                sig = extract_crash_signature(out)
+                if sig is None:
+                    results[key]['no_crash'].append((va, vb))
+                    continue
+                verdict, diff = compare_crash_signatures(ref_sig, sig)
+                crash = sig["crash_frames"][0] if sig["crash_frames"] else {}
+                if verdict in ('same_func', 'same_site'):
+                    results[key]['matches'][(va, vb)] = {
+                        'verdict': verdict,
+                        'type': sig['type'],
+                        'function': crash.get('function'),
+                        'file': _path_basename(crash.get('file')),
+                        'line': crash.get('line'),
+                        'rc': rc,
+                    }
+                    print(f'    ({va:02x},{vb:02x}) -> MATCHES ref crash '
+                          f'({verdict}: {diff})')
+                else:
+                    observed.setdefault(verdict or 'no_crash', 0)
+                    observed[verdict or 'no_crash'] += 1
+                    if verdict == 'same_type':
+                        observed.setdefault('same_type_sites', {})
+                        sites = observed['same_type_sites']
+                        skey = f"{crash.get('function')}:{_path_basename(crash.get('file'))}:{crash.get('line')}"
+                        sites.setdefault(skey, 0)
+                        sites[skey] += 1
+                        results[key]['same_type'].setdefault(skey, [])
+                        results[key]['same_type'][skey].append((va, vb))
+                    else:
+                        results[key]['different_type'].append(
+                            (va, vb, sig['type']))
+
+        n = len(results[key]['matches'])
+        _nc = len(results[key]['no_crash'])
+        _st = sum(len(v) for v in results[key]['same_type'].values())
+        _dt = len(results[key]['different_type'])
+        print(f'    => {n} matching combo(s) (target reproduces ref crash); '
+              f'no_crash={_nc}, same_type={_st}, different_type={_dt}')
+        if _nc and _nc <= 40:
+            print(f'       crash-dodging combos: '
+                  f'{[(f"0x{a:02x}", f"0x{b:02x}") for a, b in results[key]["no_crash"]]}')
+
+    results['pairwise_target_crash_summary'] = observed
+    print(f'\n  [*] Total pairwise mutations tested: {total_tests}')
+    if observed:
+        near = observed.get('same_type_sites', {})
+        other = {k: v for k, v in observed.items() if k != 'same_type_sites'}
+        if other:
+            print(f'  [*] Target crashed differently {sum(other.values())} '
+                  f'time(s): {other}')
+        if near:
+            print(f'  [*] Same ASan type at OTHER sites: {near}')
+    return results
+
+
+def run_pairwise_mutation_stage(binary, binary_ref, input_file, program_args,
+                                offsets, var_spans, timeout,
+                                title='Pairwise mutation'):
+    """Combined two-offset mutation over the fork-variable offsets."""
+    if not offsets or len(offsets) < 2 or not input_file \
+            or not os.path.isfile(input_file) or not binary:
+        return {}
+    pairs = _build_mutation_pairs(offsets, var_spans)
+    if not pairs:
+        return {}
+    print(f'\n{"="*60}')
+    print(f'  {title}')
+    print(f'{"="*60}')
+    print(f'  Input file: {input_file}')
+    print(f'  Target binary: {resolve_binary(binary)}')
+    print(f'  Reference binary: {resolve_binary(binary_ref)}')
+    print(f'  Pairs to test: {len(pairs)} (probe set: '
+          f'{",".join(f"0x{v:x}" for v in PAIRWISE_PROBE)})')
+    return test_pairwise_mutations_compare(
+        binary, binary_ref, input_file, program_args, pairs, timeout=timeout)
+
+
 
 # ---------------------------------------------------------------------------
 # CLI
