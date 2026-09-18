@@ -4877,6 +4877,175 @@ def _find_error_return_condition(func_name, source_dirs, after_line=None):
     return None
 
 
+def _get_function_return_value_generic(binary, func_name, args,
+                                       source_dirs=None, timeout=120):
+    """Run func_name under GDB and return its first return value.
+
+    The breakpoint is set BEFORE ``run`` (the libtiff-specific helpers set it
+    after ``run`` and rely on a library-load catchpoint, which never fires for
+    e.g. statically-linked projects).  Returns the signed value or None.
+    """
+    script = f'''set pagination off
+set confirm off
+set breakpoint pending on
+break {func_name}
+run {" ".join(str(a) for a in args)}
+finish
+python
+import gdb
+try:
+    print("RETVAL %s" % gdb.parse_and_eval("$rax"))
+except Exception as e:
+    print("RETVAL_ERR %s" % e)
+end
+quit
+'''
+    script_path = f"/tmp/retval_probe_{os.getpid()}.gdb"
+    with open(script_path, 'w') as f:
+        f.write(script)
+    env = os.environ.copy()
+    env["ASAN_OPTIONS"] = "detect_leaks=0"
+    gdb_cmds = ["gdb", "-batch", "-nx", "-q"]
+    for d in (source_dirs or []):
+        gdb_cmds.extend(["-iex", f"directory {d}"])
+    gdb_cmds.extend(["-x", script_path, str(binary)])
+    try:
+        _count_gdb_run(binary)
+        result = subprocess.run(gdb_cmds, capture_output=True, text=True,
+                                timeout=timeout, env=env)
+    finally:
+        try:
+            os.unlink(script_path)
+        except Exception:
+            pass
+    for line in (result.stdout + result.stderr).split('\n'):
+        m = re.search(r'RETVAL\s+(.+)', line)
+        if m:
+            try:
+                return int(m.group(1), 0)
+            except ValueError:
+                return None
+    return None
+
+
+def _find_error_return_fork_generic(func_name, source_dirs, return_value,
+                                    after_line=None):
+    """Locate the guarded error-return that yields ``return_value`` in
+    func_name's body (generic — no project-specific keywords).
+
+    Returns ``(cond_line, cond_text, ret_line, ret_text)`` for the first
+    ``if (...)`` whose body contains a ``return <value>;`` matching the
+    observed return value (e.g. -6), or None.
+    """
+    if return_value is None:
+        return None
+    src = _find_function_source(func_name, source_dirs)
+    if not src:
+        return None
+    try:
+        with open(src, encoding='utf-8', errors='replace') as f:
+            lines = f.readlines()
+    except OSError:
+        return None
+
+    body = _find_function_body_range(os.path.basename(src), func_name,
+                                     source_dirs)
+    if not body:
+        return None
+    start, end = body[0] - 1, body[1]  # 0-based slice
+
+    rv = int(return_value)
+    ret_pat = re.compile(rf'\breturn\s*(-?{abs(rv)}|-{abs(rv)})\b')
+
+    # Brace depth per line (to skip enclosing else/if blocks).
+    depth = 0
+    for i in range(start, min(end, len(lines))):
+        if after_line is not None and (i + 1) <= after_line:
+            continue
+        stripped = lines[i].strip()
+        depth += lines[i].count('{') - lines[i].count('}')
+        if depth < 0:
+            depth = 0
+        if not ret_pat.search(stripped):
+            continue
+        # Walk up to the nearest enclosing `if` condition.
+        cur_depth = depth
+        for j in range(i, max(start, i - 15) - 1, -1):
+            s = lines[j].strip()
+            m = re.match(r'if\s*\((.+?)\)\s*\{?\s*$', s)
+            if m:
+                # Only accept if this if actually opens the block containing
+                # the return (its brace depth is one less than the return's).
+                jd = _brace_depth_at(lines, start, j)
+                if jd + 1 <= cur_depth:
+                    return (j + 1, m.group(1).strip(), i + 1, stripped)
+    return None
+
+
+def _brace_depth_at(lines, start, idx):
+    depth = 0
+    for k in range(start, idx + 1):
+        depth += lines[k].count('{') - lines[k].count('}')
+    return max(0, depth)
+
+
+def _refine_target_error_fork(result, binary_b, source_dirs_b, lib_path_b,
+                              args_b, gdb_timeout):
+    """Case B refinement: the target returned an error before reaching the
+    reference's crash.  Locate the target's ACTUAL stopping point (the guarded
+    ``return`` whose value the runtime produced) and make IT the fork.
+
+    Returns an updated result with ``root_cause_*``/``poly_track_*`` pointing
+    at the guard condition and ``variables`` extracted from it.
+    """
+    func = result.get("root_cause_function") or ""
+    if not func or not binary_b or not args_b:
+        return result
+    print(f"  [error-fork] probing target return value of {func}() ...")
+    rv = _get_function_return_value_generic(
+        binary_b, func, args_b, source_dirs=source_dirs_b,
+        timeout=gdb_timeout)
+    if rv is None:
+        print(f"  [error-fork] could not obtain return value — keeping "
+              f"the reported fork.")
+        return result
+    print(f"  [error-fork] target {func}() returned {rv}")
+
+    fork = _find_error_return_fork_generic(func, source_dirs_b, rv)
+    if not fork:
+        print(f"  [error-fork] no guarded return of {rv} found in "
+              f"{func}() source — keeping the reported fork.")
+        return result
+    cond_line, cond_text, ret_line, ret_text = fork
+    src = _find_function_source(func, source_dirs_b)
+    print(f"  [error-fork] fork = guard '{cond_text}' "
+          f"({os.path.basename(src or '')}:{cond_line}) -> {ret_text}")
+
+    cond_vars = _extract_variables_from_expression(cond_text)
+    result["root_cause_function"] = func
+    if src:
+        result["root_cause_file"] = src
+    result["root_cause_line"] = cond_line
+    result["root_cause_statement_b"] = cond_text
+    result["root_cause_statement_a"] = cond_text
+    result["poly_track_function"] = func
+    if src:
+        result["poly_track_file"] = src
+    result["poly_track_line"] = cond_line
+    result["poly_track_statement"] = cond_text
+    result["fork_statement"] = cond_text
+    result["fork_statement_line"] = cond_line
+    result["fork_statement_file"] = src or result.get("fork_statement_file")
+    result["variables"] = cond_vars
+    result["_fork_is_condition"] = True
+    result["_target_error_fork"] = {
+        "return_value": rv,
+        "return_line": ret_line,
+        "return_text": ret_text,
+    }
+    return result
+
+
 def _find_matching_line(source_file, statement_text, source_dirs):
     """Find the line in source_file whose text matches statement_text.
 
