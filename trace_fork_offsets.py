@@ -4800,12 +4800,27 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
           f'({_path_basename(ref_crash.get("file"))}:'
           f'{ref_crash.get("line")}, rc={ref_rc})')
 
+    # Baseline target outcome on the ORIGINAL file.  A mutation with no crash
+    # signature is only "unchanged" if its exit code matches the baseline;
+    # a different exit code means the mutation FLIPPED the fork outcome
+    # (e.g. the target's fatal init error -> normal encoding).  Without this,
+    # fork-flipping mutations are indistinguishable from no-op mutations.
+    base_tgt_out, base_tgt_rc = _run(real_target, original_data)
+    base_tgt_sig = extract_crash_signature(base_tgt_out)
+    print(f'  Target baseline (original file): rc={base_tgt_rc}'
+          + (f', crash={base_tgt_sig["type"]}'
+             if base_tgt_sig else ', no crash (unchanged if rc matches)'))
+
     results = {
         'ref_signature': {
             'type': ref_sig['type'],
             'crash_frame': {k: ref_crash.get(k)
                             for k in ('function', 'file', 'line')},
             'summary': ref_sig['summary'],
+        },
+        'baseline_target': {
+            'rc': base_tgt_rc,
+            'crash': base_tgt_sig['type'] if base_tgt_sig else None,
         },
     }
     observed = {}      # verdict -> count across all mutations
