@@ -4481,8 +4481,12 @@ def _fork_condition_expr(stmt_text):
 
 def run_byte_mutation_stage(binary, binary_ref, input_file, program_args,
                             offsets, timeout, title='Byte mutation crash testing'):
-    """Run the screening + full-sweep crash-reproduction validation for a
-    set of input offsets and print the match summary.
+    """Run the exhaustive 255-value mutation sweep for the given input
+    offsets and print the match summary.
+
+    Every offset is mutated with ALL 255 byte values (except the original)
+    — no probe screening: the fork-variable offsets are already the precise
+    positions of interest, so each one gets the full sweep.
 
     Returns ``(crash_results, any_match)``.
     """
@@ -4498,30 +4502,9 @@ def run_byte_mutation_stage(binary, binary_ref, input_file, program_args,
     print(f'  Reference binary: {resolve_binary(binary_ref)}')
     print(f'  Offsets to test: {", ".join(f"0x{o:x}" for o in offsets)}')
 
-    if len(offsets) > 4:
-        _probe = (0x00, 0x01, 0x02, 0x04, 0x08, 0x7f, 0x80, 0xfe, 0xff)
-        print(f'\n  Screening {len(offsets)} offsets with '
-              f'{len(_probe)} probe values each ...')
-        screen = test_byte_mutations_compare(
-            binary, binary_ref, input_file, program_args,
-            offsets, timeout=timeout, probe_values=_probe)
-        promising = sorted(
-            o for o, info in screen.items()
-            if isinstance(o, int) and info.get('matches'))
-        print(f'  Screening done: {len(promising)} offset(s) show '
-              f'crash-reproducing mutations: '
-              f'{", ".join(f"0x{o:x}" for o in promising)}')
-        if not promising:
-            print(f'\n  No byte value reproduces the reference crash')
-            return screen, False
-        print(f'\n  Full 255-value sweep on the promising offsets ...')
-        crash_results = test_byte_mutations_compare(
-            binary, binary_ref, input_file, program_args,
-            promising, timeout=timeout)
-    else:
-        crash_results = test_byte_mutations_compare(
-            binary, binary_ref, input_file, program_args,
-            offsets, timeout=timeout)
+    crash_results = test_byte_mutations_compare(
+        binary, binary_ref, input_file, program_args,
+        offsets, timeout=timeout)
 
     any_match = False
     for offset, info in sorted((k, v) for k, v in crash_results.items()
