@@ -5630,28 +5630,28 @@ def main():
                     if len(fork_points) > 3:
                         print(f'      ... (+{len(fork_points)-3} more)')
 
-            if mappings:
-                print(f'\n  [*] Call-site actual arguments (dp->tdir_tag) -> file offsets:')
-                for tagid, info in mappings.items():
-                    name = info.get('tag_name', f'tag_{tagid}')
-                    if info.get('file_offset') is not None:
-                        print(f'      tagid={tagid} ({name}):')
-                        print(f'        dp={info["dp"]}  dir={info["dir"]}')
-                        print(f'        IFD at file offset '
-                              f'0x{info["ifd_offset"]:x} (tif->tif_diroff)')
-                        print(f'        entry index {info["entry_index"]} '
-                              f'-> tdir_tag at file offset '
-                              f'0x{info["file_offset"]:x}')
-                    else:
-                        print(f'      tagid={tagid} ({name}): no IFD buffer match')
-            elif var_mappings:
-                print(f'\n  [*] Fork-variable sources (fork-point context):')
-                fp = fork_points[-1] if fork_points else {}
-                diroff = fp.get('diroff')
-                for vname, info in var_mappings.items():
-                    if info.get('file_offset') is not None:
-                        print(f'      {vname}:')
-                        print(f'        kind={info["kind"]} -> file offset '
+                if mappings:
+                    print(f'\n  [*] Call-site actual arguments (dp->tdir_tag) -> file offsets:')
+                    for tagid, info in mappings.items():
+                        name = info.get('tag_name', f'tag_{tagid}')
+                        if info.get('file_offset') is not None:
+                            print(f'      tagid={tagid} ({name}):')
+                            print(f'        dp={info["dp"]}  dir={info["dir"]}')
+                            print(f'        IFD at file offset '
+                                  f'0x{info["ifd_offset"]:x} (tif->tif_diroff)')
+                            print(f'        entry index {info["entry_index"]} '
+                                  f'-> tdir_tag at file offset '
+                                  f'0x{info["file_offset"]:x}')
+                        else:
+                            print(f'      tagid={tagid} ({name}): no IFD buffer match')
+                elif var_mappings:
+                    print(f'\n  [*] Fork-variable sources (fork-point context):')
+                    fp = fork_points[-1] if fork_points else {}
+                    diroff = fp.get('diroff')
+                    for vname, info in var_mappings.items():
+                        if info.get('file_offset') is not None:
+                            print(f'      {vname}:')
+                            print(f'        kind={info["kind"]} -> file offset '
                               f'0x{info["file_offset"]:x} '
                               f'(tif->tif_diroff=0x{diroff:x})')
                     else:
