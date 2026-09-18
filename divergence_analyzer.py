@@ -5461,6 +5461,23 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
         ref_source = _read_source_line(
             crash_a["file"], crash_a["line"],
             find_source_dirs(str(binary_a)))
+
+        # The fork statement is the target's crash statement.  Multi-line
+        # statements (e.g. "track->totalfframes = track->data_size /\n (int)
+        # _af_format_frame_size(...)") report the continuation line; try the
+        # crash line and the line before it, preferring the full assignment.
+        crash_stmt = ""
+        crash_stmt_line = crash_b["line"] or 0
+        for cand_line in (crash_b["line"], (crash_b["line"] or 1) - 1):
+            stmt, start, _end = _get_complete_fork_statement(
+                crash_b["file"], cand_line, find_source_dirs(str(binary_b)))
+            if stmt:
+                crash_stmt = stmt
+                crash_stmt_line = start
+                if '=' in stmt and not stmt.lstrip().startswith('('):
+                    break
+
+        fork_vars = _extract_variables_from_expression(crash_stmt)
         result = {
             "divergence_function": func_name,
             "trace_a_index": a_idx,
@@ -5475,12 +5492,20 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
             "crash_based": True,
             "crash_signal_a": crash_a["signal"],
             "crash_signal_b": crash_b["signal"],
+            "fork_statement": crash_stmt,
+            "fork_statement_line": crash_stmt_line,
+            "fork_statement_file": crash_b["file"],
+            "poly_track_function": crash_b["function"],
+            "poly_track_file": crash_b["file"],
+            "poly_track_line": crash_stmt_line,
+            "poly_track_statement": crash_stmt,
+            "variables": fork_vars,
             "description": (
                 f"Target crashes before the reference's vulnerability crash.\n"
                 f"Target crash point IS the fork statement.\n"
                 f"  Target:    {crash_b['function']} at {crash_b['file']}:{crash_b['line']} ({crash_b['signal']})\n"
                 f"  Reference: {crash_a['function']} at {crash_a['file']}:{crash_a['line']} ({crash_a['signal']})\n"
-                f"  Statement: {source_line}"
+                f"  Statement: {crash_stmt or source_line}"
             ),
         }
         if input_file:
