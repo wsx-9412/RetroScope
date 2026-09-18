@@ -47,6 +47,8 @@ import tempfile
 import time
 from pathlib import Path
 
+import stage_timing
+
 BASE = Path(__file__).resolve().parent
 FUNCTRACER_SO = BASE / "functracer.so"
 NOISE_PREFIX = ('__', 'asan', '_ZN', '_ZSt')
@@ -550,7 +552,6 @@ def main():
             tgt_trace_funcs=[n.name for n in seq_b],
             threshold=args.rename_threshold,
         )
-        import stage_timing
         _t_ref_start = time.time()
         refactor_mappings = detector.detect()
         stage_timing.record("检测函数重构重命名", time.time() - _t_ref_start)
