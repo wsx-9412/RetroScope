@@ -6320,13 +6320,12 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
         tail_func, tail_a, tail_b = identify_divergence_function(
             matches, gaps, trace_a, trace_b, prefer_tail=True)
         if tail_func is not None:
-            func_name, a_idx, b_idx = tail_func, tail_a, tail_b
             new_gap = _trace_gap_divergence(
                 binary_a, binary_b, trace_a, trace_b, gaps,
-                a_idx, b_idx, args_a, args_b,
+                tail_a, tail_b, args_a, args_b,
                 lib_path_a, lib_path_b,
                 source_dirs_a, source_dirs_b, gdb_timeout,
-                func_name=func_name,
+                func_name=tail_func,
             )
             # Keep the PREVIOUS gap result when the tail result's fork
             # function has no target-side equivalent (e.g. it was renamed
@@ -6337,6 +6336,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                     new_gap.get("root_cause_function", ""), source_dirs_b)
                 if _tgt_src:
                     gap_result = new_gap
+                    func_name, a_idx, b_idx = tail_func, tail_a, tail_b
                 else:
                     print(f"  [tail-relocate] tail fork function "
                           f"{new_gap.get('root_cause_function')}() has no "
