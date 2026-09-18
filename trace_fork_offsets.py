@@ -4861,7 +4861,10 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                 total_tests += 1
                 sig = extract_crash_signature(out)
                 if sig is None:
-                    results[offset]['no_crash'].append(byte_val)
+                    if base_tgt_rc is not None and rc != base_tgt_rc:
+                        results[offset]['fork_flip'].append(byte_val)
+                    else:
+                        results[offset]['no_crash'].append(byte_val)
                     continue
                 verdict, diff = compare_crash_signatures(ref_sig, sig)
                 crash = sig["crash_frames"][0] if sig["crash_frames"] else {}
