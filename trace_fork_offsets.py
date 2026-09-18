@@ -4799,7 +4799,8 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
             print(f'  [!] Offset 0x{offset:x} beyond file size, skipping')
             continue
         orig_byte = original_data[offset]
-        results[offset] = {'original': orig_byte, 'matches': {}}
+        results[offset] = {'original': orig_byte, 'matches': {},
+                           'no_crash': [], 'same_type': {}}
         print(f'\n  [*] Testing offset 0x{offset:x} (original=0x{orig_byte:02x})...')
 
         # All 255 byte values are independent subprocess runs: sweep them in
