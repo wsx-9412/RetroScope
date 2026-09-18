@@ -61,8 +61,10 @@ def build_run_env(binary):
     # ASan-instrumented binaries (especially statically-linked ones like lame)
     # abort under GDB's ptrace because LeakSanitizer cannot run; disable it so
     # the fork breakpoint is actually reachable during GDB tracing.
-    env.setdefault("ASAN_OPTIONS",
-                   "detect_leaks=0:" + env["ASAN_OPTIONS"] if env.get("ASAN_OPTIONS") else "detect_leaks=0")
+    _asan = env.get("ASAN_OPTIONS", "")
+    if "detect_leaks=0" not in _asan:
+        env["ASAN_OPTIONS"] = ("detect_leaks=0" +
+                               (":" + _asan if _asan else ""))
     d = os.path.dirname(os.path.abspath(binary))
     for _ in range(6):
         lib_dirs = []
