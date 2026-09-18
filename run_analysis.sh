@@ -58,7 +58,10 @@ case "$PROJECT_NAME" in
         REFERENCE_VERSION_PATH="$BASE_DIR/lame-versions/lame-3.99.5"
         TARGET_VERSION_PATH="$BASE_DIR/lame-versions/lame-3.98.4"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2017-15045"
-        EXTRA_ARGS=()
+        # lame 3.98 -> 3.99 restructured the frontend (main -> c_main ->
+        # lame_main); full call-path matching never aligns, so match by
+        # function name instead.
+        EXTRA_ARGS=(--match-level name)
         ;;
     "audiofile")
         REFERENCE_VERSION_PATH="$BASE_DIR/audiofile-versions/audiofile-0.3.4"

@@ -260,6 +260,8 @@ def main():
     
     if args.include_exits:
         cmd.append("--include-exits")
+    if args.match_level:
+        cmd += ["--match-level", args.match_level]
     cmd += ["--max-trace-size", str(args.max_trace_size)]
     if args.refactor_detect:
         cmd += ["--refactor-detect", "--rename-threshold", str(args.rename_threshold)]

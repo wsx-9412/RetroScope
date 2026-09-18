@@ -4555,6 +4555,99 @@ def _resolve_wrapper_func(source_file, func_name, source_dirs):
     return func_name
 
 
+def _map_function_to_target(func_name, source_dirs_a, source_dirs_b):
+    """Map a reference-side fork function to its target-side equivalent.
+
+    When the fork lives in a function that was RENAMED between versions (e.g.
+    lame 3.98 ``lame_encoder`` -> 3.99 ``lame_main``), the reference's function
+    name does not exist in the target binary, so the GDB trace cannot break on
+    it.  This locates the target function whose source body most closely
+    matches the reference function's body.
+
+    Returns (target_func_name, target_source_file, body_start_line) or None.
+    """
+    if not func_name:
+        return None
+    ref_src = _find_function_source(func_name, source_dirs_a)
+    if not ref_src:
+        return None
+    ref_body = _find_function_body_range(os.path.basename(ref_src),
+                                         func_name, source_dirs_a)
+    if not ref_body:
+        return None
+    try:
+        with open(ref_src, encoding='utf-8', errors='replace') as f:
+            ref_lines = f.readlines()[ref_body[0] - 1:ref_body[1]]
+    except OSError:
+        return None
+
+    def _norm(text):
+        out = []
+        for ln in text:
+            s = re.sub(r'\s+', ' ', ln).strip()
+            s = re.sub(r'\b\d+\b', '#', s)  # normalize numeric literals
+            if not s or s.startswith(('/*', '//', '*', '#include', '#if',
+                                      '#else', '#endif', '#define', '#')):
+                continue
+            out.append(s)
+        return out
+
+    ref_norm = _norm(ref_lines)
+    if len(ref_norm) < 5:
+        return None
+
+    best = None
+    best_ratio = 0.0
+    tgt_files = set()
+    for d in (source_dirs_b or []):
+        for p in Path(d).rglob('*.c'):
+            tgt_files.add(p)
+    for p in sorted(tgt_files):
+        try:
+            lines = p.read_text(errors='replace').splitlines()
+        except OSError:
+            continue
+        for i, ln in enumerate(lines):
+            m = re.match(r'^\s*(?:static\s+)?(?:[\w\s\*]*\s+)?(\w+)\s*\(', ln)
+            if not m:
+                continue
+            name = m.group(1)
+            # Find the body extent (opening brace to matching close).
+            j = i
+            depth0 = 0
+            while j < min(i + 20, len(lines)):
+                depth0 += lines[j].count('{') - lines[j].count('}')
+                if depth0 > 0:
+                    break
+                if ';' in lines[j] and depth0 == 0:
+                    break
+                j += 1
+            if depth0 <= 0:
+                continue
+            depth = 0
+            end = j
+            for k in range(j, len(lines)):
+                depth += lines[k].count('{') - lines[k].count('}')
+                if depth == 0:
+                    end = k + 1
+                    break
+            tgt_norm = _norm(lines[i:end])
+            if len(tgt_norm) < 5:
+                continue
+            import difflib
+            ratio = difflib.SequenceMatcher(None, ref_norm,
+                                            tgt_norm).ratio()
+            if ratio > best_ratio:
+                best_ratio = ratio
+                best = (name, str(p), i + 1)
+    if best and best_ratio >= 0.45:
+        print(f"  [gap] mapped reference function {func_name}() -> target "
+              f"{best[0]}() (body similarity {best_ratio:.2f}, {best[1]}:"
+              f"{best[2]})")
+        return best
+    return None
+
+
 def _trace_gap_divergence(binary_a, binary_b, trace_a, trace_b, gaps,
                           a_idx, b_idx, args_a, args_b,
                           lib_path_a, lib_path_b,
