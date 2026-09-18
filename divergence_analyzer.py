@@ -6231,9 +6231,21 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
 
             if div_call_a and not div_call_b:
                 # The target stopped before the reference's continuation. The
-                # call site in the reference IS the fork — keep it as-is
-                # (do not overwrite with an enclosing condition).
-                pass
+                # fork is the TARGET's early error-return inside the reported
+                # function (e.g. lame_init_params returning -6 while the
+                # reference continues to lame_init_params_ppflt and crashes).
+                # Refine the reported statement to that guarded return so the
+                # downstream offset localization targets the real stopping
+                # point.
+                _refined = _refine_target_error_fork(
+                    result, binary_b, source_dirs_b, lib_path_b,
+                    args_b, gdb_timeout)
+                if _refined.get("_target_error_fork"):
+                    result = _refined
+                    print(f"  >> Target's early error-return is the fork: "
+                          f"{result['root_cause_statement_b']} "
+                          f"({os.path.basename(result.get('root_cause_file', ''))}"
+                          f":{result['root_cause_line']})")
             elif is_ctrl and is_code_change:
                 # A control statement guards a code change (e.g. `if (!crop_buff)`
                 # guarding _TIFFmalloc vs limitMalloc) -> locate the diff.
