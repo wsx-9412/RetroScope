@@ -4290,7 +4290,7 @@ def fork_flip_probe(binary, input_file, program_args, offsets, fork_marker,
 # Byte mutation crash testing
 # ---------------------------------------------------------------------------
 
-_ASAN_ERR_RE = re.compile(r'ERROR:\s*AddressSanitizer:\s*([a-z-]+)')
+_ASAN_ERR_RE = re.compile(r'ERROR:\s*AddressSanitizer:\s*([A-Za-z0-9-]+)')
 # ASan backtrace frames: "#N 0x... in <func> <file>:<line>"
 _ASAN_FRAME_RE = re.compile(
     r'#(\d+)\s+0x[0-9a-fA-F]+\s+in\s+(.+?)\s+(\S+?):(\d+)\s*$')
