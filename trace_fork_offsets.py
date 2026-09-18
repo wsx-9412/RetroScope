@@ -488,6 +488,8 @@ def read_trace_json(json_path):
         'fork_stmt': full_fork_stmt,
         'program_args': args,
         'variables': variables,
+        'root_cause_function': div.get('root_cause_function', ''),
+        'poly_track_function': div.get('poly_track_function', ''),
         '_code_change': orig_is_code_change,
         'dynamic_fork': div.get('dynamic_fork'),
         'root_cause_statement_a': div.get('root_cause_statement_a', ''),
