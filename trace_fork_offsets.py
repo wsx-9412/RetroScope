@@ -1003,6 +1003,29 @@ def _dump_var(_v, _depth=0):
             except Exception:
                 continue
         return
+    if _t.code in (gdb.TYPE_CODE_PTR,):
+        # Handle pointers (e.g. lame_encoder's gf -> gf->in_samplerate):
+        # dereference one level and expand the pointee's scalar fields.
+        if _depth >= 2:
+            return
+        try:
+            _dt = _val.dereference().type.strip_typedefs()
+        except Exception:
+            return
+        if _dt.code not in (gdb.TYPE_CODE_STRUCT, gdb.TYPE_CODE_UNION):
+            return
+        _nf = 0
+        for _fld in _dt.fields():
+            if _nf >= 32:  # cap per pointee to limit noise
+                break
+            if getattr(_fld, 'is_static', False) or getattr(_fld, 'artificial', False):
+                continue
+            try:
+                _dump_var(_v + '->' + _fld.name, _depth + 1)
+            except Exception:
+                continue
+            _nf += 1
+        return
     _scalar_codes = {{getattr(gdb, 'TYPE_CODE_INT', None),
                      getattr(gdb, 'TYPE_CODE_ENUM', None),
                      getattr(gdb, 'TYPE_CODE_FLOAT', None),
