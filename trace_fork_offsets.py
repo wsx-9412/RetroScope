@@ -553,10 +553,19 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
     out = {}
     if not variables:
         return out
-    ranges = [(r['offset'], r['offset'] + r['size'])
-              for r in reads
-              if r.get('offset') is not None and r['offset'] >= 0
-              and r.get('size')]
+    # Normalize the read regions into non-overlapping intervals: the same
+    # file region is often read repeatedly, so raw read records inflate the
+    # pattern-occurrence counts and the match list.
+    _raw = sorted((r['offset'], r['offset'] + r['size'])
+                  for r in reads
+                  if r.get('offset') is not None and r['offset'] >= 0
+                  and r.get('size'))
+    ranges = []
+    for s, e in _raw:
+        if not ranges or s > ranges[-1][1]:
+            ranges.append([s, e])
+        else:
+            ranges[-1][1] = max(ranges[-1][1], e)
     if not ranges:
         return out
 
