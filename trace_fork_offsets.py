@@ -947,6 +947,11 @@ def build_var_dump_block(variables):
     Uses GDB Python to safely evaluate each variable. If a variable doesn't
     exist in the current binary (e.g., a struct member from a different
     version), the error is caught and the variable is skipped.
+
+    Struct/union variables (e.g. ``track->f`` — the format struct that feeds
+    the divisor of a division-by-zero) are expanded into their scalar fields
+    (``track->f.channelCount``, ``track->f.sampleWidth``, ...) so the exact
+    input-derived bytes are traced instead of dropping the whole struct.
     """
     if not variables:
         return ''
@@ -955,14 +960,38 @@ def build_var_dump_block(variables):
     return f"""  python
 import gdb
 _vars = [{var_list}]
-for _v in _vars:
+def _dump_var(_v, _depth=0):
     try:
         _val = gdb.parse_and_eval(_v)
+    except Exception:
+        return
+    _t = _val.type
+    if _t.code in (gdb.TYPE_CODE_STRUCT, gdb.TYPE_CODE_UNION):
+        if _depth >= 2:
+            return
+        for _fld in _t.fields():
+            if _fld.is_static or getattr(_fld, 'artificial', False):
+                continue
+            try:
+                _dump_var(_v + '.' + _fld.name, _depth + 1)
+            except Exception:
+                continue
+        return
+    if _t.code not in (gdb.TYPE_CODE_INT, gdb.TYPE_CODE_ENUM,
+                       gdb.TYPE_CODE_FLOAT, gdb.TYPE_CODE_BOOL):
+        return
+    try:
         _addr = int(_val.address) if _val.address else 0
-        print("VAR_NAME %s" % _v)
-        print("VAR_ADDR 0x%x" % _addr)
-        print("VAR_VAL %d" % int(_val))
-        print("VAR_SIZE %d" % _val.type.sizeof)
+        _iv = int(_val)
+    except Exception:
+        return
+    print("VAR_NAME %s" % _v)
+    print("VAR_ADDR 0x%x" % _addr)
+    print("VAR_VAL %d" % _iv)
+    print("VAR_SIZE %d" % _val.type.sizeof)
+for _v in _vars:
+    try:
+        _dump_var(_v)
     except Exception:
         pass
     print("VAR_END")
