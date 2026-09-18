@@ -5574,21 +5574,8 @@ def main():
             if _info.get('file_offset') is not None:
                 mapped_offsets.add(_info['file_offset'])
 
-    # GENERIC dynamic fallback: only when the fork-variable mapping (and the
-    # call-site pointer mapping) found NOTHING do we fall back to scanning
-    # every input byte the program actually read.  Otherwise the validation
-    # candidates are exactly the offsets derived from the fork variables.
-    read_candidates = set()
-    if input_file and os.path.isfile(input_file):
-        _fsize = os.path.getsize(input_file)
-        for _fr in positioned_b:
-            _off, _sz = _fr.get('offset'), _fr.get('size')
-            if _off is None or _off < 0 or not _sz or _sz <= 0:
-                continue
-            if _off < _fsize:
-                for _o in range(_off, min(_off + _sz, _fsize)):
-                    read_candidates.add(_o)
-
+    # Validation candidates = exactly the offsets derived from the fork
+    # variables (no read-region expansion).
     if mapped_offsets:
         offset_strs = ', '.join(f'0x{o:x}' for o in sorted(mapped_offsets))
         print(f'  Validation candidates (from fork variables) at input file '
@@ -5685,27 +5672,6 @@ def main():
             sorted(stage1_offsets), a.timeout,
             title='Step 6: Byte mutation crash testing '
                   '(fork-variable offsets)')
-
-    # STAGE 2: the variable-derived offsets did not reproduce the reference
-    # crash — the crash may be driven DOWNSTREAM of the fork variables (e.g.
-    # the StripByteCounts offset field at 0x30).  Expand to every additional
-    # input byte the program actually read, clearly labeled as the
-    # crash-driving-byte search.
-    if not any_match and read_candidates:
-        _extra = sorted(read_candidates - stage1_offsets)
-        if _extra:
-            print(f'\n  Stage 1 (fork-variable offsets) reproduced no '
-                  f'reference crash — expanding to the {len(_extra)} '
-                  f'input bytes the program read (crash-driving bytes '
-                  f'downstream of the fork variables).')
-            crash_results2, any_match2 = run_byte_mutation_stage(
-                binary, binary_ref, input_file, program_args, _extra,
-                a.timeout,
-                title='Step 6b: Byte mutation crash testing '
-                      '(read-region expansion)')
-            if any_match2:
-                crash_results = crash_results2
-                any_match = True
 
     print(f'{"="*60}')
 
