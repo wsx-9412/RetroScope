@@ -4978,13 +4978,36 @@ def _find_error_return_fork_generic(func_name, source_dirs, return_value,
         cur_depth = depth
         for j in range(i, max(start, i - 15) - 1, -1):
             s = lines[j].strip()
-            m = re.match(r'if\s*\((.+?)\)\s*\{?\s*$', s)
-            if m:
-                # Only accept if this if actually opens the block containing
-                # the return (its brace depth is one less than the return's).
-                jd = _brace_depth_at(lines, start, j)
-                if jd + 1 <= cur_depth:
-                    return (j + 1, m.group(1).strip(), i + 1, stripped)
+            m = re.match(r'if\s*\(', s)
+            if not m:
+                continue
+            # Extract the condition with balanced parentheses (conditions may
+            # contain nested calls, e.g. InitGainAnalysis(...) == ERROR).
+            _cond = _balanced_paren_content(s)
+            if _cond is None:
+                continue
+            jd = _brace_depth_at(lines, start, j)
+            # Accept ifs whose block contains the return: braced ifs sit one
+            # level above the return (jd+1 <= cur_depth); non-braced
+            # ``if (...) return ...;`` share the same depth (jd == cur_depth).
+            if jd <= cur_depth:
+                return (j + 1, _cond, i + 1, stripped)
+    return None
+
+
+def _balanced_paren_content(line):
+    """Return the text inside the first balanced paren pair of ``line``."""
+    i = line.find('(')
+    if i < 0:
+        return None
+    depth = 0
+    for k in range(i, len(line)):
+        if line[k] == '(':
+            depth += 1
+        elif line[k] == ')':
+            depth -= 1
+            if depth == 0:
+                return line[i + 1:k].strip()
     return None
 
 
