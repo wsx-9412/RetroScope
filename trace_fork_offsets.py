@@ -977,8 +977,11 @@ def _dump_var(_v, _depth=0):
             except Exception:
                 continue
         return
-    if _t.code not in (gdb.TYPE_CODE_INT, gdb.TYPE_CODE_ENUM,
-                       gdb.TYPE_CODE_FLOAT, gdb.TYPE_CODE_BOOL):
+    _scalar_codes = {getattr(gdb, 'TYPE_CODE_INT', None),
+                     getattr(gdb, 'TYPE_CODE_ENUM', None),
+                     getattr(gdb, 'TYPE_CODE_FLOAT', None),
+                     getattr(gdb, 'TYPE_CODE_BOOL', None)}
+    if _t.code not in _scalar_codes:
         return
     try:
         _addr = int(_val.address) if _val.address else 0
