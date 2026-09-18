@@ -58,6 +58,11 @@ def build_run_env(binary):
     (with its debug info) is loaded instead of a system one.
     """
     env = os.environ.copy()
+    # ASan-instrumented binaries (especially statically-linked ones like lame)
+    # abort under GDB's ptrace because LeakSanitizer cannot run; disable it so
+    # the fork breakpoint is actually reachable during GDB tracing.
+    env.setdefault("ASAN_OPTIONS",
+                   "detect_leaks=0:" + env["ASAN_OPTIONS"] if env.get("ASAN_OPTIONS") else "detect_leaks=0")
     d = os.path.dirname(os.path.abspath(binary))
     for _ in range(6):
         lib_dirs = []
