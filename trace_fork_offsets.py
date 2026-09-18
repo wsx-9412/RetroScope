@@ -1678,16 +1678,10 @@ set confirm off
 set breakpoint pending on
 
 set $inv = 0
-break {fork_func}
-commands
-  silent
-  set $inv = $inv + 1
-  continue
-end
-
 break {fork_spec}
 commands
   silent
+  set $inv = $inv + 1
   printf "FORK_POINT inv=%d\\n", $inv
   python
 import gdb
@@ -1738,6 +1732,13 @@ try:
 except Exception:
     pass
 end
+  continue
+end
+
+break {fork_func}
+commands
+  silent
+  set $inv = $inv + 1
   continue
 end
 
