@@ -568,7 +568,10 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
         #    4-byte little-endian first (C ints dominate), then wider
         #    widths; 1-byte last (noisy for small values).  Negative ints
         #    (e.g. a corrupt -21692 Hz sample-rate field) are matched by
-        #    their two's-complement encoding.
+        #    their two's-complement encoding.  Multi-byte hits are expanded
+        #    to the FULL value span (e.g. a 4-byte sample rate at 0x18 maps
+        #    0x18..0x1b) so byte-mutation sweeps the whole field, including
+        #    the sign byte.
         if not hits and file_data:
             for width, endian in ((4, 'little'), (8, 'little'),
                                   (2, 'little'), (4, 'big'), (2, 'big'),
@@ -589,9 +592,10 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
                     pos = seg.find(pat)
                     while pos != -1:
                         off = rs + pos
-                        if all(h['offset'] != off for h in hits):
-                            hits.append({'offset': off, 'width': width,
-                                         'method': f'value_bytes_{endian}'})
+                        for span_off in range(off, off + width):
+                            if all(h['offset'] != span_off for h in hits):
+                                hits.append({'offset': span_off, 'width': width,
+                                             'method': f'value_bytes_{endian}'})
                         if len(hits) >= max_hits:
                             break
                         pos = seg.find(pat, pos + 1)
