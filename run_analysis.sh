@@ -54,9 +54,9 @@ case "$PROJECT_NAME" in
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2022-3627"
         EXTRA_ARGS=(--include-exits --refactor-detect)
         ;;
-    "lame")
-        REFERENCE_VERSION_PATH="$BASE_DIR/lame-versions/lame-3.98.4"
-        TARGET_VERSION_PATH="$BASE_DIR/lame-versions/lame-3.97"
+"lame")
+        REFERENCE_VERSION_PATH="$BASE_DIR/lame-versions/lame-3.99.5"
+        TARGET_VERSION_PATH="$BASE_DIR/lame-versions/lame-3.98.4"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2017-15045"
         EXTRA_ARGS=()
         ;;
