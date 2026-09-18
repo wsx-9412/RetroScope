@@ -1295,51 +1295,6 @@ def run_gdb_trace(binary, fork_spec, variables, input_file, program_args, timeou
     return None, 'fork_not_reached'
 
 
-def run_deep_tiffopen_trace(binary, input_file, program_args, timeout=30):
-    """Run GDB to trace TIFFOpen internals using raw breakpoint/catchpoint output.
-
-    Sets breakpoints at key functions and catches pread64 calls.
-    The raw GDB output is returned for parsing.
-    """
-    real_binary = resolve_binary(binary)
-    run_parts = [a.replace('{input_file}', input_file).replace('{input}', input_file)
-                 for a in program_args]
-
-    run_args = ' '.join(run_parts)
-
-    # Build GDB commands as a series of -ex arguments
-    cmds = [
-        'set pagination off',
-        'set confirm off',
-        'set breakpoint pending on',
-        'break TIFFOpen',
-        'break TIFFFetchStripThing',
-        'catch syscall pread64',
-        f'run {run_args}',
-    ]
-    # Add enough continues to get through all breakpoints/catchpoints
-    for _ in range(30):
-        cmds.append('continue')
-    cmds.append('quit')
-
-    # Build the full command line
-    gdb_args = ['gdb', '-batch', '-nx', '-q']
-    for cmd in cmds:
-        gdb_args.extend(['-ex', cmd])
-    gdb_args.extend(['--', real_binary])
-
-    try:
-        proc = subprocess.run(
-            gdb_args,
-            capture_output=True, text=True, timeout=timeout,
-            env=build_run_env(real_binary))
-    except subprocess.TimeoutExpired:
-        return None, 'timeout'
-
-    output = proc.stdout + proc.stderr
-    return output, None
-
-
 def run_gdb_chain_trace(binary, fork_spec, variables, input_file, program_args, timeout=120):
     """Use GDB watchpoints to chain-trace variables back to file offsets.
 
@@ -2852,61 +2807,6 @@ def map_libtiff_tag_to_file_offset(tag_id, input_file):
 
     return None, None, None
 
-
-def parse_deep_trace(output):
-    """Parse raw GDB output from deep trace.
-
-    Extracts:
-    - Function breakpoints (which functions were called)
-    - pread64 calls (offset and size)
-    - Error messages (IO errors, etc.)
-    """
-    result = {
-        'functions_called': [],
-        'pread64_calls': [],
-        'errors': [],
-        'tif_ptr': None,
-    }
-
-    if not output:
-        return result
-
-    for line in output.splitlines():
-        line = line.strip()
-
-        # Capture function breakpoints
-        m = re.match(r'Breakpoint \d+, (\w+) \(', line)
-        if m:
-            func_name = m.group(1)
-            if func_name not in result['functions_called']:
-                result['functions_called'].append(func_name)
-            # Capture TIFF pointer
-            if func_name in ('TIFFReadDirectory', 'TIFFFetchDirectory', 'TIFFFetchStripThing'):
-                mp = re.search(r'tif=(0x[0-9a-f]+)', line)
-                if mp:
-                    result['tif_ptr'] = mp.group(1)
-
-        # Capture pread64 call to syscall
-        if 'call to syscall pread64' in line:
-            m = re.search(r'count=count@entry=(\d+),\s*offset=(\d+)', line)
-            if m:
-                result['pread64_calls'].append({
-                    'offset': int(m.group(2)),
-                    'size': int(m.group(1)),
-                })
-
-        # Capture error messages from TIFF library
-        if 'Warning' in line and ('IO error' in line or 'Bogus' in line or 'error' in line.lower()):
-            result['errors'].append(line)
-        if 'TIFFFetchStripThing' in line and 'error' in line.lower():
-            result['errors'].append(line)
-
-    return result
-
-
-# ---------------------------------------------------------------------------
-# Parse GDB output
-# ---------------------------------------------------------------------------
 
 def _parse_value_str(val_str):
     """Parse a GDB value string into an int (hex or decimal) or return the string."""
@@ -5508,78 +5408,6 @@ def main():
         differing_vars = variables
 
     # ================================================================
-    # Step 3.5: Deep trace into TIFFOpen internals for differing vars
-    # ================================================================
-    deep_results = {}
-    if differing_vars:
-        print(f'\n{"="*60}')
-        print(f'  Step 3.5: Deep trace into TIFFOpen internals')
-        print(f'{"="*60}')
-
-        file_size = os.path.getsize(input_file) if input_file and os.path.isfile(input_file) else 0
-
-        for ver_name, ver_binary in [('target', binary), ('reference', binary_ref)]:
-            if not ver_binary or not os.path.isfile(resolve_binary(ver_binary)):
-                continue
-            print(f'\n  [*] Tracing {ver_name}: {resolve_binary(ver_binary)}')
-            trace_out, err = run_deep_tiffopen_trace(
-                ver_binary, input_file, program_args, timeout=a.timeout)
-            if err:
-                print(f'  [!] {ver_name} deep trace failed: {err}')
-                continue
-            result = parse_deep_trace(trace_out)
-            deep_results[ver_name] = result
-
-            # Print call chain results
-            print(f'    Functions called: {", ".join(result["functions_called"]) if result["functions_called"] else "none"}')
-            print(f'    TIFF pointer: {result["tif_ptr"] or "N/A"}')
-            print(f'    pread64 calls: {len(result["pread64_calls"])}')
-            for p in result['pread64_calls']:
-                within = 'within file' if p['offset'] + p['size'] <= file_size else 'BEYOND FILE'
-                print(f'      offset=0x{p["offset"]:04x} size={p["size"]} [{within}]')
-            if result['errors']:
-                print(f'    Errors ({len(result["errors"])}):')
-                for e in result['errors'][:3]:
-                    print(f'      {e[:120]}')
-
-        # Compare deep trace results
-        if 'target' in deep_results and 'reference' in deep_results:
-            t = deep_results['target']
-            r = deep_results['reference']
-            print(f'\n  [*] Deep trace comparison:')
-            t_funcs = set(t['functions_called'])
-            r_funcs = set(r['functions_called'])
-            print(f'    Functions: target={t["functions_called"]} ref={r["functions_called"]}')
-
-            # Find differing pread64 calls
-            t_offs = set((p['offset'], p['size']) for p in t['pread64_calls'])
-            r_offs = set((p['offset'], p['size']) for p in r['pread64_calls'])
-            only_t = t_offs - r_offs
-            only_r = r_offs - t_offs
-            if only_t or only_r:
-                print(f'    pread64 DIFFERS:')
-                if only_t:
-                    for off, sz in sorted(only_t):
-                        print(f'      only target: offset=0x{off:x} size={sz}')
-                if only_r:
-                    for off, sz in sorted(only_r):
-                        print(f'      only ref: offset=0x{off:x} size={sz}')
-            else:
-                print(f'    pread64 calls IDENTICAL between versions')
-
-            # Map pread64 calls to input file offsets
-            print(f'\n  [*] Mapping pread64 calls to input file:')
-            for p in t['pread64_calls']:
-                off = p['offset']
-                sz = p['size']
-                if off < file_size:
-                    end = min(off + sz, file_size)
-                    print(f'    pread64 offset=0x{off:x} size={sz} => input file bytes [0x{off:x}-0x{end:x})')
-                else:
-                    print(f'    pread64 offset=0x{off:x} size={sz} => BEYOND file (size={file_size})')
-                    print(f'      ^^^ This read accesses invalid data beyond file boundary')
-
-    # ================================================================
     # Step 4: Trace file I/O and map to input file
     # ================================================================
     print(f'\n{"="*60}')
@@ -5914,41 +5742,6 @@ def main():
             break
 
     print(f'  1. Fork point: {short_fork}')
-
-    # 3. Deep trace comparison (errors and function calls)
-    if deep_results:
-        target_errors = deep_results.get('target', {}).get('errors', [])
-        ref_errors = deep_results.get('reference', {}).get('errors', [])
-        target_funcs = deep_results.get('target', {}).get('functions_called', [])
-        ref_funcs = deep_results.get('reference', {}).get('functions_called', [])
-
-        print(f'  3. Deep trace comparison:')
-        if target_errors:
-            for e in target_errors:
-                print(f'     Target error: {e}')
-        if ref_errors:
-            for e in ref_errors:
-                print(f'     Reference error: {e}')
-        if target_funcs:
-            print(f'     Target functions called: {", ".join(target_funcs)}')
-        if ref_funcs:
-            print(f'     Reference functions called: {", ".join(ref_funcs)}')
-
-        # Critical reads beyond file boundary
-        target_reads = deep_results.get('target', {}).get('pread64_calls', [])
-        file_size = 0
-        if input_file and os.path.isfile(input_file):
-            with open(input_file, 'rb') as f:
-                file_size = len(f.read())
-        critical_reads = [r for r in target_reads if r['offset'] + r['size'] > file_size] if file_size else []
-        if critical_reads:
-            print(f'  4. Critical file reads (beyond file boundary, size={file_size}):')
-            for r in critical_reads:
-                print(f'     pread64 offset=0x{r["offset"]:x} size={r["size"]} — BEYOND FILE')
-            print(f'     These reads cause IO errors, leading to early error/abort paths '
-                  f'(e.g. a NULL handle) before the fork point')
-    else:
-        print(f'  3. Root cause: see detailed analysis above')
 
     # 5. Input file offsets to modify (from the dynamic call-site trace)
     mapped_offsets = set()
