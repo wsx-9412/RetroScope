@@ -4742,7 +4742,7 @@ def _run_mutation_worker(task):
     """
     binary, data, program_args, input_file, timeout = task
     _ext = os.path.splitext(input_file)[1] if input_file else '.bin'
-        fd, tmp_path = tempfile.mkstemp(suffix=_ext, prefix='mutate_')
+    fd, tmp_path = tempfile.mkstemp(suffix=_ext, prefix='mutate_')
     os.close(fd)
     try:
         with open(tmp_path, 'wb') as f:
