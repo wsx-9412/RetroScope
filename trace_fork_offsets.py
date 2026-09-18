@@ -5180,7 +5180,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                 verdict, diff = compare_crash_signatures(ref_sig, sig)
                 crash = sig["crash_frames"][0] if sig["crash_frames"] else {}
                 if verdict in ('same_func', 'same_site'):
-                    results[key]['matches'][(va, vb)] = {
+                    results[key]['matches'][f'{va:02x},{vb:02x}'] = {
                         'verdict': verdict,
                         'type': sig['type'],
                         'function': crash.get('function'),
