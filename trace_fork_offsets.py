@@ -5737,6 +5737,10 @@ def main():
         'ref_file_reads': positioned_a,
         'chain_trace': chain_trace_results,
         'arithmetic_backtrace': arith_result,
+        'variable_offsets': var_offsets,
+        'mutation_offsets': sorted(stage1_offsets),
+        'crash_results': crash_results,
+        'mutation_any_match': any_match,
     }
     out_path = os.path.join(os.path.dirname(input_file) if input_file else '.', 'fork_trace_result.json')
     with open(out_path, 'w') as f:
