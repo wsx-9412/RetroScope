@@ -5332,21 +5332,21 @@ def main():
                 binary, fork_spec, fork_func_name, variables, input_file,
                 program_args, timeout=a.timeout * 2, clauses=_clause)
 
-        if err:
-            print(f'  [!] Call-site trace failed: {err}')
-        elif cs_result:
-            chain_trace_results = cs_result
-            fork_points = cs_result.get('fork_points', [])
-            mappings = cs_result.get('tag_mappings', {})
-            var_mappings = cs_result.get('var_mappings', {})
+            if err:
+                print(f'  [!] Call-site trace failed: {err}')
+            elif cs_result:
+                chain_trace_results = cs_result
+                fork_points = cs_result.get('fork_points', [])
+                mappings = cs_result.get('tag_mappings', {})
+                var_mappings = cs_result.get('var_mappings', {})
 
-            if fork_points:
-                print(f'  [*] Fork-point executions ({len(fork_points)}):')
-                for fp in fork_points[:3]:
-                    vals = ' '.join(f'{k}={v}' for k, v in fp['varvals'].items())
-                    print(f'      inv={fp["inv"]}: {vals}')
-                if len(fork_points) > 3:
-                    print(f'      ... (+{len(fork_points)-3} more)')
+                if fork_points:
+                    print(f'  [*] Fork-point executions ({len(fork_points)}):')
+                    for fp in fork_points[:3]:
+                        vals = ' '.join(f'{k}={v}' for k, v in fp['varvals'].items())
+                        print(f'      inv={fp["inv"]}: {vals}')
+                    if len(fork_points) > 3:
+                        print(f'      ... (+{len(fork_points)-3} more)')
 
             if mappings:
                 print(f'\n  [*] Call-site actual arguments (dp->tdir_tag) -> file offsets:')
