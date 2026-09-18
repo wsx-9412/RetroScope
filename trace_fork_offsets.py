@@ -522,6 +522,12 @@ _TIFF_TAG_NAMES = {
     317: 'Predictor', 330: 'SubIFDs', 339: 'SampleFormat',
 }
 
+# A value encoding that appears more than this many times in the program's
+# read regions is not distinctive (e.g. 1 -> "01 00 00 00" matches zero
+# padding everywhere) and would only produce noisy offsets.
+MAX_PATTERN_OCCURRENCES = 6
+
+
 def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
     """Dynamic fork-variable -> input file offset mapping (generic).
 
@@ -611,6 +617,8 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
                     pat = enc.to_bytes(width, endian)
                 except OverflowError:
                     continue
+                if _pattern_occurrences(pat) > MAX_PATTERN_OCCURRENCES:
+                    continue  # too common in the read regions — no signal
                 for (rs, re_) in ranges:
                     seg = file_data[rs:re_]
                     pos = seg.find(pat)
