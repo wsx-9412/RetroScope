@@ -4747,17 +4747,33 @@ def _trace_gap_divergence(binary_a, binary_b, trace_a, trace_b, gaps,
         # the other, so the guard itself is where the paths split.
         gfile = guard_a.get("guard_file")
         gline = guard_a.get("guard_line")
+        # The guard lives in the REFERENCE.  The downstream GDB trace runs on
+        # the TARGET, so map the fork function to its target-side equivalent
+        # (handles renames like lame_encoder -> lame_main).  When the mapping
+        # succeeds, the target-side location is used as the breakpoint site.
+        mapped = _map_function_to_target(func_a, source_dirs_a, source_dirs_b)
+        tgt_func = mapped[0] if mapped else func_a
+        tgt_file = mapped[1] if mapped else None
+        tgt_line = mapped[2] if mapped else None
         return {
-            "root_cause_function": func_a,
-            "file": gfile,
-            "line": gline,
+            "root_cause_function": tgt_func,
+            "file": tgt_file or gfile,
+            "line": tgt_line or gline,
+            "root_cause_file_b": tgt_file or gfile,
+            "root_cause_line_b": tgt_line or gline,
+            "root_cause_file_a": gfile,
+            "root_cause_line_a": gline,
             "line_a_file": gfile,
             "line_a": gline,
-            "line_text_b": _read_source_line(gfile, gline, source_dirs_a) or "",
+            "line_text_b": (_read_source_line(tgt_file, tgt_line,
+                                              source_dirs_b)
+                            if tgt_file else None) or "",
             "line_text_a": _read_source_line(gfile, gline, source_dirs_a) or "",
             "note": (f"GDB disassembly: {_LABEL_A}'s control statement guarding "
                      f"{a_first}() in {func_a}() ({gfile}:{gline}); "
-                     f"{_LABEL_B} stopped before this point"),
+                     f"{_LABEL_B} stopped before this point"
+                     + (f"; mapped to {_LABEL_B}'s {tgt_func}() "
+                        f"({tgt_file}:{tgt_line})" if mapped else "")),
             "diverging_call_a": a_first,
             "diverging_call_b": None,
         }
