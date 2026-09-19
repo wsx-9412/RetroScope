@@ -103,6 +103,45 @@ def _value_tuple(clauses):
     return out
 
 
+# Values at or above this magnitude are address-sized (heap/stack pointers
+# under ASLR) — real scalars (file offsets, counts, sizes) never reach it.
+_PTR_LIKE_MIN = 1 << 40
+
+
+def _is_ptr_like(v):
+    try:
+        return v is not None and abs(int(v)) >= _PTR_LIKE_MIN
+    except (TypeError, ValueError):
+        return False
+
+
+def _value_diff_is_pointer_noise(va, vb):
+    """True when the operand-value difference is ONLY in pointer-like
+    operands.
+
+    Heap addresses differ between every run (ASLR) and between the two
+    versions' processes even when the behavior is identical (e.g.
+    ``if (p==NULL)`` where p is a malloc result on both sides).  A 'value'
+    diff that rests solely on such operands is meaningless fork evidence.
+    """
+    if len(va) != len(vb):
+        return False
+    has_diff = False
+    all_ptr = True
+    for (la, ra), (lb, rb) in zip(va, vb):
+        la_i, lb_i = _to_int(la), _to_int(lb)
+        ra_i, rb_i = _to_int(ra), _to_int(rb)
+        if la_i != lb_i:
+            has_diff = True
+            if not (_is_ptr_like(la_i) and _is_ptr_like(lb_i)):
+                all_ptr = False
+        if ra_i != rb_i:
+            has_diff = True
+            if not (_is_ptr_like(ra_i) and _is_ptr_like(rb_i)):
+                all_ptr = False
+    return has_diff and all_ptr
+
+
 def compare_invocations(inv_a, inv_b):
     """Compare one invocation pair; return a diff dict or None.
 
