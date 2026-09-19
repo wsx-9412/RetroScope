@@ -186,7 +186,8 @@ def compare_invocations(inv_a, inv_b):
             _value_tuple(eb.get('clauses') or {})
         if ta and tb and ta != tb and weak is None:
             weak = _mk('text', False, k, ea, eb, da, db)
-        elif va and vb and va != vb and weak is None:
+        elif va and vb and va != vb and weak is None \
+                and not _value_diff_is_pointer_noise(va, vb):
             weak = _mk('value', False, k, ea, eb, da, db)
     if strong:
         return strong
