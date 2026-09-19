@@ -5280,9 +5280,27 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                     observed.setdefault(verdict or 'no_crash', 0)
                     observed[verdict or 'no_crash'] += 1
                     if verdict == 'same_type':
+                        _site = (crash.get('function'),
+                                 _path_basename(crash.get('file')),
+                                 crash.get('line'))
+                        skey = f"{_site[0]}:{_site[1]}:{_site[2]}"
+                        # Case C: same-type crash away from the target's own
+                        # baseline (fork) site = reproduction of the
+                        # reference's failure.
+                        if base_crash_site and _site != base_crash_site:
+                            results[key]['matches'][f'{va:02x},{vb:02x}'] = {
+                                'verdict': 'same_type_cross',
+                                'type': sig['type'],
+                                'function': crash.get('function'),
+                                'file': _path_basename(crash.get('file')),
+                                'line': crash.get('line'),
+                                'rc': rc,
+                            }
+                            print(f'    ({va:02x},{vb:02x}) -> MATCHES ref crash '
+                                  f'(same_type at other site: {skey})')
+                            continue
                         observed.setdefault('same_type_sites', {})
                         sites = observed['same_type_sites']
-                        skey = f"{crash.get('function')}:{_path_basename(crash.get('file'))}:{crash.get('line')}"
                         sites.setdefault(skey, 0)
                         sites[skey] += 1
                         results[key]['same_type'].setdefault(skey, [])
