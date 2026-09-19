@@ -58,16 +58,16 @@ _DECISION_DENSITY_CACHE = {}
 # They are excluded from recursion and from the candidate set so the search
 # does not terminate on the warning/error output path.
 _NOISE_FUNC_RE = re.compile(
-    r'(TIFF(Error|Warning)(Ext)?|unix(Error|Warning)Handler|'
-    r'(Error|Warning)Handler|_TIFF(Error|Warning)|'
+    r'(?:TIFF(?:Error|Warning)(?:Ext)?|unix(?:Error|Warning)Handler|'
+    r'(?:Error|Warning)Handler|_TIFF(?:Error|Warning)|'
     r'report|fprintf|perror|'
     # allocator / runtime helpers: a fork inside them (e.g.
     # ``_TIFFmalloc``'s ``if (s == 0)``) is never the causal statement —
     # the divergence lives in the caller that computes the arguments.
-    r'_(TIFF)?(malloc|realloc|calloc|free|memcpy|memset|memmove|'
+    r'_(?:TIFF)?(?:malloc|realloc|calloc|free|memcpy|memset|memmove|'
     r'memcmp|strlen|strcmp|strcpy|strncpy|printf|fread|fwrite|fseek|'
     r'ftell|fflush|exit|abort|assert|qsort|bsearch)|'
-    r'(malloc|calloc|realloc|free|memcpy|memset|memmove|strlen|strcmp|'
+    r'malloc|calloc|realloc|free|memcpy|memset|memmove|strlen|strcmp|'
     r'fread|fwrite|exit|abort|qsort|assert)$', re.IGNORECASE)
 
 
