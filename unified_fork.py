@@ -66,7 +66,9 @@ _NOISE_FUNC_RE = re.compile(
     # the divergence lives in the caller that computes the arguments.
     r'_(TIFF)?(malloc|realloc|calloc|free|memcpy|memset|memmove|'
     r'memcmp|strlen|strcmp|strcpy|strncpy|printf|fread|fwrite|fseek|'
-    r'ftell|fflush|exit|abort|assert|qsort|bsearch))$', re.IGNORECASE)
+    r'ftell|fflush|exit|abort|assert|qsort|bsearch)|'
+    r'(malloc|calloc|realloc|free|memcpy|memset|memmove|strlen|strcmp|'
+    r'fread|fwrite|exit|abort|qsort|assert)$', re.IGNORECASE)
 
 
 def _is_noise_func(name):
