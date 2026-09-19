@@ -4902,7 +4902,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                     else:
                         results[offset]['no_crash'].append(byte_val)
                     continue
-                verdict, diff = compare_crash_signatures(ref_sig, sig)
+                verdict, diff = compare_crash_signatures(_comp_ref_sig, sig)
                 crash = sig["crash_frames"][0] if sig["crash_frames"] else {}
                 if verdict in ('same_func', 'same_site'):
                     results[offset]['matches'][byte_val] = {
@@ -4956,7 +4956,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                         else:
                             results[offset]['no_crash'].append(byte_val)
                         continue
-                    verdict, diff = compare_crash_signatures(ref_sig, sig)
+                    verdict, diff = compare_crash_signatures(_comp_ref_sig, sig)
                     crash = sig["crash_frames"][0] if sig["crash_frames"] else {}
                     # ``same_func`` or better = the target reproduces the
                     # reference crash; ``same_type`` only = a same-kind crash
