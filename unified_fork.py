@@ -60,7 +60,13 @@ _DECISION_DENSITY_CACHE = {}
 _NOISE_FUNC_RE = re.compile(
     r'(TIFF(Error|Warning)(Ext)?|unix(Error|Warning)Handler|'
     r'(Error|Warning)Handler|_TIFF(Error|Warning)|'
-    r'report|fprintf|perror)$', re.IGNORECASE)
+    r'report|fprintf|perror|'
+    # allocator / runtime helpers: a fork inside them (e.g.
+    # ``_TIFFmalloc``'s ``if (s == 0)``) is never the causal statement —
+    # the divergence lives in the caller that computes the arguments.
+    r'_(TIFF)?(malloc|realloc|calloc|free|memcpy|memset|memmove|'
+    r'memcmp|strlen|strcmp|strcpy|strncpy|printf|fread|fwrite|fseek|'
+    r'ftell|fflush|exit|abort|assert|qsort|bsearch))$', re.IGNORECASE)
 
 
 def _is_noise_func(name):
