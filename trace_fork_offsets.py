@@ -5120,6 +5120,18 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
           f'({_path_basename(ref_crash.get("file"))}:'
           f'{ref_crash.get("line")}, rc={ref_rc})')
 
+    # Cross-version rewrite (e.g. audiofile C++ -> C): map the reference's
+    # crash function to its target-side equivalent so the same underlying bug
+    # counts as a same_func match.
+    _mapped_ref_func = _map_ref_crash_function(real_target, real_ref, ref_crash)
+    _comp_ref_sig = ref_sig
+    if _mapped_ref_func:
+        print(f'  [*] Reference crash function mapped to target-side '
+              f'{_mapped_ref_func}() for cross-version comparison')
+        import copy as _copy
+        _comp_ref_sig = _copy.deepcopy(ref_sig)
+        _comp_ref_sig['crash_frames'][0]['function'] = _mapped_ref_func
+
     # Baseline target outcome on the ORIGINAL file (for fork-flip detection).
     base_tgt_out, base_tgt_rc = _run_mutation_worker(
         (real_target, bytes(original_data), program_args, input_file, timeout))
@@ -5187,7 +5199,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                     else:
                         results[key]['no_crash'].append((va, vb))
                     continue
-                verdict, diff = compare_crash_signatures(ref_sig, sig)
+                verdict, diff = compare_crash_signatures(_comp_ref_sig, sig)
                 crash = sig["crash_frames"][0] if sig["crash_frames"] else {}
                 if verdict in ('same_func', 'same_site'):
                     results[key]['matches'][f'{va:02x},{vb:02x}'] = {
