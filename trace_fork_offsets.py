@@ -303,29 +303,37 @@ def read_source_fork_statement(source_file, target_line, target_binary=None, sea
     is_if_like = re.match(r'if\s*\(|switch\s*\(|case\s+', target_stripped)
 
     if is_if_like:
-        # Search backward for case/preprocessor/if
-        start = target_line - 1
-        for i in range(target_line - 1, max(0, target_line - search_range) - 1, -1):
-            stripped = lines[i].strip()
-            if stripped.startswith('case ') or stripped.startswith('default:'):
-                start = i + 1
-                break
-            if stripped.startswith('break;') or stripped.startswith('goto ') or stripped.startswith('return'):
-                start = i + 1
-                break
-            if re.match(r'^[a-zA-Z_]\w*\s*\(', stripped) and not stripped.startswith('if'):
+        if target_stripped.startswith('case ') or target_stripped.startswith('default:'):
+            # Search backward for case/preprocessor/if
+            start = target_line - 1
+            for i in range(target_line - 1, max(0, target_line - search_range) - 1, -1):
+                stripped = lines[i].strip()
+                if stripped.startswith('case ') or stripped.startswith('default:'):
+                    start = i + 1
+                    break
+                if stripped.startswith('break;') or stripped.startswith('goto ') or stripped.startswith('return'):
+                    start = i + 1
+                    break
+                if re.match(r'^[a-zA-Z_]\w*\s*\(', stripped) and not stripped.startswith('if'):
+                    start = i
+                    break
+                if stripped.startswith('#') and not stripped.startswith('#if') and not stripped.startswith('#else') and not stripped.startswith('#endif'):
+                    start = i + 1
+                    break
+                # A comment block above the fork line ends the enclosing
+                # statement — never start the span inside one.
+                if stripped.startswith('/*') or stripped.startswith('//') \
+                        or '*/' in stripped:
+                    start = i + 1
+                    break
                 start = i
-                break
-            if stripped.startswith('#') and not stripped.startswith('#if') and not stripped.startswith('#else') and not stripped.startswith('#endif'):
-                start = i + 1
-                break
-            # A comment block above the fork line ends the enclosing
-            # statement — never start the span inside one.
-            if stripped.startswith('/*') or stripped.startswith('//') \
-                    or '*/' in stripped:
-                start = i + 1
-                break
-            start = i
+        else:
+            # Plain ``if (...)`` fork: the fork IS the condition at the fork
+            # line.  Do NOT expand backward — preceding statements (e.g. an
+            # adjacent ``if (!(tif->tif_flags&TIFF_BIGTIFF))`` two lines
+            # above) are unrelated and would corrupt the fork statement and
+            # its variables.
+            start = target_line - 1
     else:
         # Regular statement — use just this line (don't expand backward)
         start = target_line - 1
