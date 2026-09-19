@@ -4935,9 +4935,30 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                     observed.setdefault(verdict or 'no_crash', 0)
                     observed[verdict or 'no_crash'] += 1
                     if verdict == 'same_type':
+                        _site = (crash.get('function'),
+                                 _path_basename(crash.get('file')),
+                                 crash.get('line'))
+                        key = f"{_site[0]}:{_site[1]}:{_site[2]}"
+                        # Case C: the target's baseline crash is at its own
+                        # (fork) site.  A same-type crash at a DIFFERENT site
+                        # means the mutation steered the target past its own
+                        # crash into the reference's failure — count it as a
+                        # reproduction.
+                        if base_crash_site and _site != base_crash_site:
+                            results[offset]['matches'][byte_val] = {
+                                'verdict': 'same_type_cross',
+                                'type': sig['type'],
+                                'function': crash.get('function'),
+                                'file': _path_basename(crash.get('file')),
+                                'line': crash.get('line'),
+                                'rc': rc,
+                            }
+                            print(f'    0x{byte_val:02x} -> MATCHES ref crash '
+                                  f'(same_type at other site: {key})  '
+                                  f'[用时 {_t_mut:.3f}s]')
+                            continue
                         observed.setdefault('same_type_sites', {})
                         sites = observed['same_type_sites']
-                        key = f"{crash.get('function')}:{_path_basename(crash.get('file'))}:{crash.get('line')}"
                         sites.setdefault(key, 0)
                         sites[key] += 1
                         results[offset]['same_type'].setdefault(key, [])
