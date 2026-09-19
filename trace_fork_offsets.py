@@ -4736,6 +4736,32 @@ def _run_mutation_worker(task):
             pass
 
 
+def _map_ref_crash_function(binary_target, binary_ref, ref_crash):
+    """Map the reference's crash function to its target-side equivalent.
+
+    When the two versions rewrote the code (e.g. audiofile's C++ -> C
+    rewrite: ``WAVEFile::readInit`` -> ``_af_wave_read_init``), the same
+    vulnerability crashes in differently-named functions.  ``same_func``
+    comparison would never match, so the reference crash function is mapped
+    to the target function whose source body most closely resembles it.
+
+    Returns the target-side function name, or None when no mapping exists.
+    """
+    func = (ref_crash or {}).get('function')
+    if not func:
+        return None
+    try:
+        import divergence_analyzer as da
+        ref_dirs = da.find_source_dirs(str(binary_ref))
+        tgt_dirs = da.find_source_dirs(str(binary_target))
+        mapped = da._map_function_to_target(func, ref_dirs, tgt_dirs)
+        if mapped and mapped[0] and mapped[0] != func:
+            return mapped[0]
+    except Exception:
+        pass
+    return None
+
+
 def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                 program_args, offsets, timeout=10,
                                 probe_values=None):
