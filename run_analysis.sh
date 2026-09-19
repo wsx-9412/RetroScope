@@ -64,7 +64,7 @@ case "$PROJECT_NAME" in
         EXTRA_ARGS=(--match-level name)
         ;;
     "audiofile")
-        REFERENCE_VERSION_PATH="$BASE_DIR/audiofile-versions/audiofile-0.3.4"
+        REFERENCE_VERSION_PATH="$BASE_DIR/audiofile-versions/audiofile-0.3.6"
         TARGET_VERSION_PATH="$BASE_DIR/audiofile-versions/audiofile-0.2.7"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2017-6831"
         EXTRA_ARGS=(--include-exits)
