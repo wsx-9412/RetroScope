@@ -4612,6 +4612,12 @@ def _map_function_to_target(func_name, source_dirs_a, source_dirs_b):
             if not m:
                 continue
             name = m.group(1)
+            # Skip control statements and preprocessor-looking lines — they
+            # are not functions (a ``while (...)`` loop body can score high
+            # against a function with a loop).
+            if name in ('while', 'for', 'if', 'switch', 'return', 'do',
+                        'else', 'sizeof', 'case', 'catch', 'try'):
+                continue
             # Find the body extent (opening brace to matching close).
             j = i
             depth0 = 0
