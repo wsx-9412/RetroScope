@@ -5013,12 +5013,40 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                         observed.setdefault(verdict or 'no_crash', 0)
                         observed[verdict or 'no_crash'] += 1
                         if verdict == 'same_type':
-                            # Near-miss: same ASan kind but a different crash
-                            # site — valuable signal that the mutation steers
-                            # the path but not (yet) to the reference's site.
+                            _site = (crash.get('function'),
+                                     _path_basename(crash.get('file')),
+                                     crash.get('line'))
+                            key = f"{_site[0]}:{_site[1]}:{_site[2]}"
+                            # Case C: the target's baseline crash is at its
+                            # own (fork) site.  A same-type crash at a
+                            # DIFFERENT site means the mutation steered the
+                            # target past its own crash into the reference's
+                            # failure — count it as a reproduction.
+                            if base_crash_site and _site != base_crash_site:
+                                results[offset]['matches'][byte_val] = {
+                                    'verdict': 'same_type_cross',
+                                    'type': sig['type'],
+                                    'function': crash.get('function'),
+                                    'file': _path_basename(crash.get('file')),
+                                    'line': crash.get('line'),
+                                    'rc': rc,
+                                }
+                                try:
+                                    import stage_timing
+                                    stage_timing.record(
+                                        f"变异成功 offset=0x{offset:x} byte=0x{byte_val:02x}",
+                                        _t_mut)
+                                except Exception:
+                                    pass
+                                print(f'    0x{byte_val:02x} -> MATCHES ref crash '
+                                      f'(same_type at other site: {key})  '
+                                      f'[用时 {_t_mut:.3f}s]')
+                                continue
+                            # Near-miss: same ASan kind at the baseline (own
+                            # crash) site — the mutation did not steer the
+                            # target into the reference's failure.
                             observed.setdefault('same_type_sites', {})
                             sites = observed['same_type_sites']
-                            key = f"{crash.get('function')}:{_path_basename(crash.get('file'))}:{crash.get('line')}"
                             sites.setdefault(key, 0)
                             sites[key] += 1
                             results[offset]['same_type'].setdefault(key, [])
