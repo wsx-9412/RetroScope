@@ -759,6 +759,15 @@ def main():
             div_result.setdefault('input_file', str(input_a) if input_a else None)
             div_result.setdefault('version_a', _div_mod._LABEL_A)
             div_result.setdefault('version_b', _div_mod._LABEL_B)
+            # The program name comes from the config's EXECUTION_CONFIG (e.g.
+            # tiffcp, sfconvert, lame) — downstream steps must not fall back
+            # to a hardcoded default (e.g. tiffcrop) when the project uses a
+            # different program.
+            if config_module is not None:
+                _exec_cfg = getattr(config_module, 'EXECUTION_CONFIG', {})
+                _prog = _exec_cfg.get('program_name', '')
+                if _prog:
+                    div_result.setdefault('program_name', _prog)
             _annotate_divergence_confidence(div_result)
 
         print(f"\n  Divergence function: {div_result.get('divergence_function', 'N/A')}")
