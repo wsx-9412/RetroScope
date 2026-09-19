@@ -43,7 +43,7 @@ COMPILE_COMMANDS = {
 
 # Program execution parameter configuration
 EXECUTION_CONFIG = {
-    "program_name": "tiffcp",
+    "program_name": "tiffcrop",
     "timeout": 120,
     "exec_subdir": "/tools",
     "command_format": COMMAND_FORMAT,
