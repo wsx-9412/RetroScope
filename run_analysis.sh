@@ -51,7 +51,7 @@ case "$PROJECT_NAME" in
     "libtiff")
         REFERENCE_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.4.0"
         TARGET_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.2.0"
-        DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2022-2953"
+        DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2022-1354"
         EXTRA_ARGS=(--include-exits --refactor-detect)
         ;;
 "lame")
