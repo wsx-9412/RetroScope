@@ -4585,7 +4585,7 @@ def compare_crash_signatures(ref_sig, tgt_sig):
                          f"target {tfile}:{tf.get('line')})")
 
 
-def _ifd_field_probe_values(offset, entry_size):
+def _ifd_field_probe_values(offset, entry_size, entries_base=None):
     """Directed byte values for an IFD entry field offset.
 
     Structural IFD fields are semantic, not value-driven: the full 255-value
@@ -4604,7 +4604,10 @@ def _ifd_field_probe_values(offset, entry_size):
     """
     if not entry_size or entry_size <= 0:
         return None
-    rel = offset % entry_size
+    # The entry starts at ``entries_base + i*entry_size``; the on-disk entry
+    # start is NOT a multiple of ``entry_size`` (IFD count bytes precede it),
+    # so the field position must be relative to the entries base.
+    rel = (offset - (entries_base or 0)) % entry_size
     if rel in (0, 1):  # tag field (2-byte LE at entry start)
         return [0x00, 0x01, 0x02, 0x03, 0x10, 0x11, 0x12, 0x13,
                 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1c,
