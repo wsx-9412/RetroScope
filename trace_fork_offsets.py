@@ -1799,6 +1799,21 @@ try:
     print("FLAGS %d" % int(gdb.parse_and_eval('tif->tif_flags')))
 except Exception:
     pass
+try:
+    f = gdb.newest_frame().older()
+    while f is not None:
+        try:
+            dc = int(f.read_var('dircount'))
+            print("IFD_DIRCOUNT %d" % dc)
+            break
+        except Exception:
+            pass
+        try:
+            f = f.older()
+        except Exception:
+            break
+except Exception:
+    pass
 end
   continue
 end
