@@ -6180,6 +6180,18 @@ def main():
         for h in a.test_offsets:
             stage1_offsets.add(int(h, 16))
 
+    # IFD region offsets are added to the mutation set, but with DIRECTED
+    # values only: they are structural (tag/type/count/offset) rather than
+    # value-driven, so the full 255-value sweep per field would explode
+    # (N entries x 4 fields x 255 runs).  Each field type gets the small
+    # meaning-bearing value set from _ifd_field_probe_values (tag rewrites
+    # like 278->279, common types, boundary counts, in-file offsets).
+    _ifd_field_offsets = [
+        o for o in _ifd_fields
+        if _ifd_region.get('entry_size') and
+        _ifd_field_probe_values(o, _ifd_region['entry_size']) is not None]
+    _ifd_probe_offsets = sorted(set(_ifd_field_offsets) - stage1_offsets)
+
     # End of the offset-localization phase (GDB tracing / mapping above);
     # what follows is the byte-mutation crash testing.
     stage_timing.record("确定分叉语句处变量对应输入文件偏移位置",
@@ -6193,6 +6205,47 @@ def main():
             sorted(stage1_offsets), a.timeout,
             title='Step 6: Byte mutation crash testing '
                   '(fork-variable offsets)')
+
+    # Step 6a: directed structural mutation of the IFD region fields
+    # (tag/type/count/offset of every entry of the fork-point IFD).  Each
+    # field is tested only with its meaning-bearing values, so a tag rewrite
+    # (e.g. RowsPerStrip 278 -> StripByteCounts 279 at 0xDC) is exercised
+    # without a 255-value sweep.
+    ifd_crash_results = {}
+    ifd_any_match = False
+    if _ifd_probe_offsets and binary and binary_ref and input_file \
+            and os.path.isfile(input_file):
+        _esz = _ifd_region.get('entry_size') or 12
+        _probe_map = {o: _ifd_field_probe_values(o, _esz)
+                      for o in _ifd_probe_offsets}
+        _all_probes = sorted({v for vals in _probe_map.values()
+                              for v in vals})
+        print(f'\n{"="*60}')
+        print(f'  Step 6a: Directed IFD-region mutation '
+              f'({len(_ifd_probe_offsets)} structural fields, '
+              f'{len(_all_probes)} directed values)')
+        print(f'{"="*60}')
+        try:
+            ifd_crash_results = test_byte_mutations_compare(
+                binary, binary_ref, input_file, program_args,
+                _ifd_probe_offsets, timeout=a.timeout,
+                probe_values=_all_probes)
+            for offset, info in sorted(
+                    (k, v) for k, v in ifd_crash_results.items()
+                    if isinstance(k, int)):
+                if info.get('matches'):
+                    ifd_any_match = True
+                    print(f'\n  Offset 0x{offset:x} '
+                          f'(original=0x{info["original"]:02x}):')
+                    for byte_val, m in sorted(info['matches'].items()):
+                        print(f'    0x{byte_val:02x} -> {m}')
+            if not ifd_any_match:
+                print(f'\n  No directed IFD-field value reproduces the '
+                      f'reference crash')
+        except Exception as _e:
+            print(f'  [!] IFD-region mutation failed: {_e}')
+        if ifd_any_match:
+            any_match = True
 
     # Step 6b: two-offset combined mutation — single-byte sweeps miss
     # interactions that need TWO bytes changed (e.g. the sign byte AND the
