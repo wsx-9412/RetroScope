@@ -11,7 +11,7 @@
 # =====================================================
 CVE_ID = "CVE-2022-1354"          # CVE number
 INPUT_FILE = "in/CVE-2022-1354"   # input file path (relative to RetroScope/)
-OUTPUT_FILE = "/tmp/foo"          # program output file
+OUTPUT_FILE = " "          # program output file
 # Program arguments template: {program_path}, {input_file}, {output_file}
 COMMAND_FORMAT = "{program_path}  -D -i  -r {input_file} {output_file}"
 
