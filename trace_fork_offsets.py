@@ -1851,9 +1851,10 @@ run {run_args}
         line = line.strip()
         m = re.match(r'FORK_POINT inv=(\d+)', line)
         if m:
-            cur = {'inv': int(m.group(1)), 'varvals': {},
-                   'diroff': None, 'dp': None, 'dir': None, 'entry': None,
-                   'frame_dir': None, 'entsize': None, 'flags': None}
+cur = {'inv': int(m.group(1)), 'varvals': {},
+               'diroff': None, 'dp': None, 'dir': None, 'entry': None,
+               'frame_dir': None, 'entsize': None, 'flags': None,
+               'dircount': None}
             fork_points.append(cur)
             continue
         if cur is None:
@@ -1876,6 +1877,8 @@ run {run_args}
         if m: cur['entsize'] = int(m.group(1)); continue
         m = re.match(r'FLAGS (\d+)', line)
         if m: cur['flags'] = int(m.group(1)); continue
+        m = re.match(r'IFD_DIRCOUNT (\d+)', line)
+        if m: cur['dircount'] = int(m.group(1)); continue
 
     if not fork_points:
         return None, 'no_invocations'
