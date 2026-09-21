@@ -1851,10 +1851,10 @@ run {run_args}
         line = line.strip()
         m = re.match(r'FORK_POINT inv=(\d+)', line)
         if m:
-cur = {'inv': int(m.group(1)), 'varvals': {},
-               'diroff': None, 'dp': None, 'dir': None, 'entry': None,
-               'frame_dir': None, 'entsize': None, 'flags': None,
-               'dircount': None}
+            cur = {'inv': int(m.group(1)), 'varvals': {},
+                   'diroff': None, 'dp': None, 'dir': None, 'entry': None,
+                   'frame_dir': None, 'entsize': None, 'flags': None,
+                   'dircount': None}
             fork_points.append(cur)
             continue
         if cur is None:
@@ -6274,6 +6274,8 @@ def main():
         'chain_trace': chain_trace_results,
         'arithmetic_backtrace': arith_result,
         'variable_offsets': var_offsets,
+        'ifd_region': _ifd_region,
+        'ifd_region_mutation': ifd_crash_results,
         'mutation_offsets': sorted(stage1_offsets),
         'crash_results': crash_results,
         'pairwise_results': pairwise_results,
