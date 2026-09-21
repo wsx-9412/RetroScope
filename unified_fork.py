@@ -37,6 +37,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from decision_trace import record_decisions
 from decision_trace import _locate_function_source, find_function_decisions
+from decision_trace import _function_body
 from decision_trace import is_function_definition
 from trace_fork_offsets import extract_variables_from_statement
 
