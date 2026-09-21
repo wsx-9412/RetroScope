@@ -4501,9 +4501,14 @@ def compare_crash_signatures(ref_sig, tgt_sig):
     """
     if ref_sig is None or tgt_sig is None:
         return None, "no crash signature to compare"
-    if ref_sig["type"] != tgt_sig["type"]:
+    if not _crash_types_compatible(ref_sig["type"], tgt_sig["type"]):
         return None, (f"type differs: ref={ref_sig['type']} "
                       f"target={tgt_sig['type']}")
+    if ref_sig["type"] != tgt_sig["type"]:
+        # SEGV umbrella match (e.g. ref=heap-buffer-overflow, target=SEGV):
+        # ASan reports some memory-access failures as a bare SEGV; the crash
+        # SITE comparison below still decides the verdict.
+        pass
     rf = ref_sig["crash_frames"][0] if ref_sig["crash_frames"] else {}
     tf = tgt_sig["crash_frames"][0] if tgt_sig["crash_frames"] else {}
     rfunc, tfunc = rf.get("function"), tf.get("function")
