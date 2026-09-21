@@ -4373,6 +4373,44 @@ _ASAN_SUMMARY_RE = re.compile(
 _SANITIZER_FRAME_RE = re.compile(
     r'__interceptor_|__asan_|__sanitizer_|__ubsan_|__tsan_|^libc|sanitizer|/csu/')
 
+# ASan error types that are all memory-access violations reported as a bare
+# SEGV when ASan cannot classify the access (e.g. a wild dereference that is
+# really an out-of-bounds read).  A crash reported as ``SEGV`` matches any of
+# these concrete types; two distinct concrete types are NOT interchangeable.
+_SEGV_ASAN_FAMILY = {
+    'SEGV',
+    'heap-buffer-overflow',
+    'stack-buffer-overflow',
+    'global-buffer-overflow',
+    'buffer-overflow',
+    'heap-use-after-free',
+    'stack-use-after-free',
+    'use-after-free',
+    'use-after-poison',
+    'use-after-scope',
+    'container-overflow',
+    'dynamic-stack-buffer-overflow',
+    'intra-object-overflow',
+    'string-overflow',
+    'unknown-crash',
+}
+
+
+def _crash_types_compatible(ref_type, tgt_type):
+    """True when two crash types denote the same failure class.
+
+    Types are compatible when equal, or when exactly ONE side is the coarse
+    ``SEGV`` report while the other is a concrete memory-access error under
+    the SEGV umbrella (ASan falls back to ``SEGV`` when it cannot classify
+    the access).  Two distinct concrete types (e.g. heap-buffer-overflow vs
+    use-after-free) remain different crashes.
+    """
+    if ref_type == tgt_type:
+        return True
+    if ref_type not in _SEGV_ASAN_FAMILY or tgt_type not in _SEGV_ASAN_FAMILY:
+        return False
+    return 'SEGV' in (ref_type, tgt_type)
+
 
 def _path_basename(p):
     """Basename of a frame file path (``/build/tiffcrop.c`` -> ``tiffcrop.c``)."""
