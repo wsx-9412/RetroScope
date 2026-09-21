@@ -2165,6 +2165,7 @@ def _call_site_trace_case_b(fork_points, variables, clauses=None,
     ifd_region = {
         'ifd_offset': None,
         'entry_size': None,
+        'entries_base': None,
         'count': None,
         'entry_offsets': [],
         'field_offsets': [],
@@ -2181,6 +2182,7 @@ def _call_site_trace_case_b(fork_points, variables, clauses=None,
         disk_esz = 20 if bigtiff else 12
         ifd_region['ifd_offset'] = diroff
         ifd_region['entry_size'] = disk_esz
+        ifd_region['entries_base'] = diroff + count_size
         ifd_region['count'] = dircount
         base = diroff + count_size
         ifd_region['entry_offsets'] = [
@@ -6192,7 +6194,8 @@ def main():
     _ifd_field_offsets = [
         o for o in _ifd_fields
         if _ifd_region.get('entry_size') and
-        _ifd_field_probe_values(o, _ifd_region['entry_size']) is not None]
+        _ifd_field_probe_values(o, _ifd_region['entry_size'],
+                                _ifd_region.get('entries_base')) is not None]
     _ifd_probe_offsets = sorted(set(_ifd_field_offsets) - stage1_offsets)
 
     # End of the offset-localization phase (GDB tracing / mapping above);
@@ -6219,8 +6222,9 @@ def main():
     if _ifd_probe_offsets and binary and binary_ref and input_file \
             and os.path.isfile(input_file):
         _esz = _ifd_region.get('entry_size') or 12
-        _probe_map = {o: _ifd_field_probe_values(o, _esz)
-                      for o in _ifd_probe_offsets}
+        _probe_map = {o: _ifd_field_probe_values(
+            o, _esz, _ifd_region.get('entries_base'))
+            for o in _ifd_probe_offsets}
         _all_probes = sorted({v for vals in _probe_map.values()
                               for v in vals})
         print(f'\n{"="*60}')
