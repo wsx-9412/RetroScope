@@ -4585,6 +4585,42 @@ def compare_crash_signatures(ref_sig, tgt_sig):
                          f"target {tfile}:{tf.get('line')})")
 
 
+def _ifd_field_probe_values(offset, entry_size):
+    """Directed byte values for an IFD entry field offset.
+
+    Structural IFD fields are semantic, not value-driven: the full 255-value
+    sweep per field would explode (N entries x 4 fields x 255 runs).  Each
+    field type gets a small set of meaning-bearing byte values instead:
+
+      * tag field  — values that turn the tag into a nearby / common TIFF
+        tag (a tag rewrite like RowsPerStrip 278 -> StripByteCounts 279 is
+        exactly the 0xDC case: low byte 0x16 -> 0x17);
+      * type field — the common TIFF field types (BYTE..DOUBLE, LONG8...);
+      * count field — boundary counts (0, 1, huge);
+      * offset field — in-file offsets / 0 / 8.
+
+    Returns a sorted list of byte values (the original value is skipped by
+    the caller), or None when the offset is not a valid field position.
+    """
+    if not entry_size or entry_size <= 0:
+        return None
+    rel = offset % entry_size
+    if rel in (0, 1):  # tag field (2-byte LE at entry start)
+        return [0x00, 0x01, 0x02, 0x03, 0x10, 0x11, 0x12, 0x13,
+                0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1c,
+                0x1f, 0x20, 0x28, 0x40, 0x7f, 0xff]
+    if rel in (2, 3):  # type field (2-byte LE at entry+2)
+        return [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x10, 0x11, 0x12, 0xff]
+    if rel in (4, 5, 6, 7):  # count field (4-byte LE at entry+4)
+        return [0x00, 0x01, 0x02, 0x03, 0x10, 0x7f, 0xff, 0x00,
+                0x00, 0x01, 0x02, 0xff, 0x7f, 0xff, 0xff]
+    if rel in (8, 9, 10, 11):  # offset/value field (4-byte LE at entry+8)
+        return [0x00, 0x01, 0x02, 0x08, 0x10, 0x40, 0x7f, 0xff,
+                0x00, 0x01, 0x02, 0x10, 0xff, 0x7f, 0xff, 0xff]
+    return None
+
+
 def _replace_input_arg(arg, tmp_path, input_file):
     """Map a program argument to the mutated temp file.
 
