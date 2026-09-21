@@ -2152,10 +2152,50 @@ def _call_site_trace_case_b(fork_points, variables, clauses=None,
                 mapping['kind'] = 'ifd_entry'
                 mapping['entry_index'] = idx
 
+    # ------------------------------------------------------------------
+    # IFD region: the fork decision runs inside TIFFReadDirectory's loop
+    # over the IFD entries, so EVERY entry of the same IFD is a structural
+    # input to the decision (not just the current entry's value fields).
+    # From the fork-point context (diroff + dircount + entry size) the whole
+    # on-disk IFD region is computed dynamically: entry offsets for all four
+    # fields (tag/type/count/offset) of every entry in the directory the
+    # fork point belongs to.  Nothing here is a static parse of the input —
+    # without a fork-point execution there is no diroff/dircount to map.
+    # ------------------------------------------------------------------
+    ifd_region = {
+        'ifd_offset': None,
+        'entry_size': None,
+        'count': None,
+        'entry_offsets': [],
+        'field_offsets': [],
+    }
+    for fp in fork_points:
+        diroff = fp.get('diroff')
+        dircount = fp.get('dircount')
+        if diroff is None or dircount is None or dircount <= 0 \
+                or dircount > 10000:
+            continue
+        flags = fp.get('flags')
+        bigtiff = flags is not None and bool(flags & 0x80000)
+        count_size = 8 if bigtiff else 2
+        disk_esz = 20 if bigtiff else 12
+        ifd_region['ifd_offset'] = diroff
+        ifd_region['entry_size'] = disk_esz
+        ifd_region['count'] = dircount
+        base = diroff + count_size
+        ifd_region['entry_offsets'] = [
+            base + i * disk_esz for i in range(dircount)]
+        ifd_region['field_offsets'] = []
+        for eo in ifd_region['entry_offsets']:
+            ifd_region['field_offsets'].extend(
+                [eo, eo + 2, eo + 4, eo + 8])  # tag, type, count, offset
+        break
+
     return {
         'var_mappings': var_mappings,
         'fork_points': fork_points,
         'pread64': [],
+        'ifd_region': ifd_region,
     }
 
 
