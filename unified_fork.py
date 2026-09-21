@@ -346,6 +346,87 @@ def _fork_summary(res, func_a, func_b):
             f'A return={res.get("ret_a")} | B return={res.get("ret_b")}')
 
 
+def _fork_operand_names(stmt_a, stmt_b):
+    """Candidate operand identifiers of a decision statement.
+
+    Parsed from the raw condition text (NOT the blacklist-filtered variable
+    extractor): keywords, all-caps enum/macro constants and CamelCase type
+    names are excluded, so a status-code operand like ``err`` survives here.
+    """
+    names = []
+    for stmt in (stmt_a, stmt_b):
+        if not stmt:
+            continue
+        for m in re.finditer(r'\b[a-zA-Z_]\w*\b', stmt):
+            tok = m.group(0)
+            if tok in _STATEMENT_KEYWORDS:
+                continue
+            if re.fullmatch(r'[A-Z][A-Z0-9_]*', tok):
+                continue  # macro / enum constant (e.g. TIFFReadDirEntryErrOk)
+            if tok not in names:
+                names.append(tok)
+    return names
+
+
+def _upstream_operand_variables(file_b, line_b, func_b, stmt_a, stmt_b,
+                                max_scan=60):
+    """One-hop dataflow fallback: variables that PRODUCE the decision operand.
+
+    Runs ONLY when the regular operand extraction returned nothing (typically
+    because the differing operand is a status-code variable like ``err`` that
+    the extractor blacklists).  It walks the target function upward from the
+    fork statement to the assignment that produces the operand
+    (``err=TIFFReadDirEntryLong8Array(tif,dir,&data);``) and extracts the RHS
+    variables — the values that actually carry input bytes (GDB later
+    dereferences struct pointers like ``dir`` into their scalar fields).
+
+    The fallback never runs for samples whose operands extract normally, so
+    their variable sets (and downstream accuracy) are unchanged.
+    """
+    if not file_b or not line_b or not func_b:
+        return []
+    operands = _fork_operand_names(stmt_a, stmt_b)
+    if not operands:
+        return []
+    src_lines = None
+    try:
+        body = _function_body(file_b, func_b)
+    except Exception:
+        body = None
+    if body:
+        start, end, lines = body
+        src_lines = lines
+    else:
+        start, end = 1, line_b
+        try:
+            src_lines = Path(file_b).read_text(errors='replace').splitlines()
+        except Exception:
+            return []
+    if not src_lines:
+        return []
+    lo = max(0, start - 1)
+    hi = min(len(src_lines), line_b - 1)
+    assign = None
+    for i in range(hi - 1, max(lo, hi - max_scan) - 1, -1):
+        text = src_lines[i] if i < len(src_lines) else ''
+        for op in operands:
+            m = re.match(r'^\s*' + re.escape(op) + r'\s*=', text)
+            if not m:
+                continue
+            stmt = text
+            j = i
+            while not stmt.rstrip().endswith(';') and j + 1 < len(src_lines):
+                j += 1
+                stmt += ' ' + src_lines[j]
+            assign = stmt
+            break
+        if assign:
+            break
+    if not assign:
+        return []
+    return extract_variables_from_statement(assign)
+
+
 def build_dynamic_result(res, boundary_func, source_root_a, source_root_b,
                          input_file=None, fork_meta=None):
     """Assemble a divergence-result dict (the shape .diverge.json consumers
