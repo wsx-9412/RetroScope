@@ -6041,6 +6041,24 @@ def main():
             if _info.get('file_offset') is not None:
                 mapped_offsets.add(_info['file_offset'])
 
+    # 5.1. IFD region offsets (dynamic): the fork decision executes inside
+    # TIFFReadDirectory's IFD-entry loop, so the whole directory that the
+    # fork point belongs to is a structural input.  All four fields
+    # (tag/type/count/offset) of EVERY entry in that IFD are computed from
+    # the fork-point runtime context (tif->tif_diroff + dircount) — nothing
+    # static, nothing without a fork-point execution.
+    _ifd_region = (chain_trace_results or {}).get('ifd_region') or {}
+    _ifd_fields = _ifd_region.get('field_offsets') or []
+    if _ifd_fields:
+        print(f'\n  5.1. IFD region offsets (dynamic, from fork-point context):')
+        print(f'      IFD at file offset 0x{_ifd_region.get("ifd_offset"):x}, '
+              f'{_ifd_region.get("count")} entries x '
+              f'{_ifd_region.get("entry_size")} bytes')
+        _fo = ', '.join(f'0x{o:x}' for o in sorted(_ifd_fields))
+        print(f'      all entry fields (tag/type/count/offset): {_fo}')
+        for _o in _ifd_fields:
+            mapped_offsets.add(_o)
+
     # Validation candidates = exactly the offsets derived from the fork
     # variables (no read-region expansion).
     if mapped_offsets:
