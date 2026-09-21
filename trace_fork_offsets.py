@@ -6087,7 +6087,9 @@ def main():
     # fork point belongs to is a structural input.  All four fields
     # (tag/type/count/offset) of EVERY entry in that IFD are computed from
     # the fork-point runtime context (tif->tif_diroff + dircount) — nothing
-    # static, nothing without a fork-point execution.
+    # static, nothing without a fork-point execution.  These structural
+    # fields are NOT merged into the full-sweep set (72 fields x 255 values
+    # would explode); they get the directed-value mutation in Step 6a.
     _ifd_region = (chain_trace_results or {}).get('ifd_region') or {}
     _ifd_fields = _ifd_region.get('field_offsets') or []
     if _ifd_fields:
@@ -6097,8 +6099,6 @@ def main():
               f'{_ifd_region.get("entry_size")} bytes')
         _fo = ', '.join(f'0x{o:x}' for o in sorted(_ifd_fields))
         print(f'      all entry fields (tag/type/count/offset): {_fo}')
-        for _o in _ifd_fields:
-            mapped_offsets.add(_o)
 
     # Validation candidates = exactly the offsets derived from the fork
     # variables (no read-region expansion).
