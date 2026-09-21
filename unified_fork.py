@@ -43,6 +43,17 @@ from trace_fork_offsets import extract_variables_from_statement
 
 _SEMANTIC_SUFFIXES = ('WithLimit', 'Checked', 'Safe', 'Ex', 'NoSSE', 'Array')
 
+_STATEMENT_KEYWORDS = {
+    'if', 'else', 'while', 'for', 'do', 'switch', 'case', 'default',
+    'break', 'continue', 'return', 'goto', 'sizeof', 'NULL', 'true',
+    'false', 'int', 'char', 'short', 'long', 'float', 'double', 'void',
+    'signed', 'unsigned', 'const', 'static', 'extern', 'struct', 'union',
+    'enum', 'typedef', 'uint8_t', 'uint16_t', 'uint32_t', 'uint64_t',
+    'int8_t', 'int16_t', 'int32_t', 'int64_t', 'size_t', 'ssize_t',
+    'uint8', 'uint16', 'uint32', 'uint64', 'int8', 'int16', 'int32',
+    'int64', 'uint', 'ushort', 'uchar', 'toff_t', 'tsize_t', 'tdata_t',
+}
+
 # Cache of _record_side results: (binary, func_names, source_root, args) ->
 # (record_decisions_result, used_func_name).  Deterministic recordings are
 # replayed many times during the recursive descent; the cache avoids the
@@ -491,6 +502,19 @@ def build_dynamic_result(res, boundary_func, source_root_a, source_root_b,
                 for v in extract_variables_from_statement(text):
                     if v not in variables:
                         variables.append(v)
+        if not variables:
+            # One-hop dataflow fallback: the decision operands were all
+            # filtered out (e.g. ``err`` — a status code, not an input byte).
+            # Walk up to the assignment that produces the differing operand
+            # (``err=TIFFReadDirEntryLong8Array(tif,dir,&data);``) and take
+            # its RHS variables — the real input-derived producers.  Gated
+            # on an EMPTY result, so samples whose operands extract normally
+            # keep their exact variable set (no behavior change).
+            for v in _upstream_operand_variables(
+                    file_b, b.get('line'), fb,
+                    a.get('text', ''), b.get('text', '')):
+                if v not in variables:
+                    variables.append(v)
         out['variables'] = variables
         verdict = 'weak' if res.get('weak') else 'strong'
         if res.get('absorbed'):

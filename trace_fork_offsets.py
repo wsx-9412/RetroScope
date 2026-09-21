@@ -474,7 +474,17 @@ def read_trace_json(json_path):
 
     # Fallback: extract from the JSON's fork statement
     if not variables:
-        if 'polytracker_offsets' in div:
+        # The divergence analyzer may already have resolved the fork
+        # variables (e.g. the one-hop producer fallback supplies the RHS
+        # variables of the assignment that produced a status-code operand
+        # like ``err``).  Prefer those over re-extracting, which filters
+        # exactly the operands that fallback supplied.
+        div_vars = div.get('variables') or []
+        for v in div_vars:
+            if v and v not in variables:
+                variables.append(v)
+
+        if not variables and 'polytracker_offsets' in div:
             pt = div['polytracker_offsets']
             fork_stmt = pt.get('fork_statement', root_cause_stmt)
             if fork_stmt:
