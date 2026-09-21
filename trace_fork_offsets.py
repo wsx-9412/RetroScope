@@ -6185,12 +6185,13 @@ def main():
         for h in a.test_offsets:
             stage1_offsets.add(int(h, 16))
 
-    # IFD region offsets are added to the mutation set, but with DIRECTED
-    # values only: they are structural (tag/type/count/offset) rather than
-    # value-driven, so the full 255-value sweep per field would explode
-    # (N entries x 4 fields x 255 runs).  Each field type gets the small
-    # meaning-bearing value set from _ifd_field_probe_values (tag rewrites
-    # like 278->279, common types, boundary counts, in-file offsets).
+    # IFD region offsets are mutated with DIRECTED values only: they are
+    # structural (tag/type/count/offset) rather than value-driven, so the
+    # full 255-value sweep per field would explode (N entries x 4 fields x
+    # 255 runs).  Each field type gets the small meaning-bearing value set
+    # from _ifd_field_probe_values (tag rewrites like 278->279, common
+    # types, boundary counts, in-file offsets).  Offsets already covered by
+    # the fork-variable sweep (stage1) are skipped here.
     _ifd_field_offsets = [
         o for o in _ifd_fields
         if _ifd_region.get('entry_size') and
