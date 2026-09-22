@@ -6640,6 +6640,7 @@ def main():
         'target_file_reads': positioned_b,
         'ref_file_reads': positioned_a,
         'chain_trace': chain_trace_results,
+        'deep_trace': deep_results,
         'arithmetic_backtrace': arith_result,
         'variable_offsets': var_offsets,
         'ifd_region': _ifd_region,
