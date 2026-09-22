@@ -695,7 +695,8 @@ _FILE_FUNC_RETURN_VARS = {
 }
 
 
-def map_file_read_return_offsets(variables, reads, fork_vars=None, max_hits=32):
+def map_file_read_return_offsets(variables, reads, fork_vars=None, max_hits=32,
+                                 deep_reads=None, file_size=None):
     """Map a fork variable that is the NULL return value of a file-reading
     function (TIFFOpen) to the positioned file reads captured during the run.
 
@@ -704,16 +705,37 @@ def map_file_read_return_offsets(variables, reads, fork_vars=None, max_hits=32):
     known file-handle return (in/out/tif) has no byte-pattern signal (a zero
     matches every zero byte) and no read-buffer pointer — but the positioned
     reads that happened before the fork are the input bytes that determined
-    the NULL.  Returns ``{var: [{'offset','width','method'}, ...]}``.
+    the NULL.
+
+    ``deep_reads`` are the reads observed INSIDE the file-open function
+    (Step 3.5 deep trace): those are the specific reads that decided the
+    return value, so they take priority over the broader pre-fork read set.
+    Reads that go BEYOND the file boundary (``offset + size > file_size``)
+    are flagged as the actual failure cause (an IO error inside TIFFOpen
+    makes it return NULL).  Returns
+    ``{var: [{'offset','width','method'}, ...]}``.
     """
     out = {}
     if not reads:
         return out
     captured = {v.get('name'): v.get('val') for v in variables if v.get('name')}
     names = list(fork_vars) if fork_vars else list(captured)
-    positioned = sorted({r['offset'] for r in reads
-                         if r.get('offset') is not None and r['offset'] >= 0
-                         and r.get('fd', -1) >= 3 and r.get('size')})
+
+    def _collect(read_list):
+        positioned = sorted({r['offset'] for r in read_list
+                             if r.get('offset') is not None and r['offset'] >= 0
+                             and r.get('size')})
+        critical = []
+        normal = []
+        for off in positioned:
+            sz = next((r.get('size') for r in read_list
+                       if r.get('offset') == off), 0)
+            if file_size and off + sz > file_size:
+                critical.append(off)
+            else:
+                normal.append(off)
+        return critical, normal
+
     for name in names:
         if name not in _FILE_FUNC_RETURN_VARS:
             continue
@@ -723,11 +745,30 @@ def map_file_read_return_offsets(variables, reads, fork_vars=None, max_hits=32):
         if name in captured and captured[name] != 0:
             continue
         hits = []
-        for off in positioned:
+        if deep_reads:
+            critical, normal = _collect(deep_reads)
+        else:
+            critical, normal = [], []
+        for off in critical:  # beyond-file reads = the actual failure cause
+            if len(hits) >= max_hits:
+                break
+            hits.append({'offset': off, 'width': 0,
+                         'method': f'return_of_{_FILE_FUNC_RETURN_VARS[name]}_critical_read'})
+        for off in normal:
             if len(hits) >= max_hits:
                 break
             hits.append({'offset': off, 'width': 0,
                          'method': f'return_of_{_FILE_FUNC_RETURN_VARS[name]}'})
+        if not hits:
+            # Fall back to the pre-fork reads when no deep-trace reads exist.
+            positioned = sorted({r['offset'] for r in reads
+                                 if r.get('offset') is not None and r['offset'] >= 0
+                                 and r.get('fd', -1) >= 3 and r.get('size')})
+            for off in positioned:
+                if len(hits) >= max_hits:
+                    break
+                hits.append({'offset': off, 'width': 0,
+                             'method': f'return_of_{_FILE_FUNC_RETURN_VARS[name]}'})
         if hits:
             out[name] = hits
     return out
