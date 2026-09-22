@@ -685,6 +685,57 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
     return out
 
 
+# Fork variables that are the return value of a file-reading function
+# (e.g. ``in = TIFFOpen(argv[optind], "r")``).  When the function fails it
+# returns NULL and the fork ``if (in == NULL)`` is taken; the file regions
+# the function actually read (the positioned pread64/read calls captured
+# during the GDB run) are exactly what determined that NULL return.
+_FILE_FUNC_RETURN_VARS = {
+    'in': 'TIFFOpen', 'out': 'TIFFOpen', 'tif': 'TIFFOpen',
+}
+
+
+def map_file_read_return_offsets(variables, reads, fork_vars=None, max_hits=32):
+    """Map a fork variable that is the NULL return value of a file-reading
+    function (TIFFOpen) to the positioned file reads captured during the run.
+
+    This is the fully-dynamic counterpart of the removed ``analyze_offsets``
+    Case 5: a variable whose captured value is 0 (NULL) and whose name is a
+    known file-handle return (in/out/tif) has no byte-pattern signal (a zero
+    matches every zero byte) and no read-buffer pointer — but the positioned
+    reads that happened before the fork are the input bytes that determined
+    the NULL.  Returns ``{var: [{'offset','width','method'}, ...]}``.
+    """
+    out = {}
+    if not reads:
+        return out
+    fork_vars = set(fork_vars) if fork_vars else set()
+    for var in variables:
+        name = var.get('name')
+        val = var.get('val')
+        if name not in _FILE_FUNC_RETURN_VARS:
+            continue
+        if fork_vars and name not in fork_vars:
+            continue
+        if val != 0:
+            continue
+        hits = []
+        seen = set()
+        for r in reads:
+            off = r.get('offset')
+            if (off is None or off < 0 or r.get('fd', -1) < 3
+                    or not r.get('size') or off in seen):
+                continue
+            seen.add(off)
+            hits.append({'offset': off, 'width': 0,
+                         'method': f'return_of_{_FILE_FUNC_RETURN_VARS[name]}'})
+            if len(hits) >= max_hits:
+                break
+        if hits:
+            out[name] = hits
+    return out
+
+
 def parse_tiff_ifd(filepath):
     """Parse TIFF IFD and return tag info with file offsets.
 
