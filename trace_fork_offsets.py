@@ -6406,9 +6406,16 @@ def main():
     # are the variable's file offsets.
     if not var_offsets and file_reads_b:
         try:
+            _deep_reads = None
+            _file_size = None
+            if deep_results.get('target'):
+                _deep_reads = deep_results['target'].get('pread64_calls') or []
+            if input_file and os.path.isfile(input_file):
+                _file_size = os.path.getsize(input_file)
             _open_offsets = map_file_read_return_offsets(
                 parsed_b.get('variables', []), file_reads_b,
-                fork_vars=config.get('variables'))
+                fork_vars=config.get('variables'),
+                deep_reads=_deep_reads, file_size=_file_size)
             if _open_offsets:
                 var_offsets.update(_open_offsets)
         except Exception as _e:
