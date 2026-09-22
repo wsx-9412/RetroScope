@@ -671,6 +671,7 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
         #    to the FULL value span (e.g. a 4-byte sample rate at 0x18 maps
         #    0x18..0x1b) so byte-mutation sweeps the whole field, including
         #    the sign byte.
+        match_starts = []
         if not hits and file_data:
             # Try the value's MINIMAL encoding width first (a 4-byte "01 00
             # 00 00" pattern for value 1 matches zero padding everywhere; the
@@ -682,6 +683,7 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
                 min_w = 2
                 while min_w <= 8 and val < -(1 << (8 * min_w - 1)):
                     min_w += 1
+            size_hint = var.get('size')
             for width, endian in (
                     (min_w, 'little'), (min_w, 'big'),
                     (min_w + 1, 'little'), (min_w + 1, 'big'),
@@ -708,9 +710,17 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
                     pos = seg.find(pat)
                     while pos != -1:
                         off = rs + pos
-                        for span_off in range(off, off + width):
+                        # Extend the minimal match to the full on-disk slot
+                        # (GDB type width preferred, byte-verified) so the
+                        # whole field is reported, not half of it.
+                        slot_w = _slot_width(file_data, off, val, endian, width,
+                                             size_hint=size_hint)
+                        if off not in match_starts:
+                            match_starts.append(off)
+                        for span_off in range(off, off + slot_w):
                             if all(h['offset'] != span_off for h in hits):
-                                hits.append({'offset': span_off, 'width': width,
+                                hits.append({'offset': span_off, 'width': slot_w,
+                                             'match_width': width,
                                              'method': f'value_bytes_{endian}'})
                         if len(hits) >= max_hits:
                             break
@@ -725,6 +735,15 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
                     if val >= 0 or width >= min_w + 2:
                         break
         if hits:
+            if any(h.get('method') == 'points_into_read_buffer' for h in hits):
+                _tier = 'A_direct_pointer'
+            elif (len(match_starts) == 1
+                  and any(h.get('width', 0) >= 2 for h in hits)):
+                _tier = 'B_value_field'
+            else:
+                _tier = 'C_value_pattern'
+            for h in hits:
+                h.setdefault('tier', _tier)
             out[name] = hits
     return out
 
@@ -756,8 +775,13 @@ def map_file_read_return_offsets(variables, reads, fork_vars=None, max_hits=32,
     return value, so they take priority over the broader pre-fork read set.
     Reads that go BEYOND the file boundary (``offset + size > file_size``)
     are flagged as the actual failure cause (an IO error inside TIFFOpen
-    makes it return NULL).  Returns
-    ``{var: [{'offset','width','method'}, ...]}``.
+    makes it return NULL).
+
+    Tiers: ``A_deep_open_critical`` (beyond-file read = actual failure
+    cause) > ``A_deep_open_read`` (a read inside the open function) >
+    ``C_open_read_fallback`` (whole-run read set, used only when the deep
+    trace produced nothing).  Returns
+    ``{var: [{'offset','width','method','tier'}, ...]}``.
     """
     out = {}
     if not reads:
@@ -797,11 +821,13 @@ def map_file_read_return_offsets(variables, reads, fork_vars=None, max_hits=32,
             if len(hits) >= max_hits:
                 break
             hits.append({'offset': off, 'width': 0,
+                         'tier': 'A_deep_open_critical',
                          'method': f'return_of_{_FILE_FUNC_RETURN_VARS[name]}_critical_read'})
         for off in normal:
             if len(hits) >= max_hits:
                 break
             hits.append({'offset': off, 'width': 0,
+                         'tier': 'A_deep_open_read',
                          'method': f'return_of_{_FILE_FUNC_RETURN_VARS[name]}'})
         if not hits:
             # Fall back to the pre-fork reads when no deep-trace reads exist.
@@ -812,6 +838,7 @@ def map_file_read_return_offsets(variables, reads, fork_vars=None, max_hits=32,
                 if len(hits) >= max_hits:
                     break
                 hits.append({'offset': off, 'width': 0,
+                             'tier': 'C_open_read_fallback',
                              'method': f'return_of_{_FILE_FUNC_RETURN_VARS[name]}'})
         if hits:
             out[name] = hits
