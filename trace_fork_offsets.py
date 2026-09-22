@@ -3014,6 +3014,58 @@ def map_libtiff_tag_to_file_offset(tag_id, input_file):
     return None, None, None
 
 
+def parse_deep_trace(output):
+    """Parse raw GDB output from the TIFFOpen-internals deep trace.
+
+    Extracts:
+    - Function breakpoints (which TIFF functions were actually called)
+    - pread64 calls (offset and size) — the file reads that happened during
+      TIFFOpen, i.e. the specific reads that determine the handle's value
+    - Error messages (IO errors, etc.) that explain a NULL return
+    """
+    result = {
+        'functions_called': [],
+        'pread64_calls': [],
+        'errors': [],
+        'tif_ptr': None,
+    }
+
+    if not output:
+        return result
+
+    for line in output.splitlines():
+        line = line.strip()
+
+        # Capture function breakpoints
+        m = re.match(r'Breakpoint \d+, (\w+) \(', line)
+        if m:
+            func_name = m.group(1)
+            if func_name not in result['functions_called']:
+                result['functions_called'].append(func_name)
+            # Capture TIFF pointer
+            if func_name in ('TIFFReadDirectory', 'TIFFFetchDirectory', 'TIFFFetchStripThing'):
+                mp = re.search(r'tif=(0x[0-9a-f]+)', line)
+                if mp:
+                    result['tif_ptr'] = mp.group(1)
+
+        # Capture pread64 call to syscall
+        if 'call to syscall pread64' in line:
+            m = re.search(r'count=count@entry=(\d+),\s*offset=(\d+)', line)
+            if m:
+                result['pread64_calls'].append({
+                    'offset': int(m.group(2)),
+                    'size': int(m.group(1)),
+                })
+
+        # Capture error messages from TIFF library
+        if 'Warning' in line and ('IO error' in line or 'Bogus' in line or 'error' in line.lower()):
+            result['errors'].append(line)
+        if 'TIFFFetchStripThing' in line and 'error' in line.lower():
+            result['errors'].append(line)
+
+    return result
+
+
 def _parse_value_str(val_str):
     """Parse a GDB value string into an int (hex or decimal) or return the string."""
     val_str = val_str.strip()
