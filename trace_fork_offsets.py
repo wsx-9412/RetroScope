@@ -6125,6 +6125,22 @@ def main():
         except Exception as _e:
             print(f'  [!] variable->offset mapping failed: {_e}')
 
+    # A fork variable that is the NULL return of a file-reading function
+    # (``in = TIFFOpen(...)`` returning NULL — the ``if (in == NULL)`` guard)
+    # has no byte-pattern signal (value 0 matches every zero byte) and its
+    # pointer value 0 lies in no read buffer.  The positioned reads captured
+    # before the fork ARE the input bytes that made the open fail, so they
+    # are the variable's file offsets.
+    if not var_offsets and file_reads_b:
+        try:
+            _open_offsets = map_file_read_return_offsets(
+                parsed_b.get('variables', []), file_reads_b,
+                fork_vars=config.get('variables'))
+            if _open_offsets:
+                var_offsets.update(_open_offsets)
+        except Exception as _e:
+            print(f'  [!] file-open return-value mapping failed: {_e}')
+
     mapped_offsets = set()
     if var_offsets:
         print(f'\n  5. Fork variables -> input file offsets (dynamic):')
