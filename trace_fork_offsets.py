@@ -5880,6 +5880,87 @@ def main():
         differing_vars = variables
 
     # ================================================================
+    # Step 3.5: Deep trace into TIFFOpen internals for differing vars
+    # ================================================================
+    # A fork guard like ``if (in == NULL)`` tests a variable that is the
+    # RETURN value of TIFFOpen().  Rather than stopping at "in = TIFFOpen()
+    # returns NULL", trace INWARD through the open-time call path: which TIFF
+    # functions were reached, which pread64 reads were performed, and which
+    # read/error actually decided the NULL return.  This pinpoints the input
+    # file bytes that made the handle NULL.
+    deep_results = {}
+    _file_return_vars = [v for v in differing_vars if v in _FILE_FUNC_RETURN_VARS]
+    if _file_return_vars:
+        print(f'\n{"="*60}')
+        print(f'  Step 3.5: Deep trace into {", ".join(sorted(set(_FILE_FUNC_RETURN_VARS[v] for v in _file_return_vars)))} internals')
+        print(f'{"="*60}')
+
+        file_size = 0
+        if input_file and os.path.isfile(input_file):
+            file_size = os.path.getsize(input_file)
+
+        for ver_name, ver_binary in [('target', binary), ('reference', binary_ref)]:
+            if not ver_binary or not os.path.isfile(resolve_binary(ver_binary)):
+                continue
+            print(f'\n  [*] Tracing {ver_name}: {resolve_binary(ver_binary)}')
+            trace_out, err = run_deep_tiffopen_trace(
+                ver_binary, input_file, program_args, timeout=a.timeout)
+            if err:
+                print(f'  [!] {ver_name} deep trace failed: {err}')
+                continue
+            result = parse_deep_trace(trace_out)
+            deep_results[ver_name] = result
+
+            # Print call chain results
+            print(f'    Functions called: {", ".join(result["functions_called"]) if result["functions_called"] else "none"}')
+            print(f'    TIFF pointer: {result["tif_ptr"] or "N/A"}')
+            print(f'    pread64 calls: {len(result["pread64_calls"])}')
+            for p in result['pread64_calls']:
+                within = 'within file' if p['offset'] + p['size'] <= file_size else 'BEYOND FILE'
+                print(f'      offset=0x{p["offset"]:04x} size={p["size"]} [{within}]')
+            if result['errors']:
+                print(f'    Errors ({len(result["errors"])}):')
+                for e in result['errors'][:3]:
+                    print(f'      {e[:120]}')
+
+        # Compare deep trace results
+        if 'target' in deep_results and 'reference' in deep_results:
+            t = deep_results['target']
+            r = deep_results['reference']
+            print(f'\n  [*] Deep trace comparison:')
+            t_funcs = set(t['functions_called'])
+            r_funcs = set(r['functions_called'])
+            print(f'    Functions: target={t["functions_called"]} ref={r["functions_called"]}')
+
+            # Find differing pread64 calls
+            t_offs = set((p['offset'], p['size']) for p in t['pread64_calls'])
+            r_offs = set((p['offset'], p['size']) for p in r['pread64_calls'])
+            only_t = t_offs - r_offs
+            only_r = r_offs - t_offs
+            if only_t or only_r:
+                print(f'    pread64 DIFFERS:')
+                if only_t:
+                    for off, sz in sorted(only_t):
+                        print(f'      only target: offset=0x{off:x} size={sz}')
+                if only_r:
+                    for off, sz in sorted(only_r):
+                        print(f'      only ref: offset=0x{off:x} size={sz}')
+            else:
+                print(f'    pread64 calls IDENTICAL between versions')
+
+            # Map pread64 calls to input file offsets
+            print(f'\n  [*] Mapping pread64 calls to input file:')
+            for p in t['pread64_calls']:
+                off = p['offset']
+                sz = p['size']
+                if off < file_size:
+                    end = min(off + sz, file_size)
+                    print(f'    pread64 offset=0x{off:x} size={sz} => input file bytes [0x{off:x}-0x{end:x})')
+                else:
+                    print(f'    pread64 offset=0x{off:x} size={sz} => BEYOND file (size={file_size})')
+                    print(f'      ^^^ This read accesses invalid data beyond file boundary')
+
+    # ================================================================
     # Step 4: Trace file I/O and map to input file
     # ================================================================
     print(f'\n{"="*60}')
