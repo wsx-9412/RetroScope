@@ -1141,6 +1141,26 @@ def _dump_var(_v, _depth=0):
         if _depth >= 2:
             return
         try:
+            _pv = int(_val)
+        except Exception:
+            return
+        if _pv == 0:
+            # NULL pointer (e.g. `in` when TIFFOpen fails): dereference()
+            # still reports the pointee's type (a pure type op) but every
+            # field read would fail, so no scalar is ever printed.  Capture
+            # the pointer VALUE itself (0) — the fork operand ``if (in ==
+            # NULL)`` is exactly that value, and it must be recorded to map
+            # the NULL return back to the input file bytes.
+            try:
+                _addr = int(_val.address) if _val.address else 0
+            except Exception:
+                _addr = 0
+            print("VAR_NAME %s" % _v)
+            print("VAR_ADDR 0x%x" % _addr)
+            print("VAR_VAL %d" % _pv)
+            print("VAR_SIZE %d" % _val.type.sizeof)
+            return
+        try:
             _dt = _val.dereference().type.strip_typedefs()
         except Exception:
             _dt = None
@@ -1163,10 +1183,7 @@ def _dump_var(_v, _depth=0):
                     continue
                 _nf += 1
             return
-        # NULL pointer (e.g. `in` when TIFFOpen fails) or a pointer to a
-        # scalar: capture the pointer VALUE itself (0 for NULL).  The fork
-        # operand ``if (in == NULL)`` is that value, so it must be recorded
-        # to map the NULL return back to the input file bytes.
+        # Pointer to a scalar: capture the pointer VALUE itself.
         try:
             _addr = int(_val.address) if _val.address else 0
             _iv = int(_val)
