@@ -711,7 +711,7 @@ def map_file_read_return_offsets(variables, reads, fork_vars=None, max_hits=32):
         return out
     captured = {v.get('name'): v.get('val') for v in variables if v.get('name')}
     names = list(fork_vars) if fork_vars else list(captured)
-    positioned = sorted({(r['offset'], r.get('size') or 0) for r in reads
+    positioned = sorted({r['offset'] for r in reads
                          if r.get('offset') is not None and r['offset'] >= 0
                          and r.get('fd', -1) >= 3 and r.get('size')})
     for name in names:
@@ -723,7 +723,7 @@ def map_file_read_return_offsets(variables, reads, fork_vars=None, max_hits=32):
         if name in captured and captured[name] != 0:
             continue
         hits = []
-        for off, _sz in positioned:
+        for off in positioned:
             if len(hits) >= max_hits:
                 break
             hits.append({'offset': off, 'width': 0,
