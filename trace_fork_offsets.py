@@ -1391,6 +1391,56 @@ def run_gdb_trace(binary, fork_spec, variables, input_file, program_args, timeou
     return None, 'fork_not_reached'
 
 
+def run_deep_tiffopen_trace(binary, input_file, program_args, timeout=30):
+    """Run GDB to trace TIFFOpen internals using raw breakpoint/catchpoint output.
+
+    Sets breakpoints at the key TIFF library functions and catches pread64
+    calls, then walks the actual open-time call path.  This is how the
+    ``in``/``out``/``tif`` (TIFFOpen return) fork variables are traced: once
+    the fork guard (e.g. ``if (in == NULL)``) is located, the NULL return is
+    traced INWARD to the specific file reads that determined it — which
+    directory/strip read failed — instead of just attributing the value to
+    "TIFFOpen".  The raw GDB output is returned for parsing.
+    """
+    real_binary = resolve_binary(binary)
+    run_parts = [a.replace('{input_file}', input_file).replace('{input}', input_file)
+                 for a in program_args]
+
+    run_args = ' '.join(run_parts)
+
+    # Build GDB commands as a series of -ex arguments
+    cmds = [
+        'set pagination off',
+        'set confirm off',
+        'set breakpoint pending on',
+        'break TIFFOpen',
+        'break TIFFFetchStripThing',
+        'catch syscall pread64',
+        f'run {run_args}',
+    ]
+    # Add enough continues to get through all breakpoints/catchpoints
+    for _ in range(30):
+        cmds.append('continue')
+    cmds.append('quit')
+
+    # Build the full command line
+    gdb_args = ['gdb', '-batch', '-nx', '-q']
+    for cmd in cmds:
+        gdb_args.extend(['-ex', cmd])
+    gdb_args.extend(['--', real_binary])
+
+    try:
+        proc = subprocess.run(
+            gdb_args,
+            capture_output=True, text=True, timeout=timeout,
+            env=build_run_env(real_binary))
+    except subprocess.TimeoutExpired:
+        return None, 'timeout'
+
+    output = proc.stdout + proc.stderr
+    return output, None
+
+
 def run_gdb_chain_trace(binary, fork_spec, variables, input_file, program_args, timeout=120):
     """Use GDB watchpoints to chain-trace variables back to file offsets.
 
