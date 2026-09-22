@@ -6493,25 +6493,41 @@ def main():
             print(f'  [!] file-open return-value mapping failed: {_e}')
 
     mapped_offsets = set()
+    # Candidate confidence tiers: how each offset was tied to the fork
+    # statement.  Kept separately so per-tier precision can be measured
+    # (e.g. in experiments) instead of mixing exact provenance with
+    # value-pattern guesses and structural expansion.
+    candidate_tiers = {}
+
+    def _add_tier(_tier, _off):
+        candidate_tiers.setdefault(_tier, [])
+        if _off not in candidate_tiers[_tier]:
+            candidate_tiers[_tier].append(_off)
+
     if var_offsets:
         print(f'\n  5. Fork variables -> input file offsets (dynamic):')
         for _vname, _hits in var_offsets.items():
             _hstr = ', '.join(
-                f'0x{h["offset"]:x} ({h["method"]}{", w"+str(h["width"]) if h["width"] else ""})'
+                f'0x{h["offset"]:x} ({h["method"]}'
+                f'{", w"+str(h["width"]) if h["width"] else ""}'
+                f'{", " + h["tier"] if h.get("tier") else ""})'
                 for h in _hits[:8])
             print(f'     {_vname} -> {_hstr}')
         for _hits in var_offsets.values():
             for _h in _hits:
                 mapped_offsets.add(_h['offset'])
+                _add_tier(_h.get('tier') or 'C_value_pattern', _h['offset'])
 
     if chain_trace_results and chain_trace_results.get('tag_mappings'):
         for _tagid, _info in chain_trace_results['tag_mappings'].items():
             if _info.get('file_offset') is not None:
                 mapped_offsets.add(_info['file_offset'])
+                _add_tier('A_dynamic_callsite', _info['file_offset'])
     if chain_trace_results and chain_trace_results.get('var_mappings'):
         for _vname, _info in chain_trace_results['var_mappings'].items():
             if _info.get('file_offset') is not None:
                 mapped_offsets.add(_info['file_offset'])
+                _add_tier('A_dynamic_callsite', _info['file_offset'])
 
     # 5.1. IFD region offsets (dynamic): the fork decision executes inside
     # TIFFReadDirectory's IFD-entry loop, so the whole directory that the
@@ -6530,6 +6546,8 @@ def main():
               f'{_ifd_region.get("entry_size")} bytes')
         _fo = ', '.join(f'0x{o:x}' for o in sorted(_ifd_fields))
         print(f'      all entry fields (tag/type/count/offset): {_fo}')
+        for _off in _ifd_fields:
+            _add_tier('S_structural_ifd_region', _off)
 
     # Validation candidates = exactly the offsets derived from the fork
     # variables (no read-region expansion).
@@ -6537,6 +6555,36 @@ def main():
         offset_strs = ', '.join(f'0x{o:x}' for o in sorted(mapped_offsets))
         print(f'  Validation candidates (from fork variables) at input file '
               f'offsets: {offset_strs}')
+
+    # 5.2. Confidence-tiered view of the candidates (for precision
+    #      measurement per association method).
+    if candidate_tiers:
+        print(f'\n  5.2. Candidate offsets by confidence tier:')
+        _TIER_ORDER = (
+            'A_direct_pointer', 'A_dynamic_callsite', 'A_deep_open_critical',
+            'A_deep_open_read', 'B_value_field', 'B_arithmetic_tag',
+            'C_value_pattern', 'C_open_read_fallback',
+            'S_structural_ifd_region',
+        )
+        _TIER_DESC = {
+            'A_direct_pointer': 'pointer value inside a recorded read buffer (exact)',
+            'A_dynamic_callsite': 'IFD entry/dir/dp arithmetic at the fork point (exact)',
+            'A_deep_open_critical': 'beyond-file read inside the open function (failure cause)',
+            'A_deep_open_read': 'read performed inside the open function',
+            'B_value_field': 'unique multi-byte value field verified in read regions',
+            'B_arithmetic_tag': 'def-use chain TIFF tag value (runtime-matched)',
+            'C_value_pattern': 'ambiguous/narrow value-pattern match (likely noise)',
+            'C_open_read_fallback': 'whole-run read set (deep trace produced nothing)',
+            'S_structural_ifd_region': 'directory region from fork context (not swept)',
+        }
+        for _tier in _TIER_ORDER:
+            _offs = sorted(candidate_tiers.get(_tier) or [])
+            if not _offs:
+                continue
+            _sample = ', '.join(f'0x{o:x}' for o in _offs[:8])
+            _more = f' ... (+{len(_offs)-8} more)' if len(_offs) > 8 else ''
+            print(f'     {_tier} [{_TIER_DESC.get(_tier, "")}]: '
+                  f'{len(_offs)} offset(s): {_sample}{_more}')
 
     # 5c. Value-level mutation of the fork-variable origins: rewrite the
     #     whole value at each origin (e.g. the 4-byte ImageLength value at
@@ -6602,6 +6650,7 @@ def main():
         for _ch in (arith_result.get('chains') or {}).values():
             for _t in _ch.get('tag_offsets', []):
                 arith_offsets.add(_t['file_offset'])
+                _add_tier('B_arithmetic_tag', _t['file_offset'])
     if arith_offsets:
         arith_strs = ', '.join(f'0x{o:x}' for o in sorted(arith_offsets))
         print(f'  5b. Arithmetic-backtrace offsets (fork-controlling bytes): '
