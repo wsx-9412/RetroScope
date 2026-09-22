@@ -6296,6 +6296,41 @@ def main():
 
     print(f'  1. Fork point: {short_fork}')
 
+    # 3. Deep trace comparison (errors and function calls) — the INWARD
+    # trace into the file-open function whose return value the guard tests.
+    if deep_results:
+        target_errors = deep_results.get('target', {}).get('errors', [])
+        ref_errors = deep_results.get('reference', {}).get('errors', [])
+        target_funcs = deep_results.get('target', {}).get('functions_called', [])
+        ref_funcs = deep_results.get('reference', {}).get('functions_called', [])
+
+        print(f'  3. Deep trace comparison:')
+        if target_errors:
+            for e in target_errors:
+                print(f'     Target error: {e}')
+        if ref_errors:
+            for e in ref_errors:
+                print(f'     Reference error: {e}')
+        if target_funcs:
+            print(f'     Target functions called: {", ".join(target_funcs)}')
+        if ref_funcs:
+            print(f'     Reference functions called: {", ".join(ref_funcs)}')
+
+        # Critical reads beyond file boundary
+        target_reads = deep_results.get('target', {}).get('pread64_calls', [])
+        file_size = 0
+        if input_file and os.path.isfile(input_file):
+            with open(input_file, 'rb') as f:
+                file_size = len(f.read())
+        critical_reads = [r for r in target_reads if r['offset'] + r['size'] > file_size] if file_size else []
+        if critical_reads:
+            print(f'  4. Critical file reads (beyond file boundary, size={file_size}):')
+            for r in critical_reads:
+                print(f'     pread64 offset=0x{r["offset"]:x} size={r["size"]} — BEYOND FILE')
+            print(f'     These reads cause IO errors, leading to TIFFOpen returning NULL')
+    else:
+        print(f'  3. Root cause: see detailed analysis above')
+
     # 5. Input file offsets to modify (from the dynamic call-site trace)
     mapped_offsets = set()
     if chain_trace_results and chain_trace_results.get('tag_mappings'):
