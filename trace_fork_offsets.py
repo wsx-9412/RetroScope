@@ -712,8 +712,12 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
                         off = rs + pos
                         # Extend the minimal match to the full on-disk slot
                         # (GDB type width preferred, byte-verified) so the
-                        # whole field is reported, not half of it.
-                        slot_w = _slot_width(file_data, off, val, endian, width,
+                        # whole field is reported, not half of it.  The lower
+                        # bound is the value's minimal encoding width, so a
+                        # fallback match found at a non-standard search width
+                        # (e.g. min_w+2 for negative values) still snaps to a
+                        # standard slot when the bytes verify it.
+                        slot_w = _slot_width(file_data, off, val, endian, min_w,
                                              size_hint=size_hint)
                         if off not in match_starts:
                             match_starts.append(off)
