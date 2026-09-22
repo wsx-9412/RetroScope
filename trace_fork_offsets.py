@@ -6558,6 +6558,10 @@ def main():
 
     # 5.2. Confidence-tiered view of the candidates (for precision
     #      measurement per association method).
+    if arith_result:
+        for _ch in (arith_result.get('chains') or {}).values():
+            for _t in _ch.get('tag_offsets', []):
+                _add_tier('B_arithmetic_tag', _t['file_offset'])
     if candidate_tiers:
         print(f'\n  5.2. Candidate offsets by confidence tier:')
         _TIER_ORDER = (
@@ -6763,6 +6767,7 @@ def main():
         'deep_trace': deep_results,
         'arithmetic_backtrace': arith_result,
         'variable_offsets': var_offsets,
+        'candidate_tiers': candidate_tiers,
         'ifd_region': _ifd_region,
         'ifd_region_mutation': ifd_crash_results,
         'mutation_offsets': sorted(stage1_offsets),
