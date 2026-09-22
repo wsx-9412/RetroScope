@@ -1095,26 +1095,39 @@ def _dump_var(_v, _depth=0):
         try:
             _dt = _val.dereference().type.strip_typedefs()
         except Exception:
+            _dt = None
+        if _dt is not None and _dt.code in (gdb.TYPE_CODE_STRUCT, gdb.TYPE_CODE_UNION):
+            _referenced = [_r for _r in _roots if _r.startswith(_v + '->')]
+            _nf = 0
+            for _fld in _dt.fields():
+                if _nf >= 32:  # cap per pointee to limit noise
+                    break
+                if getattr(_fld, 'is_static', False) or getattr(_fld, 'artificial', False):
+                    continue
+                _fname = _v + '->' + _fld.name
+                if _referenced and not any(_r == _fname or _r.startswith(_fname + '->')
+                                           or _r.startswith(_fname + '.')
+                                           for _r in _referenced):
+                    continue  # not on the fork's data path
+                try:
+                    _dump_var(_fname, _depth + 1)
+                except Exception:
+                    continue
+                _nf += 1
             return
-        if _dt.code not in (gdb.TYPE_CODE_STRUCT, gdb.TYPE_CODE_UNION):
+        # NULL pointer (e.g. `in` when TIFFOpen fails) or a pointer to a
+        # scalar: capture the pointer VALUE itself (0 for NULL).  The fork
+        # operand ``if (in == NULL)`` is that value, so it must be recorded
+        # to map the NULL return back to the input file bytes.
+        try:
+            _addr = int(_val.address) if _val.address else 0
+            _iv = int(_val)
+        except Exception:
             return
-        _referenced = [_r for _r in _roots if _r.startswith(_v + '->')]
-        _nf = 0
-        for _fld in _dt.fields():
-            if _nf >= 32:  # cap per pointee to limit noise
-                break
-            if getattr(_fld, 'is_static', False) or getattr(_fld, 'artificial', False):
-                continue
-            _fname = _v + '->' + _fld.name
-            if _referenced and not any(_r == _fname or _r.startswith(_fname + '->')
-                                       or _r.startswith(_fname + '.')
-                                       for _r in _referenced):
-                continue  # not on the fork's data path
-            try:
-                _dump_var(_fname, _depth + 1)
-            except Exception:
-                continue
-            _nf += 1
+        print("VAR_NAME %s" % _v)
+        print("VAR_ADDR 0x%x" % _addr)
+        print("VAR_VAL %d" % _iv)
+        print("VAR_SIZE %d" % _val.type.sizeof)
         return
     _scalar_codes = {{getattr(gdb, 'TYPE_CODE_INT', None),
                      getattr(gdb, 'TYPE_CODE_ENUM', None),
