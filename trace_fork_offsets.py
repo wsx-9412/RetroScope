@@ -546,6 +546,40 @@ _TIFF_TAG_NAMES = {
 MAX_PATTERN_OCCURRENCES = 6
 
 
+def _slot_width(file_data, off, val, endian, min_w, size_hint=None, max_slot=8):
+    """Widest plausible integer slot at ``off`` whose bytes still encode ``val``.
+
+    A value parsed from a file field may occupy a wider on-disk slot than its
+    minimal encoding — e.g. the 4-byte TIFF header IFD-offset field holding
+    value 2 is ``02 00 00 00``, so the minimal 2-byte match would report only
+    half of the field.  The variable's own in-memory width (``size_hint`` from
+    GDB) is preferred, then the standard integer widths 8/4/2; each candidate
+    is only accepted when the surrounding file bytes actually verify it (the
+    wider slot must decode to the same value: zero/sign extension).
+    """
+    def _enc_ok(w):
+        if w < min_w or w > max_slot or off + w > len(file_data):
+            return False
+        if val >= 0:
+            if val >= (1 << (8 * w)):
+                return False
+        elif val < -(1 << (8 * w - 1)):
+            return False
+        return (int.from_bytes(file_data[off:off + w], endian)
+                == (val & ((1 << (8 * w)) - 1)))
+
+    order = []
+    if size_hint in (1, 2, 4, 8) and size_hint >= min_w:
+        order.append(size_hint)
+    for w in (8, 4, 2):
+        if w not in order:
+            order.append(w)
+    for w in order:
+        if _enc_ok(w):
+            return w
+    return min_w
+
+
 def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
     """Dynamic fork-variable -> input file offset mapping (generic).
 
@@ -565,8 +599,18 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
     ``MAX_PATTERN_OCCURRENCES`` — only distinctive values (real field
     contents like a sample rate or data size) produce candidate offsets.
 
+    Each hit carries a ``tier`` describing how strongly it is tied to the
+    fork statement, so precision can be measured per layer:
+
+      * ``A_direct_pointer`` — the value IS an address inside a recorded
+        read buffer (exact provenance, no pattern guessing);
+      * ``B_value_field``   — a single (unambiguous) multi-byte field whose
+        full slot was verified in the read regions;
+      * ``C_value_pattern`` — a narrow or ambiguous value-pattern match
+        (several candidate locations for the same value = likely noise).
+
     No file-format knowledge is used.  Returns
-    ``{var: [{'offset', 'width', 'method'}, ...]}``.
+    ``{var: [{'offset', 'width', 'match_width', 'method', 'tier'}, ...]}``.
     """
     out = {}
     if not variables:
