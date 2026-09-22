@@ -709,28 +709,25 @@ def map_file_read_return_offsets(variables, reads, fork_vars=None, max_hits=32):
     out = {}
     if not reads:
         return out
-    fork_vars = set(fork_vars) if fork_vars else set()
-    for var in variables:
-        name = var.get('name')
-        val = var.get('val')
+    captured = {v.get('name'): v.get('val') for v in variables if v.get('name')}
+    names = list(fork_vars) if fork_vars else list(captured)
+    positioned = sorted({(r['offset'], r.get('size') or 0) for r in reads
+                         if r.get('offset') is not None and r['offset'] >= 0
+                         and r.get('fd', -1) >= 3 and r.get('size')})
+    for name in names:
         if name not in _FILE_FUNC_RETURN_VARS:
             continue
-        if fork_vars and name not in fork_vars:
-            continue
-        if val != 0:
+        # A variable is NULL either when captured as 0 or when it is a fork
+        # variable the dump could not evaluate (NULL handle) — in both cases
+        # the guard ``if (in == NULL)`` is decided by the open-time reads.
+        if name in captured and captured[name] != 0:
             continue
         hits = []
-        seen = set()
-        for r in reads:
-            off = r.get('offset')
-            if (off is None or off < 0 or r.get('fd', -1) < 3
-                    or not r.get('size') or off in seen):
-                continue
-            seen.add(off)
-            hits.append({'offset': off, 'width': 0,
-                         'method': f'return_of_{_FILE_FUNC_RETURN_VARS[name]}'})
+        for off, _sz in positioned:
             if len(hits) >= max_hits:
                 break
+            hits.append({'offset': off, 'width': 0,
+                         'method': f'return_of_{_FILE_FUNC_RETURN_VARS[name]}'})
         if hits:
             out[name] = hits
     return out
