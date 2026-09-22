@@ -717,11 +717,17 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
                                              size_hint=size_hint)
                         if off not in match_starts:
                             match_starts.append(off)
+                        # A byte-verified wider slot marks a real field-shaped
+                        # encoding even when the same value also appears at
+                        # other (noisy) locations; a bare minimal-width match
+                        # is only promoted when it is the single match.
+                        _mt = 'B_value_field' if slot_w > width else None
                         for span_off in range(off, off + slot_w):
                             if all(h['offset'] != span_off for h in hits):
                                 hits.append({'offset': span_off, 'width': slot_w,
                                              'match_width': width,
-                                             'method': f'value_bytes_{endian}'})
+                                             'method': f'value_bytes_{endian}',
+                                             'tier': _mt})
                         if len(hits) >= max_hits:
                             break
                         pos = seg.find(pat, pos + 1)
@@ -737,13 +743,12 @@ def map_fork_variables_to_offsets(variables, reads, file_data, max_hits=16):
         if hits:
             if any(h.get('method') == 'points_into_read_buffer' for h in hits):
                 _tier = 'A_direct_pointer'
-            elif (len(match_starts) == 1
-                  and any(h.get('width', 0) >= 2 for h in hits)):
-                _tier = 'B_value_field'
             else:
-                _tier = 'C_value_pattern'
+                _tier = ('B_value_field' if len(match_starts) == 1
+                         else 'C_value_pattern')
             for h in hits:
-                h.setdefault('tier', _tier)
+                if h.get('tier') is None:
+                    h['tier'] = _tier
             out[name] = hits
     return out
 
