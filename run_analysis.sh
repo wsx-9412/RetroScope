@@ -198,6 +198,13 @@ if [ "$POLYTRACKER_MODE" = true ] || [ "$FULL_MODE" = true ]; then
         exit 1
     fi
 
+    # Pt-only mode (-pt) skips the GDB step, so tell the inline analysis to
+    # reset the mutation output folder itself (in -full mode the GDB step
+    # already did it, and Step 3 must append to its results).
+    if [ "$POLYTRACKER_MODE" = true ]; then
+        export RETRO_PT_ONLY=1
+    fi
+
     python3 -u -c "
 import sys, time
 sys.path.insert(0, '.')
