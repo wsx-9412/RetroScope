@@ -5517,6 +5517,158 @@ def _case_a_mapped_line_reachable(crash_a, binary_a, binary_b, source_dirs_b,
     return True
 
 
+_DECISION_STMT_RE = re.compile(r'^\s*(if|while|for|switch)\s*\(')
+
+
+def _find_enclosing_decisions(source_file, line, source_dirs,
+                              max_back=40, max_levels=4):
+    """Nearest control statements at/above ``line`` (innermost first).
+
+    Used by the Case A rejection path: the reference's crash statement may be
+    skipped by the target while the *decision that guards it* is still
+    reached by both versions (e.g. ``while (ninks > 1)``).  Returns
+    ``[(line, stripped_statement), ...]``.
+    """
+    full = _locate_source_file(source_file, source_dirs)
+    if not full:
+        return []
+    try:
+        with open(full, encoding='utf-8', errors='replace') as f:
+            lines = f.readlines()
+    except Exception:
+        return []
+    out = []
+    i = min(max(line, 1), len(lines)) - 1
+    for j in range(i, max(0, i - max_back) - 1, -1):
+        s = lines[j].strip()
+        if _DECISION_STMT_RE.match(s):
+            out.append((j + 1, s))
+            if len(out) >= max_levels:
+                break
+    return out
+
+
+def _eval_condition_operands(binary, source_dirs, lib_path, source_file,
+                             line, exprs, args, timeout):
+    """GDB-evaluate integer operands at ``source_file:line`` on first hit.
+
+    Returns ``{expr: int_value}``.  Address-like values are discarded: they
+    differ between two processes for reasons unrelated to the fork (the trap
+    that makes raw return-value comparison noisy).
+    """
+    full = _locate_source_file(source_file, source_dirs)
+    if not full or not exprs:
+        return {}
+    cmds = ["set breakpoint pending on", f"break {full}:{line}"]
+    cmds.append(f"run {' '.join(str(a) for a in (args or []))}")
+    for e in exprs:
+        cmds.append(f'printf "OPERAND {e} = %lld\\n", (long long)({e})')
+    try:
+        out = run_gdb_with_source(binary, source_dirs, cmds,
+                                  lib_path=lib_path, timeout=timeout)
+    except Exception:
+        return {}
+    # The probe only counts when the line is really reached.
+    if "Breakpoint 1," not in out:
+        return {}
+    vals = {}
+    for m in re.finditer(r'OPERAND (\S+) = (-?\d+)', out):
+        v = int(m.group(2))
+        if abs(v) >= (1 << 47):
+            continue
+        vals[m.group(1)] = v
+    return vals
+
+
+def _try_enclosing_decision_fork(crash_a, binary_a, binary_b, source_dirs_a,
+                                 source_dirs_b, lib_path_a, lib_path_b,
+                                 args_b, refactoring_map, gdb_timeout,
+                                 func_name, a_idx, b_idx, input_file,
+                                 skip_polytracker, config):
+    """Reachability-aware fork for the Case A rejection path.
+
+    The reference's crash statement is skipped by the target (e.g. its
+    enclosing loop is not entered because the library truncates a value), yet
+    the decision guarding the crash IS evaluated by both versions with
+    different operands.  Search the reference crash line's enclosing
+    decisions (innermost first), map each to the target by statement text,
+    and return the first one whose integer operands differ.
+    """
+    crash_file = crash_a.get("file")
+    crash_line = crash_a.get("line")
+    if not crash_file or not crash_line:
+        return None
+    ref_file_base = os.path.basename(crash_file) or crash_file
+    crash_func = crash_a.get("function")
+    tgt_func = (refactoring_map.get(crash_func, crash_func)
+                if refactoring_map else crash_func)
+    for ref_dec_line, ref_dec_stmt in _find_enclosing_decisions(
+            crash_file, crash_line, source_dirs_a):
+        mapped = _find_matching_line(ref_file_base, ref_dec_stmt, source_dirs_b)
+        if not mapped:
+            continue
+        tgt_dec_line, tgt_dec_stmt = mapped
+        exprs = [e for e in _extract_variables_from_expression(ref_dec_stmt)
+                 if re.fullmatch(r'[A-Za-z_]\w*', e)][:4]
+        if not exprs:
+            continue
+        vals_a = _eval_condition_operands(
+            binary_a, source_dirs_a, lib_path_a, ref_file_base,
+            ref_dec_line, exprs, args_b, gdb_timeout)
+        if not vals_a:
+            continue
+        vals_b = _eval_condition_operands(
+            binary_b, source_dirs_b, lib_path_b, ref_file_base,
+            tgt_dec_line, exprs, args_b, gdb_timeout)
+        if not vals_b:
+            continue
+        diffs = {e: (vals_a[e], vals_b[e]) for e in exprs
+                 if e in vals_a and e in vals_b and vals_a[e] != vals_b[e]}
+        if not diffs:
+            continue
+        operand_desc = ', '.join(
+            f'{e}: reference={va} target={vb}' for e, (va, vb) in diffs.items())
+        print(f"\n  >> Crash statement is unreachable in the target, but its "
+              f"enclosing decision differs: {ref_dec_stmt}")
+        print(f"     operands: {operand_desc}")
+        result = {
+            "divergence_function": func_name,
+            "trace_a_index": a_idx,
+            "trace_b_index": b_idx,
+            "root_cause_function": tgt_func,
+            "root_cause_file": ref_file_base,
+            "root_cause_line": tgt_dec_line,
+            "root_cause_file_a": crash_file,
+            "root_cause_line_a": ref_dec_line,
+            "root_cause_statement_a": ref_dec_stmt,
+            "root_cause_statement_b": tgt_dec_stmt,
+            "enclosing_decision_fork": True,
+            "crash_based": True,
+            "crash_signal": crash_a.get("signal"),
+            "variables": sorted(diffs),
+            "description": (
+                "Reference crashes but the target skips the crash statement; "
+                "the nearest enclosing decision IS evaluated by both versions "
+                "with different operands — that decision is the fork.\n"
+                f"  Reference: {ref_file_base}:{ref_dec_line}  {ref_dec_stmt}\n"
+                f"  Target:    {ref_file_base}:{tgt_dec_line}  {tgt_dec_stmt}\n"
+                f"  Operands:  {operand_desc}"),
+        }
+        if input_file:
+            result["input_file"] = str(input_file)
+        if not skip_polytracker:
+            try:
+                result = _polytracker_locate_input_offsets(
+                    result, config=config, binary_b=binary_b,
+                    binary_a=binary_a)
+            except Exception as e:
+                print(f"  [PolyTracker] Analysis failed: {e}")
+                result["polytracker_offsets"] = {
+                    "status": "error", "error": str(e)}
+        return result
+    return None
+
+
 def _run_backward_tracer(func_name, binary_a, binary_b, source_dirs_a,
                          source_dirs_b, lib_path_a, lib_path_b, input_file,
                          args_b, gdb_timeout):
