@@ -5461,6 +5461,66 @@ def _target_reached_crash_point(crash_a, trace_a, trace_b, refactoring_map=None)
     return False
 
 
+def _case_a_mapped_line_reachable(crash_a, binary_a, binary_b, source_dirs_b,
+                                  lib_path_b, args_b, gdb_timeout):
+    """True unless the target provably never executes Case A's mapped line.
+
+    Case A claims "the target reached the crash point but didn't trigger"
+    because the target's FUNCTION-CALL trace contains the crash function.  A
+    large function (e.g. tiffcp) can be entered while a different internal
+    path is taken, so the crash line textually mapped to the target may never
+    execute (CVE-2022-4645: libtiff truncates NumberOfInks to 1, so the
+    ``while (ninks > 1)`` body holding the crash line is skipped).  This
+    verifies the mapped line with a GDB breakpoint on the TARGET binary.
+
+    Returns False only on positive proof that the target runs without ever
+    hitting the line.  Inconclusive checks (GDB error/timeout, unmappable
+    source, breakpoint not created, pending breakpoint) return True so the
+    legacy Case A decision — and every sample that worked before — is
+    preserved.
+    """
+    crash_file = crash_a.get("file")
+    crash_line = crash_a.get("line")
+    if not crash_file or not crash_line or not binary_b:
+        return True
+    try:
+        ref_stmt = _read_source_line(
+            crash_file, crash_line, find_source_dirs(str(binary_a)))
+        mapped = _find_matching_line(crash_file, ref_stmt or "", source_dirs_b)
+        tgt_line = mapped[0] if mapped else crash_line
+        full = _locate_source_file(crash_file, source_dirs_b)
+        if not full:
+            return True
+        run_args = " ".join(str(a) for a in (args_b or []))
+        out = run_gdb_with_source(
+            binary_b, source_dirs_b,
+            [
+                "set breakpoint pending on",
+                f"break {full}:{tgt_line}",
+                "commands 1",
+                "silent",
+                'printf "FORK_LINE_REACHED\\n"',
+                "quit",
+                "end",
+                f"run {run_args}",
+            ],
+            lib_path=lib_path_b, timeout=gdb_timeout)
+    except Exception:
+        return True
+    if "FORK_LINE_REACHED" in out:
+        return True
+    # A negative verdict only counts when the breakpoint was really created
+    # (otherwise the target ran without any probe — not evidence).
+    if "Breakpoint 1 at" not in out:
+        return True
+    # Positive evidence that the target ran to completion / died without ever
+    # hitting the mapped line.
+    if ("exited" in out or "Inferior" in out
+            or "Program received signal" in out):
+        return False
+    return True
+
+
 def _run_backward_tracer(func_name, binary_a, binary_b, source_dirs_a,
                          source_dirs_b, lib_path_a, lib_path_b, input_file,
                          args_b, gdb_timeout):
