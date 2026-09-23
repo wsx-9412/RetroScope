@@ -861,12 +861,6 @@ def _annotate_divergence_confidence(div):
         notes.append('fork located by static source diff (guard added in one '
                      'version); NOT execution-path aware — verify the guard '
                      'is actually reached by the input')
-    elif div.get('enclosing_decision_fork'):
-        path = 'crash_enclosing_decision'
-        notes.append('fork located as the nearest enclosing decision of the '
-                     'reference crash point; both versions execute it with '
-                     'different operand values (the crash statement itself is '
-                     'unreachable in the target)')
     elif div.get('backward_chain') or div.get('assign_diff'):
         path = 'backward_tracer_gdb'
         notes.append('fork located by GDB return-value probing; chain is '

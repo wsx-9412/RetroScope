@@ -5499,7 +5499,8 @@ def _case_a_mapped_line_reachable(crash_a, binary_a, binary_b, source_dirs_b,
                 f"break {full}:{tgt_line}",
                 f"run {run_args}",
             ],
-            lib_path=lib_path_b, timeout=gdb_timeout)
+            lib_path=lib_path_b,
+            timeout=min(int(gdb_timeout or 60), 60))
     except Exception:
         return True
     # A hit prints "Breakpoint 1, <func> (...) at <file>:<line>".
@@ -5565,7 +5566,8 @@ def _eval_condition_operands(binary, source_dirs, lib_path, source_file,
         cmds.append(f'printf "OPERAND {e} = %lld\\n", (long long)({e})')
     try:
         out = run_gdb_with_source(binary, source_dirs, cmds,
-                                  lib_path=lib_path, timeout=timeout)
+                                  lib_path=lib_path,
+                                  timeout=min(int(timeout or 60), 60))
     except Exception:
         return {}
     # The probe only counts when the line is really reached.
