@@ -4956,8 +4956,51 @@ def _fork_condition_expr(stmt_text):
     return None
 
 
+def _mutation_out_dir(input_file, version, out_root=None):
+    """Directory for successfully mutated inputs: ``out/<name>-<version>/``.
+
+    One folder per input file (CVE) + target version, e.g.
+    ``out/CVE-2022-3627-4-0-8/`` for ``in/CVE-2022-3627`` against tiff-4.0.8.
+    The directory is created lazily by ``_save_mutation_artifact`` (only when
+    a mutation actually succeeds).
+    """
+    base = os.path.basename(input_file) if input_file else 'unknown'
+    ver = 'target'
+    if version:
+        m = re.search(r'(\d+\.\d+(?:\.\d+)*)', str(version))
+        if m:
+            ver = m.group(1).replace('.', '-')
+    root = out_root or os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), 'out')
+    return os.path.join(root, f'{base}-{ver}')
+
+
+def _save_mutation_artifact(out_dir, name, original_data, changes):
+    """Persist a successfully mutated input file; returns its path or None.
+
+    ``changes`` = [(offset, new_byte), ...] applied to ``original_data``.
+    ``name`` is used verbatim (e.g. ``0xe8:-0x00:time:1``); ':' and '-' are
+    legal in POSIX file names and keep offset/value/time readable.
+    """
+    if not out_dir or not changes:
+        return None
+    data = bytearray(original_data)
+    for off, val in changes:
+        if 0 <= off < len(data):
+            data[off] = val
+    path = os.path.join(out_dir, name)
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+        with open(path, 'wb') as f:
+            f.write(bytes(data))
+    except Exception:
+        return None
+    return path
+
+
 def run_byte_mutation_stage(binary, binary_ref, input_file, program_args,
-                            offsets, timeout, title='Byte mutation crash testing'):
+                            offsets, timeout, title='Byte mutation crash testing',
+                            version=None):
     """Run the exhaustive 255-value mutation sweep for the given input
     offsets and print the match summary.
 
