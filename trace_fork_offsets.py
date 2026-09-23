@@ -5730,7 +5730,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
         if _saved:
             print(f'      saved: {_saved}')
 
-    ref_out, ref_rc = _run_mutation_worker(
+    ref_out, ref_rc, _ = _run_mutation_worker(
         (real_ref, bytes(original_data), program_args, input_file, timeout))
     ref_sig = extract_crash_signature(ref_out)
     if ref_sig is None:
@@ -5756,7 +5756,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
         _comp_ref_sig['crash_frames'][0]['function'] = _mapped_ref_func
 
     # Baseline target outcome on the ORIGINAL file (for fork-flip detection).
-    base_tgt_out, base_tgt_rc = _run_mutation_worker(
+    base_tgt_out, base_tgt_rc, _ = _run_mutation_worker(
         (real_target, bytes(original_data), program_args, input_file, timeout))
     base_tgt_sig = extract_crash_signature(base_tgt_out)
     print(f'  Target baseline (original file): rc={base_tgt_rc}'
