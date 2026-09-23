@@ -5448,9 +5448,8 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
 
         if len(tasks) <= 1:
             for byte_val, data in tasks:
-                out, rc = _run_mutation_worker(
+                out, rc, _t_mut = _run_mutation_worker(
                     (real_target, data, program_args, input_file, timeout))
-                _t_mut = 0.0
                 total_tests += 1
                 sig = extract_crash_signature(out)
                 if sig is None:
@@ -5523,11 +5522,10 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                     fut = ex.submit(_run_mutation_worker,
                                     (real_target, data, program_args,
                                      input_file, timeout))
-                    futures[fut] = (byte_val, time.time())
+                    futures[fut] = byte_val
                 for fut in as_completed(futures):
-                    byte_val, t_submit = futures[fut]
-                    out, rc = fut.result()
-                    _t_mut = time.time() - t_submit
+                    byte_val = futures[fut]
+                    out, rc, _t_mut = fut.result()
                     total_tests += 1
                     sig = extract_crash_signature(out)
                     if sig is None:
