@@ -9,11 +9,11 @@
 # =====================================================
 # CVE configuration: change this section for each CVE
 # =====================================================
-CVE_ID = "CVE-2022-4645"          # CVE number
-INPUT_FILE = "in/CVE-2022-4645"   # input file path (relative to RetroScope/)
+CVE_ID = "CVE-2022-48281"          # CVE number
+INPUT_FILE = "in/CVE-2022-48281"   # input file path (relative to RetroScope/)
 OUTPUT_FILE = "/tmp/foo"          # program output file
 # Program arguments template: {program_path}, {input_file}, {output_file}
-COMMAND_FORMAT = "{program_path}  {input_file} {output_file}"
+COMMAND_FORMAT = "{program_path} -Z 1:3,2:4 -e divided {input_file} {output_file}"
 
 # =====================================================
 # Compilation configuration (usually no need to change)
@@ -43,7 +43,7 @@ COMPILE_COMMANDS = {
 
 # Program execution parameter configuration
 EXECUTION_CONFIG = {
-    "program_name": "tiffcp",
+    "program_name": "tiffcrop",
     "timeout": 120,
     "exec_subdir": "/tools",
     "command_format": COMMAND_FORMAT,
