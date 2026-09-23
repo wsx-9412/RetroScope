@@ -5671,13 +5671,17 @@ def _build_mutation_pairs(offsets, var_spans, max_pairs=60):
 
 def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                                     program_args, pairs, timeout=10,
-                                    probe_values=None):
+                                    probe_values=None, version=None):
     """Two-offset combined byte mutation.
 
     For every (offA, offB) pair, mutate BOTH bytes simultaneously (sweeping a
     bounded probe-value set on each) and check whether the combined mutation
     makes the target reproduce the reference's crash — or produces a new
     outcome that neither single-byte mutation alone achieves.
+
+    Successful combinations are archived under
+    ``out/<input-name>-<target-version>/`` named
+    ``<offA>+<offB>:-<va>-<vb>:time:<seconds>``.
     """
     real_target = resolve_binary(binary_target)
     real_ref = resolve_binary(binary_ref)
@@ -5688,6 +5692,17 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
 
     with open(input_file, 'rb') as f:
         original_data = bytearray(f.read())
+
+    out_dir = _mutation_out_dir(input_file, version)
+
+    def _archive(offA, offB, va, vb, t_mut):
+        """Save a successful two-offset mutation to the out folder."""
+        _saved = _save_mutation_artifact(
+            out_dir,
+            f'0x{offA:x}+0x{offB:x}:-0x{va:02x}-0x{vb:02x}:time:{int(round(t_mut))}',
+            original_data, [(offA, va), (offB, vb)])
+        if _saved:
+            print(f'      saved: {_saved}')
 
     ref_out, ref_rc = _run_mutation_worker(
         (real_ref, bytes(original_data), program_args, input_file, timeout))
