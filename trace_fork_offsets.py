@@ -5839,6 +5839,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                             }
                             print(f'    ({va:02x},{vb:02x}) -> MATCHES ref crash '
                                   f'(same_type at other site: {skey})')
+                            _archive(offA, offB, va, vb, _t_mut)
                             continue
                         observed.setdefault('same_type_sites', {})
                         sites = observed['same_type_sites']
@@ -5877,7 +5878,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
 
 def run_pairwise_mutation_stage(binary, binary_ref, input_file, program_args,
                                 offsets, var_spans, timeout,
-                                title='Pairwise mutation'):
+                                title='Pairwise mutation', version=None):
     """Combined two-offset mutation over the fork-variable offsets."""
     if not offsets or len(offsets) < 2 or not input_file \
             or not os.path.isfile(input_file) or not binary:
@@ -5894,7 +5895,8 @@ def run_pairwise_mutation_stage(binary, binary_ref, input_file, program_args,
     print(f'  Pairs to test: {len(pairs)} (probe set: '
           f'{",".join(f"0x{v:x}" for v in PAIRWISE_PROBE)})')
     return test_pairwise_mutations_compare(
-        binary, binary_ref, input_file, program_args, pairs, timeout=timeout)
+        binary, binary_ref, input_file, program_args, pairs, timeout=timeout,
+        version=version)
 
 
 
@@ -6784,7 +6786,8 @@ def main():
             binary, binary_ref, input_file, program_args,
             sorted(stage1_offsets), a.timeout,
             title='Step 6: Byte mutation crash testing '
-                  '(fork-variable offsets)')
+                  '(fork-variable offsets)',
+            version=config.get('version_b'))
 
     # Step 6a: directed structural mutation of the IFD region fields
     # (tag/type/count/offset of every entry of the fork-point IFD).  Each
