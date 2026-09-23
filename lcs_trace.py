@@ -879,6 +879,8 @@ def _annotate_divergence_confidence(div):
         level = 'medium'
     elif path == 'backward_tracer_gdb':
         level = 'medium'
+    elif path == 'crash_enclosing_decision':
+        level = 'medium'
     elif path == 'crash_based':
         level = 'medium'
     elif path == 'dynamic_fork' and notes:
