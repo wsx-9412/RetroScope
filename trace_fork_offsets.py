@@ -4999,6 +4999,23 @@ def _save_mutation_artifact(out_dir, name, original_data, changes):
     return path
 
 
+def _reset_mutation_out_dir(input_file, version, out_root=None):
+    """Clear previous mutation artifacts for this input + target version.
+
+    Every run keeps only its own results: the ``out/<name>-<version>/`` folder
+    for the same CVE + target version is removed before new mutations are
+    archived (called once per analysis run, before any mutation stage).
+    Returns the (now empty / non-existent) folder path.
+    """
+    path = _mutation_out_dir(input_file, version, out_root=out_root)
+    try:
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+    except Exception:
+        pass
+    return path
+
+
 def run_byte_mutation_stage(binary, binary_ref, input_file, program_args,
                             offsets, timeout, title='Byte mutation crash testing',
                             version=None):
