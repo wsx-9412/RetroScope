@@ -5816,11 +5816,10 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                 fut = ex.submit(_run_mutation_worker,
                                 (real_target, data, program_args,
                                  input_file, timeout))
-                futures[fut] = (combo, time.time())
+                futures[fut] = combo
             for fut in as_completed(futures):
-                (va, vb), t_submit = futures[fut]
-                out, rc = fut.result()
-                _t_mut = time.time() - t_submit
+                va, vb = futures[fut]
+                out, rc, _t_mut = fut.result()
                 total_tests += 1
                 sig = extract_crash_signature(out)
                 if sig is None:
