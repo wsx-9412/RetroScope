@@ -1,7 +1,7 @@
 {
-  "binary_target": "/tmp/fork_analysis_snt2hv_b/target/tools/.libs/tiffcrop",
-  "binary_ref": "/tmp/fork_analysis_snt2hv_b/ref/tools/.libs/tiffcrop",
-  "fork_spec": "/tmp/fork_analysis_snt2hv_b/target/tools/tiffcrop.c:7505",
+  "binary_target": "/tmp/fork_analysis_ahq65bvk/target/tools/.libs/tiffcrop",
+  "binary_ref": "/tmp/fork_analysis_ahq65bvk/ref/tools/.libs/tiffcrop",
+  "fork_spec": "/tmp/fork_analysis_ahq65bvk/target/tools/tiffcrop.c:7505",
   "variables": [
     "crop_buff"
   ],
@@ -13,19 +13,19 @@
       "fd": 3,
       "offset": 0,
       "size": 832,
-      "buf_addr": 140725082529288
+      "buf_addr": 140720660760216
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 4096,
-      "buf_addr": 127264835624960
+      "buf_addr": 127766435852288
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 8192,
-      "buf_addr": 127264835362816
+      "buf_addr": 127766435590144
     },
     {
       "fd": 3,
@@ -43,133 +43,133 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140725082528144
+      "buf_addr": 140720660759072
     },
     {
       "fd": 3,
       "offset": 149,
       "size": 4096,
-      "buf_addr": 127264835624960
+      "buf_addr": 127766435852288
     },
     {
       "fd": 3,
       "offset": 149,
       "size": 3947,
-      "buf_addr": 127264835625109
+      "buf_addr": 127766435852437
     },
     {
       "fd": 3,
       "offset": 832,
       "size": 832,
-      "buf_addr": 140725082529288
+      "buf_addr": 140720660760216
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140725082528080
+      "buf_addr": 140720660759008
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140725082528000
+      "buf_addr": 140720660758928
     },
     {
       "fd": 3,
       "offset": 3531,
       "size": 4096,
-      "buf_addr": 127264835624960
+      "buf_addr": 127766435852288
     },
     {
       "fd": 3,
       "offset": 3531,
       "size": 565,
-      "buf_addr": 127264835628491
+      "buf_addr": 127766435855819
     },
     {
       "fd": 3,
-      "offset": 4061,
+      "offset": 4000,
       "size": 4096,
-      "buf_addr": 127264835321856
+      "buf_addr": 127766435549184
     },
     {
       "fd": 3,
-      "offset": 4061,
-      "size": 35,
-      "buf_addr": 127264835325917
+      "offset": 4000,
+      "size": 96,
+      "buf_addr": 127766435553184
     },
     {
       "fd": 3,
-      "offset": 4061,
+      "offset": 4000,
       "size": 8192,
-      "buf_addr": 127264834990080
+      "buf_addr": 127766435405824
     },
     {
       "fd": 3,
-      "offset": 4061,
-      "size": 4131,
-      "buf_addr": 127264834994141
+      "offset": 4000,
+      "size": 4192,
+      "buf_addr": 127766435409824
     },
     {
       "fd": 3,
-      "offset": 4071,
+      "offset": 4086,
       "size": 4096,
-      "buf_addr": 127264835366912
+      "buf_addr": 127766435594240
     },
     {
       "fd": 3,
-      "offset": 4071,
-      "size": 25,
-      "buf_addr": 127264835370983
+      "offset": 4086,
+      "size": 10,
+      "buf_addr": 127766435598326
     },
     {
       "fd": 3,
-      "offset": 4071,
+      "offset": 4086,
       "size": 8192,
-      "buf_addr": 127264835362816
+      "buf_addr": 127766435590144
     },
     {
       "fd": 3,
-      "offset": 4071,
-      "size": 4121,
-      "buf_addr": 127264835366887
+      "offset": 4086,
+      "size": 4106,
+      "buf_addr": 127766435594230
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 25,
-      "buf_addr": 127264835370983
+      "size": 10,
+      "buf_addr": 127766435598326
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 35,
-      "buf_addr": 127264835325917
+      "size": 96,
+      "buf_addr": 127766435553184
     },
     {
       "fd": 3,
-      "offset": 5940,
-      "size": 4121,
-      "buf_addr": 127264835366887
+      "offset": 5891,
+      "size": 4106,
+      "buf_addr": 127766435594230
     },
     {
       "fd": 3,
-      "offset": 5940,
-      "size": 2252,
-      "buf_addr": 127264835368756
+      "offset": 5891,
+      "size": 2301,
+      "buf_addr": 127766435596035
     },
     {
       "fd": 3,
       "offset": 6269,
-      "size": 4131,
-      "buf_addr": 127264834994141
+      "size": 4192,
+      "buf_addr": 127766435409824
     },
     {
       "fd": 3,
       "offset": 6269,
       "size": 1923,
-      "buf_addr": 127264834996349
+      "buf_addr": 127766435412093
     }
   ],
   "ref_file_reads": [
@@ -177,19 +177,19 @@
       "fd": 3,
       "offset": 0,
       "size": 832,
-      "buf_addr": 140728633780648
+      "buf_addr": 140730947098024
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 4096,
-      "buf_addr": 134804595322880
+      "buf_addr": 138281836220416
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 8192,
-      "buf_addr": 134804595060736
+      "buf_addr": 138281835958272
     },
     {
       "fd": 3,
@@ -207,133 +207,133 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140728633779504
+      "buf_addr": 140730947096880
     },
     {
       "fd": 3,
       "offset": 146,
       "size": 4096,
-      "buf_addr": 134804595322880
+      "buf_addr": 138281836220416
     },
     {
       "fd": 3,
       "offset": 146,
       "size": 3950,
-      "buf_addr": 134804595323026
+      "buf_addr": 138281836220562
     },
     {
       "fd": 3,
       "offset": 832,
       "size": 832,
-      "buf_addr": 140728633780648
+      "buf_addr": 140730947098024
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140728633779440
+      "buf_addr": 140730947096816
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140728633779360
+      "buf_addr": 140730947096736
     },
     {
       "fd": 3,
       "offset": 3528,
       "size": 4096,
-      "buf_addr": 134804595322880
+      "buf_addr": 138281836220416
     },
     {
       "fd": 3,
       "offset": 3528,
       "size": 568,
-      "buf_addr": 134804595326408
+      "buf_addr": 138281836223944
     },
     {
       "fd": 3,
-      "offset": 3992,
+      "offset": 4042,
       "size": 4096,
-      "buf_addr": 134804595064832
+      "buf_addr": 138281835962368
     },
     {
       "fd": 3,
-      "offset": 3992,
-      "size": 104,
-      "buf_addr": 134804595068824
+      "offset": 4042,
+      "size": 54,
+      "buf_addr": 138281835966410
     },
     {
       "fd": 3,
-      "offset": 3992,
+      "offset": 4042,
       "size": 8192,
-      "buf_addr": 134804595060736
+      "buf_addr": 138281835958272
     },
     {
       "fd": 3,
-      "offset": 3992,
-      "size": 4200,
-      "buf_addr": 134804595064728
+      "offset": 4042,
+      "size": 4150,
+      "buf_addr": 138281835962314
     },
     {
       "fd": 3,
-      "offset": 4049,
+      "offset": 4044,
       "size": 4096,
-      "buf_addr": 134804595019776
+      "buf_addr": 138281835917312
     },
     {
       "fd": 3,
-      "offset": 4049,
-      "size": 47,
-      "buf_addr": 134804595023825
+      "offset": 4044,
+      "size": 52,
+      "buf_addr": 138281835921356
     },
     {
       "fd": 3,
-      "offset": 4049,
+      "offset": 4044,
       "size": 8192,
-      "buf_addr": 134804594933760
+      "buf_addr": 138281834639360
     },
     {
       "fd": 3,
-      "offset": 4049,
-      "size": 4143,
-      "buf_addr": 134804594937809
+      "offset": 4044,
+      "size": 4148,
+      "buf_addr": 138281834643404
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 104,
-      "buf_addr": 134804595068824
+      "size": 54,
+      "buf_addr": 138281835966410
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 47,
-      "buf_addr": 134804595023825
+      "size": 52,
+      "buf_addr": 138281835921356
     },
     {
       "fd": 3,
-      "offset": 5809,
-      "size": 4200,
-      "buf_addr": 134804595064728
+      "offset": 5858,
+      "size": 4150,
+      "buf_addr": 138281835962314
     },
     {
       "fd": 3,
-      "offset": 5809,
-      "size": 2383,
-      "buf_addr": 134804595066545
+      "offset": 5858,
+      "size": 2334,
+      "buf_addr": 138281835964130
     },
     {
       "fd": 3,
-      "offset": 6138,
-      "size": 4143,
-      "buf_addr": 134804594937809
+      "offset": 6187,
+      "size": 4148,
+      "buf_addr": 138281834643404
     },
     {
       "fd": 3,
-      "offset": 6138,
-      "size": 2054,
-      "buf_addr": 134804594939898
+      "offset": 6187,
+      "size": 2005,
+      "buf_addr": 138281834645547
     }
   ],
   "chain_trace": {
@@ -374,7 +374,7 @@
   },
   "deep_trace": {},
   "arithmetic_backtrace": {
-    "source": "/tmp/fork_analysis_snt2hv_b/target/tools/tiffcrop.c",
+    "source": "/tmp/fork_analysis_ahq65bvk/target/tools/tiffcrop.c",
     "fork_line": 7505,
     "nodes": {
       "crop_buff": {
@@ -664,11 +664,11 @@
       "type": "heap-buffer-overflow",
       "crash_frame": {
         "function": "extractContigSamplesShifted8bits",
-        "file": "/tmp/fork_analysis_snt2hv_b/ref/tools/tiffcrop.c",
+        "file": "/tmp/fork_analysis_ahq65bvk/ref/tools/tiffcrop.c",
         "line": 3303
       },
       "summary": {
-        "file": "/tmp/fork_analysis_snt2hv_b/ref/tools/tiffcrop.c",
+        "file": "/tmp/fork_analysis_ahq65bvk/ref/tools/tiffcrop.c",
         "line": 3303,
         "function": "extractContigSamplesShifted8bits"
       }
@@ -680,7 +680,7 @@
     "170": {
       "original": 32,
       "matches": {
-        "3": {
+        "4": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -688,7 +688,15 @@
           "line": 3197,
           "rc": 1
         },
-        "4": {
+        "2": {
+          "verdict": "same_func",
+          "type": "heap-buffer-overflow",
+          "function": "extractContigSamplesShifted8bits",
+          "file": "tiffcrop.c",
+          "line": 3197,
+          "rc": 1
+        },
+        "3": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -704,7 +712,7 @@
           "line": 3197,
           "rc": 1
         },
-        "2": {
+        "6": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -721,14 +729,6 @@
           "rc": 1
         },
         "7": {
-          "verdict": "same_func",
-          "type": "heap-buffer-overflow",
-          "function": "extractContigSamplesShifted8bits",
-          "file": "tiffcrop.c",
-          "line": 3197,
-          "rc": 1
-        },
-        "6": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -768,6 +768,14 @@
           "line": 3197,
           "rc": 1
         },
+        "35": {
+          "verdict": "same_func",
+          "type": "heap-buffer-overflow",
+          "function": "extractContigSamplesShifted8bits",
+          "file": "tiffcrop.c",
+          "line": 3197,
+          "rc": 1
+        },
         "33": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
@@ -783,32 +791,24 @@
           "file": "tiffcrop.c",
           "line": 3197,
           "rc": 1
-        },
-        "35": {
-          "verdict": "same_func",
-          "type": "heap-buffer-overflow",
-          "function": "extractContigSamplesShifted8bits",
-          "file": "tiffcrop.c",
-          "line": 3197,
-          "rc": 1
         }
       },
       "no_crash": [
         9,
-        10,
         11,
+        10,
         12,
-        14,
         13,
+        14,
         16,
         15,
         19,
         18,
         20,
+        22,
         21,
         23,
         24,
-        22,
         27,
         28,
         29,
@@ -820,220 +820,220 @@
         39,
         40,
         41,
+        42,
+        45,
         43,
         44,
-        42,
-        46,
-        45,
-        47,
         48,
-        50,
+        47,
         49,
+        46,
         51,
+        50,
         52,
-        54,
         53,
-        56,
+        54,
         55,
-        58,
         57,
-        59,
-        62,
+        56,
+        58,
         60,
+        59,
         61,
         63,
+        62,
+        64,
+        65,
         66,
         67,
-        65,
-        64,
-        71,
+        69,
         70,
         68,
-        69,
         73,
-        72,
+        71,
         74,
+        72,
         75,
         76,
-        77,
-        79,
         80,
         78,
+        77,
+        79,
         81,
-        82,
         83,
         84,
-        85,
+        82,
         86,
+        85,
         87,
-        88,
         89,
+        88,
+        91,
+        93,
         90,
         92,
         94,
-        91,
-        93,
         95,
-        97,
-        96,
         98,
+        96,
+        97,
         99,
         100,
         101,
-        103,
         102,
         104,
-        105,
         106,
+        103,
+        105,
         107,
-        109,
-        108,
-        111,
-        113,
         110,
+        109,
+        111,
+        108,
+        114,
         112,
         115,
-        114,
-        117,
+        113,
         116,
+        117,
         118,
-        119,
-        121,
         120,
+        119,
         122,
-        125,
-        124,
         123,
-        129,
+        121,
+        124,
         126,
-        127,
+        125,
         128,
-        131,
+        127,
         130,
-        132,
+        129,
+        131,
         133,
+        132,
+        136,
         134,
         135,
-        139,
-        138,
-        136,
         137,
+        138,
         141,
+        139,
         140,
-        143,
         142,
+        143,
         144,
-        147,
-        146,
-        149,
         145,
         148,
+        146,
+        147,
+        149,
         152,
         151,
         150,
-        153,
-        154,
-        156,
         155,
+        154,
+        153,
+        156,
+        159,
         157,
         158,
         160,
-        159,
         161,
-        162,
         163,
+        162,
         164,
-        165,
         166,
+        165,
         167,
-        169,
         168,
         170,
-        171,
+        169,
         172,
-        173,
+        171,
         174,
+        173,
         175,
         176,
         178,
         177,
+        182,
         180,
         179,
         181,
-        182,
         184,
-        183,
         185,
         186,
-        187,
         188,
+        183,
         189,
+        187,
         190,
-        191,
         192,
+        194,
+        191,
         195,
         193,
-        194,
         196,
         199,
+        200,
         198,
         197,
-        200,
-        203,
-        202,
         201,
+        202,
+        203,
+        206,
         204,
         205,
-        207,
-        206,
         208,
+        207,
         209,
         210,
-        211,
-        213,
-        212,
         214,
+        212,
+        213,
+        211,
         215,
+        218,
+        217,
         216,
         219,
         220,
-        217,
-        218,
-        224,
         221,
         222,
+        224,
         223,
         225,
         226,
-        228,
         227,
-        230,
+        228,
         229,
-        232,
-        233,
+        230,
         231,
-        235,
-        236,
+        233,
+        232,
         234,
-        238,
+        236,
+        235,
         237,
+        238,
+        240,
         239,
         241,
-        240,
-        242,
         243,
-        246,
+        242,
         244,
+        246,
         245,
-        248,
         247,
         250,
-        249,
         251,
-        253,
-        252,
+        248,
+        249,
         255,
-        254
+        252,
+        254,
+        253
       ],
       "fork_flip": [
         0
@@ -1045,261 +1045,261 @@
       "original": 32,
       "matches": {},
       "no_crash": [
-        2,
-        0,
         1,
+        2,
         3,
+        0,
         4,
         5,
-        7,
         6,
-        9,
         8,
-        10,
+        7,
+        9,
         11,
+        10,
         12,
         13,
         14,
         15,
         16,
-        19,
         18,
         17,
-        21,
+        19,
         20,
-        22,
         23,
-        25,
+        21,
+        22,
         24,
-        26,
+        25,
         27,
-        30,
+        26,
         28,
         29,
         33,
-        34,
+        30,
         31,
-        36,
         35,
-        37,
+        34,
+        36,
         38,
+        37,
         39,
-        41,
-        40,
         42,
+        40,
+        41,
         43,
         44,
         45,
-        46,
         47,
-        50,
+        46,
         48,
+        50,
         49,
         51,
         52,
-        54,
-        55,
         53,
+        54,
         56,
-        58,
+        55,
         57,
-        59,
         61,
+        58,
+        59,
         60,
-        62,
-        63,
         64,
-        66,
         65,
+        63,
+        62,
         67,
+        66,
         68,
         69,
-        71,
         70,
-        74,
+        71,
         72,
         73,
+        74,
         75,
+        78,
         76,
         77,
-        79,
-        78,
-        80,
         81,
-        83,
+        79,
+        80,
         82,
-        86,
+        83,
         84,
         85,
         87,
         88,
+        86,
         89,
-        90,
         91,
         92,
+        90,
         93,
         94,
-        96,
-        97,
         95,
-        99,
+        96,
         98,
+        97,
+        99,
         101,
-        102,
         100,
-        103,
+        102,
         104,
+        103,
         105,
         106,
         107,
-        108,
         109,
+        108,
         110,
-        111,
         112,
-        113,
         114,
-        116,
+        111,
+        113,
         115,
-        119,
+        116,
         117,
         118,
+        119,
         120,
         121,
-        122,
-        123,
-        124,
         125,
+        123,
+        122,
+        124,
         127,
         126,
         128,
-        130,
         129,
+        130,
         131,
         132,
+        136,
         134,
         133,
-        136,
         135,
         137,
         139,
         138,
-        140,
-        142,
-        143,
         141,
+        140,
+        143,
+        142,
         144,
+        147,
         146,
         145,
-        147,
         148,
-        150,
         151,
+        150,
         149,
         153,
         152,
-        155,
         154,
-        156,
+        155,
         157,
-        158,
+        156,
         159,
-        160,
+        158,
         161,
+        160,
         162,
-        163,
         165,
+        163,
         164,
         166,
         167,
         168,
+        170,
         169,
         171,
-        170,
-        172,
         173,
+        172,
         175,
-        174,
-        177,
         176,
-        178,
+        174,
         179,
-        181,
         180,
-        183,
+        177,
+        178,
+        181,
         182,
         184,
+        183,
         186,
-        185,
         187,
+        185,
         188,
-        189,
         190,
+        189,
         192,
         191,
-        196,
-        194,
         193,
+        194,
+        196,
         195,
         199,
-        198,
         197,
+        198,
+        200,
         202,
         201,
-        200,
         203,
-        206,
         204,
         205,
+        206,
         207,
+        210,
         208,
         209,
-        210,
-        211,
         212,
+        211,
         213,
         215,
-        214,
         216,
+        214,
         217,
+        219,
         218,
         220,
-        221,
-        219,
         222,
+        221,
         225,
-        223,
         224,
-        227,
+        223,
         226,
-        229,
         228,
-        231,
+        227,
+        229,
         230,
+        231,
         232,
         233,
-        236,
-        234,
-        237,
         235,
-        239,
+        234,
+        236,
         238,
+        239,
+        237,
         240,
-        242,
         241,
+        242,
         243,
-        246,
         244,
         245,
-        248,
+        246,
         247,
-        249,
         250,
+        248,
+        249,
         251,
         252,
         253,
-        254,
-        255
+        255,
+        254
       ],
       "fork_flip": [],
       "same_type": {},
@@ -1309,260 +1309,260 @@
       "original": 1,
       "matches": {},
       "no_crash": [
-        3,
-        2,
-        4,
         5,
-        8,
+        4,
+        2,
+        3,
         6,
         7,
+        8,
         9,
         10,
         12,
         11,
-        15,
         13,
         14,
+        15,
         16,
-        19,
-        17,
         18,
+        17,
         20,
-        21,
-        22,
-        24,
+        19,
         23,
+        22,
+        21,
+        24,
         27,
         25,
         26,
         28,
+        31,
+        32,
         30,
         29,
-        32,
-        31,
         33,
         35,
         34,
         36,
         37,
         38,
-        40,
         39,
-        43,
+        40,
         42,
         41,
-        46,
         44,
+        43,
+        46,
         45,
-        48,
         47,
-        50,
+        48,
         49,
+        50,
         51,
         52,
         53,
-        54,
         56,
+        54,
         55,
         57,
-        59,
         58,
-        61,
+        59,
         60,
+        61,
         62,
-        64,
         63,
-        65,
+        64,
         66,
-        68,
+        65,
         67,
+        68,
         69,
         70,
+        72,
         71,
         73,
-        72,
-        74,
-        75,
-        77,
         76,
+        75,
+        74,
         78,
-        81,
-        80,
         79,
+        77,
+        80,
+        81,
         82,
         83,
+        86,
+        84,
         85,
         87,
-        84,
-        86,
-        88,
-        90,
-        91,
         89,
+        90,
+        88,
         92,
-        95,
+        91,
         93,
-        96,
         94,
-        97,
-        99,
+        95,
         98,
+        96,
+        97,
         100,
-        101,
+        99,
         103,
+        101,
+        105,
         104,
         102,
-        105,
         107,
-        108,
         106,
         110,
+        108,
         109,
         111,
         112,
-        113,
+        116,
         114,
         115,
-        116,
+        113,
         117,
-        118,
         119,
         120,
-        121,
+        118,
         122,
+        121,
         123,
-        125,
         124,
         127,
+        125,
         126,
         128,
+        129,
         130,
         131,
-        129,
         132,
-        134,
         133,
+        134,
         135,
-        137,
         136,
+        137,
         138,
-        139,
         140,
+        139,
         141,
-        142,
         143,
-        144,
         145,
-        147,
+        142,
+        144,
         146,
+        147,
         148,
-        151,
-        150,
         149,
-        152,
-        154,
-        155,
+        151,
         153,
+        150,
+        152,
         156,
+        155,
+        154,
         157,
         158,
-        160,
         159,
-        161,
         162,
-        165,
+        160,
+        161,
         164,
         163,
-        167,
         166,
-        169,
+        165,
+        167,
         168,
         170,
-        171,
-        173,
         172,
+        169,
+        171,
         174,
-        175,
+        173,
         176,
+        175,
         177,
         178,
         179,
-        181,
         180,
-        183,
+        181,
         184,
         182,
+        183,
         185,
+        186,
         187,
         188,
-        186,
-        189,
         190,
+        189,
         191,
-        194,
-        193,
-        195,
         192,
-        199,
-        198,
-        197,
+        193,
+        194,
+        195,
         196,
+        197,
+        198,
+        199,
         200,
         201,
         202,
-        203,
         204,
+        203,
         205,
-        207,
-        208,
         206,
-        211,
+        207,
         209,
-        212,
+        208,
         210,
-        214,
+        211,
         213,
+        212,
+        214,
         215,
         216,
-        219,
         217,
         218,
         220,
-        223,
+        219,
         222,
         221,
-        225,
+        223,
         224,
-        227,
+        225,
         226,
-        228,
-        231,
-        229,
+        227,
         230,
-        233,
+        228,
+        229,
+        231,
         232,
+        233,
         234,
         235,
-        237,
         236,
         238,
+        237,
         239,
-        241,
-        240,
         242,
+        240,
+        241,
         243,
+        246,
         244,
         245,
-        246,
         247,
         248,
-        249,
         250,
+        249,
         251,
         252,
+        254,
         253,
-        255,
-        254
+        255
       ],
       "fork_flip": [
         0
@@ -1577,11 +1577,11 @@
       "type": "heap-buffer-overflow",
       "crash_frame": {
         "function": "extractContigSamplesShifted8bits",
-        "file": "/tmp/fork_analysis_snt2hv_b/ref/tools/tiffcrop.c",
+        "file": "/tmp/fork_analysis_ahq65bvk/ref/tools/tiffcrop.c",
         "line": 3303
       },
       "summary": {
-        "file": "/tmp/fork_analysis_snt2hv_b/ref/tools/tiffcrop.c",
+        "file": "/tmp/fork_analysis_ahq65bvk/ref/tools/tiffcrop.c",
         "line": 3303,
         "function": "extractContigSamplesShifted8bits"
       }
@@ -1612,23 +1612,15 @@
           "line": 3197,
           "rc": 1
         },
-        "01,04": {
-          "verdict": "same_func",
-          "type": "heap-buffer-overflow",
-          "function": "extractContigSamplesShifted8bits",
-          "file": "tiffcrop.c",
-          "line": 3197,
-          "rc": 1
-        },
-        "01,7f": {
-          "verdict": "same_func",
-          "type": "heap-buffer-overflow",
-          "function": "extractContigSamplesShifted8bits",
-          "file": "tiffcrop.c",
-          "line": 3197,
-          "rc": 1
-        },
         "01,01": {
+          "verdict": "same_func",
+          "type": "heap-buffer-overflow",
+          "function": "extractContigSamplesShifted8bits",
+          "file": "tiffcrop.c",
+          "line": 3197,
+          "rc": 1
+        },
+        "01,04": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -1644,7 +1636,7 @@
           "line": 3197,
           "rc": 1
         },
-        "01,80": {
+        "01,7f": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -1653,6 +1645,14 @@
           "rc": 1
         },
         "01,fe": {
+          "verdict": "same_func",
+          "type": "heap-buffer-overflow",
+          "function": "extractContigSamplesShifted8bits",
+          "file": "tiffcrop.c",
+          "line": 3197,
+          "rc": 1
+        },
+        "01,80": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -1700,7 +1700,7 @@
           "line": 3197,
           "rc": 1
         },
-        "02,7f": {
+        "02,08": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -1708,7 +1708,7 @@
           "line": 3197,
           "rc": 1
         },
-        "02,08": {
+        "02,7f": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -1724,14 +1724,6 @@
           "line": 3197,
           "rc": 1
         },
-        "02,fe": {
-          "verdict": "same_func",
-          "type": "heap-buffer-overflow",
-          "function": "extractContigSamplesShifted8bits",
-          "file": "tiffcrop.c",
-          "line": 3197,
-          "rc": 1
-        },
         "02,ff": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
@@ -1740,15 +1732,7 @@
           "line": 3197,
           "rc": 1
         },
-        "04,01": {
-          "verdict": "same_func",
-          "type": "heap-buffer-overflow",
-          "function": "extractContigSamplesShifted8bits",
-          "file": "tiffcrop.c",
-          "line": 3197,
-          "rc": 1
-        },
-        "04,02": {
+        "02,fe": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -1764,7 +1748,7 @@
           "line": 3197,
           "rc": 1
         },
-        "04,08": {
+        "04,02": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -1772,7 +1756,7 @@
           "line": 3197,
           "rc": 1
         },
-        "04,7f": {
+        "04,01": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -1788,6 +1772,14 @@
           "line": 3197,
           "rc": 1
         },
+        "04,08": {
+          "verdict": "same_func",
+          "type": "heap-buffer-overflow",
+          "function": "extractContigSamplesShifted8bits",
+          "file": "tiffcrop.c",
+          "line": 3197,
+          "rc": 1
+        },
         "04,80": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
@@ -1796,15 +1788,7 @@
           "line": 3197,
           "rc": 1
         },
-        "04,fe": {
-          "verdict": "same_func",
-          "type": "heap-buffer-overflow",
-          "function": "extractContigSamplesShifted8bits",
-          "file": "tiffcrop.c",
-          "line": 3197,
-          "rc": 1
-        },
-        "08,00": {
+        "04,7f": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -1820,7 +1804,7 @@
           "line": 3197,
           "rc": 1
         },
-        "08,02": {
+        "04,fe": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -1836,6 +1820,14 @@
           "line": 3197,
           "rc": 1
         },
+        "08,00": {
+          "verdict": "same_func",
+          "type": "heap-buffer-overflow",
+          "function": "extractContigSamplesShifted8bits",
+          "file": "tiffcrop.c",
+          "line": 3197,
+          "rc": 1
+        },
         "08,04": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
@@ -1844,7 +1836,7 @@
           "line": 3197,
           "rc": 1
         },
-        "08,08": {
+        "08,02": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -1860,7 +1852,15 @@
           "line": 3197,
           "rc": 1
         },
-        "08,fe": {
+        "08,08": {
+          "verdict": "same_func",
+          "type": "heap-buffer-overflow",
+          "function": "extractContigSamplesShifted8bits",
+          "file": "tiffcrop.c",
+          "line": 3197,
+          "rc": 1
+        },
+        "08,ff": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -1876,7 +1876,7 @@
           "line": 3197,
           "rc": 1
         },
-        "08,ff": {
+        "08,fe": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -1904,10 +1904,6 @@
         ],
         [
           127,
-          8
-        ],
-        [
-          127,
           127
         ],
         [
@@ -1916,15 +1912,19 @@
         ],
         [
           127,
+          8
+        ],
+        [
+          127,
+          254
+        ],
+        [
+          127,
           255
         ],
         [
           128,
           0
-        ],
-        [
-          127,
-          254
         ],
         [
           128,
@@ -1940,11 +1940,15 @@
         ],
         [
           128,
-          127
+          8
         ],
         [
           128,
-          8
+          254
+        ],
+        [
+          128,
+          127
         ],
         [
           128,
@@ -1955,12 +1959,8 @@
           255
         ],
         [
-          128,
-          254
-        ],
-        [
           254,
-          0
+          1
         ],
         [
           254,
@@ -1968,15 +1968,15 @@
         ],
         [
           254,
-          8
-        ],
-        [
-          254,
-          1
-        ],
-        [
-          254,
           4
+        ],
+        [
+          254,
+          0
+        ],
+        [
+          254,
+          8
         ],
         [
           254,
@@ -1989,10 +1989,6 @@
         [
           254,
           254
-        ],
-        [
-          255,
-          0
         ],
         [
           254,
@@ -2000,7 +1996,7 @@
         ],
         [
           255,
-          2
+          0
         ],
         [
           255,
@@ -2008,11 +2004,15 @@
         ],
         [
           255,
-          4
+          8
         ],
         [
           255,
-          8
+          2
+        ],
+        [
+          255,
+          4
         ],
         [
           255,
@@ -2020,11 +2020,11 @@
         ],
         [
           255,
-          128
+          254
         ],
         [
           255,
-          254
+          128
         ],
         [
           255,
@@ -2034,11 +2034,11 @@
       "fork_flip": [
         [
           0,
-          1
+          0
         ],
         [
           0,
-          0
+          1
         ],
         [
           0,
@@ -2050,7 +2050,7 @@
         ],
         [
           0,
-          128
+          8
         ],
         [
           0,
@@ -2058,11 +2058,11 @@
         ],
         [
           0,
-          127
+          128
         ],
         [
           0,
-          8
+          127
         ],
         [
           0,
@@ -2078,14 +2078,6 @@
         1
       ],
       "matches": {
-        "01,08": {
-          "verdict": "same_func",
-          "type": "heap-buffer-overflow",
-          "function": "extractContigSamplesShifted8bits",
-          "file": "tiffcrop.c",
-          "line": 3197,
-          "rc": 1
-        },
         "01,04": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
@@ -2095,6 +2087,14 @@
           "rc": 1
         },
         "01,02": {
+          "verdict": "same_func",
+          "type": "heap-buffer-overflow",
+          "function": "extractContigSamplesShifted8bits",
+          "file": "tiffcrop.c",
+          "line": 3197,
+          "rc": 1
+        },
+        "01,08": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -2118,7 +2118,7 @@
           "line": 3197,
           "rc": 1
         },
-        "02,02": {
+        "02,08": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -2134,31 +2134,7 @@
           "line": 3197,
           "rc": 1
         },
-        "02,08": {
-          "verdict": "same_func",
-          "type": "heap-buffer-overflow",
-          "function": "extractContigSamplesShifted8bits",
-          "file": "tiffcrop.c",
-          "line": 3197,
-          "rc": 1
-        },
-        "04,01": {
-          "verdict": "same_func",
-          "type": "heap-buffer-overflow",
-          "function": "extractContigSamplesShifted8bits",
-          "file": "tiffcrop.c",
-          "line": 3197,
-          "rc": 1
-        },
-        "04,08": {
-          "verdict": "same_func",
-          "type": "heap-buffer-overflow",
-          "function": "extractContigSamplesShifted8bits",
-          "file": "tiffcrop.c",
-          "line": 3197,
-          "rc": 1
-        },
-        "04,04": {
+        "02,02": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -2174,6 +2150,30 @@
           "line": 3197,
           "rc": 1
         },
+        "04,01": {
+          "verdict": "same_func",
+          "type": "heap-buffer-overflow",
+          "function": "extractContigSamplesShifted8bits",
+          "file": "tiffcrop.c",
+          "line": 3197,
+          "rc": 1
+        },
+        "04,04": {
+          "verdict": "same_func",
+          "type": "heap-buffer-overflow",
+          "function": "extractContigSamplesShifted8bits",
+          "file": "tiffcrop.c",
+          "line": 3197,
+          "rc": 1
+        },
+        "04,08": {
+          "verdict": "same_func",
+          "type": "heap-buffer-overflow",
+          "function": "extractContigSamplesShifted8bits",
+          "file": "tiffcrop.c",
+          "line": 3197,
+          "rc": 1
+        },
         "08,01": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
@@ -2182,7 +2182,7 @@
           "line": 3197,
           "rc": 1
         },
-        "08,02": {
+        "08,04": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -2190,7 +2190,7 @@
           "line": 3197,
           "rc": 1
         },
-        "08,04": {
+        "08,02": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted8bits",
@@ -2234,27 +2234,23 @@
         ],
         [
           128,
-          1
-        ],
-        [
-          128,
           2
         ],
         [
           128,
-          4
+          1
         ],
         [
           128,
           8
         ],
         [
-          127,
-          254
+          128,
+          4
         ],
         [
-          128,
-          127
+          127,
+          254
         ],
         [
           127,
@@ -2266,19 +2262,23 @@
         ],
         [
           254,
+          1
+        ],
+        [
+          128,
+          127
+        ],
+        [
+          254,
           2
         ],
         [
           254,
-          1
+          8
         ],
         [
           254,
           4
-        ],
-        [
-          254,
-          8
         ],
         [
           254,
@@ -2293,16 +2293,16 @@
           128
         ],
         [
-          128,
-          254
+          255,
+          1
         ],
         [
           255,
           2
         ],
         [
-          255,
-          1
+          128,
+          254
         ],
         [
           255,
@@ -2317,6 +2317,10 @@
           128
         ],
         [
+          254,
+          255
+        ],
+        [
           255,
           127
         ],
@@ -2325,26 +2329,22 @@
           254
         ],
         [
-          254,
+          255,
           255
         ],
         [
           255,
           254
-        ],
-        [
-          255,
-          255
         ]
       ],
       "fork_flip": [
         [
           0,
-          4
+          0
         ],
         [
           0,
-          2
+          4
         ],
         [
           0,
@@ -2352,7 +2352,11 @@
         ],
         [
           0,
-          0
+          2
+        ],
+        [
+          0,
+          8
         ],
         [
           0,
@@ -2364,19 +2368,15 @@
         ],
         [
           0,
-          8
-        ],
-        [
-          0,
           254
-        ],
-        [
-          0,
-          255
         ],
         [
           1,
           0
+        ],
+        [
+          0,
+          255
         ],
         [
           2,
@@ -2419,15 +2419,11 @@
           ],
           [
             1,
-            254
+            255
           ],
           [
             1,
-            255
-          ],
-          [
-            2,
-            127
+            254
           ],
           [
             2,
@@ -2435,6 +2431,10 @@
           ],
           [
             2,
+            127
+          ],
+          [
+            2,
             254
           ],
           [
@@ -2463,11 +2463,11 @@
           ],
           [
             8,
-            255
+            254
           ],
           [
             8,
-            254
+            255
           ]
         ]
       },
@@ -2488,10 +2488,6 @@
       "no_crash": [
         [
           0,
-          4
-        ],
-        [
-          0,
           2
         ],
         [
@@ -2500,11 +2496,11 @@
         ],
         [
           0,
-          8
+          4
         ],
         [
           0,
-          127
+          8
         ],
         [
           0,
@@ -2515,12 +2511,12 @@
           1
         ],
         [
-          1,
-          2
+          0,
+          127
         ],
         [
           1,
-          4
+          2
         ],
         [
           1,
@@ -2528,17 +2524,21 @@
         ],
         [
           1,
-          127
-        ],
-        [
-          0,
-          254
+          4
         ],
         [
           0,
           255
         ],
         [
+          0,
+          254
+        ],
+        [
+          1,
+          127
+        ],
+        [
           2,
           1
         ],
@@ -2552,11 +2552,11 @@
         ],
         [
           2,
-          4
+          8
         ],
         [
           2,
-          8
+          4
         ],
         [
           1,
@@ -2567,18 +2567,18 @@
           127
         ],
         [
+          2,
+          128
+        ],
+        [
+          4,
+          1
+        ],
+        [
           1,
           255
         ],
         [
-          2,
-          128
-        ],
-        [
-          4,
-          1
-        ],
-        [
           4,
           2
         ],
@@ -2595,24 +2595,20 @@
           127
         ],
         [
-          4,
-          128
-        ],
-        [
           2,
           254
-        ],
-        [
-          8,
-          1
         ],
         [
           2,
           255
         ],
         [
+          4,
+          128
+        ],
+        [
           8,
-          2
+          1
         ],
         [
           8,
@@ -2620,11 +2616,15 @@
         ],
         [
           8,
+          2
+        ],
+        [
+          8,
           8
         ],
         [
           8,
-          128
+          127
         ],
         [
           4,
@@ -2632,7 +2632,7 @@
         ],
         [
           8,
-          127
+          128
         ],
         [
           4,
@@ -2640,11 +2640,11 @@
         ],
         [
           127,
-          1
+          2
         ],
         [
           127,
-          2
+          1
         ],
         [
           127,
@@ -2653,10 +2653,6 @@
         [
           127,
           8
-        ],
-        [
-          127,
-          127
         ],
         [
           8,
@@ -2671,12 +2667,16 @@
           255
         ],
         [
-          128,
-          1
+          127,
+          127
         ],
         [
           128,
           2
+        ],
+        [
+          128,
+          1
         ],
         [
           128,
@@ -2687,24 +2687,24 @@
           8
         ],
         [
-          127,
-          254
-        ],
-        [
-          127,
-          255
+          128,
+          128
         ],
         [
           128,
           127
         ],
         [
-          254,
-          1
+          127,
+          255
         ],
         [
-          128,
-          128
+          127,
+          254
+        ],
+        [
+          254,
+          1
         ],
         [
           254,
@@ -2715,20 +2715,8 @@
           2
         ],
         [
-          128,
-          254
-        ],
-        [
           254,
           8
-        ],
-        [
-          254,
-          128
-        ],
-        [
-          254,
-          254
         ],
         [
           254,
@@ -2737,6 +2725,14 @@
         [
           128,
           255
+        ],
+        [
+          254,
+          128
+        ],
+        [
+          128,
+          254
         ],
         [
           255,
@@ -2748,15 +2744,19 @@
         ],
         [
           255,
-          8
-        ],
-        [
-          255,
           4
         ],
         [
           255,
+          8
+        ],
+        [
+          255,
           128
+        ],
+        [
+          254,
+          255
         ],
         [
           255,
@@ -2764,7 +2764,7 @@
         ],
         [
           254,
-          255
+          254
         ],
         [
           255,
