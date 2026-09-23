@@ -5046,8 +5046,9 @@ def run_byte_mutation_stage(binary, binary_ref, input_file, program_args,
 
 
 def test_value_level_mutations(binary_target, binary_ref, input_file,
-                              program_args, var_origins, fork_spec,
-                              fork_cond, timeout=60, fork_variables=None):
+                               program_args, var_origins, fork_spec,
+                               fork_cond, timeout=60, fork_variables=None,
+                               version=None):
     """Value-level mutation of fork-variable origin offsets (generic).
 
     The single-byte sweep proves which *byte* steers the crash; this tests
@@ -5067,6 +5068,10 @@ def test_value_level_mutations(binary_target, binary_ref, input_file,
     ``{offset: {'width', 'original', 'baseline_outcome', 'baseline_vals',
     'trials': {value: {'outcome', 'outcome_flip', 'val_changed',
     'crash'}}}}``.
+
+    Values that reproduce the reference crash are archived under
+    ``out/<input-name>-<target-version>/`` named
+    ``<offset>:-<value>:time:<seconds>``.
     """
     real_target = resolve_binary(binary_target)
     real_ref = resolve_binary(binary_ref)
@@ -5077,6 +5082,19 @@ def test_value_level_mutations(binary_target, binary_ref, input_file,
 
     with open(input_file, 'rb') as f:
         original_data = bytearray(f.read())
+
+    out_dir = _mutation_out_dir(input_file, version)
+
+    def _archive(off, width, v, t_mut):
+        """Save a crash-reproducing value mutation to the out folder."""
+        _changes = []
+        for i in range(width):
+            _changes.append((off + i, (int(v) >> (8 * i)) & 0xff))
+        _saved = _save_mutation_artifact(
+            out_dir, f'0x{off:x}:-0x{int(v):x}:time:{int(round(t_mut))}',
+            original_data, _changes)
+        if _saved:
+            print(f'      saved: {_saved}')
 
     def _run_outcome(binary, data):
         fd, tmp_path = tempfile.mkstemp(suffix='.tif', prefix='valmut_')
