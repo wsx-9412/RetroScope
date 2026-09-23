@@ -6107,6 +6107,18 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                     result["polytracker_offsets"] = {"status": "error", "error": str(e)}
             return result
         else:
+            # Reachability-aware step: the crash statement may be skipped by
+            # the target while the DECISION guarding it is evaluated by both
+            # versions with different operand values (CVE-2022-4645:
+            # `while (ninks > 1)` with reference 65407 vs target 1).
+            if _case_a_reached_function:
+                _encl_result = _try_enclosing_decision_fork(
+                    crash_a, binary_a, binary_b, source_dirs_a, source_dirs_b,
+                    lib_path_a, lib_path_b, args_b, refactoring_map,
+                    gdb_timeout, func_name, a_idx, b_idx, input_file,
+                    skip_polytracker, config)
+                if _encl_result:
+                    return _encl_result
             # Case B: the target did not reach the crash point (it diverged
             # earlier).  Prefer the crash-anchored reverse fork chain: walk the
             # reference trace backward from the crash and take the boundary
