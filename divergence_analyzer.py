@@ -5895,7 +5895,23 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
 
     # Case A/B: reference crashes, target doesn't.
     if crash_a and not crash_b:
-        if _target_reached_crash_point(crash_a, trace_a, trace_b, refactoring_map):
+        _case_a_reached_function = _target_reached_crash_point(
+            crash_a, trace_a, trace_b, refactoring_map)
+        # Even when the crash FUNCTION appears in the target trace, the mapped
+        # crash LINE may never execute (a different inner path was taken).
+        # Verify the line dynamically; only a positive "never hit" verdict
+        # downgrades to Case B, so previously working Case A samples keep
+        # their result.
+        _case_a_line_ok = True
+        if _case_a_reached_function:
+            _case_a_line_ok = _case_a_mapped_line_reachable(
+                crash_a, binary_a, binary_b, source_dirs_b, lib_path_b,
+                args_b, gdb_timeout)
+            if not _case_a_line_ok:
+                print("\n  >> Target calls the crash function but never "
+                      "executes the mapped crash line — the fork is earlier; "
+                      "using crash-anchored selection.")
+        if _case_a_reached_function and _case_a_line_ok:
             # Case A: the target reached the crash point but didn't trigger.
             # The reference's crash point (mapped to the target) is the fork.
             print("\n  >> Target reached the crash point but didn't trigger — "
