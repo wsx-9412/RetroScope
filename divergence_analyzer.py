@@ -5497,17 +5497,13 @@ def _case_a_mapped_line_reachable(crash_a, binary_a, binary_b, source_dirs_b,
             [
                 "set breakpoint pending on",
                 f"break {full}:{tgt_line}",
-                "commands 1",
-                "silent",
-                'printf "FORK_LINE_REACHED\\n"',
-                "quit",
-                "end",
                 f"run {run_args}",
             ],
             lib_path=lib_path_b, timeout=gdb_timeout)
     except Exception:
         return True
-    if "FORK_LINE_REACHED" in out:
+    # A hit prints "Breakpoint 1, <func> (...) at <file>:<line>".
+    if "Breakpoint 1," in out:
         return True
     # A negative verdict only counts when the breakpoint was really created
     # (otherwise the target ran without any probe — not evidence).
@@ -5515,7 +5511,7 @@ def _case_a_mapped_line_reachable(crash_a, binary_a, binary_b, source_dirs_b,
         return True
     # Positive evidence that the target ran to completion / died without ever
     # hitting the mapped line.
-    if ("exited" in out or "Inferior" in out
+    if ("[Inferior" in out or "exited" in out
             or "Program received signal" in out):
         return False
     return True
