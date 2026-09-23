@@ -5790,10 +5790,11 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                 fut = ex.submit(_run_mutation_worker,
                                 (real_target, data, program_args,
                                  input_file, timeout))
-                futures[fut] = combo
+                futures[fut] = (combo, time.time())
             for fut in as_completed(futures):
-                va, vb = futures[fut]
+                (va, vb), t_submit = futures[fut]
                 out, rc = fut.result()
+                _t_mut = time.time() - t_submit
                 total_tests += 1
                 sig = extract_crash_signature(out)
                 if sig is None:
@@ -5815,6 +5816,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                     }
                     print(f'    ({va:02x},{vb:02x}) -> MATCHES ref crash '
                           f'({verdict}: {diff})')
+                    _archive(offA, offB, va, vb, _t_mut)
                 else:
                     observed.setdefault(verdict or 'no_crash', 0)
                     observed[verdict or 'no_crash'] += 1
