@@ -5195,10 +5195,14 @@ def test_value_level_mutations(binary_target, binary_ref, input_file,
                     continue
                 data = bytearray(original_data)
                 data[off:off + width] = int(v).to_bytes(width, 'little')
+                _t_trial = time.time()
                 outcome, vals, sig, _ = _run_outcome(real_target, data)
+                _t_mut = time.time() - _t_trial
                 verdict = None
                 if sig is not None and ref_sig is not None:
                     verdict, _ = compare_crash_signatures(ref_sig, sig)
+                if verdict in ('same_func', 'same_site'):
+                    _archive(off, width, v, _t_mut)
                 val_changed = bool(
                     vals and base_vals
                     and any(vals.get(i) != base_vals.get(i)
@@ -6714,7 +6718,8 @@ def main():
                 value_level_results = test_value_level_mutations(
                     binary, binary_ref, input_file, program_args,
                     var_offsets, fork_spec_b, _cond_text,
-                    timeout=a.timeout, fork_variables=variables)
+                    timeout=a.timeout, fork_variables=variables,
+                    version=config.get('version_b'))
             except Exception as _e:
                 print(f'  [!] value-level mutation failed: {_e}')
             if value_level_results:
