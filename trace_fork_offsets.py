@@ -6054,6 +6054,12 @@ def main():
     if binary_ref:
         print(f'[*] Reference fork spec: {fork_spec_a}')
 
+    # Each run keeps only its own mutation artifacts: clear the
+    # out/<input-name>-<target-version>/ folder for this CVE + version
+    # before any mutation stage archives new results.
+    _reset_dir = _reset_mutation_out_dir(input_file, config.get('version_b'))
+    print(f'[*] Mutation output dir (reset): {_reset_dir}')
+
     # ================================================================
     # Step 1: Run GDB on TARGET binary (tiff-4.0.8)
     # ================================================================
