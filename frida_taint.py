@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""frida_taint.py - 通过 Frida 动态插桩追踪分叉变量对应的输入文件偏移
+"""frida_taint.py - trace the input file offsets of fork variables via Frida dynamic instrumentation
 
-一次运行完成，支持大文件。原理：
-  1. hook mmap/openat 获取文件映射信息
-  2. hook 关键函数调用，记录数据流
-  3. 在分叉语句处检查变量地址与 mmap 区域的映射关系
+Completes in a single run and supports large files. Principle:
+  1. hook mmap/openat to obtain file-mapping information
+  2. hook key function calls and record the data flow
+  3. at the fork statement, check how variable addresses map to mmap regions
 
-用法:
+Usage:
     python3 frida_taint.py \
         --binary tiff-versions/tiff-4.0.8/tools/.libs/tiffcrop \
         --fork-file tools/tiffcrop.c --fork-line 3369 \
@@ -40,7 +40,7 @@ def resolve_binary(binary):
 
 
 def get_fork_address(binary, fork_file, fork_line):
-    """用 GDB 获取分叉语句地址。"""
+    """Use GDB to get the fork statement's address."""
     cmd = [
         'gdb', '-batch', '-nx', '-q',
         '-ex', f'break {fork_file}:{fork_line}',
@@ -93,20 +93,20 @@ def parse_tiff_tags(filepath):
 
 
 # ---------------------------------------------------------------------------
-# Frida JS 脚本
+# Frida JS script
 # ---------------------------------------------------------------------------
 
 FRIDA_JS = r"""
 'use strict';
 
-// ========== 参数 ==========
+// ========== Parameters ==========
 const FORK_ADDR  = ptr('%(fork_addr)s');
 const INPUT_BASE = ptr('%(input_mmap_base)s');
 const INPUT_SIZE = %(input_mmap_size)s;
 const INPUT_FILE_OFF = %(input_file_offset)s;
 const TAG_OFFSETS = %(tag_offsets_json)s;
 
-// ========== 全局状态 ==========
+// ========== Global state ==========
 let mmap_regions = [];     // [{base, size, fd, offset, path}]
 let fd_paths = {};
 let tag_found = {};
@@ -162,24 +162,24 @@ try {
     }
 } catch(e) {}
 
-// ========== 在分叉地址设 stalker ==========
+// ========== Set up stalker at the fork address ==========
 let fork_hit = false;
 let fork_bp_addr = FORK_ADDR;
 
-// 用 Interceptor 在分叉函数入口做检查
-// 分叉在 extractContigSamplesShifted24bits 内
-// 但我们无法精确到行号，所以用 address 匹配
+// Use an Interceptor to check at the fork function entry
+// The fork is inside extractContigSamplesShifted24bits
+// but we cannot resolve the line number, so match by address
 let target_module = Process.enumerateModules()[0];
 let fork_offset = FORK_ADDR.sub(target_module.base);
 
-// 用 DebugSymbol 找到函数
+// Find the function with DebugSymbol
 let symbols = DebugSymbol.findFunctionsNamed('extractContigSamplesShifted24bits');
 if (symbols.length > 0) {
     send({type: 'info', msg: 'Found function: ' + symbols[0].name + ' at ' + symbols[0].address});
 }
 
-// 在分叉地址设置 instrumentation
-// 通过 Stalker 跟踪执行
+// Set instrumentation at the fork address
+// Trace execution with Stalker
 Stalker.follow(Process.enumerateThreads()[0].id, {
     events: {
         call: true,
@@ -189,22 +189,22 @@ Stalker.follow(Process.enumerateThreads()[0].id, {
         compile: false
     },
     onReceive: function(events) {
-        // 不处理原始事件
+        // Do not process raw events
     },
     onCallSummary: function(summary) {
-        // 检查是否有调用到分叉地址附近的函数
+        // Check whether a function near the fork address is called
     }
 });
 
-// ========== 主动扫描方案 ==========
-// 由于 Stalker 不能精确匹配行号，改用主动扫描：
-// 枚举所有 mmap 区域，检查哪些包含输入文件数据
+// ========== Active-scan approach ==========
+// Stalker cannot match line numbers precisely, so switch to active scanning:
+// Enumerate all mmap regions and check which contain input-file data
 
 send({type: 'ready', msg: 'Hooks installed, waiting for fork...'});
 
-// 延迟后发送扫描请求
+// Send the scan request after a delay
 setTimeout(function() {
-    // 枚举当前所有 mmap 区域
+    // Enumerate all current mmap regions
     let regions = Process.enumerateRanges('r--');
     for (let r of regions) {
         let path = '';
@@ -213,7 +213,7 @@ setTimeout(function() {
             if (m) path = m.path;
         } catch(e) {}
 
-        // 检查是否是输入文件的映射
+        // Check whether this is a mapping of the input file
         if (r.size > 0 && r.size < 50*1024*1024) {  // <50MB
             send({
                 type: 'region',
@@ -225,18 +225,18 @@ setTimeout(function() {
         }
     }
 
-    // 发送 mmap 跟踪结果
+    // Send the mmap tracking results
     for (let mr of mmap_regions) {
         send({type: 'mmap', data: mr});
     }
 
     send({type: 'done'});
-}, 2000);  // 等 2 秒让程序运行到分叉处
+}, 2000);  // wait 2 seconds for the program to reach the fork
 """
 
 
 # ---------------------------------------------------------------------------
-# 分析
+# Analysis
 # ---------------------------------------------------------------------------
 
 def run_analysis(binary, fork_file, fork_line, variables, input_file,
@@ -246,41 +246,41 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
     program_args = program_args or []
     real_binary = resolve_binary(binary)
 
-    # 构建运行参数
+    # Build the run arguments
     run_parts = []
     for a in program_args:
         run_parts.append(a.replace('{input_file}', input_file)
                          .replace('{input}', input_file))
 
-    # 1. 获取分叉地址
-    print(f'[*] 获取分叉语句地址...')
+    # 1. Get the fork address
+    print(f'[*] Getting the fork statement address...')
     fork_addr = get_fork_address(real_binary, fork_file, fork_line)
     if fork_addr is None:
         return {'error': 'fork address not found'}
-    print(f'[*] 分叉地址: 0x{fork_addr:x}')
+    print(f'[*] Fork address: 0x{fork_addr:x}')
 
-    # 2. 解析 TIFF 标签
+    # 2. Parse TIFF tags
     tiff_tags = parse_tiff_tags(input_file)
     tag_offsets = [t['offset'] for t in tiff_tags]
-    print(f'[*] TIFF 标签: {len(tiff_tags)} 个')
+    print(f'[*] TIFF tags: {len(tiff_tags)}')
 
-    # 3. 获取输入文件大小
+    # 3. Get the input file size
     file_size = os.path.getsize(input_file)
-    print(f'[*] 输入文件: {input_file} ({file_size} 字节)')
+    print(f'[*] Input file: {input_file} ({file_size} bytes)')
 
-    # 4. 启动 Frida
-    print(f'[*] 启动 Frida 插桩...')
+    # 4. Start Frida
+    print(f'[*] Starting Frida instrumentation...')
     device = frida.get_local_device()
 
-    # spawn 进程
+    # spawn the process
     argv = [real_binary] + run_parts
     pid = device.spawn(argv)
     session = device.attach(pid)
 
-    # 生成 JS 脚本
+    # Generate the JS script
     js_code = FRIDA_JS % {
         'fork_addr': str(fork_addr),
-        'input_mmap_base': '0x0',   # 占位，运行时填充
+        'input_mmap_base': '0x0',   # placeholder, filled at runtime
         'input_mmap_size': 0,
         'input_file_offset': 0,
         'tag_offsets_json': json.dumps(tag_offsets),
@@ -313,16 +313,16 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
     script.on('message', on_message)
     script.load()
 
-    # 恢复进程执行
+    # Resume process execution
     device.resume(pid)
-    print(f'[*] 进程 {pid} 已启动')
+    print(f'[*] Process {pid} started')
 
-    # 等待完成
+    # Wait for completion
     start = time.time()
     while not done and (time.time() - start) < timeout:
         time.sleep(0.2)
 
-    # 5. 分析结果
+    # 5. Analyze the results
     output = {
         'binary': real_binary,
         'input_file': input_file,
@@ -332,7 +332,7 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
         'regions_count': len(results['regions']),
     }
 
-    # 匹配输入文件
+    # Match the input file
     input_basename = os.path.basename(input_file)
     found_mmap = None
     for mr in results['mmap_regions']:
@@ -345,10 +345,10 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
         mmap_base = int(found_mmap['base'], 16)
         mmap_size = found_mmap['size']
         file_off = found_mmap.get('file_offset', 0)
-        print(f'[*] 找到输入文件 mmap: base=0x{mmap_base:x}, '
+        print(f'[*] Found the input file mmap: base=0x{mmap_base:x}, '
               f'size={mmap_size}, file_offset={file_off}')
 
-        # 计算标签在文件中的偏移
+        # Compute the tag's file offset
         offsets = []
         for tag in tiff_tags:
             foff = tag['offset']
@@ -360,18 +360,18 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
         output['input_mmap'] = found_mmap
         output['influential_offsets'] = offsets
     else:
-        print('[!] 未找到输入文件的 mmap 区域')
-        # 尝试从 regions 中找
+        print('[!] no mmap region found for the input file')
+        # Try to find it among the regions
         for r in results['regions']:
             base = int(r['base'], 16)
             size = r['size']
-            # 检查这个区域是否包含 TIFF header
+            # Check whether this region contains a TIFF header
             try:
                 session_obj = session
-                # 读取内存前 4 字节
+                # Read the first 4 bytes of memory
                 data = session_obj.read_memory(ptr(base), min(4, size))
                 if data[:2] in (b'II', b'MM'):
-                    print(f'[*] 发现 TIFF 文件映射: base=0x{base:x}, size={size}')
+                    print(f'[*] Found a TIFF file mapping: base=0x{base:x}, size={size}')
                     output['input_mmap'] = {'base': r['base'], 'size': size}
                     offsets = [t['offset'] for t in tiff_tags]
                     output['influential_offsets'] = offsets
@@ -382,7 +382,7 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
             except:
                 pass
 
-    # 清理
+    # Cleanup
     try:
         session.detach()
     except:
@@ -397,14 +397,14 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
 
 def main():
     ap = argparse.ArgumentParser(
-        description='通过 Frida 动态插桩定位分叉变量对应的输入文件偏移')
+        description='Locate the input file offsets of fork variables via Frida dynamic instrumentation')
     ap.add_argument('--binary',    required=True)
     ap.add_argument('--fork-file', required=True)
     ap.add_argument('--fork-line', required=True, type=int)
     ap.add_argument('--variables', required=True, nargs='+')
-    ap.add_argument('--input',     required=True, help='输入文件路径')
+    ap.add_argument('--input',     required=True, help='input file path')
     ap.add_argument('--args',      nargs=argparse.REMAINDER, default=[],
-                    help='程序参数（用 {input_file} 占位）')
+                    help='program arguments ({input_file} placeholder)')
     ap.add_argument('--timeout',   type=int, default=30)
     a = ap.parse_args()
 
@@ -417,11 +417,11 @@ def main():
     if 'error' in result:
         print(f'  ERROR: {result["error"]}')
     else:
-        print(f'  分叉地址: {result["fork_addr"]}')
+        print(f'  fork address: {result["fork_addr"]}')
         if 'influential_offsets' in result:
             offs = [f'0x{o:02x}' for o in result['influential_offsets']]
-            print(f'  影响分叉的输入偏移: {", ".join(offs)}')
-        print(f'  mmap 区域数: {len(result.get("mmap_regions", []))}')
+            print(f'  input offsets affecting the fork: {", ".join(offs)}')
+        print(f'  mmap regions: {len(result.get("mmap_regions", []))}')
     print('=' * 60)
 
 

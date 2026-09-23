@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""input_mutation.py - 通过输入变异动态定位分叉变量对应的文件偏移
+"""input_mutation.py - dynamically locate the file offsets of fork variables via input mutation
 
-方法：逐字节修改输入文件，运行程序到分叉语句，比较变量值。
-若变量值变化，则该字节影响分叉变量。
+Method: mutate the input file byte by byte, run to the fork statement, and compare variable values.
+If a variable's value changes, that byte affects the fork variable.
 
-用法:
+Usage:
     python3 input_mutation.py \
         --binary tiff-versions/tiff-4.0.8/tools/.libs/tiffcrop \
         --fork-file tools/tiffcrop.c --fork-line 3369 \
@@ -23,7 +23,7 @@ import shutil
 
 
 def resolve_binary(binary):
-    """跳过 libtool 包装脚本，找到真正的 ELF。"""
+    """Skip the libtool wrapper script and find the real ELF."""
     if not os.path.isfile(binary):
         return binary
     with open(binary, 'rb') as f:
@@ -37,7 +37,7 @@ def resolve_binary(binary):
 
 
 def make_gdb_script(fork_spec, variables, input_file, run_args, log_file):
-    """生成 GDB 脚本：运行到分叉语句，记录所有变量值。"""
+    """Generate a GDB script: run to the fork statement and record all variable values."""
     var_printfs = []
     for v in variables:
         var_printfs.append(
@@ -66,8 +66,8 @@ run {run_args}
 
 def get_variable_values(binary, fork_spec, variables, input_file, run_args_list,
                         timeout=30):
-    """运行一次程序，返回分叉语句处各变量的值。"""
-    # 替换占位符
+    """Run the program once and return the variable values at the fork statement."""
+    # Substitute placeholders
     resolved_args = []
     for a in run_args_list:
         resolved_args.append(
@@ -120,7 +120,7 @@ def get_variable_values(binary, fork_spec, variables, input_file, run_args_list,
 
 
 def _test_single_byte(args):
-    """并行工作函数：测试单个字节翻转的影响。"""
+    """Parallel worker: test the effect of a single byte flip."""
     (i, original_byte, tmp_path, original_data,
      binary, fork_spec, variables, program_args, timeout) = args
 
@@ -140,7 +140,7 @@ def _test_single_byte(args):
 
 
 def _test_single_byte_worker(args):
-    """并行工作函数：创建自己的临时文件。"""
+    """Parallel worker: create its own temp file."""
     (i, original_data, binary, fork_spec, variables,
      program_args, timeout) = args
 
@@ -167,21 +167,21 @@ def _test_single_byte_worker(args):
 def run_analysis(binary, fork_file, fork_line, variables, input_file,
                  program_args=None, timeout=30, workers=None):
     """
-    通过输入变异找到影响分叉变量的输入字节偏移。
-    使用多进程并行加速。
+    Find the input byte offsets that affect the fork variables via input mutation.
+    Uses multiprocessing for parallel speedup.
 
-    参数:
-        binary:       ELF 二进制路径
-        fork_file:    分叉语句所在源文件
-        fork_line:    分叉语句行号
-        variables:    要追踪的变量列表
-        input_file:   输入文件路径
-        program_args: 程序参数（用 {input_file} 占位）
-        timeout:      每次运行超时（秒）
-        workers:      并行进程数（默认 CPU 核数）
+    Args:
+        binary:       path to the ELF binary
+        fork_file:    source file containing the fork statement
+        fork_line:    line number of the fork statement
+        variables:    list of variables to trace
+        input_file:   path to the input file
+        program_args: program arguments ({input_file} placeholder)
+        timeout:      per-run timeout (seconds)
+        workers:      number of parallel processes (default: CPU count)
 
-    返回:
-        dict: {var: [offset1, offset2, ...]} 影响该变量的输入偏移
+    Returns:
+        dict: {var: [offset1, offset2, ...]} input offsets affecting that variable
     """
     from multiprocessing import Pool, cpu_count
 
@@ -189,23 +189,23 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
     real_binary = resolve_binary(binary)
     fork_spec = f'{fork_file}:{fork_line}'
 
-    # 读取原始输入
+    # Read the original input
     with open(input_file, 'rb') as f:
         original = bytearray(f.read())
     file_size = len(original)
-    print(f'[*] 输入文件: {input_file} ({file_size} 字节)')
+    print(f'[*] Input file: {input_file} ({file_size} bytes)')
 
-    # 获取原始变量值（基线）
-    print(f'[*] 获取基线变量值...')
+    # Get the original variable values (baseline)
+    print(f'[*] Capturing baseline variable values...')
     baseline = get_variable_values(
         real_binary, fork_spec, variables, input_file, program_args, timeout)
     if baseline is None:
-        print('[!] 无法获取基线值（程序未到达分叉语句）', file=sys.stderr)
+        print('[!] failed to capture baseline values (program did not reach the fork statement)', file=sys.stderr)
         return {'error': 'baseline failed'}
 
-    print(f'[*] 基线值: {baseline}')
+    print(f'[*] Baseline values: {baseline}')
 
-    # 跳过头部字节（通常导致崩溃）和末尾 padding
+    # Skip header bytes (usually cause crashes) and trailing padding
     skip_start = 0
     for i in range(min(16, file_size)):
         test_mut = bytearray(original)
@@ -223,12 +223,12 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
         skip_start = i + 1
 
     test_range = list(range(skip_start, file_size))
-    print(f'[*] 需测试 {len(test_range)} 个偏移 (跳过头部 {skip_start} 字节)')
+    print(f'[*] Testing {len(test_range)} offsets (skipping the first {skip_start} bytes)')
 
-    # 创建临时文件用于并行测试
-    # 每个进程需要自己的临时文件
+    # Create temp files for parallel testing
+    # Each process needs its own temp file
     n_workers = workers or min(cpu_count(), 8)
-    print(f'[*] 并行进程数: {n_workers}')
+    print(f'[*] Parallel workers: {n_workers}')
 
     influenced = {v: [] for v in variables}
     tested = [0]
@@ -237,7 +237,7 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
         i, values = result
         tested[0] += 1
         if tested[0] % 20 == 0 or tested[0] == len(test_range):
-            print(f'[*] 已测试 {tested[0]}/{len(test_range)} 字节...', flush=True)
+            print(f'[*] Tested {tested[0]}/{len(test_range)} bytes...', flush=True)
         if values is None:
             return
         for v in variables:
@@ -245,7 +245,7 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
                 if values[v] != baseline[v]:
                     influenced[v].append(i)
 
-    # 构建任务参数（每个任务用自己的临时文件）
+    # Build task arguments (each task uses its own temp file)
     import atexit
     tasks = []
     tmp_files = []
@@ -258,7 +258,7 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
             real_binary, fork_spec, variables, list(program_args), timeout
         ))
 
-    # 并行执行
+    # Run in parallel
     pool = Pool(processes=n_workers)
     try:
         for task in tasks:
@@ -267,7 +267,7 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
         pool.join()
     finally:
         pool.terminate()
-        # 清理临时文件
+        # Clean up temp files
         for f in tmp_files:
             os.unlink(f) if os.path.exists(f) else None
 
@@ -276,16 +276,16 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
 
 def main():
     ap = argparse.ArgumentParser(
-        description='通过输入变异动态定位分叉变量对应的输入文件偏移')
+        description='Dynamically locate the input file offsets of fork variables via input mutation')
     ap.add_argument('--binary',    required=True)
     ap.add_argument('--fork-file', required=True)
     ap.add_argument('--fork-line', required=True, type=int)
     ap.add_argument('--variables', required=True, nargs='+')
-    ap.add_argument('--input',     required=True, help='输入文件路径')
+    ap.add_argument('--input',     required=True, help='input file path')
     ap.add_argument('--args',      nargs=argparse.REMAINDER, default=[],
-                    help='程序参数（用 {input_file} 占位）')
+                    help='program arguments ({input_file} placeholder)')
     ap.add_argument('--timeout',   type=int, default=30,
-                    help='每次运行超时秒数')
+                    help='per-run timeout in seconds')
     a = ap.parse_args()
 
     result = run_analysis(

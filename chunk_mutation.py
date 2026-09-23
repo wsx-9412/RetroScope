@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""chunk_mutation.py - 分块变异法定位分叉变量对应的输入文件偏移
+"""chunk_mutation.py - locate the input file offsets of fork variables via chunked mutation
 
-原理：大文件先按块翻转，找到有影响的块后再逐字节细化。
-对 10,000 字节文件只需 ~200 次 GDB 运行（而非 10,000 次）。
+Principle: for large files, flip whole chunks first, then refine the affecting chunks byte by byte.
+A 10,000-byte file needs only ~200 GDB runs (instead of 10,000).
 
-用法:
+Usage:
     python3 chunk_mutation.py \
         --binary tiff-versions/tiff-4.0.8/tools/.libs/tiffcrop \
         --fork-file tools/tiffcrop.c --fork-line 3369 \
@@ -37,7 +37,7 @@ def resolve_binary(binary):
 
 def get_variable_values(binary, fork_spec, variables, input_file,
                         run_args_list, timeout=15):
-    """运行一次程序，返回分叉语句处各变量的值。"""
+    """Run the program once and return the variable values at the fork statement."""
     resolved_args = []
     for a in run_args_list:
         resolved_args.append(
@@ -108,7 +108,7 @@ run {run_args_str}
 
 
 def _test_chunk(args):
-    """并行工作函数：翻转一个块并检测变量变化。"""
+    """Parallel worker: flip one chunk and detect variable changes."""
     (start, end, original_data, tmp_path,
      binary, fork_spec, variables, program_args, timeout) = args
 
@@ -129,7 +129,7 @@ def _test_chunk(args):
 
 
 def _test_byte(args):
-    """并行工作函数：翻转单个字节。"""
+    """Parallel worker: flip a single byte."""
     (i, original_data, tmp_path,
      binary, fork_spec, variables, program_args, timeout) = args
 
@@ -151,10 +151,10 @@ def _test_byte(args):
 def run_analysis(binary, fork_file, fork_line, variables, input_file,
                  program_args=None, timeout=15, workers=None, chunk_size=None):
     """
-    分块变异法：先按块测试，再对有影响的块逐字节细化。
+    Chunked mutation: test chunks first, then refine the affecting chunks byte by byte.
 
-    参数:
-        chunk_size: 块大小（None=自动，根据文件大小调整）
+    Args:
+        chunk_size: chunk size (None = automatic, based on file size)
     """
     from multiprocessing import cpu_count
 
@@ -166,32 +166,32 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
     with open(input_file, 'rb') as f:
         original = bytearray(f.read())
     file_size = len(original)
-    print(f'[*] 输入文件: {input_file} ({file_size} 字节)')
+    print(f'[*] Input file: {input_file} ({file_size} bytes)')
 
-    # 自动确定块大小
+    # Determine the chunk size automatically
     if chunk_size is None:
         if file_size <= 500:
-            chunk_size = 1     # 小文件逐字节
+            chunk_size = 1     # small file: byte by byte
         elif file_size <= 5000:
-            chunk_size = 10    # 中等文件 10 字节一块
+            chunk_size = 10    # medium file: 10-byte chunks
         else:
-            chunk_size = 50    # 大文件 50 字节一块
-    print(f'[*] 块大小: {chunk_size}, 并行数: {n_workers}')
+            chunk_size = 50    # large file: 50-byte chunks
+    print(f'[*] Chunk size: {chunk_size}, workers: {n_workers}')
 
-    # 获取基线
-    print(f'[*] 获取基线变量值...')
+    # Capture the baseline
+    print(f'[*] Capturing baseline variable values...')
     baseline = get_variable_values(real_binary, fork_spec, variables,
                                    input_file, program_args, timeout)
     if baseline is None:
-        print('[!] 程序未到达分叉语句', file=sys.stderr)
+        print('[!] program did not reach the fork statement', file=sys.stderr)
         return {'error': 'baseline failed'}
-    print(f'[*] 基线值: {baseline}')
+    print(f'[*] Baseline values: {baseline}')
 
     influenced = {v: [] for v in variables}
     total_runs = 0
 
-    # ===== 第零轮：识别崩溃区域 =====
-    print(f'\n[*] ===== 识别崩溃区域 =====')
+    # ===== Round zero: identify crash regions =====
+    print(f'\n[*] ===== Identify crash regions =====')
     crash_blocks = set()
     test_blocks = [(i, min(i + chunk_size, file_size))
                    for i in range(0, file_size, chunk_size)]
@@ -227,17 +227,17 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
         if vals is None:
             crash_blocks.add(i)
             start, end = test_blocks[i]
-            print(f'    块 [{start:03d}-{end:03d}): 崩溃/超时', flush=True)
+            print(f'    chunk [{start:03d}-{end:03d}): crash/timeout', flush=True)
 
-    print(f'[*] 崩溃块: {len(crash_blocks)}/{len(test_blocks)}')
+    print(f'[*] Crash chunks: {len(crash_blocks)}/{len(test_blocks)}')
     total_runs += len(test_blocks)
 
-    # ===== 第一轮：分块测试（排除崩溃块） =====
-    print(f'\n[*] ===== 第一轮：分块测试 =====')
+    # ===== Round one: chunk testing (crash chunks excluded) =====
+    print(f'\n[*] ===== Round one: chunk testing =====')
     active_blocks = []
     live_blocks = [(s, e) for i, (s, e) in enumerate(test_blocks)
                    if i not in crash_blocks]
-    print(f'[*] 可测试块: {len(live_blocks)}')
+    print(f'[*] Testable chunks: {len(live_blocks)}')
 
     live_tasks = []
     for start, end in live_blocks:
@@ -254,8 +254,8 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
         start, end, values = result
         live_completed[0] += 1
         if live_completed[0] % 10 == 0:
-            print(f'[*] 块进度: {live_completed[0]}/{len(live_tasks)}', flush=True)
-        # 找到对应的块索引
+            print(f'[*] chunk progress: {live_completed[0]}/{len(live_tasks)}', flush=True)
+        # Find the corresponding chunk index
         for idx, (s, e) in enumerate(live_blocks):
             if s == start and e == end:
                 live_results[idx] = values
@@ -277,18 +277,18 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
         for v in variables:
             if v in vals and v in baseline and vals[v] != baseline[v]:
                 active_blocks.append((start, end))
-                print(f'    块 [{start:03d}-{end:03d}]: 影响 {v}', flush=True)
+                print(f'    chunk [{start:03d}-{end:03d}]: affects {v}', flush=True)
                 break
 
     total_runs += len(live_tasks)
-    print(f'[*] 发现 {len(active_blocks)} 个有影响的块')
+    print(f'[*] Found {len(active_blocks)} affecting chunk(s)')
 
-    # ===== 第二轮：逐字节细化（排除崩溃字节） =====
-    print(f'\n[*] ===== 第二轮：逐字节细化 =====')
+    # ===== Round two: byte-level refinement (crash bytes excluded) =====
+    print(f'\n[*] ===== Round two: byte-level refinement =====')
     refine_bytes = []
     for start, end in active_blocks:
         refine_bytes.extend(range(start, end))
-    print(f'[*] 需细化 {len(refine_bytes)} 个字节')
+    print(f'[*] Refining {len(refine_bytes)} byte(s)')
 
     tasks2 = []
     for i in refine_bytes:
@@ -305,8 +305,8 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
         i, values = result
         completed2[0] += 1
         if completed2[0] % 20 == 0:
-            print(f'[*] 字节进度: {completed2[0]}/{len(refine_bytes)}', flush=True)
-        # 找到对应的字节索引
+            print(f'[*] byte progress: {completed2[0]}/{len(refine_bytes)}', flush=True)
+        # Find the corresponding byte index
         for idx, byte_i in enumerate(refine_bytes):
             if byte_i == i:
                 byte_results[idx] = values
@@ -323,7 +323,7 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
 
     for idx, vals in enumerate(byte_results):
         if vals is None:
-            continue  # 崩溃字节，跳过
+            continue  # crash byte, skip
         i = refine_bytes[idx]
         for v in variables:
             if v in vals and v in baseline and vals[v] != baseline[v]:
@@ -332,7 +332,7 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
 
     total_runs += len(refine_bytes)
 
-    # 去重排序
+    # Deduplicate and sort
     for v in influenced:
         influenced[v] = sorted(set(influenced[v]))
 
@@ -349,18 +349,18 @@ def run_analysis(binary, fork_file, fork_line, variables, input_file,
 
 def main():
     ap = argparse.ArgumentParser(
-        description='分块变异法：动态定位分叉变量对应的输入文件偏移')
+        description='Chunked mutation: dynamically locate the input file offsets of fork variables')
     ap.add_argument('--binary',    required=True)
     ap.add_argument('--fork-file', required=True)
     ap.add_argument('--fork-line', required=True, type=int)
     ap.add_argument('--variables', required=True, nargs='+')
-    ap.add_argument('--input',     required=True, help='输入文件路径')
+    ap.add_argument('--input',     required=True, help='input file path')
     ap.add_argument('--timeout',   type=int, default=15)
     ap.add_argument('--workers',   type=int, default=None)
     ap.add_argument('--chunk-size', type=int, default=None,
-                    help='块大小（默认自动）')
+                    help='chunk size (default: automatic)')
     ap.add_argument('--args',      nargs=argparse.REMAINDER, default=[],
-                    help='程序参数（必须放最后，用 {input_file} 占位）')
+                    help='program arguments (must be last; {input_file} placeholder)')
     a = ap.parse_args()
 
     t0 = time.time()
@@ -382,9 +382,9 @@ def main():
             all_offsets.update(offs)
         if all_offsets:
             sorted_all = sorted(all_offsets)
-            print(f'\n  汇总: {", ".join(f"0x{o:02x}" for o in sorted_all)}')
-        print(f'  总运行次数: {result["total_runs"]}')
-        print(f'  耗时: {elapsed:.1f}s')
+            print(f'\n  Summary: {", ".join(f"0x{o:02x}" for o in sorted_all)}')
+        print(f'  total runs: {result["total_runs"]}')
+        print(f'  elapsed: {elapsed:.1f}s')
     print('=' * 60)
 
 
