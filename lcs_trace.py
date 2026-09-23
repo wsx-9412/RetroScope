@@ -832,7 +832,13 @@ def _annotate_divergence_confidence(div):
         notes.append('target-side statement is a synthetic call description, '
                      'not real C source')
 
-    if div.get('crash_based'):
+    if div.get('enclosing_decision_fork'):
+        path = 'crash_enclosing_decision'
+        notes.append('fork located as the nearest enclosing decision of the '
+                     'reference crash point; both versions execute it with '
+                     'different operand values (the crash statement itself is '
+                     'unreachable in the target)')
+    elif div.get('crash_based'):
         path = 'crash_based'
         if div.get('crash_signal_b'):
             # Case C: the target crashes on its own (different site) — its
