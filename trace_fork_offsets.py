@@ -5236,12 +5236,18 @@ def test_value_level_mutations(binary_target, binary_ref, input_file,
 def _run_mutation_worker(task):
     """Run one byte-mutation through ``binary`` in a subprocess (worker for the
     parallel mutation sweep).  ``task`` = (binary, data, program_args,
-    input_file, timeout).  Returns (stdout+stderr, returncode).
+    input_file, timeout).
+
+    Returns ``(stdout+stderr, returncode, elapsed_seconds)`` where the
+    elapsed time is THIS mutation's own execution time (temp-file write +
+    subprocess run) — not the pool queue wait, which would otherwise inflate
+    the reported time for tasks queued behind other workers.
     """
     binary, data, program_args, input_file, timeout = task
     _ext = os.path.splitext(input_file)[1] if input_file else '.bin'
     fd, tmp_path = tempfile.mkstemp(suffix=_ext, prefix='mutate_')
     os.close(fd)
+    _t0 = time.time()
     try:
         with open(tmp_path, 'wb') as f:
             f.write(data)
@@ -5250,11 +5256,11 @@ def _run_mutation_worker(task):
         env = build_run_env(binary)
         proc = subprocess.run(cmd, capture_output=True, text=True,
                               timeout=timeout, env=env)
-        return proc.stdout + proc.stderr, proc.returncode
+        return proc.stdout + proc.stderr, proc.returncode, time.time() - _t0
     except subprocess.TimeoutExpired:
-        return '', -1
+        return '', -1, time.time() - _t0
     except Exception:
-        return '', -2
+        return '', -2, time.time() - _t0
     finally:
         try:
             os.unlink(tmp_path)
