@@ -1,16 +1,19 @@
-# Diverge Finder - 独立的分叉点查找程序
+# Diverge Finder - standalone fork-point finder
 
-## 功能
+## Features
 
-这个程序可以找到导致两个版本程序执行路径不同的语句（分叉点）。
+This program finds the statement (fork point) that makes two versions of a
+program take different execution paths.
 
-### 主要功能：
-1. 分别用两个不同的输入文件运行同一个程序，获取函数调用轨迹
-2. 对比两个轨迹找到函数调用分叉点
-3. 用 GDB 逐步执行分叉函数（如果可能），或者分析源代码找到分叉点
-4. 输出分叉点的详细信息
+### Main features:
+1. Run the same program with two different input files and capture the
+   function-call traces
+2. Compare the two traces to find the function-call fork point
+3. Single-step the fork function with GDB (when possible), or analyze the
+   source code to find the fork point
+4. Output detailed information about the fork point
 
-## 用法
+## Usage
 
 ```bash
 python3 diverge_finder.py \
@@ -23,19 +26,20 @@ python3 diverge_finder.py \
     --output /path/to/result.json
 ```
 
-### 参数说明：
+### Arguments:
 
-- `--binary`: 要测试的二进制文件路径
-- `--input-a`: 第一个输入文件路径（参考版本）
-- `--input-b`: 第二个输入文件路径（目标版本）
-- `--args`: 程序参数模板，`{input}` 会被替换为输入文件路径
-- `--timeout`: 程序执行超时时间（秒，默认300）
-- `--gdb-timeout`: GDB 执行超时时间（秒，默认120）
-- `-o, --output`: 输出 JSON 文件路径
+- `--binary`: path to the binary under test
+- `--input-a`: path to the first input file (reference version)
+- `--input-b`: path to the second input file (target version)
+- `--args`: program argument template; `{input}` is replaced by the input
+  file path
+- `--timeout`: program execution timeout in seconds (default 300)
+- `--gdb-timeout`: GDB execution timeout in seconds (default 120)
+- `-o, --output`: output JSON file path
 
-## 示例
+## Example
 
-### 测试 libtiff 的 CVE-2022-3597
+### Testing CVE-2022-3597 in libtiff
 
 ```bash
 cd /home/ws/Desktop/RetroScope
@@ -50,69 +54,74 @@ python3 diverge_finder.py \
     --output /tmp/result.json
 ```
 
-### 输出示例
+### Example output
 
 ```
 ======================================================================
-分析摘要
+Analysis summary
 ======================================================================
-  最后一个匹配的函数: _TIFFfree
-  分叉后第一个不同的函数: TIFFFetchStripThing
-  实际分析的函数: TIFFFetchStripThing
-  分叉文件: libtiff/tif_dirread.c
-  分叉行号: 3749
-  分叉描述: 在 TIFFReadDirectory 函数中，输入 A 处理 TIFFTAG_STRIPOFFSETS 标签，输入 B 处理其他标签
-  根本原因: 两个输入文件的 TIFF 标签顺序或内容不同，导致处理路径分叉
-  输出文件: /tmp/result.json
+  last matched function: _TIFFfree
+  first differing function after the fork: TIFFFetchStripThing
+  function actually analyzed: TIFFFetchStripThing
+  fork file: libtiff/tif_dirread.c
+  fork line: 3749
+  fork description: in TIFFReadDirectory, input A processes the TIFFTAG_STRIPOFFSETS tag while input B processes other tags
+  root cause: the TIFF tag order or content differs between the two inputs, diverging the processing path
+  output file: /tmp/result.json
 ```
 
-## 输出格式
+## Output format
 
-输出的 JSON 文件包含以下信息：
+The output JSON file contains the following information:
 
 ```json
 {
-  "binary": "二进制文件路径",
-  "input_a": "输入文件 A 路径",
-  "input_b": "输入文件 B 路径",
-  "args": "程序参数",
+  "binary": "binary file path",
+  "input_a": "input file A path",
+  "input_b": "input file B path",
+  "args": "program arguments",
   "trace_a_length": 816,
   "trace_b_length": 1441,
-  "trace_a": ["轨迹 A 的函数调用序列"],
-  "trace_b": ["轨迹 B 的函数调用序列"],
-  "divergence_function": "最后一个匹配的函数",
-  "next_divergent_function": "分叉后第一个不同的函数",
-  "analyzed_function": "实际分析的函数",
+  "trace_a": ["function-call sequence of trace A"],
+  "trace_b": ["function-call sequence of trace B"],
+  "divergence_function": "last matched function",
+  "next_divergent_function": "first differing function after the fork",
+  "analyzed_function": "function actually analyzed",
   "divergence_index_a": 788,
   "divergence_index_b": 788,
   "divergence_result": {
-    "diverging_file": "分叉文件路径",
+    "diverging_file": "fork file path",
     "diverging_line": 3749,
-    "line_text": "分叉行的内容",
-    "description": "分叉描述",
-    "root_cause": "根本原因"
+    "line_text": "content of the fork line",
+    "description": "fork description",
+    "root_cause": "root cause"
   }
 }
 ```
 
-## 工作原理
+## How it works
 
-1. **轨迹捕获**: 使用 `-finstrument-functions` 编译选项和 `functracer.so` 预加载库来捕获函数调用轨迹
-2. **分叉点查找**: 比较两个轨迹，找到第一个不同的函数调用
-3. **分叉分析**: 
-   - 如果 GDB 能正常工作，逐步执行分叉函数找到导致分叉的语句
-   - 如果 GDB 失败（程序崩溃），分析源代码找到分叉点
+1. **Trace capture**: use the `-finstrument-functions` compile option and the
+   `functracer.so` preload library to capture the function-call trace
+2. **Fork-point search**: compare the two traces and find the first differing
+   function call
+3. **Fork analysis**:
+   - If GDB works, single-step the fork function to find the statement that
+     causes the divergence
+   - If GDB fails (the program crashes), analyze the source code to find the
+     fork point
 
-## 注意事项
+## Notes
 
-1. 程序需要使用 `-finstrument-functions` 编译选项编译
-2. 如果程序使用 ASan，GDB 可能会因为 LeakSanitizer 而失败
-3. 对于崩溃的输入文件，GDB 可能无法到达断点，程序会回退到源代码分析
+1. The program must be compiled with the `-finstrument-functions` option
+2. If the program uses ASan, GDB may fail because of LeakSanitizer
+3. For crashing input files, GDB may not reach the breakpoint; the program
+   falls back to source analysis
 
-## 测试的 CVE
+## Tested CVEs
 
-程序已经测试过以下 CVE：
+The program has been tested on the following CVEs:
 - CVE-2022-3597
 - CVE-2022-3627
 - CVE-2022-3598
-- 等等
+- etc.
