@@ -5024,7 +5024,7 @@ def run_byte_mutation_stage(binary, binary_ref, input_file, program_args,
 
     crash_results = test_byte_mutations_compare(
         binary, binary_ref, input_file, program_args,
-        offsets, timeout=timeout)
+        offsets, timeout=timeout, version=version)
 
     any_match = False
     for offset, info in sorted((k, v) for k, v in crash_results.items()
@@ -5268,7 +5268,7 @@ def _map_ref_crash_function(binary_target, binary_ref, ref_crash):
 
 def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                 program_args, offsets, timeout=10,
-                                probe_values=None):
+                                probe_values=None, version=None):
     """Mutate each byte at each offset and check whether the *target* binary
     (e.g. 4.0.8) reproduces the *reference* binary's (4.4.0) crash type.
 
@@ -5281,6 +5281,11 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
     A value that makes the target crash *the same way* the reference does is
     evidence that this byte steers the divergence.  A mere exit-code change
     (e.g. the target's TIFFOpen returning NULL) is NOT counted as a match.
+
+    Every successful mutation is also archived as a standalone input file
+    under ``out/<input-name>-<target-version>/`` named
+    ``<offset>:-<new-value>:time:<seconds>`` (per-offset mutation time,
+    rounded to whole seconds).
     """
     real_target = resolve_binary(binary_target)
     real_ref = resolve_binary(binary_ref)
@@ -5291,6 +5296,17 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
 
     with open(input_file, 'rb') as f:
         original_data = bytearray(f.read())
+
+    out_dir = _mutation_out_dir(input_file, version)
+
+    def _archive(offset, byte_val, t_mut):
+        """Save a successful mutation to the out folder and report it."""
+        _saved = _save_mutation_artifact(
+            out_dir,
+            f'0x{offset:x}:-0x{byte_val:02x}:time:{int(round(t_mut))}',
+            original_data, [(offset, byte_val)])
+        if _saved:
+            print(f'      saved: {_saved}')
 
     def _run(binary, data):
         _ext = os.path.splitext(input_file)[1] if input_file else '.bin'
@@ -5435,6 +5451,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                         pass
                     print(f'    0x{byte_val:02x} -> MATCHES ref crash '
                           f'({verdict}: {diff})  [took {_t_mut:.3f}s]')
+                    _archive(offset, byte_val, _t_mut)
                 else:
                     observed.setdefault(verdict or 'no_crash', 0)
                     observed[verdict or 'no_crash'] += 1
@@ -5460,6 +5477,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                             print(f'    0x{byte_val:02x} -> MATCHES ref crash '
                                   f'(same_type at other site: {key})  '
                                   f'[took {_t_mut:.3f}s]')
+                            _archive(offset, byte_val, _t_mut)
                             continue
                         observed.setdefault('same_type_sites', {})
                         sites = observed['same_type_sites']
@@ -5513,6 +5531,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                             pass
                         print(f'    0x{byte_val:02x} -> MATCHES ref crash '
                               f'({verdict}: {diff})  [took {_t_mut:.3f}s]')
+                        _archive(offset, byte_val, _t_mut)
                     else:
                         observed.setdefault(verdict or 'no_crash', 0)
                         observed[verdict or 'no_crash'] += 1
@@ -5545,6 +5564,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                 print(f'    0x{byte_val:02x} -> MATCHES ref crash '
                                       f'(same_type at other site: {key})  '
                                       f'[took {_t_mut:.3f}s]')
+                                _archive(offset, byte_val, _t_mut)
                                 continue
                             # Near-miss: same ASan kind at the baseline (own
                             # crash) site — the mutation did not steer the
