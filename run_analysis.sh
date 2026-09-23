@@ -230,9 +230,9 @@ result = locate_offsets(
 _t_loc = time.time() - _t_loc
 try:
     import stage_timing
-    stage_timing.record('确定分叉语句处变量对应输入文件偏移位置(PolyTracker)', _t_loc)
+    stage_timing.record('locate input-file offsets for variables at the fork statement (PolyTracker)', _t_loc)
 except Exception:
-    print(f'[时间] 确定分叉语句处变量对应输入文件偏移位置(PolyTracker): 用时 {_t_loc:.3f}s')
+    print(f'[time] locate input-file offsets for variables at the fork statement (PolyTracker): took {_t_loc:.3f}s')
 
 output_path = 'results/${CVE_ID}_polytracker_offsets.json'
 
@@ -291,12 +291,12 @@ python3 -c "
 import json, time
 try:
     d = json.load(open('$RETRO_TIMINGS'))
-    print(f'总用时(编译后): {time.time() - d[\"t0\"]:.3f}s')
-    print('各阶段:')
+    print(f'total time (after compilation): {time.time() - d[\"t0\"]:.3f}s')
+    print('stages:')
     for s in d['stages']:
-        extra = f' (用时 {s[\"duration\"]:.3f}s)' if 'duration' in s else ''
-        print(f'  {s[\"stage\"]}: 累计 {s[\"elapsed\"]:.3f}s{extra}')
-    print(f'明细保存在: $RETRO_TIMINGS')
+        extra = f' (took {s[\"duration\"]:.3f}s)' if 'duration' in s else ''
+        print(f'  {s[\"stage\"]}: cumulative {s[\"elapsed\"]:.3f}s{extra}')
+    print(f'details saved to: $RETRO_TIMINGS')
 except Exception as e:
-    print(f'无法读取计时文件 $RETRO_TIMINGS: {e}')
+    print(f'failed to read the timing file $RETRO_TIMINGS: {e}')
 "

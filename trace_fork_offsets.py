@@ -5386,12 +5386,12 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                     try:
                         import stage_timing
                         stage_timing.record(
-                            f"变异成功 offset=0x{offset:x} byte=0x{byte_val:02x}",
+                            f"mutation succeeded offset=0x{offset:x} byte=0x{byte_val:02x}",
                             _t_mut)
                     except Exception:
                         pass
                     print(f'    0x{byte_val:02x} -> MATCHES ref crash '
-                          f'({verdict}: {diff})  [用时 {_t_mut:.3f}s]')
+                          f'({verdict}: {diff})  [took {_t_mut:.3f}s]')
                 else:
                     observed.setdefault(verdict or 'no_crash', 0)
                     observed[verdict or 'no_crash'] += 1
@@ -5416,7 +5416,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                             }
                             print(f'    0x{byte_val:02x} -> MATCHES ref crash '
                                   f'(same_type at other site: {key})  '
-                                  f'[用时 {_t_mut:.3f}s]')
+                                  f'[took {_t_mut:.3f}s]')
                             continue
                         observed.setdefault('same_type_sites', {})
                         sites = observed['same_type_sites']
@@ -5464,12 +5464,12 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                         try:
                             import stage_timing
                             stage_timing.record(
-                                f"变异成功 offset=0x{offset:x} byte=0x{byte_val:02x}",
+                                f"mutation succeeded offset=0x{offset:x} byte=0x{byte_val:02x}",
                                 _t_mut)
                         except Exception:
                             pass
                         print(f'    0x{byte_val:02x} -> MATCHES ref crash '
-                              f'({verdict}: {diff})  [用时 {_t_mut:.3f}s]')
+                              f'({verdict}: {diff})  [took {_t_mut:.3f}s]')
                     else:
                         observed.setdefault(verdict or 'no_crash', 0)
                         observed[verdict or 'no_crash'] += 1
@@ -5495,13 +5495,13 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                 try:
                                     import stage_timing
                                     stage_timing.record(
-                                        f"变异成功 offset=0x{offset:x} byte=0x{byte_val:02x}",
+                                        f"mutation succeeded offset=0x{offset:x} byte=0x{byte_val:02x}",
                                         _t_mut)
                                 except Exception:
                                     pass
                                 print(f'    0x{byte_val:02x} -> MATCHES ref crash '
                                       f'(same_type at other site: {key})  '
-                                      f'[用时 {_t_mut:.3f}s]')
+                                      f'[took {_t_mut:.3f}s]')
                                 continue
                             # Near-miss: same ASan kind at the baseline (own
                             # crash) site — the mutation did not steer the
@@ -5525,8 +5525,8 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
         _st = sum(len(v) for v in results[offset]['same_type'].values())
         _dt = len(results[offset]['different_type'])
         print(f'    => {n} matching value(s) (target reproduces ref crash) '
-              f'{verdicts}; no_crash(不变)={_nc}, fork_flip(行为改变)={_ff}, '
-              f'same_type(其他崩溃点)={_st}, different_type={_dt}')
+              f'{verdicts}; no_crash(unchanged)={_nc}, fork_flip(behavior changed)={_ff}, '
+              f'same_type(other crash site)={_st}, different_type={_dt}')
         if _ff:
             print(f'       fork-flipping values (target outcome changed): '
                   f'{[f"0x{v:02x}" for v in results[offset]["fork_flip"][:40]]}')
@@ -5776,7 +5776,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
         _st = sum(len(v) for v in results[key]['same_type'].values())
         _dt = len(results[key]['different_type'])
         print(f'    => {n} matching combo(s) (target reproduces ref crash); '
-              f'no_crash(不变)={_nc}, fork_flip(行为改变)={_ff}, '
+              f'no_crash(unchanged)={_nc}, fork_flip(behavior changed)={_ff}, '
               f'same_type={_st}, different_type={_dt}')
         if _ff and _ff <= 60:
             print(f'       fork-flipping combos (target outcome changed): '
@@ -6694,7 +6694,7 @@ def main():
 
     # End of the offset-localization phase (GDB tracing / mapping above);
     # what follows is the byte-mutation crash testing.
-    stage_timing.record("确定分叉语句处变量对应输入文件偏移位置",
+    stage_timing.record("locate input-file offsets for variables at the fork statement",
                         time.time() - _t_main_start)
 
     crash_results = {}

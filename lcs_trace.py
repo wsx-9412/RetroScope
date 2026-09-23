@@ -554,7 +554,7 @@ def main():
         )
         _t_ref_start = time.time()
         refactor_mappings = detector.detect()
-        stage_timing.record("检测函数重构重命名", time.time() - _t_ref_start)
+        stage_timing.record("detect function refactor/rename", time.time() - _t_ref_start)
         rename_map = refactor_mappings.all_renames()
 
         if rename_map:
@@ -745,9 +745,9 @@ def main():
             _gdb_count = _st.gdb_runs()
         except Exception:
             _gdb_count = 0
-        print(f"  [GDB] 寻找分叉语句期间共启动 GDB 进程 {_gdb_count} 次"
-              f"（平均每次 {_div_secs / max(_gdb_count, 1):.2f}s）")
-        stage_timing.record("寻找分叉语句", _div_secs)
+        print(f"  [GDB] launched {_gdb_count} GDB process(es) while searching for the fork statement"
+              f" (average {_div_secs / max(_gdb_count, 1):.2f}s each)")
+        stage_timing.record("find fork statement", _div_secs)
 
         # Ensure the divergence result carries the info trace_fork_offsets.py
         # needs: binary/args for the target and the input file.

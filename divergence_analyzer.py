@@ -5714,7 +5714,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
         bt_result = _run_backward_tracer(
             last_common, binary_a, binary_b, source_dirs_a, source_dirs_b,
             lib_path_a, lib_path_b, input_file, args_b, gdb_timeout)
-        stage_timing.record("寻找分叉语句-向后追踪器", time.time() - _t_bt)
+        stage_timing.record("find fork statement - backward tracer", time.time() - _t_bt)
     except Exception as e:
         print(f"  [Backward tracer] failed: {e}")
         bt_result = {"status": "error", "error": str(e)}
@@ -5749,7 +5749,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                                   source_dirs_a, gdb_timeout)
     crash_b = _detect_crash_point(binary_b, args_b, lib_path_b,
                                   source_dirs_b, gdb_timeout)
-    stage_timing.record("寻找分叉语句-崩溃检测", time.time() - _t_crash)
+    stage_timing.record("find fork statement - crash detection", time.time() - _t_crash)
 
     if crash_a:
         print(f"  Reference CRASH: {crash_a.get('signal')} in "
@@ -5901,7 +5901,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 print(f"  [crash-anchor] failed: {e}")
                 anchor_func, anchor_a, anchor_b, fork_meta = \
                     None, -1, -1, None
-            stage_timing.record("寻找分叉语句-崩溃锚点选择",
+            stage_timing.record("find fork statement - crash anchor selection",
                                 time.time() - _t_anchor)
             if anchor_func:
                 if fork_meta and isinstance(fork_meta, dict):
@@ -5933,7 +5933,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                         anchor_func, args_b,
                         refactoring_map=refactoring_map,
                         timeout=max(gdb_timeout, 240))
-                    stage_timing.record("寻找分叉语句-动态决策定位",
+                    stage_timing.record("find fork statement - dynamic decision localization",
                                         time.time() - _t_dyn)
                     if dyn.get('status') in ('decision_fork', 'value_fork'):
                         print(f"\n  [unified-dynamic] {dyn['status']} "
@@ -6017,7 +6017,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 source_dirs_a, source_dirs_b, gdb_timeout,
                 refactoring_map=refactoring_map, gaps=gaps,
             )
-            stage_timing.record("寻找分叉语句-单步定位", time.time() - _t_step)
+            stage_timing.record("find fork statement - single-step localization", time.time() - _t_step)
             bogus = _is_spurious_step_divergence(div_loc)
             if not bogus:
                 result = {

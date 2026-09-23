@@ -4,7 +4,7 @@
 The clock starts when the compilation step finishes (stage_timing.init is
 called by run_fork_analysis.py right after the build).  Every later stage
 appends its cumulative elapsed time (and optional duration) to a JSON file
-and prints a ``[时间]`` line.  The JSON path comes from the RETRO_TIMINGS
+and prints a ``[time]`` line.  The JSON path comes from the RETRO_TIMINGS
 environment variable (exported by run_analysis.sh).
 """
 
@@ -50,7 +50,7 @@ def init():
     """Reset the clock. Called right after compilation completes."""
     data = {"t0": time.time(), "stages": []}
     _save(data)
-    print("[时间] 编译完成，计时开始 (t0)")
+    print("[time] compilation finished, timing started (t0)")
     return data["t0"]
 
 
@@ -64,6 +64,6 @@ def record(stage, duration=None):
         entry["duration"] = round(duration, 3)
     data["stages"].append(entry)
     _save(data)
-    dur = f" 用时 {duration:.3f}s" if duration is not None else ""
-    print(f"[时间] {stage}: 编译后累计 {elapsed:.3f}s{dur}")
+    dur = f" took {duration:.3f}s" if duration is not None else ""
+    print(f"[time] {stage}: cumulative after compilation {elapsed:.3f}s{dur}")
     return elapsed
