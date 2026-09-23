@@ -208,6 +208,13 @@ from pathlib import Path
 with open('$DIVERGE_JSON') as f:
     div = json.load(f)
 
+# Pt-only mode skips the GDB 2nd step, which normally resets the mutation
+# output folder; reset it here so only this run's mutated inputs are kept.
+if os.environ.get('RETRO_PT_ONLY') == '1':
+    from trace_fork_offsets import _reset_mutation_out_dir
+    _rd = _reset_mutation_out_dir(div.get('input_file'), div.get('version_b'))
+    print(f'[*] Mutation output dir (reset): {_rd}')
+
 # For semantic forks, poly_track_* fields point to the target's variable-read
 # site (correct for PolyTracker instrumentation); root_cause_* may point to the
 # guard or fork-call-site instead.
