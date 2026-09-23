@@ -265,7 +265,7 @@ if offsets and target_bin and ref_bin and os.path.isfile(target_bin) and os.path
         from trace_fork_offsets import test_byte_mutations_compare
         mutation_results = test_byte_mutations_compare(
             target_bin, ref_bin, input_file, div.get('args_b') or [],
-            offsets, timeout=60)
+            offsets, timeout=60, version=div.get('version_b'))
         result['mutation_results'] = mutation_results
     except Exception as e:
         print(f'  [!] Byte mutation testing failed: {e}')

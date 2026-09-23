@@ -6813,7 +6813,8 @@ def main():
             ifd_crash_results = test_byte_mutations_compare(
                 binary, binary_ref, input_file, program_args,
                 _ifd_probe_offsets, timeout=a.timeout,
-                probe_values=_all_probes)
+                probe_values=_all_probes,
+                version=config.get('version_b'))
             for offset, info in sorted(
                     (k, v) for k, v in ifd_crash_results.items()
                     if isinstance(k, int)):
@@ -6842,7 +6843,8 @@ def main():
             binary, binary_ref, input_file, program_args,
             sorted(stage1_offsets), _var_spans, a.timeout,
             title='Step 6b: Two-offset combined byte mutation '
-                  '(pairwise)')
+                  '(pairwise)',
+            version=config.get('version_b'))
 
     print(f'{"="*60}')
 
