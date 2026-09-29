@@ -456,13 +456,36 @@ def _slot_label(slot):
     return slot[1]
 
 def _nav_reverse(n):
+    """Move back exactly n instructions, or return 0.  GDB's counted
+    reverse-stepi can stop early (recording start / unsupported step), in which
+    case the count cannot be trusted: retrace forward to the original PC and
+    report failure so the caller can fall back to per-instruction scanning."""
     if n <= 0:
+        return 0
+    before = cur_pc()
+    try:
+        gdb.execute("reverse-stepi %d" % n, to_string=True)
+    except Exception:
+        # partial move: re-sync forward to the original position
+        for _ in range(n + 1):
+            if cur_pc() == before:
+                break
+            try:
+                gdb.execute("stepi", to_string=True)
+            except Exception:
+                break
+        return 0
+    try:
+        gdb.execute("stepi %d" % n, to_string=True)
+    except Exception:
+        return 0
+    if cur_pc() != before:
         return 0
     try:
         gdb.execute("reverse-stepi %d" % n, to_string=True)
-        return n
     except Exception:
         return 0
+    return n if cur_pc() != before else 0
 
 def _nav_forward(n):
     if n <= 0:
@@ -1106,6 +1129,9 @@ def main():
     ap.add_argument("--max-steps", type=int, default=20000,
                     help="max reverse instructions per slot")
     ap.add_argument("--max-depth", type=int, default=8)
+    ap.add_argument("--batch-steps", type=int, default=16,
+                    help="reverse-stepping batch size for the approach scan "
+                    "(clamped to 64)")
     ap.add_argument("--fork-ignore", type=int, default=None,
                     help="skip this many earlier hits of the fork breakpoint "
                     "(select a specific invocation; default: from diverge JSON)")
@@ -1196,6 +1222,7 @@ def main():
         "trace_control": bool(args.trace_control),
         "trace_args": bool(args.trace_args),
         "input_real": os.path.realpath(input_file),
+        "batch_steps": min(64, max(2, args.batch_steps)),
         "fork_ignore": fork_ignore or 0,
     }
 
