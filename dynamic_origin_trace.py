@@ -212,6 +212,47 @@ class ReadLogger(gdb.Breakpoint):
             pass
         return False
 
+class MmapFinish(gdb.FinishBreakpoint):
+    def __init__(self, fd, length, offset):
+        super(MmapFinish, self).__init__(internal=True)
+        self.fd = fd
+        self.length = length
+        self.offset = offset
+
+    def stop(self):
+        try:
+            ret = int(self.return_value) & MASK
+            if ret not in (0, MASK) and ret < (1 << 63):
+                result["reads"].append({
+                    "kind": "mmap", "fd": self.fd, "buf": ret,
+                    "size": self.length, "file_offset": self.offset,
+                    "file": fd_path(self.fd),
+                    "seq": len(result["reads"]),
+                })
+                save()
+        except Exception:
+            pass
+        return False
+
+class MmapLogger(gdb.Breakpoint):
+    """Log file mappings (input_file -> memory) so terminal mapping also works
+    when the program mmaps the input instead of read()ing it (libtiff uses
+    TIFFMapFileContents -> mmap for small files)."""
+    def __init__(self, name):
+        super(MmapLogger, self).__init__(name, internal=True)
+        self.silent = True
+
+    def stop(self):
+        try:
+            fd = uval("$r8")
+            length = uval("$rsi")
+            offset = uval("$r9")
+            if fd >= 3 and 0 < length < (1 << 31):
+                MmapFinish(fd, length, offset)
+        except Exception:
+            pass
+        return False
+
 # --------------------------------------------------------------------------- #
 # record full cannot record some newer syscalls (e.g. getrandom, 318).  The
 # tracer forces getrandom callers to take an early return with a success code;
@@ -328,7 +369,20 @@ anchor_pc = [None]
 visited = set()
 stats = {"reverse_steps": 0, "writes": 0, "terminals": 0}
 
+HALT = {"flag": False}
+MAX_EVENTS = int(CFG.get("max_events", 600))
+
 def add_event(parent, kind, **kw):
+    if HALT["flag"] or len(result["events"]) >= MAX_EVENTS:
+        if not HALT["flag"]:
+            HALT["flag"] = True
+            result["events"].append({"id": next_id[0], "parent": parent,
+                                     "kind": "event_limit",
+                                     "note": "max_events=%d reached — tracing "
+                                             "stopped early" % MAX_EVENTS})
+            next_id[0] += 1
+            save()
+        return parent
     e = {"id": next_id[0], "parent": parent, "kind": kind}
     e.update(kw)
     result["events"].append(e)
@@ -356,7 +410,14 @@ def record_offset(offset, length, eid, via, file=None):
     stats["terminals"] += 1
 
 def terminal_for_mem(addr, size):
+    input_real = CFG.get("input_real")
     for r in reversed(result["reads"]):
+        if input_real and r.get("file"):
+            try:
+                if os.path.realpath(r["file"]) != input_real:
+                    continue
+            except Exception:
+                pass
         b = r.get("buf")
         if b is None or not (b <= addr < b + r["size"]):
             continue
@@ -751,11 +812,17 @@ except Exception as e:
                        % e)
     save(); gdb.execute("quit"); sys.exit(0)
 
-ReadLogger("read", "read")
-ReadLogger("pread64", "pread64")
+LOGGERS = []
+LOGGERS.append(ReadLogger("read", "read"))
+LOGGERS.append(ReadLogger("pread64", "pread64"))
+for _mm in ("mmap", "mmap64"):
+    try:
+        LOGGERS.append(MmapLogger(_mm))
+    except Exception:
+        pass
 if CFG.get("skip_getrandom", True):
     try:
-        GetrandomSkipper()
+        LOGGERS.append(GetrandomSkipper())
     except Exception:
         pass
 
@@ -793,6 +860,11 @@ if fork_bp.hit_count < IGNORE + 1:
 
 anchor_pc[0] = cur_pc()
 result["fork"]["pc"] = hex(anchor_pc[0])
+for _b in LOGGERS:
+    try:
+        _b.enabled = False
+    except Exception:
+        pass
 save()
 
 # capture variable slots at the fork
