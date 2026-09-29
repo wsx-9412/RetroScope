@@ -408,7 +408,9 @@ def scan_mem(addr, size, parent, depth, delta=0):
 
 def scan_reg(reg, parent, depth, bound_pc=None, label=None, delta=0,
              stop_pcs=None):
-    key = ("reg", reg, label)
+    # key includes the pre-state PC: the same register is legitimately
+    # re-traced at different times (e.g. the old value of an RMW dest).
+    key = ("reg", reg, cur_pc(), label)
     if key in visited:
         add_event(parent, "visited", reg=reg)
         return
