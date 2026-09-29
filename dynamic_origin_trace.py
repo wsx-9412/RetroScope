@@ -459,7 +459,6 @@ def trace_read_request(parent, max_lookback=300):
     back to the input structure (the actionable offset may live in the
     control dependency, not the value's bytes)."""
     steps = 0
-    calls = []
     while steps < max_lookback:
         if over_deadline():
             return
@@ -473,32 +472,34 @@ def trace_read_request(parent, max_lookback=300):
             if m:
                 target = m.group(1)
             rec = {
+                "pc": hex(pc),
                 "callee": target,
                 "fd": reg_value("rdi"),
                 "buf": hex(reg_value("rsi")) if reg_value("rsi") is not None else None,
                 "count": reg_value("rdx"),
                 "offset": reg_value("r10"),
             }
-            calls.append(rec)
             if target and any(k in target for k in ("read", "pread")):
-                add_event(parent, "read_request", pc=hex(pc), **rec)
+                add_event(parent, "read_request", **rec)
                 return
-            if len(calls) >= 3:
-                add_event(parent, "nearby_calls", calls=calls,
-                          note="bounded control-side lookback: calls preceding "
-                               "the error-constant write")
+            if target is None:
+                # indirect call (through a function pointer, e.g. the TIFF
+                # read proc): the nearest layered read boundary
+                add_event(parent, "indirect_call", insn=asm, **rec)
+                return
+            # a named non-read call: keep looking a little further back
+            steps += 1
+            if steps >= 60:
+                add_event(parent, "nearest_call", **rec)
                 return
         try:
             gdb.execute("reverse-stepi", to_string=True)
         except Exception:
             break
         steps += 1
-    if calls:
-        add_event(parent, "nearby_calls", calls=calls)
-    else:
-        add_event(parent, "no_read_request",
-                  note="no read/pread call found within %d instructions back"
-                       % max_lookback)
+    add_event(parent, "no_read_request",
+              note="no read/pread call found within %d instructions back"
+                   % max_lookback)
 
 # --------------------------------------------------------------------------- #
 # Writer analysis
@@ -1062,6 +1063,12 @@ def print_summary(res, gdb_log):
                 extra = "%s = %s" % (e.get("expr"), e.get("value"))
             elif kind == "call_boundary":
                 extra = "-> %s" % e.get("callee")
+            elif kind == "read_request":
+                extra = "%s(fd=%s, count=%s, offset=%s) buf=%s" % (
+                    e.get("callee"), e.get("fd"), e.get("count"),
+                    e.get("offset"), e.get("buf"))
+            elif kind in ("indirect_call", "nearest_call"):
+                extra = "%s  [%s]" % (e.get("insn"), e.get("pc"))
             print("  %s%s %s" % (" " * indent, kind, extra))
             dump(e.get("id"), indent + 2)
     dump(None, 2)
