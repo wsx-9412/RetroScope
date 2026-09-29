@@ -159,7 +159,7 @@ def fd_pos(fd):
 # --------------------------------------------------------------------------- #
 class ReadLogger(gdb.Breakpoint):
     def __init__(self, name, kind):
-        super(ReadLogger, self).__init__(name, pending=True)
+        super(ReadLogger, self).__init__(name, internal=True)
         self.kind = kind
         self.silent = True
 
@@ -878,6 +878,7 @@ def main():
         res = json.load(f)
 
     res["wall_seconds"] = round(elapsed, 2)
+    res["_output"] = output
     with open(output, "w") as f:
         json.dump(res, f, indent=1, default=str)
 
