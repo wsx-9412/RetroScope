@@ -522,6 +522,11 @@ def _locate_last_change(slot, base_value, window):
             last_idx = i
     if last_idx is None:
         return None
+    if CFG.get("debug_changes"):
+        add_event(None, "dbg_changes", window=window, last_idx=last_idx,
+                  n_changes=len(changes),
+                  changes=[(hex(c[0]), str(c[1])[:24], str(c[2])[:24])
+                           for c in changes])
     # we are at the original point; go back to the writer's pre-state
     back = window - last_idx
     _nav_reverse(back)
@@ -1150,6 +1155,8 @@ def main():
                     default=True, help="disable glibc AVX dispatch so "
                     "record full can replay (default on)")
     ap.add_argument("--no-glibc-avx-off", dest="avx_off", action="store_false")
+    ap.add_argument("--debug-changes", action="store_true",
+                    help="record per-window change diagnostics in the events")
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args()
 
@@ -1223,6 +1230,7 @@ def main():
         "trace_args": bool(args.trace_args),
         "input_real": os.path.realpath(input_file),
         "batch_steps": min(64, max(2, args.batch_steps)),
+        "debug_changes": bool(args.debug_changes),
         "fork_ignore": fork_ignore or 0,
     }
 
