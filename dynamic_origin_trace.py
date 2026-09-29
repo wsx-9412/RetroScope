@@ -842,6 +842,11 @@ def trace_control(parent, depth, lookback=None, test_lookback=60):
                    taken=taken)
     steps = 0
     while steps < test_lookback:
+        # step over the branch (or the previous instruction) first: we want
+        # the instruction that produced the branch's operands, not the branch
+        if _nav_reverse(1) == 0:
+            break
+        steps += 1
         pc2 = cur_pc()
         insn2 = disas(pc2)
         if insn2 is None:
@@ -857,9 +862,6 @@ def trace_control(parent, depth, lookback=None, test_lookback=60):
             add_event(ev, "control_test_boundary", pc=hex(pc2),
                       insn=insn2["asm"])
             return
-        if _nav_reverse(1) == 0:
-            break
-        steps += 1
     add_event(ev, "control_test_unknown")
 
 # --------------------------------------------------------------------------- #
