@@ -1322,6 +1322,12 @@ def build_trace_build(source_dir, config_mod):
     if binp is None:
         print("[!] trace binary not found under %s" % src)
         return None
+    # find_binary may return the libtool wrapper shell script; unwrap it
+    try:
+        import trace_fork_offsets as _tfo
+        binp = Path(_tfo.resolve_binary(str(binp)))
+    except Exception:
+        pass
     print("[*] trace binary: %s" % binp)
     return str(binp)
 
