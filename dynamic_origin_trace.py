@@ -657,7 +657,7 @@ for expr in CFG.get("variables", []):
         v = gdb.parse_and_eval(expr)
         t = v.type.strip_typedefs()
         info["type"] = str(t)
-        info["size"] = int(t.sizeof())
+        info["size"] = int(t.sizeof)
         info["pointer"] = (t.code == gdb.TYPE_CODE_PTR)
         try:
             info["value"] = int(v) & MASK
