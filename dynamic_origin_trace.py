@@ -1100,13 +1100,30 @@ if CFG.get("skip_getrandom", True):
         pass
 
 fork_bp = None
+_pending = None
 for spec in CFG.get("fork_specs", []):
     try:
-        fork_bp = gdb.Breakpoint(spec)
-        result["fork"]["spec"] = spec
-        break
+        bp = gdb.Breakpoint(spec)
     except Exception:
         continue
+    # an absolute source path from the pipeline build never resolves in a
+    # trace build loaded from another tree; skip unresolved specs in favour
+    # of the basename spec that does resolve
+    try:
+        if getattr(bp, "pending", False):
+            if _pending is None:
+                _pending = (spec, bp)
+            else:
+                bp.delete()
+            continue
+    except Exception:
+        pass
+    fork_bp = bp
+    result["fork"]["spec"] = spec
+    break
+if fork_bp is None and _pending is not None:
+    result["fork"]["spec"] = _pending[0]
+    fork_bp = _pending[1]
 if fork_bp is None:
     result["status"] = "error"
     result["error"] = "no fork breakpoint could be created"
