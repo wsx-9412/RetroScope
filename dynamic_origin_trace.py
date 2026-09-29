@@ -498,10 +498,22 @@ def handle_write(slot, parent, depth, value_before=None, value_after=None,
         m = re.search(r"<([^>]+)>", asm)
         if m:
             target = m.group(1)
+        if target and any(k in target for k in ("read", "pread")):
+            # the value is the return status of a file-read call: report the
+            # request arguments (fd, buf, count, pread offset) instead of
+            # trying to descend into libc
+            add_event(eid, "read_call", callee=target,
+                      fd=reg_value("rdi"), buf=hex(reg_value("rsi"))
+                      if reg_value("rsi") is not None else None,
+                      count=reg_value("rdx"), offset=reg_value("r10"),
+                      note="value is the return of a read/pread call")
         add_event(eid, "call_boundary", callee=target,
                   note="value produced by a function return; "
                        "follow_returns=%s" % CFG.get("follow_returns", True))
-        if CFG.get("follow_returns", True) and slot[0] == "reg" \
+        follow = CFG.get("follow_returns", True)
+        if target and any(k in target for k in ("read", "pread")):
+            follow = False
+        if follow and slot[0] == "reg" \
                 and slot[1] in ("rax", "eax", "ax", "al") and depth < MAX_DEPTH:
             descend_call(eid, target, depth, delta)
         return
