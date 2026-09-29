@@ -1312,11 +1312,26 @@ def sanitize_compile_cfg(cfg):
     return out
 
 
-def build_trace_build(source_dir, config_mod):
-    """Build a -g -O0, no-ASan copy of source_dir for record-full replay.
+def _trace_build_key(source_dir, config_path):
+    import hashlib
+    h = hashlib.sha1()
+    h.update(str(Path(source_dir).resolve()).encode())
+    h.update(b"|")
+    if config_path and os.path.isfile(config_path):
+        with open(config_path, "rb") as f:
+            h.update(f.read())
+    return h.hexdigest()[:12]
 
-    Origin tracing does not need ASan, and the ASan runtime executes
-    instructions (e.g. rdtscp) that GDB's record-full cannot replay."""
+
+def build_trace_build(source_dir, config_mod, config_path=None,
+                      cache_root=None, refresh=False):
+    """Build (or reuse from cache) a -g -O0, no-ASan copy of source_dir for
+    record-full replay.
+
+    ASan is only needed as the crash oracle, not for origin tracing; the ASan
+    runtime executes instructions (e.g. rdtscp) that record-full cannot
+    replay.  The build is cached by (source dir, config bytes) so repeated
+    pipeline runs do not pay the compile time again."""
     import shutil
     import tempfile as _tf
     import run_fork_analysis as rfa
@@ -1328,10 +1343,33 @@ def build_trace_build(source_dir, config_mod):
     if not cfg:
         print("[!] config has no COMPILE_COMMANDS for a trace build")
         return None
-    work = Path(_tf.mkdtemp(prefix="dyn_trace_build_"))
-    src = work / "src"
+
+    src = None
+    if cache_root:
+        base = Path(cache_root) / _trace_build_key(source_dir, config_path)
+        src = base / "src"
+    if src is not None and src.is_dir() and not refresh:
+        binp = rfa.find_binary(src, exec_cfg)
+        if binp is not None:
+            try:
+                import trace_fork_offsets as _tfo
+                binp = Path(_tfo.resolve_binary(str(binp)))
+            except Exception:
+                pass
+            if os.access(str(binp), os.X_OK):
+                print("[*] reusing cached trace build: %s" % binp)
+                return str(binp)
+    if src is None:
+        work = Path(_tf.mkdtemp(prefix="dyn_trace_build_"))
+        src = work / "src"
+    else:
+        if src.exists() and refresh:
+            shutil.rmtree(str(src.parent))
+        src.parent.mkdir(parents=True, exist_ok=True)
+
     print("[*] building a no-ASan trace build in %s ..." % src)
-    shutil.copytree(str(source_dir), str(src))
+    if not src.is_dir():
+        shutil.copytree(str(source_dir), str(src))
     if not rfa.run_build(src, "trace", cfg):
         print("[!] trace build failed")
         return None
@@ -1339,7 +1377,6 @@ def build_trace_build(source_dir, config_mod):
     if binp is None:
         print("[!] trace binary not found under %s" % src)
         return None
-    # find_binary may return the libtool wrapper shell script; unwrap it
     try:
         import trace_fork_offsets as _tfo
         binp = Path(_tfo.resolve_binary(str(binp)))
@@ -1369,6 +1406,13 @@ def main():
                     "(for the trace build)")
     ap.add_argument("--no-trace-build", action="store_true",
                     help="never build a no-ASan trace build")
+    ap.add_argument("--trace-build-cache", default=None,
+                    help="cache dir for no-ASan trace builds "
+                    "(default: out/.dyn_trace_build)")
+    ap.add_argument("--no-trace-build-cache", action="store_true",
+                    help="disable trace-build caching (always rebuild)")
+    ap.add_argument("--refresh-trace-build", action="store_true",
+                    help="force a rebuild of the cached trace build")
     ap.add_argument("--binary", help="target binary")
     ap.add_argument("--input", help="input file (PoC)")
     ap.add_argument("--args", default="", help="program args template, "
@@ -1566,7 +1610,13 @@ def main():
             not args.no_trace_build:
         print("[*] record-full failed on the pipeline binary; trying a "
               "no-ASan trace build (origin tracing does not need ASan)")
-        trace_bin = build_trace_build(source_dir, config_mod)
+        cache_root = None
+        if not args.no_trace_build_cache:
+            cache_root = args.trace_build_cache or str(
+                BASE / "out" / ".dyn_trace_build")
+        trace_bin = build_trace_build(
+            source_dir, config_mod, config_path=args.config,
+            cache_root=cache_root, refresh=args.refresh_trace_build)
         if trace_bin:
             res2, gdb_out2, elapsed2 = run_gdb(trace_bin)
             if res2 is not None:
