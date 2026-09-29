@@ -279,7 +279,7 @@ def parse_operand(op, next_pc):
 # --------------------------------------------------------------------------- #
 # Backward scan primitives
 # --------------------------------------------------------------------------- #
-MAX_STEPS = int(CFG.get("max_steps", 2000))
+MAX_STEPS = int(CFG.get("max_steps", 20000))
 MAX_DEPTH = int(CFG.get("max_depth", 8))
 segments = []          # path stack for readable parent links
 next_id = [0]
@@ -452,7 +452,7 @@ def classify_sources(mnem, ops, slot, next_pc, parent, depth, eid):
     return srcs
 
 def handle_write(slot, parent, depth, value_before=None, value_after=None,
-                 changed=None):
+                 changed=None, delta=0):
     pc = cur_pc()
     insn = disas(pc)
     asm = insn["asm"].strip() if insn else "?"
@@ -476,7 +476,7 @@ def handle_write(slot, parent, depth, value_before=None, value_after=None,
                        "follow_returns=%s" % CFG.get("follow_returns", True))
         if CFG.get("follow_returns", True) and slot[0] == "reg" \
                 and slot[1] in ("rax", "eax", "ax", "al") and depth < MAX_DEPTH:
-            descend_call(eid, target, depth)
+            descend_call(eid, target, depth, delta)
         return
 
     if mnem in ("rep movsb", "rep movsw", "rep movsd", "rep movsq",
@@ -507,18 +507,23 @@ def handle_write(slot, parent, depth, value_before=None, value_after=None,
         if slot[0] == "reg":
             for r in ("rax", "rdx"):
                 if r != slot[1]:
-                    scan_reg(r, eid, depth + 1)
-            scan_reg(slot[1], eid, depth + 1)
+                    scan_reg(r, eid, depth + 1, delta=delta)
+            scan_reg(slot[1], eid, depth + 1, delta=delta)
         return
 
     next_pc_addr = (pc + length) & 0xFFFFFFFFFFFFFFFF
     srcs = classify_sources(mnem, ops, slot, next_pc_addr, eid, depth, eid)
+    if delta and slot[0] == "reg":
+        add_event(eid, "delta_note", delta=delta,
+                  note="byte position inside the register/window carried "
+                       "through this write")
     for s in srcs:
         if s[0] == "imm":
             add_event(eid, "constant", value=hex(s[1] & MASK))
         elif s[0] == "mem":
-            addr = s[1]
-            size = s[2] or 8
+            addr = (s[1] + delta) & 0xFFFFFFFFFFFFFFFF
+            wsize = s[2] or 8
+            size = max(1, wsize - delta) if delta < wsize else 1
             t = terminal_for_mem(addr, size)
             if t:
                 add_event(eid, "input", addr=hex(addr), size=size, **t)
@@ -539,19 +544,21 @@ def handle_write(slot, parent, depth, value_before=None, value_after=None,
             if s[1] in ("rbp", "rsp", "rip"):
                 add_event(eid, "frame_register", reg=s[1])
             else:
-                scan_reg(s[1], eid, depth + 1)
+                scan_reg(s[1], eid, depth + 1, delta=delta)
         else:
             add_event(eid, "unknown_operand", operand=s[1])
 
-def descend_call(parent_eid, target, depth):
+def descend_call(parent_eid, target, depth, delta=0):
     """Follow a call's return value: enter the callee, run to its return, then
     reverse-scan the return register (rax) inside the callee."""
+    call_pc = cur_pc()
     try:
         gdb.execute("stepi", to_string=True)     # enter callee
         entry = cur_pc()
         gdb.execute("finish", to_string=True)    # run to return
         add_event(parent_eid, "callee_enter", callee=target, entry=hex(entry))
-        scan_reg("rax", parent_eid, depth + 1, bound_pc=entry)
+        scan_reg("rax", parent_eid, depth + 1, bound_pc=entry, delta=delta,
+                 stop_pcs={entry, call_pc})
     except Exception as e:
         add_event(parent_eid, "call_boundary_unfollowed",
                   callee=target, error=str(e)[:200])
@@ -763,7 +770,7 @@ def main():
     ap.add_argument("--output", default=None, help="result JSON path")
     ap.add_argument("--timeout", type=float, default=900,
                     help="overall tracing deadline (seconds)")
-    ap.add_argument("--max-steps", type=int, default=2000,
+    ap.add_argument("--max-steps", type=int, default=20000,
                     help="max reverse instructions per slot")
     ap.add_argument("--max-depth", type=int, default=8)
     ap.add_argument("--no-follow-returns", action="store_true",
