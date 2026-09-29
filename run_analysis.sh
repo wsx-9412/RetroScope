@@ -168,21 +168,44 @@ python3 -u run_fork_analysis.py \
 # ============================================================================
 if [ "$POLYTRACKER_MODE" = false ]; then
     echo ""
-    echo "=== GDB dynamic trace ==="
+    echo "=== GDB dynamic origin trace (record/replay, fork variables -> input offsets) ==="
     DIVERGE_JSON="results/${CVE_ID}.diverge.json"
+    ORIGIN_JSON="results/${CVE_ID}_origin.json"
     if [ ! -f "$DIVERGE_JSON" ]; then
         echo "Error: $DIVERGE_JSON not found"
         exit 1
     fi
     echo "Using divergence result: $DIVERGE_JSON"
-    python3 -u trace_fork_offsets.py \
-        --trace-json "$DIVERGE_JSON" \
-        --timeout 60
-    if [ $? -eq 0 ]; then
-        echo -e "\n=== GDB trace completed ==="
+    echo "Origin trace result:       $ORIGIN_JSON"
+    # Direct dynamic backward tracing of the fork variables.  The tracer
+    # records the target execution with GDB, stops at the fork, and walks
+    # backwards to the input read/mmap that produced each value.  If the
+    # pipeline binary is ASan-instrumented (record-full cannot replay the
+    # sanitizer runtime) the tracer builds a -O0 no-ASan trace binary itself.
+    python3 -u dynamic_origin_trace.py \
+        --diverge-json "$DIVERGE_JSON" \
+        --config "$CONFIG_MODULE" \
+        --source-dir "$TARGET_VERSION_PATH" \
+        --output "$ORIGIN_JSON" \
+        --timeout 900 || true
+
+    DYN_OFFSETS=$(python3 -c "import json;d=json.load(open('$ORIGIN_JSON'));print(len(d.get('offsets') or []))" 2>/dev/null || echo 0)
+    echo "Dynamic origin trace input offsets: ${DYN_OFFSETS}"
+
+    if [ "${DYN_OFFSETS:-0}" = "0" ]; then
+        echo ""
+        echo "=== Legacy GDB offset trace (fallback) ==="
+        python3 -u trace_fork_offsets.py \
+            --trace-json "$DIVERGE_JSON" \
+            --timeout 60
+        if [ $? -eq 0 ]; then
+            echo -e "\n=== GDB trace completed ==="
+        else
+            echo "GDB trace failed!"
+            exit 1
+        fi
     else
-        echo "GDB trace failed!"
-        exit 1
+        echo "[*] dynamic origin trace produced input offsets; legacy offset trace skipped."
     fi
 fi
 
