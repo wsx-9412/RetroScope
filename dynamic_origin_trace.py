@@ -189,6 +189,23 @@ class ReadLogger(gdb.Breakpoint):
         return False
 
 # --------------------------------------------------------------------------- #
+# record full cannot record some newer syscalls (e.g. getrandom, 318).  The
+# tracer forces getrandom callers to take an early return with a success code;
+# the returned bytes are not observable through the traced value chain.
+# --------------------------------------------------------------------------- #
+class GetrandomSkipper(gdb.Breakpoint):
+    def __init__(self):
+        super(GetrandomSkipper, self).__init__("getrandom", internal=True)
+        self.silent = True
+
+    def stop(self):
+        try:
+            gdb.execute("return (long)8", to_string=True)
+        except Exception:
+            pass
+        return False
+
+# --------------------------------------------------------------------------- #
 # Instruction parsing (Intel syntax)
 # --------------------------------------------------------------------------- #
 MEM_RE = re.compile(r"\[([^\]]+)\]")
@@ -578,6 +595,12 @@ except Exception:
     pass
 
 try:
+    gdb.execute("set args %s" % " ".join(
+        '"%s"' % a.replace('"', '\\"') for a in CFG.get("args", [])))
+except Exception:
+    pass
+
+try:
     gdb.execute("start")
 except Exception as e:
     result["status"] = "error"
@@ -595,6 +618,11 @@ except Exception as e:
 
 ReadLogger("read", "read")
 ReadLogger("pread64", "pread64")
+if CFG.get("skip_getrandom", True):
+    try:
+        GetrandomSkipper()
+    except Exception:
+        pass
 
 fork_bp = None
 for spec in CFG.get("fork_specs", []):
