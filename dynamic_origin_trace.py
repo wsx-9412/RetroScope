@@ -31,17 +31,41 @@ Usage (from a divergence result):
 
 Notes / limitations
 -------------------
-* GDB "record full" cannot replay some AVX instructions found in glibc's
-  ifunc dispatchers.  The driver therefore disables AVX dispatch through
-  GLIBC_TUNABLES by default (--glibc-avx-off).  rr would be preferable but
-  requires kernel.perf_event_paranoid <= 1 (this is checked and reported).
-* Works best on -O0 builds (the fork pipeline builds with -g/-O0).
+* GDB "record full" cannot replay some instructions (AVX in glibc's ifunc
+  dispatchers, rdtscp, some loader instructions).  The driver disables AVX
+  dispatch and the AVX_Fast_Unaligned_Load preference via GLIBC_TUNABLES and
+  skips getrandom; LD_BIND_NOW avoids the lazy PLT resolver.  ASan builds bring
+  in additional unsupported instructions (rdtscp in the sanitizer runtime), so
+  the origin trace is best run on a dedicated tracing build:
+      ./configure CFLAGS="-g -O0 -Wno-error" LDFLAGS="" && make
+  (the trace does not need ASan).
+* rr would be the production engine (record once, replay with reverse
+  watchpoints) but requires kernel.perf_event_paranoid <= 1; the driver
+  reports the current value and falls back to record full.
 * Hardware/software watchpoints are not used: reverse stepping + value diff
   is uniform for memory and registers and does not suffer GDB's unsupported
   "watchpoints during reverse execution" limitation.
 * Function-return boundaries are followed one callee at a time (bounded by
   --max-depth); calls into uninstrumented libraries without debug info end
   the trace with an explicit boundary event.
+* Multi-byte SIMD copies are handled via the "delta" carried from the stored
+  destination window to the loaded source window, which keeps byte-exact
+  offsets for the common vector copy patterns.
+* The read-request lookback (--trace-read-request) is a heuristic bridge for
+  control-side causes (e.g. an I/O error code set on a failed read); it is
+  off by default because indirect calls through function pointers are not
+  reliably attributed.
+
+Validated (2026-09-29, this machine)
+------------------------------------
+* Synthetic read()-based demo: fork variable y traced back to byte loads from
+  the read buffer, yielding exact input offsets 0x3 and 0x4
+  (json: /tmp/opencode/forkdemo.origin.json).
+* libtiff CVE-2023-30775 target fork (tif_dirread.c:5433, invocation 2):
+  err=0x3 traced through TIFFReadDirEntryLong8Array -> TIFFReadDirEntryArray
+  -> TIFFReadDirEntryData to the constant TIFFReadDirEntryErrIo (3), i.e. the
+  I/O-failure assignment (json:
+  results/CVE-2023-30775_tracebuild_origin.json, tracing build without ASan).
 """
 
 import argparse
@@ -609,7 +633,7 @@ def handle_write(slot, parent, depth, value_before=None, value_after=None,
     for s in srcs:
         if s[0] == "imm":
             add_event(eid, "constant", value=hex(s[1] & MASK))
-            if CFG.get("trace_read_request", True):
+            if CFG.get("trace_read_request", False):
                 trace_read_request(eid)
         elif s[0] == "mem":
             addr = (s[1] + delta) & 0xFFFFFFFFFFFFFFFF
@@ -890,6 +914,9 @@ def main():
     ap.add_argument("--fork-ignore", type=int, default=None,
                     help="skip this many earlier hits of the fork breakpoint "
                     "(select a specific invocation; default: from diverge JSON)")
+    ap.add_argument("--trace-read-request", action="store_true",
+                    help="at constant/error terminals, look back for the nearest "
+                    "read/pread call and report its request arguments (heuristic)")
     ap.add_argument("--no-follow-returns", action="store_true",
                     help="do not follow function return values")
     ap.add_argument("--glibc-avx-off", dest="avx_off", action="store_true",
@@ -964,6 +991,7 @@ def main():
         "max_steps": args.max_steps,
         "max_depth": args.max_depth,
         "follow_returns": not args.no_follow_returns,
+        "trace_read_request": bool(args.trace_read_request),
         "fork_ignore": fork_ignore or 0,
     }
 
