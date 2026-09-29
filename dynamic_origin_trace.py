@@ -1492,7 +1492,19 @@ def main():
         with open(script_path, "w") as f:
             f.write(GDB_SCRIPT)
         gdb_log = os.path.join(tmpdir, "gdb.log")
+        # fresh environment for THIS binary: the trace build must load its own
+        # libs, not the pipeline build's (ASan) libraries
         run_env = dict(env)
+        try:
+            import trace_fork_offsets as _tfo
+            run_env = _tfo.build_run_env(str(binary_path))
+            run_env["ASAN_OPTIONS"] = env.get("ASAN_OPTIONS",
+                                              "detect_leaks=0:abort_on_error=0")
+            if env.get("GLIBC_TUNABLES"):
+                run_env["GLIBC_TUNABLES"] = env["GLIBC_TUNABLES"]
+            run_env.setdefault("LD_BIND_NOW", "1")
+        except Exception:
+            pass
         run_env["DYNT_CFG"] = cfg_path
         run_env["DYNT_OUT"] = output
         t0 = time.time()
