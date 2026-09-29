@@ -1249,23 +1249,27 @@ def basename_candidates(div):
 
 
 def extract_variables(div):
-    vs = div.get("variables") or []
-    out = []
-    for v in vs:
-        if isinstance(v, str) and v and not v.startswith(("if ", "while ",
-                                                          "for ", "return ")):
-            out.append(v)
-    if out:
-        return out
-    # fall back to the statement's identifiers
+    """Fork variables, preferring the ones that appear in the fork statement
+    (e.g. `err` in `if (err != TIFFReadDirEntryErrOk)`).  Pointer-typed
+    context variables from the divergence result are kept as a fallback."""
     import re
     stmt = (div.get("root_cause_statement_b")
             or div.get("fork_statement")
             or div.get("root_cause_statement_a") or "")
-    toks = re.findall(r"[A-Za-z_][A-Za-z0-9_]*(?:\s*->\s*[A-Za-z_][A-Za-z0-9_]*)*",
-                      stmt)
-    black = {"if", "while", "for", "return", "sizeof", "NULL", "else"}
-    return [t for t in toks if t not in black][:6]
+    black = {"if", "while", "for", "return", "sizeof", "NULL", "else", "goto"}
+    toks = re.findall(
+        r"[A-Za-z_][A-Za-z0-9_]*(?:\s*->\s*[A-Za-z_][A-Za-z0-9_]*)*", stmt)
+    stmt_vars = [t for t in toks if t not in black]
+    out, seen = [], set()
+    for v in stmt_vars + [v for v in (div.get("variables") or [])
+                          if isinstance(v, str)]:
+        v = v.strip()
+        if not v or v.startswith(("if ", "while ", "for ", "return ")):
+            continue
+        if v not in seen:
+            seen.add(v)
+            out.append(v)
+    return out[:8]
 
 
 def sanitize_compile_cfg(cfg):
