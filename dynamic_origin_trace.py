@@ -451,6 +451,55 @@ def scan_reg(reg, parent, depth, bound_pc=None, label=None, delta=0,
         prev = cur
     add_event(parent, "scan_limit", reg=reg, steps=steps)
 
+def trace_read_request(parent, max_lookback=300):
+    """At an error-constant terminal, look back a bounded window for the file
+    read that set the failure status: report the nearest call(s) to a
+    read/pread function with their argument registers.  This bridges the
+    data-origin chain to the I/O request, which is what an analyst can map
+    back to the input structure (the actionable offset may live in the
+    control dependency, not the value's bytes)."""
+    steps = 0
+    calls = []
+    while steps < max_lookback:
+        if over_deadline():
+            return
+        pc = cur_pc()
+        insn = disas(pc)
+        asm = insn["asm"] if insn else ""
+        mnem, ops = split_insn(asm)
+        if mnem.startswith("call"):
+            target = None
+            m = re.search(r"<([^>]+)>", asm)
+            if m:
+                target = m.group(1)
+            rec = {
+                "callee": target,
+                "fd": reg_value("rdi"),
+                "buf": hex(reg_value("rsi")) if reg_value("rsi") is not None else None,
+                "count": reg_value("rdx"),
+                "offset": reg_value("r10"),
+            }
+            calls.append(rec)
+            if target and any(k in target for k in ("read", "pread")):
+                add_event(parent, "read_request", pc=hex(pc), **rec)
+                return
+            if len(calls) >= 3:
+                add_event(parent, "nearby_calls", calls=calls,
+                          note="bounded control-side lookback: calls preceding "
+                               "the error-constant write")
+                return
+        try:
+            gdb.execute("reverse-stepi", to_string=True)
+        except Exception:
+            break
+        steps += 1
+    if calls:
+        add_event(parent, "nearby_calls", calls=calls)
+    else:
+        add_event(parent, "no_read_request",
+                  note="no read/pread call found within %d instructions back"
+                       % max_lookback)
+
 # --------------------------------------------------------------------------- #
 # Writer analysis
 # --------------------------------------------------------------------------- #
@@ -559,6 +608,8 @@ def handle_write(slot, parent, depth, value_before=None, value_after=None,
     for s in srcs:
         if s[0] == "imm":
             add_event(eid, "constant", value=hex(s[1] & MASK))
+            if CFG.get("trace_read_request", True):
+                trace_read_request(eid)
         elif s[0] == "mem":
             addr = (s[1] + delta) & 0xFFFFFFFFFFFFFFFF
             wsize = s[2] or 8
