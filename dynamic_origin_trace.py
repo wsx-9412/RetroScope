@@ -274,6 +274,32 @@ class GetrandomSkipper(gdb.Breakpoint):
 # Instruction parsing (Intel syntax)
 # --------------------------------------------------------------------------- #
 MEM_RE = re.compile(r"\[([^\]]+)\]")
+REG_FAMILY = {}
+for _fam in (("rax", "eax", "ax", "al", "ah"),
+             ("rbx", "ebx", "bx", "bl", "bh"),
+             ("rcx", "ecx", "cx", "cl", "ch"),
+             ("rdx", "edx", "dx", "dl", "dh"),
+             ("rsi", "esi", "si", "sil"), ("rdi", "edi", "di", "dil"),
+             ("rbp", "ebp", "bp", "bpl"), ("rsp", "esp", "sp", "spl"),
+             ("r8", "r8d", "r8w", "r8b"), ("r9", "r9d", "r9w", "r9b"),
+             ("r10", "r10d", "r10w", "r10b"), ("r11", "r11d", "r11w", "r11b"),
+             ("r12", "r12d", "r12w", "r12b"), ("r13", "r13d", "r13w", "r13b"),
+             ("r14", "r14d", "r14w", "r14b"), ("r15", "r15d", "r15w", "r15b")):
+    for _r in _fam:
+        REG_FAMILY[_r] = _fam[0]
+
+def reg_family(name):
+    return REG_FAMILY.get(name.lower(), name.lower())
+
+def _reg_write(dest, slot_reg):
+    return (dest[0] == "reg"
+            and reg_family(dest[1]) == reg_family(slot_reg))
+
+def _mem_overlaps(dest, addr, size):
+    if dest[0] != "mem":
+        return False
+    d, ds = dest[1], (dest[2] or 8)
+    return d < (addr + size) and addr < (d + ds)
 REG_RE = re.compile(r"^(?:r[a-z0-9]+|e[a-z0-9]+|[abcd][lhx]|r[0-9]+d?|[sd]il?|[sb]pl?)$")
 SIZE_PREFIX = {
     "byte": 1, "word": 2, "dword": 4, "qword": 8,
@@ -496,41 +522,64 @@ def _nav_forward(n):
     except Exception:
         return 0
 
-def _locate_last_change(slot, base_value, window):
-    """We are `window` instructions before the point at which the slot held
-    `base_value`; somewhere inside the window the value differs.  Walk the
-    window forward exactly (at most BATCH instructions), remember the LAST
-    write, then navigate back to that instruction's pre-state.
+def _instr_writes_slot(asm, slot, next_pc):
+    """Return True if the instruction writes the tracked slot (register or a
+    memory range overlapping the slot), including implicit writes (call ->
+    rax, rep movs -> [rdi])."""
+    mnem, ops = split_insn(asm)
+    if not mnem:
+        return False
+    if slot[0] == "reg":
+        if mnem.startswith("call"):
+            return reg_family(slot[1]) in ("rax", "rdi", "rsi", "rdx", "rcx",
+                                           "r8", "r9", "r10", "r11")
+        if mnem in ("rep movsb", "rep movsw", "rep movsd", "rep movsq"):
+            return reg_family(slot[1]) in ("rsi", "rdi", "rcx")
+        if not ops:
+            return False
+        return _reg_write(parse_operand(ops[0], next_pc), slot[1])
+    # memory slot
+    if mnem.startswith("call"):
+        return False
+    if mnem in ("push", "pop"):
+        return False
+    if mnem in ("rep movsb", "rep movsw", "rep movsd", "rep movsq"):
+        rdi, rcx = reg_value("rdi"), reg_value("rcx")
+        if rdi is None or rcx is None:
+            return False
+        return rdi < (slot[1] + slot[2]) and slot[1] < (rdi + rcx)
+    if not ops:
+        return False
+    dest = parse_operand(ops[0], next_pc)
+    return _mem_overlaps(dest, slot[1], slot[2])
 
-    Exactness matters: coincidental value equalities (e.g. a callee clobbering
-    a register with the same value) make a pure bisect unsound.  Batching is
-    still used for the long approach scan; only the small detected window is
-    walked step by step."""
+def _locate_last_change(slot, base_value, window):
+    """Walk the detected window (<= BATCH instructions) forward and find the
+    LAST instruction that writes the slot, inspecting destination operands
+    rather than value changes: this catches idempotent writes (store of the
+    same value), which are invisible to value differencing.  Leaves the
+    inferior at that instruction's pre-state and returns (before, after)."""
     stats["reverse_steps"] += window
-    changes = []
-    last_idx = None
+    ladder = []
     for i in range(window):
         pc = cur_pc()
-        before = _slot_value(slot)
+        insn = disas(pc)
+        if insn is None:
+            break
+        asm = insn["asm"]
+        if _instr_writes_slot(asm, slot, pc + insn["length"]):
+            ladder.append((i, pc, asm))
         if _nav_forward(1) == 0:
             break
-        after = _slot_value(slot)
-        if after is None:
-            break
-        if after != before:
-            changes.append((pc, before, after))
-            last_idx = i
-    if last_idx is None:
+    if not ladder:
         return None
-    if CFG.get("debug_changes"):
-        add_event(None, "dbg_changes", window=window, last_idx=last_idx,
-                  n_changes=len(changes),
-                  changes=[(hex(c[0]), str(c[1])[:24], str(c[2])[:24])
-                           for c in changes])
-    # we are at the original point; go back to the writer's pre-state
+    last_idx, writer_pc, writer_asm = ladder[-1]
     back = window - last_idx
     _nav_reverse(back)
-    pc, before, after = changes[-1]
+    before = _slot_value(slot)
+    _nav_forward(1)
+    after = _slot_value(slot)
+    _nav_reverse(1)
     return before, after
 
 def scan_slot(slot, parent, depth, bound_pc=None, stop_pcs=None, delta=0,
@@ -583,7 +632,16 @@ def scan_slot(slot, parent, depth, bound_pc=None, stop_pcs=None, delta=0,
                       slot=_slot_label(slot))
             return
         if v != base:
-            before, after = _locate_last_change(slot, base, moved)
+            located = _locate_last_change(slot, base, moved)
+            if located is None:
+                # value changed but no explicit write in the window (e.g. a
+                # call clobber or string move): report a boundary and stop
+                add_event(parent, "implicit_or_unknown_write",
+                          slot=_slot_label(slot),
+                          note="value changed without a visible store in the "
+                               "window")
+                return
+            before, after = located
             if slot[0] == "mem" and isinstance(before, (bytes, bytearray)) \
                     and isinstance(after, (bytes, bytearray)):
                 changed = [i for i in range(len(before)) if before[i] != after[i]]
