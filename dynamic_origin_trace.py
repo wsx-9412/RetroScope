@@ -530,9 +530,6 @@ def _instr_writes_slot(asm, slot, next_pc):
     if not mnem:
         return False
     if slot[0] == "reg":
-        if mnem.startswith("call"):
-            return reg_family(slot[1]) in ("rax", "rdi", "rsi", "rdx", "rcx",
-                                           "r8", "r9", "r10", "r11")
         if mnem in ("rep movsb", "rep movsw", "rep movsd", "rep movsq"):
             return reg_family(slot[1]) in ("rsi", "rdi", "rcx")
         if not ops:
@@ -607,9 +604,40 @@ def scan_slot(slot, parent, depth, bound_pc=None, stop_pcs=None, delta=0,
         add_event(parent, "unmapped" if slot[0] == "mem" else "unknown_reg",
                   slot=_slot_label(slot))
         return
-    batch = BATCH if slot[0] == "mem" else int(CFG.get("batch_steps_reg", 8))
-    if bound_pc is not None or stop_pcs:
-        batch = 1
+
+    if slot[0] == "reg":
+        # registers: walk back one instruction at a time and look for an
+        # instruction that WRITES the register (idempotent writes included)
+        total = 0
+        while total < MAX_STEPS:
+            if over_deadline():
+                add_event(parent, "timeout", slot=_slot_label(slot))
+                return
+            pc = cur_pc()
+            insn = disas(pc)
+            if insn is not None and _instr_writes_slot(insn["asm"], slot,
+                                                       pc + insn["length"]):
+                before = _slot_value(slot)
+                _nav_forward(1)
+                after = _slot_value(slot)
+                _nav_reverse(1)
+                handle_write(slot, parent, depth, value_before=before,
+                             value_after=after, changed="all", delta=delta)
+                return
+            if (bound_pc is not None and pc == bound_pc) or \
+                    (stop_pcs and pc in stop_pcs):
+                add_event(parent, "function_entry", slot=_slot_label(slot),
+                          note="value comes from the caller (parameter)")
+                return
+            if _nav_reverse(1) == 0:
+                add_event(parent, "record_start", slot=_slot_label(slot))
+                return
+            total += 1
+        add_event(parent, "scan_limit", slot=_slot_label(slot), steps=total)
+        return
+
+    # memory: batched approach scan, then exact window inspection
+    batch = BATCH
     total = 0
     while total < MAX_STEPS:
         if over_deadline():
@@ -621,29 +649,21 @@ def scan_slot(slot, parent, depth, bound_pc=None, stop_pcs=None, delta=0,
             add_event(parent, "record_start", slot=_slot_label(slot))
             return
         total += moved
-        pc = cur_pc()
-        if (bound_pc is not None and pc == bound_pc) or                 (stop_pcs and pc in stop_pcs):
-            add_event(parent, "function_entry", slot=_slot_label(slot),
-                      note="value comes from the caller (parameter)")
-            return
         v = _slot_value(slot)
         if v is None:
-            add_event(parent, "unmapped" if slot[0] == "mem" else "unknown_reg",
-                      slot=_slot_label(slot))
+            add_event(parent, "unmapped", slot=_slot_label(slot))
             return
         if v != base:
             located = _locate_last_change(slot, base, moved)
             if located is None:
-                # value changed but no explicit write in the window (e.g. a
-                # call clobber or string move): report a boundary and stop
                 add_event(parent, "implicit_or_unknown_write",
                           slot=_slot_label(slot),
                           note="value changed without a visible store in the "
                                "window")
                 return
             before, after = located
-            if slot[0] == "mem" and isinstance(before, (bytes, bytearray)) \
-                    and isinstance(after, (bytes, bytearray)):
+            if isinstance(before, (bytes, bytearray)) and \
+                    isinstance(after, (bytes, bytearray)):
                 changed = [i for i in range(len(before)) if before[i] != after[i]]
             else:
                 changed = "all"
