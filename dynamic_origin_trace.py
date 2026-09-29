@@ -337,11 +337,11 @@ def terminal_for_mem(addr, size):
         if b is None or not (b <= addr < b + r["size"]):
             continue
         if r.get("file_offset") is None:
-            return {"kind": "input_unknown_offset", "read": r["seq"],
+            return {"terminal": "input_unknown_offset", "read": r["seq"],
                     "via": r["kind"], "file": r.get("file")}
         off = r["file_offset"] + (addr - b)
         length = min(size, b + r["size"] - addr)
-        return {"kind": "input", "offset": off, "length": length,
+        return {"terminal": "input", "offset": off, "length": length,
                 "via": r["kind"], "file": r.get("file")}
     return None
 
