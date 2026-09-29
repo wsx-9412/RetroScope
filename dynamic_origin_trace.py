@@ -659,6 +659,11 @@ if fork_bp is None:
     result["error"] = "no fork breakpoint could be created"
     save(); gdb.execute("quit"); sys.exit(0)
 
+IGNORE = int(CFG.get("fork_ignore", 0))
+if IGNORE:
+    fork_bp.ignore_count = IGNORE
+    result["fork"]["ignore"] = IGNORE
+
 try:
     gdb.execute("continue")
 except Exception as e:
@@ -666,7 +671,7 @@ except Exception as e:
     result["error"] = "execution failed before the fork: %s" % e
     save(); gdb.execute("quit"); sys.exit(0)
 
-if fork_bp.hit_count == 0:
+if fork_bp.hit_count < IGNORE + 1:
     result["status"] = "error"
     result["error"] = ("did not reach the fork breakpoint (%s); the stop was "
                        "at %s — likely a record-full limitation (see gdb log)"
@@ -830,6 +835,9 @@ def main():
     ap.add_argument("--max-steps", type=int, default=20000,
                     help="max reverse instructions per slot")
     ap.add_argument("--max-depth", type=int, default=8)
+    ap.add_argument("--fork-ignore", type=int, default=None,
+                    help="skip this many earlier hits of the fork breakpoint "
+                    "(select a specific invocation; default: from diverge JSON)")
     ap.add_argument("--no-follow-returns", action="store_true",
                     help="do not follow function return values")
     ap.add_argument("--glibc-avx-off", dest="avx_off", action="store_true",
@@ -884,6 +892,15 @@ def main():
         env["GLIBC_TUNABLES"] = ((prev + ":") if prev else "") + \
             "glibc.cpu.hwcaps=-AVX2,-AVX,-AVX512F,-AVX512VL,-AVX_Fast_Unaligned_Load"
 
+    fork_ignore = args.fork_ignore
+    if fork_ignore is None:
+        dyn = div.get("dynamic_fork") or {}
+        inv = dyn.get("invocation")
+        if isinstance(inv, int) and inv > 0:
+            fork_ignore = inv - 1
+            if not args.quiet:
+                print("[*] fork invocation: %d (ignoring %d earlier hit(s))"
+                      % (inv, fork_ignore))
     cfg = {
         "binary": real_bin,
         "args": prog_args,
@@ -895,6 +912,7 @@ def main():
         "max_steps": args.max_steps,
         "max_depth": args.max_depth,
         "follow_returns": not args.no_follow_returns,
+        "fork_ignore": fork_ignore or 0,
     }
 
     tmpdir = tempfile.mkdtemp(prefix="dyn_origin_")
