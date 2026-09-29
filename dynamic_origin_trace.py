@@ -657,6 +657,11 @@ def scan_slot(slot, parent, depth, bound_pc=None, stop_pcs=None, delta=0,
             record_offset(term.get("offset"), term.get("length", slot[2]),
                           parent, term.get("via", "read"), term.get("file"))
             return
+        if _structural_addr(slot[1]):
+            add_event(parent, "structural_skipped", slot=_slot_label(slot),
+                      note="address is in the binary/library static mapping; "
+                           "not input-derived state")
+            return
     base = _slot_value(slot)
     if base is None:
         add_event(parent, "unmapped" if slot[0] == "mem" else "unknown_reg",
@@ -705,7 +710,10 @@ def scan_slot(slot, parent, depth, bound_pc=None, stop_pcs=None, delta=0,
         n = min(batch, MAX_STEPS - total)
         moved = _nav_reverse(n)
         if moved == 0:
-            add_event(parent, "record_start", slot=_slot_label(slot))
+            add_event(parent, "record_start", slot=_slot_label(slot),
+                      steps=total,
+                      note="reached the start of the recorded execution before "
+                           "any value change was observed")
             return
         total += moved
         v = _slot_value(slot)
@@ -789,6 +797,68 @@ def trace_read_request(parent, max_lookback=300):
               note="no read/pread call found within %d instructions back"
                    % max_lookback)
 
+REGIONS = []          # [(start, end, name_or_None)] from /proc/pid/maps
+INPUT_REGIONS = []    # (start, end) of input read/mmap buffers
+
+def refresh_regions():
+    """Capture the process memory map so operands living in the binary's or a
+    library's static mapping (structural state such as tif->tif_flags) can be
+    pruned without scanning them."""
+    del REGIONS[:]
+    try:
+        out = gdb.execute("info proc mappings", to_string=True)
+    except Exception:
+        return
+    for line in out.splitlines():
+        parts = line.split()
+        if len(parts) < 2:
+            continue
+        try:
+            start = int(parts[0], 16)
+            end = int(parts[1], 16)
+        except ValueError:
+            continue
+        name = None
+        for tok in parts[2:]:
+            if tok.startswith("/") or tok.startswith("["):
+                name = tok
+                break
+        REGIONS.append((start, end, name))
+    del INPUT_REGIONS[:]
+    for r in result["reads"]:
+        b, n = r.get("buf"), r.get("size")
+        if b is not None and n:
+            INPUT_REGIONS.append((b, b + n))
+
+def _region_of(addr):
+    for (s0, e0, name) in REGIONS:
+        if s0 <= addr < e0:
+            return name
+    return None
+
+def _in_input_region_addr(addr):
+    for (s0, e0) in INPUT_REGIONS:
+        if s0 <= addr < e0:
+            return True
+    return False
+
+def _structural_addr(addr):
+    """True for addresses in a file-backed mapping that is not the input file
+    (binary text/data/bss, shared libraries): pure structural state."""
+    if _in_input_region_addr(addr):
+        return False
+    name = _region_of(addr)
+    if name is None:
+        return False
+    if name.startswith("["):          # [heap], [stack], [vvar], ...
+        return False
+    try:
+        if CFG.get("input_real") and os.path.realpath(name) == CFG["input_real"]:
+            return False
+    except Exception:
+        pass
+    return True
+
 def _addresslike(v):
     return v is not None and v > (1 << 40)
 
@@ -799,7 +869,11 @@ def trace_operand(parent, parsed, depth):
     if parsed[0] == "imm":
         add_event(parent, "constant", value=hex(parsed[1] & MASK))
     elif parsed[0] == "mem":
-        scan_mem(parsed[1], parsed[2] or 8, parent, depth)
+        if _structural_addr(parsed[1]):
+            add_event(parent, "structural_skipped", addr=hex(parsed[1]),
+                      note="structural mapping")
+        else:
+            scan_mem(parsed[1], parsed[2] or 8, parent, depth)
     elif parsed[0] == "reg":
         if parsed[1] in ("rbp", "rsp", "rip"):
             add_event(parent, "frame_register", reg=parsed[1])
@@ -952,6 +1026,20 @@ def handle_write(slot, parent, depth, value_before=None, value_after=None,
                 and slot[1] in ("rax", "eax", "ax", "al") and depth < MAX_DEPTH:
             descend_call(eid, target, depth, delta)
         return
+
+    COPY_CALLEES = ("memcpy", "memmove", "mempcpy", "_TIFFmemcpy",
+                    "bcopy", "TIFFmemcpy")
+    if mnem.startswith("call") and slot[0] == "mem" and any(
+            k.lower() in (asm.lower()) for k in COPY_CALLEES):
+        # call memcpy(dst=rdi, src=rsi, n=rdx): the bytes of our slot were
+        # copied from rsi + (slot_addr - rdi)
+        rdi, rsi = reg_value("rdi"), reg_value("rsi")
+        if rdi is not None and rsi is not None and rdi <= slot[1] < rdi + slot[2]:
+            src = rsi + (slot[1] - rdi)
+            add_event(eid, "copy_source", src=hex(src), size=slot[2],
+                      callee=asm.strip())
+            scan_mem(src, slot[2], eid, depth + 1)
+            return
 
     if mnem in ("rep movsb", "rep movsw", "rep movsd", "rep movsq",
                 "movs", "stos", "rep movs"):
@@ -1148,6 +1236,7 @@ if fork_bp.hit_count < IGNORE + 1:
                        % (result["fork"]["spec"], func_name(cur_pc())))
     save(); gdb.execute("quit"); sys.exit(0)
 
+refresh_regions()
 anchor_pc[0] = cur_pc()
 enter_replay()
 ANCHOR_INSN = [cur_insn()]
