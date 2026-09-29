@@ -475,33 +475,34 @@ def _nav_forward(n):
 
 def _locate_last_change(slot, base_value, window):
     """We are `window` instructions before the point at which the slot held
-    `base_value`; somewhere inside the window the value differs.  Bisect the
-    forward direction for the LAST write that produced `base_value`, leave the
-    inferior at that instruction's pre-state, and return (before, after)."""
+    `base_value`; somewhere inside the window the value differs.  Walk the
+    window forward exactly (at most BATCH instructions), remember the LAST
+    write, then navigate back to that instruction's pre-state.
+
+    Exactness matters: coincidental value equalities (e.g. a callee clobbering
+    a register with the same value) make a pure bisect unsound.  Batching is
+    still used for the long approach scan; only the small detected window is
+    walked step by step."""
     stats["reverse_steps"] += window
-    cur = [0]
-
-    def goto(pos):
-        if pos > cur[0]:
-            _nav_forward(pos - cur[0])
-        elif pos < cur[0]:
-            _nav_reverse(cur[0] - pos)
-        cur[0] = pos
-
-    lo, hi = 0, window
-    while hi - lo > 1:
-        mid = (lo + hi) // 2
-        goto(mid)
-        v = _slot_value(slot)
-        if v is None or v == base_value:
-            hi = mid
-        else:
-            lo = mid
-    goto(hi - 1)
-    before = _slot_value(slot)
-    _nav_forward(1)
-    after = _slot_value(slot)
-    _nav_reverse(1)
+    changes = []
+    last_idx = None
+    for i in range(window):
+        pc = cur_pc()
+        before = _slot_value(slot)
+        if _nav_forward(1) == 0:
+            break
+        after = _slot_value(slot)
+        if after is None:
+            break
+        if after != before:
+            changes.append((pc, before, after))
+            last_idx = i
+    if last_idx is None:
+        return None
+    # we are at the original point; go back to the writer's pre-state
+    back = window - last_idx
+    _nav_reverse(back)
+    pc, before, after = changes[-1]
     return before, after
 
 def scan_slot(slot, parent, depth, bound_pc=None, stop_pcs=None, delta=0,
