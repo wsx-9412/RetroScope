@@ -341,7 +341,7 @@ def goto_anchor():
 def over_deadline():
     return time.time() > DEADLINE
 
-def scan_mem(addr, size, parent, depth):
+def scan_mem(addr, size, parent, depth, delta=0):
     key = ("mem", addr, size)
     if key in visited:
         add_event(parent, "visited", addr=hex(addr))
@@ -383,12 +383,14 @@ def scan_mem(addr, size, parent, depth):
         if cur != prev:
             changed = [i for i in range(size) if cur[i] != prev[i]]
             handle_write(("mem", addr, size), parent, depth,
-                         value_before=cur, value_after=prev, changed=changed)
+                         value_before=cur, value_after=prev, changed=changed,
+                         delta=delta)
             return
         prev = cur
     add_event(parent, "scan_limit", addr=hex(addr), steps=steps)
 
-def scan_reg(reg, parent, depth, bound_pc=None, label=None):
+def scan_reg(reg, parent, depth, bound_pc=None, label=None, delta=0,
+             stop_pcs=None):
     key = ("reg", reg, label)
     if key in visited:
         add_event(parent, "visited", reg=reg)
@@ -413,7 +415,8 @@ def scan_reg(reg, parent, depth, bound_pc=None, label=None):
             return
         stats["reverse_steps"] += 1
         steps += 1
-        if bound_pc is not None and cur_pc() == bound_pc:
+        if (bound_pc is not None and cur_pc() == bound_pc) or \
+                (stop_pcs and cur_pc() in stop_pcs):
             add_event(parent, "function_entry", reg=reg,
                       note="register value comes from the caller (parameter)")
             return
@@ -423,7 +426,8 @@ def scan_reg(reg, parent, depth, bound_pc=None, label=None):
             return
         if cur != prev:
             handle_write(("reg", reg), parent, depth,
-                         value_before=cur, value_after=prev, changed="all")
+                         value_before=cur, value_after=prev, changed="all",
+                         delta=delta)
             return
         prev = cur
     add_event(parent, "scan_limit", reg=reg, steps=steps)
