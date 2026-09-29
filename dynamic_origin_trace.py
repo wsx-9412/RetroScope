@@ -382,98 +382,135 @@ def goto_anchor():
 def over_deadline():
     return time.time() > DEADLINE
 
-def scan_mem(addr, size, parent, depth, delta=0):
-    key = ("mem", addr, size)
+BATCH = int(CFG.get("batch_steps", 64))
+
+def _slot_value(slot):
+    if slot[0] == "mem":
+        return safe_read(slot[1], slot[2])
+    return reg_value(slot[1])
+
+def _slot_label(slot):
+    if slot[0] == "mem":
+        return "mem@%x+%d" % (slot[1], slot[2])
+    return slot[1]
+
+def _nav_reverse(n):
+    if n <= 0:
+        return 0
+    try:
+        gdb.execute("reverse-stepi %d" % n, to_string=True)
+        return n
+    except Exception:
+        return 0
+
+def _nav_forward(n):
+    if n <= 0:
+        return 0
+    try:
+        gdb.execute("stepi %d" % n, to_string=True)
+        return n
+    except Exception:
+        return 0
+
+def _locate_last_change(slot, base_value, window):
+    """We are `window` instructions before the point at which the slot held
+    `base_value`; somewhere inside the window the value differs.  Bisect the
+    forward direction for the LAST write that produced `base_value`, leave the
+    inferior at that instruction's pre-state, and return (before, after)."""
+    stats["reverse_steps"] += window
+    cur = [0]
+
+    def goto(pos):
+        if pos > cur[0]:
+            _nav_forward(pos - cur[0])
+        elif pos < cur[0]:
+            _nav_reverse(cur[0] - pos)
+        cur[0] = pos
+
+    lo, hi = 0, window
+    while hi - lo > 1:
+        mid = (lo + hi) // 2
+        goto(mid)
+        v = _slot_value(slot)
+        if v is None or v == base_value:
+            hi = mid
+        else:
+            lo = mid
+    goto(hi - 1)
+    before = _slot_value(slot)
+    _nav_forward(1)
+    after = _slot_value(slot)
+    _nav_reverse(1)
+    return before, after
+
+def scan_slot(slot, parent, depth, bound_pc=None, stop_pcs=None, delta=0,
+              label=None):
+    key = ("slot",) + tuple(slot) + (cur_pc(), label)
     if key in visited:
-        add_event(parent, "visited", addr=hex(addr))
+        add_event(parent, "visited", slot=_slot_label(slot))
         return
     visited.add(key)
     if depth > MAX_DEPTH:
-        add_event(parent, "depth_limit", addr=hex(addr))
+        add_event(parent, "depth_limit", slot=_slot_label(slot))
         return
     if over_deadline():
-        add_event(parent, "timeout", addr=hex(addr))
+        add_event(parent, "timeout", slot=_slot_label(slot))
         return
-    term = terminal_for_mem(addr, size)
-    if term:
-        add_event(parent, "input", addr=hex(addr), size=size, **term)
-        record_offset(term.get("offset"), term.get("length", size), parent,
-                      term.get("via", "read"), term.get("file"))
+    if slot[0] == "mem":
+        term = terminal_for_mem(slot[1], slot[2])
+        if term:
+            add_event(parent, "input", addr=hex(slot[1]), size=slot[2], **term)
+            record_offset(term.get("offset"), term.get("length", slot[2]),
+                          parent, term.get("via", "read"), term.get("file"))
+            return
+    base = _slot_value(slot)
+    if base is None:
+        add_event(parent, "unmapped" if slot[0] == "mem" else "unknown_reg",
+                  slot=_slot_label(slot))
         return
-    prev = safe_read(addr, size)
-    if prev is None:
-        add_event(parent, "unmapped", addr=hex(addr), size=size)
-        return
-    steps = 0
-    while steps < MAX_STEPS:
+    batch = BATCH if slot[0] == "mem" else int(CFG.get("batch_steps_reg", 8))
+    if bound_pc is not None or stop_pcs:
+        batch = 1
+    total = 0
+    while total < MAX_STEPS:
         if over_deadline():
-            add_event(parent, "timeout", addr=hex(addr))
+            add_event(parent, "timeout", slot=_slot_label(slot))
             return
-        try:
-            gdb.execute("reverse-stepi", to_string=True)
-        except Exception as e:
-            add_event(parent, "record_start", addr=hex(addr), error=str(e)[:120])
+        n = min(batch, MAX_STEPS - total)
+        moved = _nav_reverse(n)
+        if moved == 0:
+            add_event(parent, "record_start", slot=_slot_label(slot))
             return
-        stats["reverse_steps"] += 1
-        steps += 1
-        cur = safe_read(addr, size)
-        if cur is None:
-            add_event(parent, "unmapped", addr=hex(addr), size=size,
-                      note="address not mapped earlier in the recording")
+        total += moved
+        pc = cur_pc()
+        if (bound_pc is not None and pc == bound_pc) or                 (stop_pcs and pc in stop_pcs):
+            add_event(parent, "function_entry", slot=_slot_label(slot),
+                      note="value comes from the caller (parameter)")
             return
-        if cur != prev:
-            changed = [i for i in range(size) if cur[i] != prev[i]]
-            handle_write(("mem", addr, size), parent, depth,
-                         value_before=cur, value_after=prev, changed=changed,
-                         delta=delta)
+        v = _slot_value(slot)
+        if v is None:
+            add_event(parent, "unmapped" if slot[0] == "mem" else "unknown_reg",
+                      slot=_slot_label(slot))
             return
-        prev = cur
-    add_event(parent, "scan_limit", addr=hex(addr), steps=steps)
+        if v != base:
+            before, after = _locate_last_change(slot, base, moved)
+            if slot[0] == "mem" and isinstance(before, (bytes, bytearray)) \
+                    and isinstance(after, (bytes, bytearray)):
+                changed = [i for i in range(len(before)) if before[i] != after[i]]
+            else:
+                changed = "all"
+            handle_write(slot, parent, depth, value_before=before,
+                         value_after=after, changed=changed, delta=delta)
+            return
+    add_event(parent, "scan_limit", slot=_slot_label(slot), steps=total)
+
+def scan_mem(addr, size, parent, depth, delta=0):
+    scan_slot(("mem", addr, size), parent, depth, delta=delta)
 
 def scan_reg(reg, parent, depth, bound_pc=None, label=None, delta=0,
              stop_pcs=None):
-    # key includes the pre-state PC: the same register is legitimately
-    # re-traced at different times (e.g. the old value of an RMW dest).
-    key = ("reg", reg, cur_pc(), label)
-    if key in visited:
-        add_event(parent, "visited", reg=reg)
-        return
-    visited.add(key)
-    if depth > MAX_DEPTH:
-        add_event(parent, "depth_limit", reg=reg)
-        return
-    prev = reg_value(reg)
-    if prev is None:
-        add_event(parent, "unknown_reg", reg=reg)
-        return
-    steps = 0
-    while steps < MAX_STEPS:
-        if over_deadline():
-            add_event(parent, "timeout", reg=reg)
-            return
-        try:
-            gdb.execute("reverse-stepi", to_string=True)
-        except Exception as e:
-            add_event(parent, "record_start", reg=reg, error=str(e)[:120])
-            return
-        stats["reverse_steps"] += 1
-        steps += 1
-        if (bound_pc is not None and cur_pc() == bound_pc) or \
-                (stop_pcs and cur_pc() in stop_pcs):
-            add_event(parent, "function_entry", reg=reg,
-                      note="register value comes from the caller (parameter)")
-            return
-        cur = reg_value(reg)
-        if cur is None:
-            add_event(parent, "unknown_reg", reg=reg)
-            return
-        if cur != prev:
-            handle_write(("reg", reg), parent, depth,
-                         value_before=cur, value_after=prev, changed="all",
-                         delta=delta)
-            return
-        prev = cur
-    add_event(parent, "scan_limit", reg=reg, steps=steps)
+    scan_slot(("reg", reg), parent, depth, bound_pc=bound_pc, stop_pcs=stop_pcs,
+              delta=delta, label=label)
 
 def trace_read_request(parent, max_lookback=300):
     """At an error-constant terminal, look back a bounded window for the file
