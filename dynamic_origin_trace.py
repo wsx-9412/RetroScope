@@ -388,10 +388,11 @@ def parse_operand(op, next_pc):
 # Backward scan primitives
 # --------------------------------------------------------------------------- #
 MAX_STEPS = int(CFG.get("max_steps", 20000))
-MAX_DEPTH = int(CFG.get("max_depth", 8))
+MAX_DEPTH = int(CFG.get("max_depth", 16))
 segments = []          # path stack for readable parent links
 next_id = [0]
 anchor_pc = [None]
+ANCHOR_INSN = [None]
 visited = set()
 stats = {"reverse_steps": 0, "writes": 0, "terminals": 0}
 
@@ -457,6 +458,8 @@ def terminal_for_mem(addr, size):
     return None
 
 def goto_anchor():
+    if ANCHOR_INSN[0] is not None and goto_insn(ANCHOR_INSN[0]):
+        return
     if anchor_pc[0] is None:
         return
     if cur_pc() == anchor_pc[0]:
@@ -468,6 +471,34 @@ def goto_anchor():
 
 def over_deadline():
     return time.time() > DEADLINE
+
+def enter_replay():
+    """record-full reports the current instruction number only in replay mode;
+    a one-step reverse/forward pair switches to it without moving in time."""
+    try:
+        gdb.execute("reverse-stepi 1", to_string=True)
+        gdb.execute("stepi 1", to_string=True)
+    except Exception:
+        pass
+
+def cur_insn():
+    try:
+        out = gdb.execute("info record", to_string=True)
+        m = re.search(r"Current instruction number is (\d+)", out)
+        return int(m.group(1)) if m else None
+    except Exception:
+        return None
+
+def goto_insn(n):
+    if n is None:
+        return False
+    if cur_insn() == n:
+        return True
+    try:
+        gdb.execute("record goto %d" % n, to_string=True)
+        return True
+    except Exception:
+        return False
 
 BATCH = int(CFG.get("batch_steps", 64))
 
@@ -606,14 +637,24 @@ def scan_slot(slot, parent, depth, bound_pc=None, stop_pcs=None, delta=0,
         return
 
     if slot[0] == "reg":
-        # registers: walk back one instruction at a time and look for an
-        # instruction that WRITES the register (idempotent writes included)
+        # registers: step back first, then inspect the instruction we moved
+        # over (the last executed one); the instruction AT the current
+        # position is the consumer, not the producer.
         total = 0
         while total < MAX_STEPS:
             if over_deadline():
                 add_event(parent, "timeout", slot=_slot_label(slot))
                 return
+            if _nav_reverse(1) == 0:
+                add_event(parent, "record_start", slot=_slot_label(slot))
+                return
+            total += 1
             pc = cur_pc()
+            if (bound_pc is not None and pc == bound_pc) or \
+                    (stop_pcs and pc in stop_pcs):
+                add_event(parent, "function_entry", slot=_slot_label(slot),
+                          note="value comes from the caller (parameter)")
+                return
             insn = disas(pc)
             if insn is not None and _instr_writes_slot(insn["asm"], slot,
                                                        pc + insn["length"]):
@@ -624,15 +665,6 @@ def scan_slot(slot, parent, depth, bound_pc=None, stop_pcs=None, delta=0,
                 handle_write(slot, parent, depth, value_before=before,
                              value_after=after, changed="all", delta=delta)
                 return
-            if (bound_pc is not None and pc == bound_pc) or \
-                    (stop_pcs and pc in stop_pcs):
-                add_event(parent, "function_entry", slot=_slot_label(slot),
-                          note="value comes from the caller (parameter)")
-                return
-            if _nav_reverse(1) == 0:
-                add_event(parent, "record_start", slot=_slot_label(slot))
-                return
-            total += 1
         add_event(parent, "scan_limit", slot=_slot_label(slot), steps=total)
         return
 
@@ -914,11 +946,14 @@ def handle_write(slot, parent, depth, value_before=None, value_after=None,
 
     next_pc_addr = (pc + length) & 0xFFFFFFFFFFFFFFFF
     srcs = classify_sources(mnem, ops, slot, next_pc_addr, eid, depth, eid)
+    _cp = cur_insn()
     if delta and slot[0] == "reg":
         add_event(eid, "delta_note", delta=delta,
                   note="byte position inside the register/window carried "
                        "through this write")
-    for s in srcs:
+    for _si, s in enumerate(srcs):
+        if _si > 0 and _cp is not None:
+            goto_insn(_cp)
         if s[0] == "imm":
             add_event(eid, "constant", value=hex(s[1] & MASK))
             if CFG.get("trace_control", True):
@@ -1051,7 +1086,10 @@ if fork_bp.hit_count < IGNORE + 1:
     save(); gdb.execute("quit"); sys.exit(0)
 
 anchor_pc[0] = cur_pc()
+enter_replay()
+ANCHOR_INSN = [cur_insn()]
 result["fork"]["pc"] = hex(anchor_pc[0])
+result["fork"]["insn"] = ANCHOR_INSN[0]
 for _b in LOGGERS:
     try:
         _b.enabled = False
@@ -1211,7 +1249,7 @@ def main():
                     help="overall tracing deadline (seconds)")
     ap.add_argument("--max-steps", type=int, default=20000,
                     help="max reverse instructions per slot")
-    ap.add_argument("--max-depth", type=int, default=8)
+    ap.add_argument("--max-depth", type=int, default=16)
     ap.add_argument("--batch-steps", type=int, default=16,
                     help="reverse-stepping batch size for the approach scan "
                     "(clamped to 64)")
