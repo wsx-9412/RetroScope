@@ -850,7 +850,7 @@ def main():
     if args.avx_off:
         prev = env.get("GLIBC_TUNABLES", "")
         env["GLIBC_TUNABLES"] = ((prev + ":") if prev else "") + \
-            "glibc.cpu.hwcaps=-AVX2,-AVX,-AVX512F,-AVX512VL"
+            "glibc.cpu.hwcaps=-AVX2,-AVX,-AVX512F,-AVX512VL,-AVX_Fast_Unaligned_Load"
 
     cfg = {
         "binary": real_bin,
