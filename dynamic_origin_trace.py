@@ -789,6 +789,12 @@ def trace_read_request(parent, max_lookback=300):
               note="no read/pread call found within %d instructions back"
                    % max_lookback)
 
+def _addresslike(v):
+    return v is not None and v > (1 << 40)
+
+def _in_input_region(v):
+    return v is not None and terminal_for_mem(v, 1) is not None
+
 def trace_operand(parent, parsed, depth):
     if parsed[0] == "imm":
         add_event(parent, "constant", value=hex(parsed[1] & MASK))
@@ -797,8 +803,14 @@ def trace_operand(parent, parsed, depth):
     elif parsed[0] == "reg":
         if parsed[1] in ("rbp", "rsp", "rip"):
             add_event(parent, "frame_register", reg=parsed[1])
-        else:
-            scan_reg(parsed[1], parent, depth)
+            return
+        v = reg_value(parsed[1])
+        if _addresslike(v) and not _in_input_region(v):
+            add_event(parent, "pointer_skipped", reg=parsed[1], value=hex(v),
+                      note="operand is a pointer into non-input memory "
+                           "(structural state); not an input offset carrier")
+            return
+        scan_reg(parsed[1], parent, depth)
     else:
         add_event(parent, "unknown_operand", operand=parsed[1])
 
@@ -1012,8 +1024,13 @@ def handle_write(slot, parent, depth, value_before=None, value_after=None,
         elif s[0] == "reg":
             if s[1] in ("rbp", "rsp", "rip"):
                 add_event(eid, "frame_register", reg=s[1])
-            else:
-                scan_reg(s[1], eid, depth + 1, delta=delta)
+                continue
+            _rv = reg_value(s[1])
+            if _addresslike(_rv) and not _in_input_region(_rv):
+                add_event(eid, "pointer_skipped", reg=s[1], value=hex(_rv),
+                          note="pointer into non-input memory")
+                continue
+            scan_reg(s[1], eid, depth + 1, delta=delta)
         else:
             add_event(eid, "unknown_operand", operand=s[1])
 
