@@ -623,6 +623,79 @@ def trace_read_request(parent, max_lookback=300):
               note="no read/pread call found within %d instructions back"
                    % max_lookback)
 
+def trace_operand(parent, parsed, depth):
+    if parsed[0] == "imm":
+        add_event(parent, "constant", value=hex(parsed[1] & MASK))
+    elif parsed[0] == "mem":
+        scan_mem(parsed[1], parsed[2] or 8, parent, depth)
+    elif parsed[0] == "reg":
+        if parsed[1] in ("rbp", "rsp", "rip"):
+            add_event(parent, "frame_register", reg=parsed[1])
+        else:
+            scan_reg(parsed[1], parent, depth)
+    else:
+        add_event(parent, "unknown_operand", operand=parsed[1])
+
+def trace_control(parent, depth, lookback=None, test_lookback=60):
+    """Slice the control dependency of a terminal write: find the nearest
+    executed conditional branch, record its outcome, then trace the operands
+    of the compare/test that guards it.  This is what links a constant error
+    code (e.g. TIFFReadDirEntryErrIo) back to the check that failed, and from
+    there to the input-derived values (sizes, offsets, tags)."""
+    if HALT["flag"] or over_deadline() or depth > MAX_DEPTH:
+        return
+    lookback = lookback or int(CFG.get("control_lookback", 400))
+    steps = 0
+    branch = None
+    while steps < lookback:
+        pc = cur_pc()
+        insn = disas(pc)
+        if insn is None:
+            break
+        mnem, ops = split_insn(insn["asm"])
+        if mnem in COND_JUMPS:
+            branch = (pc, insn)
+            break
+        if mnem.startswith("call") or mnem.startswith("ret"):
+            add_event(parent, "control_boundary", pc=hex(pc), insn=insn["asm"])
+            return
+        if _nav_reverse(1) == 0:
+            add_event(parent, "control_boundary", note="record start")
+            return
+        steps += 1
+    if branch is None:
+        add_event(parent, "no_control",
+                  note="no conditional branch within %d instructions" % lookback)
+        return
+    pc, insn = branch
+    fallthrough = pc + insn["length"]
+    ok = _nav_forward(1)
+    taken = bool(ok) and cur_pc() != fallthrough
+    _nav_reverse(1)
+    ev = add_event(parent, "control_branch", pc=hex(pc), insn=insn["asm"],
+                   taken=taken)
+    steps = 0
+    while steps < test_lookback:
+        pc2 = cur_pc()
+        insn2 = disas(pc2)
+        if insn2 is None:
+            break
+        mnem2, ops2 = split_insn(insn2["asm"])
+        if mnem2 in ("cmp", "test"):
+            add_event(ev, "control_test", pc=hex(pc2), insn=insn2["asm"])
+            nextp = pc2 + insn2["length"]
+            for o in ops2:
+                trace_operand(ev, parse_operand(o, nextp), depth + 1)
+            return
+        if mnem2 in COND_JUMPS or mnem2.startswith("call"):
+            add_event(ev, "control_test_boundary", pc=hex(pc2),
+                      insn=insn2["asm"])
+            return
+        if _nav_reverse(1) == 0:
+            break
+        steps += 1
+    add_event(ev, "control_test_unknown")
+
 # --------------------------------------------------------------------------- #
 # Writer analysis
 # --------------------------------------------------------------------------- #
@@ -682,6 +755,16 @@ def handle_write(slot, parent, depth, value_before=None, value_after=None,
         add_event(eid, "call_boundary", callee=target,
                   note="value produced by a function return; "
                        "follow_returns=%s" % CFG.get("follow_returns", True))
+        if CFG.get("trace_args", True) and depth < int(CFG.get("trace_args_depth", 3)):
+            for _r in ("rdi", "rsi", "rdx", "rcx", "r8", "r9"):
+                _v = reg_value(_r)
+                if _v is None:
+                    continue
+                if _v > (1 << 40) and not terminal_for_mem(_v, 1):
+                    continue  # address-like (tif/pointers/dest buffers)
+                if slot[0] == "reg" and slot[1] == _r:
+                    continue
+                scan_reg(_r, eid, depth + 1, label="arg@%x" % pc)
         follow = CFG.get("follow_returns", True)
         if target and any(k in target for k in ("read", "pread")):
             follow = False
@@ -731,6 +814,8 @@ def handle_write(slot, parent, depth, value_before=None, value_after=None,
     for s in srcs:
         if s[0] == "imm":
             add_event(eid, "constant", value=hex(s[1] & MASK))
+            if CFG.get("trace_control", True):
+                trace_control(eid, depth)
             if CFG.get("trace_read_request", False):
                 trace_read_request(eid)
         elif s[0] == "mem":
@@ -1023,6 +1108,12 @@ def main():
     ap.add_argument("--fork-ignore", type=int, default=None,
                     help="skip this many earlier hits of the fork breakpoint "
                     "(select a specific invocation; default: from diverge JSON)")
+    ap.add_argument("--no-control", dest="trace_control", action="store_false",
+                    default=True, help="do not slice the control dependency at "
+                    "constant terminals (default: on)")
+    ap.add_argument("--no-trace-args", dest="trace_args", action="store_false",
+                    default=True, help="do not trace call argument registers "
+                    "at call boundaries (default: on)")
     ap.add_argument("--trace-read-request", action="store_true",
                     help="at constant/error terminals, look back for the nearest "
                     "read/pread call and report its request arguments (heuristic)")
@@ -1101,6 +1192,9 @@ def main():
         "max_depth": args.max_depth,
         "follow_returns": not args.no_follow_returns,
         "trace_read_request": bool(args.trace_read_request),
+        "trace_control": bool(args.trace_control),
+        "trace_args": bool(args.trace_args),
+        "input_real": os.path.realpath(input_file),
         "fork_ignore": fork_ignore or 0,
     }
 
