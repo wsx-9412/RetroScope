@@ -654,6 +654,13 @@ except Exception as e:
     result["error"] = "execution failed before the fork: %s" % e
     save(); gdb.execute("quit"); sys.exit(0)
 
+if fork_bp.hit_count == 0:
+    result["status"] = "error"
+    result["error"] = ("did not reach the fork breakpoint (%s); the stop was "
+                       "at %s — likely a record-full limitation (see gdb log)"
+                       % (result["fork"]["spec"], func_name(cur_pc())))
+    save(); gdb.execute("quit"); sys.exit(0)
+
 anchor_pc[0] = cur_pc()
 result["fork"]["pc"] = hex(anchor_pc[0])
 save()
@@ -857,6 +864,9 @@ def main():
     except Exception:
         real_bin = binary
     env["ASAN_OPTIONS"] = "detect_leaks=0:abort_on_error=0"
+    # ld.so's lazy PLT resolver uses XSAVE instructions that record-full
+    # cannot replay; resolve everything before main instead.
+    env.setdefault("LD_BIND_NOW", "1")
     if args.avx_off:
         prev = env.get("GLIBC_TUNABLES", "")
         env["GLIBC_TUNABLES"] = ((prev + ":") if prev else "") + \
