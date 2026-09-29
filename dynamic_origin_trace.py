@@ -553,29 +553,56 @@ def _nav_forward(n):
     except Exception:
         return 0
 
+WRITE_MNEMONICS = frozenset([
+    "mov", "movzx", "movsx", "movsxd", "lea", "add", "sub", "and", "or",
+    "xor", "inc", "dec", "shl", "sal", "shr", "sar", "rol", "ror", "neg",
+    "not", "xchg", "cmpxchg", "imul", "mul", "div", "idiv", "adc", "sbb",
+    "movd", "movq", "movups", "movaps", "movdqu", "movdqa", "movss",
+    "vmovups", "vmovaps", "vmovdqu", "vmovdqa", "vmovss", "vmovsd",
+    "stosb", "stosw", "stosd", "stosq", "movsb", "movsw", "movsd", "movsq",
+    "bswap", "pmovmskb", "pinsrb", "pinsrw", "pinsrd", "pinsrq",
+    "pextrb", "pextrw", "pextrd", "pextrq", "punpcklbw", "punpcklwd",
+    "punpckldq", "punpcklqdq", "packuswb", "por", "pand", "pxor",
+    "psllw", "pslld", "psllq", "psrlw", "psrld", "psrlq",
+])
+
+def _mnem_writes_dest(mnem):
+    base = mnem.split()[0]
+    if base in ("cmp", "test", "push", "pop", "jmp", "nop", "prefetch",
+                "prefetchnta", "prefetcht0", "prefetcht1", "prefetcht2",
+                "bt", "bts", "btr", "btc", "ucomiss", "ucomisd", "comiss",
+                "comisd", "wrmsr", "rdmsr", "cpuid", "syscall", "sysenter",
+                "leave", "endbr64", "pause"):
+        return False
+    if base in WRITE_MNEMONICS:
+        return True
+    if base.startswith(("set", "cmov", "vmov", "psll", "psrl", "pack",
+                        "punpck", "pinsr", "pextr", "pand", "por", "pxor",
+                        "movs", "stos")):
+        return True
+    return False
+
 def _instr_writes_slot(asm, slot, next_pc):
     """Return True if the instruction writes the tracked slot (register or a
-    memory range overlapping the slot), including implicit writes (call ->
-    rax, rep movs -> [rdi])."""
+    memory range overlapping the slot).  Only instructions whose first operand
+    is a true destination count (cmp/test/call are reads/branches)."""
     mnem, ops = split_insn(asm)
     if not mnem:
         return False
-    if slot[0] == "reg":
-        if mnem in ("rep movsb", "rep movsw", "rep movsd", "rep movsq"):
-            return reg_family(slot[1]) in ("rsi", "rdi", "rcx")
-        if not ops:
-            return False
-        return _reg_write(parse_operand(ops[0], next_pc), slot[1])
-    # memory slot
-    if mnem.startswith("call"):
-        return False
-    if mnem in ("push", "pop"):
-        return False
     if mnem in ("rep movsb", "rep movsw", "rep movsd", "rep movsq"):
+        if slot[0] == "reg":
+            return reg_family(slot[1]) in ("rsi", "rdi", "rcx")
         rdi, rcx = reg_value("rdi"), reg_value("rcx")
         if rdi is None or rcx is None:
             return False
         return rdi < (slot[1] + slot[2]) and slot[1] < (rdi + rcx)
+    if not _mnem_writes_dest(mnem):
+        return False
+    if slot[0] == "reg":
+        if not ops:
+            return False
+        return _reg_write(parse_operand(ops[0], next_pc), slot[1])
+    # memory slot
     if not ops:
         return False
     dest = parse_operand(ops[0], next_pc)
