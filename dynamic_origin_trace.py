@@ -1251,6 +1251,60 @@ def extract_variables(div):
     return [t for t in toks if t not in black][:6]
 
 
+def sanitize_compile_cfg(cfg):
+    """Strip sanitizer/instrumentation flags so record-full can replay."""
+    import re
+    TOKENS = ("-fsanitize=address", "-fsanitize=undefined", "-fsanitize=leak",
+              "-fsanitize=thread", "-finstrument-functions",
+              "-fno-omit-frame-pointer")
+
+    def strip(t):
+        for tok in TOKENS:
+            t = t.replace(tok, " ")
+        return re.sub(r"\s+", " ", t).strip()
+
+    out = {}
+    for k, v in (cfg or {}).items():
+        if k == "pre_build":
+            out[k] = [strip(c) for c in (v or [])]
+        elif k == "compile_flags":
+            out[k] = {kk: strip(vv) for kk, vv in (v or {}).items()}
+        else:
+            out[k] = v
+    return out
+
+
+def build_trace_build(source_dir, config_mod):
+    """Build a -g -O0, no-ASan copy of source_dir for record-full replay.
+
+    Origin tracing does not need ASan, and the ASan runtime executes
+    instructions (e.g. rdtscp) that GDB's record-full cannot replay."""
+    import shutil
+    import tempfile as _tf
+    import run_fork_analysis as rfa
+
+    compile_cmds = getattr(config_mod, "COMPILE_COMMANDS", {})
+    exec_cfg = getattr(config_mod, "EXECUTION_CONFIG", {})
+    cfg = sanitize_compile_cfg(compile_cmds.get("target")
+                               or compile_cmds.get("reference") or {})
+    if not cfg:
+        print("[!] config has no COMPILE_COMMANDS for a trace build")
+        return None
+    work = Path(_tf.mkdtemp(prefix="dyn_trace_build_"))
+    src = work / "src"
+    print("[*] building a no-ASan trace build in %s ..." % src)
+    shutil.copytree(str(source_dir), str(src))
+    if not rfa.run_build(src, "trace", cfg):
+        print("[!] trace build failed")
+        return None
+    binp = rfa.find_binary(src, exec_cfg)
+    if binp is None:
+        print("[!] trace binary not found under %s" % src)
+        return None
+    print("[*] trace binary: %s" % binp)
+    return str(binp)
+
+
 def build_args(template, input_file):
     if isinstance(template, (list, tuple)):
         args = [str(a) for a in template]
@@ -1265,6 +1319,12 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--diverge-json", help="divergence result JSON "
                     "(binary/args/fork/variables auto-filled)")
+    ap.add_argument("--config", help="project config (for a no-ASan trace "
+                    "build when the pipeline binary is ASan-instrumented)")
+    ap.add_argument("--source-dir", help="target version source tree "
+                    "(for the trace build)")
+    ap.add_argument("--no-trace-build", action="store_true",
+                    help="never build a no-ASan trace build")
     ap.add_argument("--binary", help="target binary")
     ap.add_argument("--input", help="input file (PoC)")
     ap.add_argument("--args", default="", help="program args template, "
@@ -1309,6 +1369,21 @@ def main():
     div = {}
     if args.diverge_json:
         div = load_diverge_json(args.diverge_json)
+
+    config_mod = None
+    if args.config:
+        import importlib.util as _ilu
+        _spec = _ilu.spec_from_file_location("dyn_config", args.config)
+        config_mod = _ilu.module_from_spec(_spec)
+        try:
+            _spec.loader.exec_module(config_mod)
+        except Exception as e:
+            print("[!] cannot load config %s: %s" % (args.config, e))
+            config_mod = None
+    source_dir = args.source_dir
+    if source_dir and not os.path.isdir(source_dir):
+        print("[!] --source-dir not found: %s" % source_dir)
+        source_dir = None
 
     binary = args.binary or div.get("binary_b") or div.get("binary_a")
     input_file = args.input or div.get("input_file")
@@ -1379,18 +1454,41 @@ def main():
         "fork_ignore": fork_ignore or 0,
     }
 
-    tmpdir = tempfile.mkdtemp(prefix="dyn_origin_")
-    cfg_path = os.path.join(tmpdir, "cfg.json")
-    with open(cfg_path, "w") as f:
-        json.dump(cfg, f, indent=1)
-
-    script_path = os.path.join(tmpdir, "trace.py")
-    with open(script_path, "w") as f:
-        f.write(GDB_SCRIPT)
-
-    gdb_out = os.path.join(tmpdir, "gdb.log")
-    env["DYNT_CFG"] = cfg_path
-    env["DYNT_OUT"] = output
+    def run_gdb(binary_path):
+        tmpdir = tempfile.mkdtemp(prefix="dyn_origin_")
+        cfg_path = os.path.join(tmpdir, "cfg.json")
+        run_cfg = dict(cfg)
+        run_cfg["binary"] = str(binary_path)
+        with open(cfg_path, "w") as f:
+            json.dump(run_cfg, f, indent=1)
+        script_path = os.path.join(tmpdir, "trace.py")
+        with open(script_path, "w") as f:
+            f.write(GDB_SCRIPT)
+        gdb_log = os.path.join(tmpdir, "gdb.log")
+        run_env = dict(env)
+        run_env["DYNT_CFG"] = cfg_path
+        run_env["DYNT_OUT"] = output
+        t0 = time.time()
+        try:
+            with open(gdb_log, "w") as logf:
+                subprocess.run(
+                    ["gdb", "-batch", "-nx", "-q", "-x", script_path,
+                     str(binary_path)],
+                    env=run_env, stdout=logf, stderr=subprocess.STDOUT,
+                    timeout=args.timeout + 120)
+        except subprocess.TimeoutExpired:
+            print("[!] gdb timed out")
+        elapsed = time.time() - t0
+        if not os.path.isfile(output):
+            return None, gdb_log, elapsed
+        with open(output) as f:
+            res = json.load(f)
+        res["wall_seconds"] = round(elapsed, 2)
+        res["_output"] = output
+        res["binary"] = str(binary_path)
+        with open(output, "w") as f:
+            json.dump(res, f, indent=1, default=str)
+        return res, gdb_log, elapsed
 
     if not args.quiet:
         print("[*] binary    : %s" % real_bin)
@@ -1401,23 +1499,22 @@ def main():
         print("[*] recording : gdb record full (rr unavailable: %s)" %
               ("perf_event_paranoid=%s" % read_paranoid()))
 
-    t0 = time.time()
-    try:
-        with open(gdb_out, "w") as logf:
-            subprocess.run(
-                ["gdb", "-batch", "-nx", "-q", "-x", script_path, real_bin],
-                env=env, stdout=logf, stderr=subprocess.STDOUT,
-                timeout=args.timeout + 120)
-    except subprocess.TimeoutExpired:
-        print("[!] gdb timed out")
-    elapsed = time.time() - t0
-
-    if not os.path.isfile(output):
+    res, gdb_out, elapsed = run_gdb(real_bin)
+    if res is None:
         print("[!] no result written; see %s" % gdb_out)
         return 2
 
-    with open(output) as f:
-        res = json.load(f)
+    # If record-full failed (e.g. ASan runtime instructions), build a no-ASan
+    # trace build and retry once.
+    if res.get("status") != "ok" and source_dir and config_mod and \
+            not args.no_trace_build:
+        print("[*] record-full failed on the pipeline binary; trying a "
+              "no-ASan trace build (origin tracing does not need ASan)")
+        trace_bin = build_trace_build(source_dir, config_mod)
+        if trace_bin:
+            res2, gdb_out2, elapsed2 = run_gdb(trace_bin)
+            if res2 is not None:
+                res, gdb_out, elapsed = res2, gdb_out2, elapsed2
 
     res["wall_seconds"] = round(elapsed, 2)
     res["_output"] = output
