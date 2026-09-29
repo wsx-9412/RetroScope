@@ -474,13 +474,21 @@ def handle_write(slot, parent, depth, value_before=None, value_after=None,
     insn = disas(pc)
     asm = insn["asm"].strip() if insn else "?"
     length = insn["length"] if insn else 1
+    def _fmt(v):
+        if v is None:
+            return None
+        if isinstance(v, (bytes, bytearray)):
+            return v.hex()
+        if isinstance(v, int):
+            return hex(v & MASK)
+        return str(v)[:64]
     stats["writes"] += 1
     eid = add_event(parent, "write", pc=hex(pc), insn=asm,
                     func=func_name(pc), slot=("mem@%x+%d" % (slot[1], slot[2])
                                               if slot[0] == "mem" else slot[1]),
                     changed=changed,
-                    value_before=(value_before or b"").hex(),
-                    value_after=(value_after or b"").hex())
+                    value_before=_fmt(value_before),
+                    value_after=_fmt(value_after))
     mnem, ops = split_insn(asm)
 
     if mnem.startswith("call"):
