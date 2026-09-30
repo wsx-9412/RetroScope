@@ -913,6 +913,11 @@ def scan_slot(slot, parent, depth, bound_pc=None, stop_pcs=None, delta=0,
         add_event(parent, "scan_limit", slot=_slot_label(slot), steps=total)
         return
 
+    # memory: under rr prefer the native watchpoint + reverse-continue path
+    if ENGINE == "rr" and CFG.get("rr_watch", True):
+        if try_watch_scan(slot, parent, depth, delta):
+            return
+
     # memory: batched approach scan, then exact window inspection
     batch = BATCH
     total = 0
@@ -951,6 +956,70 @@ def scan_slot(slot, parent, depth, bound_pc=None, stop_pcs=None, delta=0,
                          value_after=after, changed=changed, delta=delta)
             return
     add_event(parent, "scan_limit", slot=_slot_label(slot), steps=total)
+
+def _watch_spec(addr, size):
+    n = min(max(int(size), 1), 8)
+    typ = {1: "unsigned char", 2: "unsigned short",
+           4: "unsigned int", 8: "unsigned long"}[n]
+    return "*(%s*)0x%x" % (typ, addr)
+
+def try_watch_scan(slot, parent, depth, delta):
+    """rr native path: hardware watchpoint + reverse-continue.
+
+    rr replays between internal checkpoints, so one reverse-continue finds the
+    last write to the slot regardless of distance (vs one gdb round trip per
+    batch for counted reverse-stepi).  Returns True when the slot was handled
+    (writer found or recording start reached), False to fall back to stepping.
+    """
+    addr, size = slot[1], slot[2]
+    wp = None
+    try:
+        try:
+            wp = gdb.Breakpoint(_watch_spec(addr, size),
+                                type=gdb.BP_WATCHPOINT,
+                                wp_class=gdb.WP_WRITE, internal=True)
+        except Exception as e:
+            add_event(parent, "rr_watch_create_failed",
+                      slot=_slot_label(slot), error=str(e)[:120])
+            return False
+        try:
+            gdb.execute("reverse-continue", to_string=True)
+        except Exception as e:
+            add_event(parent, "rr_watch_reverse_failed",
+                      slot=_slot_label(slot), error=str(e)[:120])
+            return False
+        if getattr(wp, "hit_count", 0) <= 0:
+            add_event(parent, "record_start", slot=_slot_label(slot), steps=0,
+                      note="reached the start of the recording; the watchpoint "
+                           "was never hit")
+            return True
+        stats["rr_watch_hits"] = stats.get("rr_watch_hits", 0) + 1
+        before = _slot_value(slot)
+        _nav_forward(1)
+        after = _slot_value(slot)
+        _nav_reverse(1)
+        if size > 8:
+            add_event(parent, "rr_watch_partial", slot=_slot_label(slot),
+                      note="watched the first 8 of %d bytes" % size)
+        try:
+            wp.delete()
+        except Exception:
+            pass
+        wp = None
+        if isinstance(before, (bytes, bytearray)) and \
+                isinstance(after, (bytes, bytearray)):
+            changed = [i for i in range(len(before)) if before[i] != after[i]]
+        else:
+            changed = "all"
+        handle_write(slot, parent, depth, value_before=before,
+                     value_after=after, changed=changed, delta=delta)
+        return True
+    finally:
+        if wp is not None:
+            try:
+                wp.delete()
+            except Exception:
+                pass
 
 def scan_mem(addr, size, parent, depth, delta=0):
     scan_slot(("mem", addr, size), parent, depth, delta=delta)
@@ -1821,6 +1890,10 @@ def main():
                     "perf_event_paranoid<=1); 'auto' prefers rr when available")
     ap.add_argument("--rr-bin", default=None,
                     help="path to the rr (or rr.soft) executable")
+    ap.add_argument("--no-rr-watch", dest="rr_watch", action="store_false",
+                    default=True, help="under rr, do not use "
+                    "watch+reverse-continue for memory slots (use counted "
+                    "reverse stepping instead; for benchmarking)")
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args()
 
@@ -1941,6 +2014,7 @@ def main():
         "debug_changes": bool(args.debug_changes),
         "fork_ignore": fork_ignore or 0,
         "engine": engine,
+        "rr_watch": bool(args.rr_watch),
     }
 
     def _env_for(binary_path):
