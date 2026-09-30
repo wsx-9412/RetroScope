@@ -1770,19 +1770,7 @@ def main():
         "engine": engine,
     }
 
-    def run_gdb(binary_path):
-        tmpdir = tempfile.mkdtemp(prefix="dyn_origin_")
-        cfg_path = os.path.join(tmpdir, "cfg.json")
-        run_cfg = dict(cfg)
-        run_cfg["binary"] = str(binary_path)
-        with open(cfg_path, "w") as f:
-            json.dump(run_cfg, f, indent=1)
-        script_path = os.path.join(tmpdir, "trace.py")
-        with open(script_path, "w") as f:
-            f.write(GDB_SCRIPT)
-        gdb_log = os.path.join(tmpdir, "gdb.log")
-        # fresh environment for THIS binary: the trace build must load its own
-        # libs, not the pipeline build's (ASan) libraries
+    def _env_for(binary_path):
         run_env = dict(env)
         try:
             import trace_fork_offsets as _tfo
@@ -1794,6 +1782,38 @@ def main():
             run_env.setdefault("LD_BIND_NOW", "1")
         except Exception:
             pass
+        return run_env
+
+    def _write_run_files(tmpdir, binary_path, engine_name):
+        cfg_path = os.path.join(tmpdir, "cfg.json")
+        run_cfg = dict(cfg)
+        run_cfg["binary"] = str(binary_path)
+        run_cfg["engine"] = engine_name
+        with open(cfg_path, "w") as f:
+            json.dump(run_cfg, f, indent=1)
+        script_path = os.path.join(tmpdir, "trace.py")
+        with open(script_path, "w") as f:
+            f.write(GDB_SCRIPT)
+        return cfg_path, script_path
+
+    def _parse_result(binary_path, elapsed):
+        if not os.path.isfile(output):
+            return None
+        with open(output) as f:
+            res = json.load(f)
+        res["wall_seconds"] = round(elapsed, 2)
+        res["_output"] = output
+        res["binary"] = str(binary_path)
+        with open(output, "w") as f:
+            json.dump(res, f, indent=1, default=str)
+        return res
+
+    def run_gdb(binary_path):
+        """gdb record-full engine."""
+        tmpdir = tempfile.mkdtemp(prefix="dyn_origin_")
+        cfg_path, script_path = _write_run_files(tmpdir, binary_path, "record")
+        gdb_log = os.path.join(tmpdir, "gdb.log")
+        run_env = _env_for(binary_path)
         run_env["DYNT_CFG"] = cfg_path
         run_env["DYNT_OUT"] = output
         t0 = time.time()
@@ -1807,16 +1827,54 @@ def main():
         except subprocess.TimeoutExpired:
             print("[!] gdb timed out")
         elapsed = time.time() - t0
-        if not os.path.isfile(output):
-            return None, gdb_log, elapsed
-        with open(output) as f:
-            res = json.load(f)
-        res["wall_seconds"] = round(elapsed, 2)
-        res["_output"] = output
-        res["binary"] = str(binary_path)
-        with open(output, "w") as f:
-            json.dump(res, f, indent=1, default=str)
-        return res, gdb_log, elapsed
+        return _parse_result(binary_path, elapsed), gdb_log, elapsed
+
+    def run_rr(binary_path):
+        """rr / rr.soft engine: record once, replay under gdb.
+
+        rr launches the debugger itself (with the correct copied binary and
+        sysroot); a tiny wrapper appends our gdb script so it runs after the
+        remote connection is established."""
+        tmpdir = tempfile.mkdtemp(prefix="dyn_rr_")
+        trace_dir = os.path.join(tmpdir, "trace")
+        os.makedirs(trace_dir, exist_ok=True)
+        cfg_path, script_path = _write_run_files(tmpdir, binary_path, "rr")
+        gdb_log = os.path.join(tmpdir, "gdb.log")
+        rec_log = os.path.join(tmpdir, "rr_record.log")
+        wrapper = os.path.join(tmpdir, "gdbwrap.sh")
+        with open(wrapper, "w") as f:
+            f.write("#!/bin/sh\nexec gdb -batch -nx -q \"$@\" -x %s\n"
+                    % script_path)
+        os.chmod(wrapper, 0o755)
+
+        run_env = _env_for(binary_path)
+        t0 = time.time()
+        try:
+            with open(rec_log, "w") as logf:
+                subprocess.run(
+                    [rr_bin, "record", "-W", "-o", trace_dir,
+                     str(binary_path)] + [str(a) for a in prog_args],
+                    env=run_env, stdout=logf, stderr=subprocess.STDOUT,
+                    timeout=args.timeout + 120)
+        except subprocess.TimeoutExpired:
+            print("[!] rr record timed out")
+        run_env["DYNT_CFG"] = cfg_path
+        run_env["DYNT_OUT"] = output
+        try:
+            with open(gdb_log, "w") as logf:
+                subprocess.run(
+                    [rr_bin, "replay", "-W", "-d", wrapper, trace_dir],
+                    env=run_env, stdout=logf, stderr=subprocess.STDOUT,
+                    timeout=args.timeout + 120)
+        except subprocess.TimeoutExpired:
+            print("[!] rr replay timed out")
+        elapsed = time.time() - t0
+        return _parse_result(binary_path, elapsed), gdb_log, elapsed
+
+    def run_engine(binary_path):
+        if engine == "rr":
+            return run_rr(binary_path)
+        return run_gdb(binary_path)
 
     if not args.quiet:
         print("[*] binary    : %s" % real_bin)
@@ -1824,20 +1882,27 @@ def main():
         print("[*] args      : %s" % " ".join(prog_args))
         print("[*] fork specs: %s" % ", ".join(fork_specs[:4]))
         print("[*] variables : %s" % ", ".join(variables))
-        print("[*] recording : gdb record full (rr unavailable: %s)" %
-              ("perf_event_paranoid=%s" % read_paranoid()))
+        if engine == "rr":
+            print("[*] engine    : rr (rr.soft -W software counters) "
+                  "[%s, perf_event_paranoid=%s]" % (rr_bin, read_paranoid()))
+        else:
+            print("[*] engine    : gdb record full [perf_event_paranoid=%s]"
+                  % read_paranoid())
 
-    res, gdb_out, elapsed = run_gdb(real_bin)
+    res, gdb_out, elapsed = run_engine(real_bin)
+    if engine == "rr" and (res is None or res.get("status") != "ok"):
+        print("[*] rr engine failed; falling back to gdb record full")
+        res, gdb_out, elapsed = run_gdb(real_bin)
     if res is None:
         print("[!] no result written; see %s" % gdb_out)
         return 2
 
-    # If record-full failed (e.g. ASan runtime instructions), build a no-ASan
-    # trace build and retry once.
+    # If the engine failed on the pipeline binary (e.g. ASan runtime
+    # instructions for record full), build a no-ASan trace build and retry.
     if res.get("status") != "ok" and source_dir and config_mod and \
             not args.no_trace_build:
-        print("[*] record-full failed on the pipeline binary; trying a "
-              "no-ASan trace build (origin tracing does not need ASan)")
+        print("[*] engine failed on the pipeline binary; trying a no-ASan "
+              "trace build (origin tracing does not need ASan)")
         cache_root = None
         if not args.no_trace_build_cache:
             cache_root = args.trace_build_cache or str(
@@ -1846,7 +1911,7 @@ def main():
             source_dir, config_mod, config_path=args.config,
             cache_root=cache_root, refresh=args.refresh_trace_build)
         if trace_bin:
-            res2, gdb_out2, elapsed2 = run_gdb(trace_bin)
+            res2, gdb_out2, elapsed2 = run_engine(trace_bin)
             if res2 is not None:
                 res, gdb_out, elapsed = res2, gdb_out2, elapsed2
 
