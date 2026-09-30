@@ -1520,7 +1520,10 @@ for _mm in ("mmap", "mmap64"):
         LOGGERS.append(MmapLogger(_mm))
     except Exception:
         pass
-if CFG.get("skip_getrandom", True):
+if CFG.get("skip_getrandom", True) and ENGINE != "rr":
+    # record-full cannot log syscall 318 and needs the forced early return;
+    # under rr the syscall replays fine and forcing a return would desync the
+    # replay, so the skipper is record-engine only.
     try:
         LOGGERS.append(GetrandomSkipper())
     except Exception:
