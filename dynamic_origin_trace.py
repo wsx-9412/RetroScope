@@ -2078,7 +2078,17 @@ def main():
                 except Exception:
                     pass
         elapsed = time.time() - t0
-        return _parse_result(binary_path, elapsed), gdb_log, elapsed
+        res = _parse_result(binary_path, elapsed)
+        if res is None or res.get("status") != "ok":
+            print("[!] rr engine failed (logs in %s)" % tmpdir)
+            for _f in (rec_log, gdb_log):
+                try:
+                    _tail = open(_f).read().splitlines()[-10:]
+                    print("--- %s ---" % _f)
+                    print("\n".join(_tail))
+                except Exception:
+                    pass
+        return res, gdb_log, elapsed
 
     def run_engine(binary_path):
         if engine == "rr":
