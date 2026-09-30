@@ -1327,7 +1327,7 @@ def handle_write(slot, parent, depth, value_before=None, value_after=None,
     for _si, s in enumerate(srcs):
         if _si > 0 and _cp is not None:
             goto_insn(_cp[0])
-            if cur_pc() != _cp[1] and not _is_rr_stub(cur_pc()):
+            if cur_pc() != _cp[1]:
                 goto_pc_exact(_cp[1])
         if s[0] == "imm":
             add_event(eid, "constant", value=hex(s[1] & MASK))
