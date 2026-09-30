@@ -1242,25 +1242,28 @@ try:
 except Exception:
     pass
 
-try:
-    gdb.execute("set args %s" % " ".join(
-        '"%s"' % a.replace('"', '\\"') for a in CFG.get("args", [])))
-except Exception:
-    pass
-
-try:
-    gdb.execute("start")
-except Exception as e:
-    result["status"] = "error"
-    result["error"] = "cannot start inferior: %s" % e
-    save(); gdb.execute("quit"); sys.exit(0)
-
 if ENGINE == "rr":
+    # Under rr replay the inferior is already at the recording start and the
+    # program arguments come from the recording.  Do NOT use start/run: it
+    # restarts the replay and desynchronizes rr.soft's software-counter
+    # instrumentation (verified: without start the fork breakpoint hits
+    # normally, with start the replay runs off the rails).
     try:
         gdb.execute("set sysroot /")
     except Exception:
         pass
 else:
+    try:
+        gdb.execute("set args %s" % " ".join(
+            '"%s"' % a.replace('"', '\\"') for a in CFG.get("args", [])))
+    except Exception:
+        pass
+    try:
+        gdb.execute("start")
+    except Exception as e:
+        result["status"] = "error"
+        result["error"] = "cannot start inferior: %s" % e
+        save(); gdb.execute("quit"); sys.exit(0)
     try:
         gdb.execute("record full")
     except Exception as e:
@@ -1830,25 +1833,19 @@ def main():
         return _parse_result(binary_path, elapsed), gdb_log, elapsed
 
     def run_rr(binary_path):
-        """rr / rr.soft engine: record once, replay under gdb.
-
-        rr launches the debugger itself (with the correct copied binary and
-        sysroot); a tiny wrapper appends our gdb script so it runs after the
+        """rr / rr.soft engine: record once, then replay under gdb via the
+        remote debug server.  The debugger command line is built explicitly
+        (sysroot + copied binary) because our gdb script must run *after* the
         remote connection is established."""
+        import glob as _glob
+        import socket as _socket
         tmpdir = tempfile.mkdtemp(prefix="dyn_rr_")
-        # rr creates the trace directory itself and refuses to use one that
-        # already exists
         trace_dir = os.path.join(tmpdir, "trace")
         cfg_path, script_path = _write_run_files(tmpdir, binary_path, "rr")
         gdb_log = os.path.join(tmpdir, "gdb.log")
         rec_log = os.path.join(tmpdir, "rr_record.log")
-        wrapper = os.path.join(tmpdir, "gdbwrap.sh")
-        with open(wrapper, "w") as f:
-            f.write("#!/bin/sh\nexec gdb -batch -nx -q \"$@\" -x %s\n"
-                    % script_path)
-        os.chmod(wrapper, 0o755)
-
         run_env = _env_for(binary_path)
+
         t0 = time.time()
         try:
             with open(rec_log, "w") as logf:
@@ -1860,16 +1857,56 @@ def main():
                     timeout=args.timeout + 120)
         except subprocess.TimeoutExpired:
             print("[!] rr record timed out")
+
+        copied = _glob.glob(os.path.join(
+            trace_dir, "mmap_copy_*_" + os.path.basename(str(binary_path))))
+        if not copied:
+            with open(gdb_log, "w") as logf:
+                logf.write("no copied binary in %s (rr record failed?)\n"
+                           % trace_dir)
+            return _parse_result(binary_path, time.time() - t0), gdb_log, \
+                time.time() - t0
+
+        # pick a free port
+        srv = _socket.socket()
+        srv.bind(("127.0.0.1", 0))
+        port = srv.getsockname()[1]
+        srv.close()
+
         run_env["DYNT_CFG"] = cfg_path
         run_env["DYNT_OUT"] = output
+        rr_proc = subprocess.Popen(
+            [rr_bin, "replay", "-W", "-s", str(port), "-k", trace_dir],
+            env=run_env, stdout=open(rec_log, "a"),
+            stderr=subprocess.STDOUT)
         try:
-            with open(gdb_log, "w") as logf:
-                subprocess.run(
-                    [rr_bin, "replay", "-W", "-d", wrapper, trace_dir],
-                    env=run_env, stdout=logf, stderr=subprocess.STDOUT,
-                    timeout=args.timeout + 120)
-        except subprocess.TimeoutExpired:
-            print("[!] rr replay timed out")
+            for _ in range(120):
+                try:
+                    c = _socket.create_connection(("127.0.0.1", port), 0.2)
+                    c.close()
+                    break
+                except OSError:
+                    time.sleep(0.25)
+            try:
+                with open(gdb_log, "w") as logf:
+                    subprocess.run(
+                        ["gdb", "-batch", "-nx", "-q", copied[0],
+                         "-ex", "set sysroot /",
+                         "-ex", "target extended-remote 127.0.0.1:%d" % port,
+                         "-x", script_path],
+                        env=run_env, stdout=logf, stderr=subprocess.STDOUT,
+                        timeout=args.timeout + 120)
+            except subprocess.TimeoutExpired:
+                print("[!] gdb (rr replay) timed out")
+        finally:
+            try:
+                rr_proc.terminate()
+                rr_proc.wait(timeout=10)
+            except Exception:
+                try:
+                    rr_proc.kill()
+                except Exception:
+                    pass
         elapsed = time.time() - t0
         return _parse_result(binary_path, elapsed), gdb_log, elapsed
 
