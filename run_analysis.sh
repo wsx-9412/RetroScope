@@ -192,7 +192,52 @@ if [ "$POLYTRACKER_MODE" = false ]; then
     DYN_OFFSETS=$(python3 -c "import json;d=json.load(open('$ORIGIN_JSON'));print(len(d.get('offsets') or []))" 2>/dev/null || echo 0)
     echo "Dynamic origin trace input offsets: ${DYN_OFFSETS}"
 
-    if [ "${DYN_OFFSETS:-0}" = "0" ]; then
+    SKIP_LEGACY=0
+    if [ "${DYN_OFFSETS:-0}" != "0" ]; then
+        # Validate the dynamically derived offsets by mutating them and
+        # checking whether the target reproduces the reference crash.  If it
+        # does, the legacy offset+search stage is not needed.
+        echo ""
+        echo "=== mutation testing on dynamic origin-trace offsets ==="
+        python3 -u - "$DIVERGE_JSON" "$ORIGIN_JSON" "results/${CVE_ID}_origin_mutation.json" <<'DYN_MUT_PY'
+import json, sys
+sys.path.insert(0, '.')
+from trace_fork_offsets import test_byte_mutations_compare
+
+diverge_json, origin_json, out_json = sys.argv[1], sys.argv[2], sys.argv[3]
+div = json.load(open(diverge_json))
+org = json.load(open(origin_json))
+offs = set()
+for o in (org.get('offsets') or []):
+    off, ln = o.get('offset'), o.get('length') or 1
+    if off is None:
+        continue
+    for k in range(off, off + ln):
+        offs.add(k)
+offs = sorted(offs)[:64]
+print('dynamic offsets under test: %s' % ' '.join('0x%x' % o for o in offs),
+      flush=True)
+if not offs:
+    sys.exit(3)
+res = test_byte_mutations_compare(
+    div.get('binary_b'), div.get('binary_a'), div.get('input_file'),
+    div.get('args_b') or [], offs, timeout=60, version=div.get('version_b'))
+n = sum(len(i.get('matches') or {})
+        for i in res.values() if isinstance(i, dict))
+json.dump(res, open(out_json, 'w'), indent=1, default=str)
+print('dynamic-offset mutation matches: %d (details: %s)' % (n, out_json),
+      flush=True)
+sys.exit(0 if n else 3)
+DYN_MUT_PY
+        if [ $? -eq 0 ]; then
+            echo "[*] dynamic origin trace + mutation reproduced the reference crash; legacy stage skipped."
+            SKIP_LEGACY=1
+        else
+            echo "[*] dynamic offsets did not reproduce the crash; falling back to legacy."
+        fi
+    fi
+
+    if [ "${SKIP_LEGACY:-0}" != "1" ]; then
         echo ""
         echo "=== Legacy GDB offset trace (fallback) ==="
         python3 -u trace_fork_offsets.py \
@@ -204,8 +249,6 @@ if [ "$POLYTRACKER_MODE" = false ]; then
             echo "GDB trace failed!"
             exit 1
         fi
-    else
-        echo "[*] dynamic origin trace produced input offsets; legacy offset trace skipped."
     fi
 fi
 
