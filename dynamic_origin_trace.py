@@ -2037,8 +2037,10 @@ def main():
         except subprocess.TimeoutExpired:
             print("[!] rr record timed out")
 
+        # rr names the private copy of the executable mmap_copy_* or
+        # mmap_hardlink_* depending on whether a hardlink was possible
         copied = _glob.glob(os.path.join(
-            trace_dir, "mmap_copy_*_" + os.path.basename(str(binary_path))))
+            trace_dir, "mmap_*_" + os.path.basename(str(binary_path))))
         if not copied:
             with open(gdb_log, "w") as logf:
                 logf.write("no copied binary in %s (rr record failed?)\n"
