@@ -291,16 +291,53 @@ for _fam in (("rax", "eax", "ax", "al", "ah"),
 def reg_family(name):
     return REG_FAMILY.get(name.lower(), name.lower())
 
+def is_simd_reg(name):
+    n = name.lower()
+    return n.startswith(("xmm", "ymm", "zmm"))
+
+def simd_bytes(name):
+    """Read a vector register as raw bytes (for value-change detection)."""
+    try:
+        v = gdb.newest_frame().read_register(name)
+    except Exception:
+        return None
+    for accessor in ("tobytes",):
+        try:
+            return bytes(getattr(v, accessor)())
+        except Exception:
+            pass
+    try:
+        parts = []
+        for sub in ("v2_int64", "v2_double"):
+            try:
+                val = v[sub]
+                for i in range(2):
+                    parts.append(int(val[i]) & MASK)
+                break
+            except Exception:
+                continue
+        if parts:
+            return b"".join(x.to_bytes(8, "little") for x in parts)
+    except Exception:
+        pass
+    try:
+        return bytes(int(v) & 0xFF for _ in range(0))
+    except Exception:
+        return None
+
 def _reg_write(dest, slot_reg):
-    return (dest[0] == "reg"
-            and reg_family(dest[1]) == reg_family(slot_reg))
+    if dest[0] != "reg":
+        return False
+    if is_simd_reg(slot_reg) or is_simd_reg(dest[1]):
+        return dest[1].lower() == slot_reg.lower()
+    return reg_family(dest[1]) == reg_family(slot_reg)
 
 def _mem_overlaps(dest, addr, size):
     if dest[0] != "mem":
         return False
     d, ds = dest[1], (dest[2] or 8)
     return d < (addr + size) and addr < (d + ds)
-REG_RE = re.compile(r"^(?:r[a-z0-9]+|e[a-z0-9]+|[abcd][lhx]|r[0-9]+d?|[sd]il?|[sb]pl?)$")
+REG_RE = re.compile(r"^(?:r[a-z0-9]+|e[a-z0-9]+|[abcd][lhx]|r[0-9]+d?|[sd]il?|[sb]pl?|[xyz]mm[0-9]+)$")
 SIZE_PREFIX = {
     "byte": 1, "word": 2, "dword": 4, "qword": 8,
     "xmmword": 16, "ymmword": 32, "zmmword": 64,
@@ -337,10 +374,17 @@ def split_insn(asm):
     return mnem.lower(), ops
 
 def mem_size(op):
+    m = re.match(r"\s*(byte|word|dword|qword|xmmword|ymmword|zmmword)\s+ptr",
+                 op.lower())
+    if m:
+        return SIZE_PREFIX[m.group(1)]
     low = op.lower()
-    for k, v in SIZE_PREFIX.items():
+    for k in ("xmmword", "ymmword", "zmmword"):
         if k in low:
-            return v
+            return SIZE_PREFIX[k]
+    for k in ("dword", "qword", "word", "byte"):
+        if re.search(r"\b%s\b" % k, low):
+            return SIZE_PREFIX[k]
     return None
 
 def eff_addr(expr, next_pc):
@@ -513,6 +557,9 @@ BATCH = int(CFG.get("batch_steps", 64))
 def _slot_value(slot):
     if slot[0] == "mem":
         return safe_read(slot[1], slot[2])
+    if is_simd_reg(slot[1]):
+        b = simd_bytes(slot[1])
+        return b[:slot[2]] if (b is not None and slot[2]) else b
     return reg_value(slot[1])
 
 def _slot_label(slot):
