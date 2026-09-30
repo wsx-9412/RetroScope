@@ -95,11 +95,13 @@ import time
 
 CFG = json.load(open(os.environ["DYNT_CFG"]))
 OUT = os.environ["DYNT_OUT"]
+ENGINE = CFG.get("engine", "record")
 DEADLINE = time.time() + float(CFG.get("timeout", 900))
 
 result = {
     "status": "running",
     "error": None,
+    "engine": ENGINE,
     "fork": {"spec": None, "pc": None},
     "variables": [],
     "reads": [],
@@ -534,6 +536,15 @@ def enter_replay():
         pass
 
 def cur_insn():
+    if ENGINE == "rr":
+        # rr's gdb extension: "when" prints the last completely replayed
+        # event number; that is our time checkpoint
+        try:
+            out = gdb.execute("when", to_string=True)
+            m = re.search(r"(\d+)", out)
+            return int(m.group(1)) if m else None
+        except Exception:
+            return None
     try:
         out = gdb.execute("info record", to_string=True)
         m = re.search(r"Current instruction number is (\d+)", out)
@@ -546,6 +557,12 @@ def goto_insn(n):
         return False
     if cur_insn() == n:
         return True
+    if ENGINE == "rr":
+        try:
+            gdb.execute("seek %d" % n, to_string=True)
+            return True
+        except Exception:
+            return False
     try:
         gdb.execute("record goto %d" % n, to_string=True)
         return True
@@ -1238,14 +1255,20 @@ except Exception as e:
     result["error"] = "cannot start inferior: %s" % e
     save(); gdb.execute("quit"); sys.exit(0)
 
-try:
-    gdb.execute("record full")
-except Exception as e:
-    result["status"] = "error"
-    result["error"] = ("record full unsupported: %s "
-                       "(try --glibc-avx-off; rr needs perf_event_paranoid<=1)"
-                       % e)
-    save(); gdb.execute("quit"); sys.exit(0)
+if ENGINE == "rr":
+    try:
+        gdb.execute("set sysroot /")
+    except Exception:
+        pass
+else:
+    try:
+        gdb.execute("record full")
+    except Exception as e:
+        result["status"] = "error"
+        result["error"] = ("record full unsupported: %s "
+                           "(try --glibc-avx-off; rr needs "
+                           "perf_event_paranoid<=1)" % e)
+        save(); gdb.execute("quit"); sys.exit(0)
 
 LOGGERS = []
 LOGGERS.append(ReadLogger("read", "read"))
