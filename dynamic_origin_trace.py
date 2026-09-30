@@ -630,17 +630,26 @@ def _locate_last_change(slot, base_value, window):
     inferior at that instruction's pre-state and returns (before, after)."""
     stats["reverse_steps"] += window
     ladder = []
+    seen = []
     for i in range(window):
         pc = cur_pc()
         insn = disas(pc)
         if insn is None:
             break
         asm = insn["asm"]
+        if CFG.get("debug_changes"):
+            mnem, ops = split_insn(asm)
+            dest = parse_operand(ops[0], pc + insn["length"]) if ops else None
+            seen.append((i, hex(pc), asm, str(dest)[:40],
+                         _mnem_writes_dest(mnem)))
         if _instr_writes_slot(asm, slot, pc + insn["length"]):
             ladder.append((i, pc, asm))
         if _nav_forward(1) == 0:
             break
     if not ladder:
+        if CFG.get("debug_changes"):
+            add_event(None, "dbg_window", slot=_slot_label(slot),
+                      window=window, walked=len(seen), insns=seen)
         return None
     last_idx, writer_pc, writer_asm = ladder[-1]
     back = window - last_idx
