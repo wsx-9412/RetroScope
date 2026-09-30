@@ -521,46 +521,42 @@ def _slot_label(slot):
     return slot[1]
 
 def _nav_reverse(n):
-    """Move back exactly n instructions, or return 0.  GDB's counted
-    reverse-stepi can stop early (recording start / unsupported step), in which
-    case the count cannot be trusted: retrace forward to the original PC and
-    report failure so the caller can fall back to per-instruction scanning."""
+    """Move back exactly n instructions, or return the largest sub-count that
+    succeeded (0 = no movement).  With all breakpoints disabled during the
+    scan, a counted reverse-stepi only stops early at the start of recorded
+    execution; on a partial move we re-sync forward and retry with halved
+    counts, so the caller always learns the true number of steps taken."""
     if n <= 0:
         return 0
     before = cur_pc()
-    try:
-        gdb.execute("reverse-stepi %d" % n, to_string=True)
-    except Exception:
-        # partial move: re-sync forward to the original position
-        for _ in range(n + 1):
-            if cur_pc() == before:
-                break
-            try:
-                gdb.execute("stepi", to_string=True)
-            except Exception:
-                break
-        return 0
-    try:
-        gdb.execute("stepi %d" % n, to_string=True)
-    except Exception:
-        pass
-    if cur_pc() != before:
-        # a breakpoint or replay event interrupted the counted retrace:
-        # re-sync one instruction at a time (bounded), then retry once
+
+    def _resync():
         for _ in range(n + 8):
             if cur_pc() == before:
-                break
+                return True
             try:
                 gdb.execute("stepi", to_string=True)
             except Exception:
-                return 0
-        if cur_pc() != before:
-            return 0
+                return False
+        return cur_pc() == before
+
     try:
         gdb.execute("reverse-stepi %d" % n, to_string=True)
+        return n
     except Exception:
+        pass
+    if not _resync():
         return 0
-    return n if cur_pc() != before else 0
+    m = n // 2
+    while m >= 1:
+        try:
+            gdb.execute("reverse-stepi %d" % m, to_string=True)
+            return m
+        except Exception:
+            if not _resync():
+                return 0
+            m //= 2
+    return 0
 
 def _nav_forward(n):
     if n <= 0:
@@ -1545,7 +1541,7 @@ def main():
     ap.add_argument("--max-steps", type=int, default=20000,
                     help="max reverse instructions per slot")
     ap.add_argument("--max-depth", type=int, default=16)
-    ap.add_argument("--batch-steps", type=int, default=16,
+    ap.add_argument("--batch-steps", type=int, default=64,
                     help="reverse-stepping batch size for the approach scan "
                     "(clamped to 64)")
     ap.add_argument("--fork-ignore", type=int, default=None,
@@ -1655,7 +1651,7 @@ def main():
         "trace_control": bool(args.trace_control),
         "trace_args": bool(args.trace_args),
         "input_real": os.path.realpath(input_file),
-        "batch_steps": min(64, max(2, args.batch_steps)),
+        "batch_steps": min(256, max(2, args.batch_steps)),
         "debug_changes": bool(args.debug_changes),
         "fork_ignore": fork_ignore or 0,
     }
