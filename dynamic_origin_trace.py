@@ -2043,6 +2043,13 @@ def main():
             with open(gdb_log, "w") as logf:
                 logf.write("no copied binary in %s (rr record failed?)\n"
                            % trace_dir)
+            print("[!] rr record produced no trace in %s" % trace_dir)
+            try:
+                _tail = open(rec_log).read().splitlines()[-15:]
+                print("--- %s ---" % rec_log)
+                print("\n".join(_tail))
+            except Exception:
+                pass
             return _parse_result(binary_path, time.time() - t0), gdb_log, \
                 time.time() - t0
 
