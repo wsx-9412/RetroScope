@@ -1981,8 +1981,16 @@ def main():
             json.dump(res, f, indent=1, default=str)
         return res
 
+    def _clear_output():
+        try:
+            if os.path.isfile(output):
+                os.remove(output)
+        except Exception:
+            pass
+
     def run_gdb(binary_path):
         """gdb record-full engine."""
+        _clear_output()
         tmpdir = tempfile.mkdtemp(prefix="dyn_origin_")
         cfg_path, script_path = _write_run_files(tmpdir, binary_path, "record")
         gdb_log = os.path.join(tmpdir, "gdb.log")
@@ -2009,6 +2017,7 @@ def main():
         remote connection is established."""
         import glob as _glob
         import socket as _socket
+        _clear_output()
         tmpdir = tempfile.mkdtemp(prefix="dyn_rr_")
         trace_dir = os.path.join(tmpdir, "trace")
         cfg_path, script_path = _write_run_files(tmpdir, binary_path, "rr")
