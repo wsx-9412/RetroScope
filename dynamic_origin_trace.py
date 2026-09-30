@@ -1642,6 +1642,12 @@ def main():
     ap.add_argument("--no-glibc-avx-off", dest="avx_off", action="store_false")
     ap.add_argument("--debug-changes", action="store_true",
                     help="record per-window change diagnostics in the events")
+    ap.add_argument("--engine", choices=["auto", "record", "rr"], default="auto",
+                    help="reverse-execution engine: 'record' = gdb record full; "
+                    "'rr' = rr/rr.soft record+replay (needs "
+                    "perf_event_paranoid<=1); 'auto' prefers rr when available")
+    ap.add_argument("--rr-bin", default=None,
+                    help="path to the rr (or rr.soft) executable")
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args()
 
@@ -1686,6 +1692,35 @@ def main():
     output = args.output or (input_file + ".origin.json"
                              if not args.diverge_json else
                              os.path.splitext(args.diverge_json)[0] + "_origin.json")
+
+    # ---- engine selection (record full vs rr / rr.soft) ----
+    def _find_rr():
+        cands = []
+        if args.rr_bin:
+            cands.append(args.rr_bin)
+        else:
+            w = shutil.which("rr")
+            if w:
+                cands.append(w)
+            cands.append(str(Path.home() / "tools" / "rr-soft-built" / "bin" / "rr"))
+        for c in cands:
+            if c and os.path.isfile(c) and os.access(c, os.X_OK):
+                return c
+        return None
+
+    rr_bin = _find_rr()
+    engine = args.engine
+    if engine == "auto":
+        engine = "rr" if rr_bin else "record"
+    if engine == "rr":
+        _p = read_paranoid()
+        if not rr_bin:
+            print("[!] rr executable not found; using gdb record full")
+            engine = "record"
+        elif _p not in ("0", "1"):
+            print("[!] rr needs kernel.perf_event_paranoid<=1 (currently %s);"
+                  " using gdb record full" % _p)
+            engine = "record"
 
     # environment discipline: use the project's own libraries
     env = os.environ.copy()
@@ -1732,6 +1767,7 @@ def main():
         "batch_steps": min(512, max(2, args.batch_steps)),
         "debug_changes": bool(args.debug_changes),
         "fork_ignore": fork_ignore or 0,
+        "engine": engine,
     }
 
     def run_gdb(binary_path):
