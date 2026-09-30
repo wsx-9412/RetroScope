@@ -431,7 +431,7 @@ def parse_operand(op, next_pc):
 # --------------------------------------------------------------------------- #
 # Backward scan primitives
 # --------------------------------------------------------------------------- #
-MAX_STEPS = int(CFG.get("max_steps", 100000))
+MAX_STEPS = int(CFG.get("max_steps", 400000))
 MAX_DEPTH = int(CFG.get("max_depth", 30))
 segments = []          # path stack for readable parent links
 next_id = [0]
@@ -552,7 +552,7 @@ def goto_insn(n):
     except Exception:
         return False
 
-BATCH = int(CFG.get("batch_steps", 64))
+BATCH = int(CFG.get("batch_steps", 128))
 
 def _slot_value(slot):
     if slot[0] == "mem":
@@ -1593,10 +1593,10 @@ def main():
     ap.add_argument("--output", default=None, help="result JSON path")
     ap.add_argument("--timeout", type=float, default=900,
                     help="overall tracing deadline (seconds)")
-    ap.add_argument("--max-steps", type=int, default=100000,
+    ap.add_argument("--max-steps", type=int, default=400000,
                     help="max reverse instructions per slot")
     ap.add_argument("--max-depth", type=int, default=30)
-    ap.add_argument("--batch-steps", type=int, default=64,
+    ap.add_argument("--batch-steps", type=int, default=128,
                     help="reverse-stepping batch size for the approach scan "
                     "(clamped to 64)")
     ap.add_argument("--fork-ignore", type=int, default=None,
@@ -1706,7 +1706,7 @@ def main():
         "trace_control": bool(args.trace_control),
         "trace_args": bool(args.trace_args),
         "input_real": os.path.realpath(input_file),
-        "batch_steps": min(256, max(2, args.batch_steps)),
+        "batch_steps": min(512, max(2, args.batch_steps)),
         "debug_changes": bool(args.debug_changes),
         "fork_ignore": fork_ignore or 0,
     }
