@@ -807,6 +807,10 @@ def _locate_last_change(slot, base_value, window):
         if insn is None:
             break
         asm = insn["asm"]
+        if _is_rr_stub(pc):
+            if _nav_forward(1) == 0:
+                break
+            continue
         if CFG.get("debug_changes"):
             mnem, ops = split_insn(asm)
             dest = parse_operand(ops[0], pc + insn["length"]) if ops else None
@@ -880,6 +884,8 @@ def scan_slot(slot, parent, depth, bound_pc=None, stop_pcs=None, delta=0,
                 add_event(parent, "function_entry", slot=_slot_label(slot),
                           note="value comes from the caller (parameter)")
                 return
+            if _is_rr_stub(pc):
+                continue
             insn = disas(pc)
             if insn is not None and _instr_writes_slot(insn["asm"], slot,
                                                        pc + insn["length"]):
@@ -1057,6 +1063,25 @@ def _structural_addr(addr):
         pass
     return True
 
+RR_STUB_RE = re.compile(
+    r"(librrpreload|librrpage|librraudit|rr-shared|rr_page|/rr/)", re.I)
+
+def _is_rr_stub(pc):
+    """True for instructions inside rr's own instrumentation/pages: under
+    rr.soft the recorded process executes injected counter stubs
+    (commit_raw_syscall, __do_software_count, ...) which clobber registers and
+    must not be mistaken for value producers."""
+    name = _region_of(pc)
+    if name:
+        return bool(RR_STUB_RE.search(name))
+    try:
+        fn = func_name(pc)
+    except Exception:
+        return False
+    return bool(fn and re.search(r"(commit_raw_syscall|__do_software_count|"
+                                  r"software_count|rrcall|rr_page)",
+                                  fn, re.I))
+
 def _addresslike(v):
     return v is not None and v > (1 << 40)
 
@@ -1102,6 +1127,11 @@ def trace_control(parent, depth, lookback=None, test_lookback=60):
         insn = disas(pc)
         if insn is None:
             break
+        if _is_rr_stub(pc):
+            if _nav_reverse(1) == 0:
+                break
+            steps += 1
+            continue
         mnem, ops = split_insn(insn["asm"])
         if mnem in COND_JUMPS:
             branch = (pc, insn)
@@ -1132,6 +1162,8 @@ def trace_control(parent, depth, lookback=None, test_lookback=60):
             break
         steps += 1
         pc2 = cur_pc()
+        if _is_rr_stub(pc2):
+            continue
         insn2 = disas(pc2)
         if insn2 is None:
             break
