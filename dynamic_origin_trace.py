@@ -162,7 +162,22 @@ def func_name(pc):
     except Exception:
         return "?"
 
+# fd state is tracked ourselves (open/lseek/close + read return values)
+# because under rr replay /proc/<pid>/fdinfo describes the *replay* process,
+# not the recorded program.
+FD_POS = {}
+FD_PATH = {}
+
+def read_cstr(addr, maxlen=4096):
+    try:
+        data = gdb.selected_inferior().read_memory(addr, maxlen)
+        return bytes(data).split(b"\0", 1)[0].decode("utf-8", "replace")
+    except Exception:
+        return None
+
 def fd_path(fd):
+    if fd in FD_PATH:
+        return FD_PATH.get(fd)
     try:
         pid = gdb.selected_inferior().pid
         return os.readlink("/proc/%d/fd/%d" % (pid, fd))
@@ -170,6 +185,8 @@ def fd_path(fd):
         return None
 
 def fd_pos(fd):
+    if fd in FD_POS:
+        return FD_POS.get(fd)
     try:
         pid = gdb.selected_inferior().pid
         with open("/proc/%d/fdinfo/%d" % (pid, fd)) as f:
@@ -179,6 +196,21 @@ def fd_pos(fd):
     except Exception:
         pass
     return None
+
+class ReadFinish(gdb.FinishBreakpoint):
+    """Advance the tracked fd position by the number of bytes read."""
+    def __init__(self, fd):
+        super(ReadFinish, self).__init__(internal=True)
+        self.fd = fd
+
+    def stop(self):
+        try:
+            n = int(self.return_value) & MASK
+            if n < (1 << 63):
+                FD_POS[self.fd] = FD_POS.get(self.fd, 0) + n
+        except Exception:
+            pass
+        return False
 
 # --------------------------------------------------------------------------- #
 # read()/pread64() logging: a python breakpoint that logs and never stops.
@@ -199,7 +231,7 @@ class ReadLogger(gdb.Breakpoint):
             if self.kind == "pread64":
                 off = uval("$r10")
             else:
-                off = fd_pos(fd)
+                off = FD_POS.get(fd, 0)
             result["reads"].append({
                 "kind": self.kind,
                 "fd": fd,
@@ -210,6 +242,81 @@ class ReadLogger(gdb.Breakpoint):
                 "seq": len(result["reads"]),
             })
             save()
+            if self.kind == "read":
+                ReadFinish(fd)
+        except Exception:
+            pass
+        return False
+
+class OpenFinish(gdb.FinishBreakpoint):
+    def __init__(self, path):
+        super(OpenFinish, self).__init__(internal=True)
+        self.path = path
+
+    def stop(self):
+        try:
+            fd = int(self.return_value) & MASK
+            if fd >> 63:
+                return False
+            if fd < (1 << 20):
+                FD_POS[fd] = 0
+                if self.path:
+                    FD_PATH[fd] = self.path
+        except Exception:
+            pass
+        return False
+
+class OpenLogger(gdb.Breakpoint):
+    """Track fd -> path and initial offset 0 on open/openat."""
+    def __init__(self, name, at):
+        super(OpenLogger, self).__init__(name, internal=True)
+        self.at = at
+        self.silent = True
+
+    def stop(self):
+        try:
+            path = read_cstr(uval("$rsi" if self.at else "$rdi"))
+            OpenFinish(path)
+        except Exception:
+            pass
+        return False
+
+class LseekFinish(gdb.FinishBreakpoint):
+    def __init__(self, fd):
+        super(LseekFinish, self).__init__(internal=True)
+        self.fd = fd
+
+    def stop(self):
+        try:
+            r = int(self.return_value) & MASK
+            if r < (1 << 63):
+                FD_POS[self.fd] = r
+        except Exception:
+            pass
+        return False
+
+class LseekLogger(gdb.Breakpoint):
+    def __init__(self, name):
+        super(LseekLogger, self).__init__(name, internal=True)
+        self.silent = True
+
+    def stop(self):
+        try:
+            LseekFinish(uval("$rdi"))
+        except Exception:
+            pass
+        return False
+
+class CloseLogger(gdb.Breakpoint):
+    def __init__(self):
+        super(CloseLogger, self).__init__("close", internal=True)
+        self.silent = True
+
+    def stop(self):
+        try:
+            fd = uval("$rdi")
+            FD_POS.pop(fd, None)
+            FD_PATH.pop(fd, None)
         except Exception:
             pass
         return False
@@ -1276,6 +1383,21 @@ else:
 LOGGERS = []
 LOGGERS.append(ReadLogger("read", "read"))
 LOGGERS.append(ReadLogger("pread64", "pread64"))
+for _on, _at in (("open", False), ("open64", False),
+                 ("openat", True), ("openat64", True)):
+    try:
+        LOGGERS.append(OpenLogger(_on, _at))
+    except Exception:
+        pass
+for _ln in ("lseek", "lseek64"):
+    try:
+        LOGGERS.append(LseekLogger(_ln))
+    except Exception:
+        pass
+try:
+    LOGGERS.append(CloseLogger())
+except Exception:
+    pass
 for _mm in ("mmap", "mmap64"):
     try:
         LOGGERS.append(MmapLogger(_mm))
