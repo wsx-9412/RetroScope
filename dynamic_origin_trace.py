@@ -610,9 +610,23 @@ def terminal_for_mem(addr, size):
                 "via": r["kind"], "file": r.get("file")}
     return None
 
+def goto_pc_exact(pc):
+    """After an rr seek (which restores an approximate time point), replay
+    forward to the exact saved PC with a temporary breakpoint."""
+    try:
+        if cur_pc() == pc:
+            return True
+        gdb.execute("tbreak *0x%x" % pc, to_string=True)
+        gdb.execute("continue", to_string=True)
+        return cur_pc() == pc
+    except Exception:
+        return False
+
 def goto_anchor():
     if ANCHOR_INSN[0] is not None and goto_insn(ANCHOR_INSN[0]):
-        return
+        if anchor_pc[0] is None or cur_pc() == anchor_pc[0] \
+                or goto_pc_exact(anchor_pc[0]):
+            return
     if anchor_pc[0] is None:
         return
     if cur_pc() == anchor_pc[0]:
@@ -1305,14 +1319,16 @@ def handle_write(slot, parent, depth, value_before=None, value_after=None,
 
     next_pc_addr = (pc + length) & 0xFFFFFFFFFFFFFFFF
     srcs = classify_sources(mnem, ops, slot, next_pc_addr, eid, depth, eid)
-    _cp = cur_insn()
+    _cp = (cur_insn(), cur_pc())
     if delta and slot[0] == "reg":
         add_event(eid, "delta_note", delta=delta,
                   note="byte position inside the register/window carried "
                        "through this write")
     for _si, s in enumerate(srcs):
         if _si > 0 and _cp is not None:
-            goto_insn(_cp)
+            goto_insn(_cp[0])
+            if cur_pc() != _cp[1] and not _is_rr_stub(cur_pc()):
+                goto_pc_exact(_cp[1])
         if s[0] == "imm":
             add_event(eid, "constant", value=hex(s[1] & MASK))
             if CFG.get("trace_control", True):
