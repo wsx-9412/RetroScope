@@ -431,8 +431,8 @@ def parse_operand(op, next_pc):
 # --------------------------------------------------------------------------- #
 # Backward scan primitives
 # --------------------------------------------------------------------------- #
-MAX_STEPS = int(CFG.get("max_steps", 20000))
-MAX_DEPTH = int(CFG.get("max_depth", 16))
+MAX_STEPS = int(CFG.get("max_steps", 100000))
+MAX_DEPTH = int(CFG.get("max_depth", 30))
 segments = []          # path stack for readable parent links
 next_id = [0]
 anchor_pc = [None]
@@ -1593,9 +1593,9 @@ def main():
     ap.add_argument("--output", default=None, help="result JSON path")
     ap.add_argument("--timeout", type=float, default=900,
                     help="overall tracing deadline (seconds)")
-    ap.add_argument("--max-steps", type=int, default=20000,
+    ap.add_argument("--max-steps", type=int, default=100000,
                     help="max reverse instructions per slot")
-    ap.add_argument("--max-depth", type=int, default=16)
+    ap.add_argument("--max-depth", type=int, default=30)
     ap.add_argument("--batch-steps", type=int, default=64,
                     help="reverse-stepping batch size for the approach scan "
                     "(clamped to 64)")
