@@ -49,7 +49,7 @@ CONFIG_MODULE="$PROJECT_CONFIG"
 # Per-project: reference/target version paths + default input file
 case "$PROJECT_NAME" in
     "libtiff")
-        REFERENCE_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.4.0"
+        REFERENCE_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.0.9"
         TARGET_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.0.8"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2023-25434"
         EXTRA_ARGS=(--include-exits --refactor-detect)
