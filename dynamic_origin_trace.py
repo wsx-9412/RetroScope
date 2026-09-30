@@ -1529,6 +1529,17 @@ if CFG.get("skip_getrandom", True) and ENGINE != "rr":
     except Exception:
         pass
 
+if ENGINE == "rr":
+    # replay starts at _start where shared libraries are not mapped yet, so a
+    # breakpoint in a library (e.g. libtiff's tif_dirread.c) would stay
+    # pending forever.  Replay forward to main first (continue, NOT run/start:
+    # run would restart the replay and desync rr.soft).
+    try:
+        gdb.execute("tbreak main", to_string=True)
+        gdb.execute("continue", to_string=True)
+    except Exception:
+        pass
+
 fork_bp = None
 _pending = None
 for spec in CFG.get("fork_specs", []):
