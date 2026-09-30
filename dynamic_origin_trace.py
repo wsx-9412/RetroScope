@@ -1699,10 +1699,10 @@ def main():
         if args.rr_bin:
             cands.append(args.rr_bin)
         else:
+            cands.append(str(Path.home() / "tools" / "rr-soft-built" / "bin" / "rr"))
             w = shutil.which("rr")
             if w:
                 cands.append(w)
-            cands.append(str(Path.home() / "tools" / "rr-soft-built" / "bin" / "rr"))
         for c in cands:
             if c and os.path.isfile(c) and os.access(c, os.X_OK):
                 return c
@@ -1853,7 +1853,8 @@ def main():
             with open(rec_log, "w") as logf:
                 subprocess.run(
                     [rr_bin, "record", "-W", "-o", trace_dir,
-                     str(binary_path)] + [str(a) for a in prog_args],
+                     os.path.abspath(str(binary_path))]
+                    + [str(a) for a in prog_args],
                     env=run_env, stdout=logf, stderr=subprocess.STDOUT,
                     timeout=args.timeout + 120)
         except subprocess.TimeoutExpired:
