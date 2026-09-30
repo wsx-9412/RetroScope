@@ -558,8 +558,7 @@ def _slot_value(slot):
     if slot[0] == "mem":
         return safe_read(slot[1], slot[2])
     if is_simd_reg(slot[1]):
-        b = simd_bytes(slot[1])
-        return b[:slot[2]] if (b is not None and slot[2]) else b
+        return simd_bytes(slot[1])
     return reg_value(slot[1])
 
 def _slot_label(slot):
