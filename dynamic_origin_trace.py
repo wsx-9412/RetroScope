@@ -825,7 +825,8 @@ def refresh_regions():
     del REGIONS[:]
     try:
         out = gdb.execute("info proc mappings", to_string=True)
-    except Exception:
+    except Exception as e:
+        result["regions_info"] = {"count": 0, "error": str(e)[:200]}
         return
     for line in out.splitlines():
         parts = line.split()
@@ -847,6 +848,10 @@ def refresh_regions():
         b, n = r.get("buf"), r.get("size")
         if b is not None and n:
             INPUT_REGIONS.append((b, b + n))
+    result["regions_info"] = {
+        "count": len(REGIONS), "input": len(INPUT_REGIONS),
+        "sample": [list(r) for r in REGIONS[:6]],
+    }
 
 def _region_of(addr):
     for (s0, e0, name) in REGIONS:
