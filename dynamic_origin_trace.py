@@ -465,7 +465,15 @@ def goto_anchor():
     if cur_pc() == anchor_pc[0]:
         return
     try:
+        globals().get("fork_bp").enabled = True
+    except Exception:
+        pass
+    try:
         gdb.execute("continue", to_string=True)
+    except Exception:
+        pass
+    try:
+        globals().get("fork_bp").enabled = False
     except Exception:
         pass
 
@@ -535,9 +543,19 @@ def _nav_reverse(n):
     try:
         gdb.execute("stepi %d" % n, to_string=True)
     except Exception:
-        return 0
+        pass
     if cur_pc() != before:
-        return 0
+        # a breakpoint or replay event interrupted the counted retrace:
+        # re-sync one instruction at a time (bounded), then retry once
+        for _ in range(n + 8):
+            if cur_pc() == before:
+                break
+            try:
+                gdb.execute("stepi", to_string=True)
+            except Exception:
+                return 0
+        if cur_pc() != before:
+            return 0
     try:
         gdb.execute("reverse-stepi %d" % n, to_string=True)
     except Exception:
@@ -1247,6 +1265,12 @@ for _b in LOGGERS:
         _b.enabled = False
     except Exception:
         pass
+# the fork breakpoint would intercept forward verification steps during the
+# backward scan; goto_anchor uses the recorded instruction checkpoint instead
+try:
+    fork_bp.enabled = False
+except Exception:
+    pass
 save()
 
 # capture variable slots at the fork
