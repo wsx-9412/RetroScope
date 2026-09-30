@@ -1836,8 +1836,9 @@ def main():
         sysroot); a tiny wrapper appends our gdb script so it runs after the
         remote connection is established."""
         tmpdir = tempfile.mkdtemp(prefix="dyn_rr_")
+        # rr creates the trace directory itself and refuses to use one that
+        # already exists
         trace_dir = os.path.join(tmpdir, "trace")
-        os.makedirs(trace_dir, exist_ok=True)
         cfg_path, script_path = _write_run_files(tmpdir, binary_path, "rr")
         gdb_log = os.path.join(tmpdir, "gdb.log")
         rec_log = os.path.join(tmpdir, "rr_record.log")
