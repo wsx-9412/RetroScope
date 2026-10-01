@@ -62,6 +62,10 @@ for T in "${TARGETS[@]}"; do
     [ -d "$TDIR" ] || { echo "[skip] $T (dir missing)"; continue; }
     MARK="$SWEEP_DIR/${T}.done"
     LOG="$SWEEP_DIR/${T}.log"
+    if [ -f "$SWEEP_DIR/${T}.skipped" ] && [ "$FORCE" -eq 0 ]; then
+        echo "[skip] $T (marked skipped: ${T}.skipped)"
+        continue
+    fi
     if [ -f "$MARK" ] && [ "$FORCE" -eq 0 ]; then
         echo "[skip] $T (already completed: $MARK)"
         continue
