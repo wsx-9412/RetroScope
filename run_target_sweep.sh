@@ -21,6 +21,7 @@ BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$BASE_DIR"
 
 CONFIG="${CONFIG:-config_libtiff.py}"
+CVE_ID=$(grep -m1 '^CVE_ID' "$CONFIG" | sed 's/.*"\(.*\)".*/\1/')
 REF_NAME="${REF_NAME:-tiff-4.0.9}"
 REF_DIR="tiff-versions/$REF_NAME"
 INITIAL_TARGET="${INITIAL_TARGET:-tiff-4.0.8}"
@@ -68,6 +69,25 @@ for T in "${TARGETS[@]}"; do
     ./run_analysis.sh "$CONFIG" > "$LOG" 2>&1
     rc=$?
     echo "exit_code=$rc" >> "$LOG"
+
+    # archive the per-target result JSONs (results/ is overwritten each run)
+    ARCH="$SWEEP_DIR/$T"
+    mkdir -p "$ARCH"
+    for f in "results/${CVE_ID}.diverge.json" \
+             "results/${CVE_ID}.json" \
+             "results/${CVE_ID}_origin.json" \
+             "results/${CVE_ID}_origin_mutation.json" \
+             "results/${CVE_ID}_fork_path_verification.json" \
+             "results/${CVE_ID}_timings.json" \
+             "in/fork_trace_result.json"; do
+        [ -f "$f" ] && cp -f "$f" "$ARCH/" 2>/dev/null
+    done
+    # note the mutation artifact directory (kept in place under out/)
+    OUTDIR=$(ls -dt out/*"${T#tiff-}"* 2>/dev/null | head -1)
+    if [ -n "${OUTDIR:-}" ]; then
+        echo "$OUTDIR" > "$ARCH/out_dir.txt"
+        ls "$OUTDIR" 2>/dev/null | wc -l > "$ARCH/out_file_count.txt"
+    fi
 
     if grep -q 'Analysis completed' "$LOG"; then
         touch "$MARK"
