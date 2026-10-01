@@ -5360,11 +5360,15 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
 
     out_dir = _mutation_out_dir(input_file, version)
 
-    def _archive(offset, byte_val, t_mut):
-        """Save a successful mutation to the out folder and report it."""
+    def _archive(offset, byte_val, t_success):
+        """Save a successful mutation to the out folder and report it.
+
+        The ``time:`` component is the elapsed time from the FIRST mutation
+        attempt of the run to this successful one (seconds, one decimal),
+        matching the reported time-to-success metric."""
         _saved = _save_mutation_artifact(
             out_dir,
-            f'0x{offset:x}:-0x{byte_val:02x}:time:{int(round(t_mut))}',
+            f'0x{offset:x}:-0x{byte_val:02x}:time:{t_success:.1f}',
             original_data, [(offset, byte_val)])
         if _saved:
             print(f'      saved: {_saved}')
@@ -5518,7 +5522,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                     print(f'    0x{byte_val:02x} -> MATCHES ref crash '
                           f'({verdict}: {diff})  [since first mutation {_tot:.3f}s, '
                           f'this run {_t_mut:.3f}s]')
-                    _archive(offset, byte_val, _t_mut)
+                    _archive(offset, byte_val, _tot)
                 else:
                     observed.setdefault(verdict or 'no_crash', 0)
                     observed[verdict or 'no_crash'] += 1
@@ -5548,7 +5552,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                   f'(same_type at other site: {key})  '
                                   f'[since first mutation {_tot:.3f}s, '
                                   f'this run {_t_mut:.3f}s]')
-                            _archive(offset, byte_val, _t_mut)
+                            _archive(offset, byte_val, _tot)
                             continue
                         observed.setdefault('same_type_sites', {})
                         sites = observed['same_type_sites']
@@ -5605,7 +5609,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                         print(f'    0x{byte_val:02x} -> MATCHES ref crash '
                               f'({verdict}: {diff})  [since first mutation {_tot:.3f}s, '
                               f'this run {_t_mut:.3f}s]')
-                        _archive(offset, byte_val, _t_mut)
+                        _archive(offset, byte_val, _tot)
                     else:
                         observed.setdefault(verdict or 'no_crash', 0)
                         observed[verdict or 'no_crash'] += 1
@@ -5642,7 +5646,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                       f'(same_type at other site: {key})  '
                                       f'[since first mutation {_tot:.3f}s, '
                                       f'this run {_t_mut:.3f}s]')
-                                _archive(offset, byte_val, _t_mut)
+                                _archive(offset, byte_val, _tot)
                                 continue
                             # Near-miss: same ASan kind at the baseline (own
                             # crash) site — the mutation did not steer the
@@ -5773,11 +5777,14 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
 
     out_dir = _mutation_out_dir(input_file, version)
 
-    def _archive(offA, offB, va, vb, t_mut):
-        """Save a successful two-offset mutation to the out folder."""
+    def _archive(offA, offB, va, vb, t_success):
+        """Save a successful two-offset mutation to the out folder.
+
+        The ``time:`` component is the elapsed time from the first mutation
+        attempt of the run to this successful one (seconds, one decimal)."""
         _saved = _save_mutation_artifact(
             out_dir,
-            f'0x{offA:x}+0x{offB:x}:-0x{va:02x}-0x{vb:02x}:time:{int(round(t_mut))}',
+            f'0x{offA:x}+0x{offB:x}:-0x{va:02x}-0x{vb:02x}:time:{t_success:.1f}',
             original_data, [(offA, va), (offB, vb)])
         if _saved:
             print(f'      saved: {_saved}')
@@ -5900,7 +5907,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                     print(f'    ({va:02x},{vb:02x}) -> MATCHES ref crash '
                           f'({verdict}: {diff})  [since first mutation {_tot:.3f}s, '
                           f'this run {_t_mut:.3f}s]')
-                    _archive(offA, offB, va, vb, _t_mut)
+                    _archive(offA, offB, va, vb, _tot)
                 else:
                     observed.setdefault(verdict or 'no_crash', 0)
                     observed[verdict or 'no_crash'] += 1
@@ -5928,7 +5935,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                                   f'(same_type at other site: {skey})  '
                                   f'[since first mutation {_tot:.3f}s, '
                                   f'this run {_t_mut:.3f}s]')
-                            _archive(offA, offB, va, vb, _t_mut)
+                            _archive(offA, offB, va, vb, _tot)
                             continue
                         observed.setdefault('same_type_sites', {})
                         sites = observed['same_type_sites']
