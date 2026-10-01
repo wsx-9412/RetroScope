@@ -478,7 +478,9 @@ def main():
         mdir = a.mutants_dir or default_mutants_dir(input_file,
                                                     div.get("version_b"))
         if mdir and os.path.isdir(mdir):
-            files = sorted(str(p) for p in Path(mdir).iterdir() if p.is_file())
+            files = sorted(str(p) for p in Path(mdir).iterdir()
+                           if p.is_file() and not p.name.startswith('.')
+                           and not p.name.startswith('NO_CRASH_MATCH'))
             print("[*] mutants dir : %s (%d files)" % (mdir, len(files)))
         else:
             print("[!] no mutants directory for this target version "

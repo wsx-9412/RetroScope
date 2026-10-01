@@ -6982,6 +6982,32 @@ def main():
         f.write(log_text_b)
     print(f'[*] Raw GDB log: {debug_log}')
 
+    # Every target version keeps a trace in out/: on success the directory
+    # holds the crashing mutants; on zero matches an explicit marker is
+    # written so the sweep can tell "processed, nothing found" apart from
+    # "never ran".
+    try:
+        out_dir = _mutation_out_dir(input_file, config.get('version_b'))
+        real_files = ([n for n in os.listdir(out_dir)
+                       if not n.startswith('.')
+                       and not n.startswith('NO_CRASH_MATCH')]
+                      if os.path.isdir(out_dir) else [])
+        if not any_match and not real_files:
+            os.makedirs(out_dir, exist_ok=True)
+            with open(os.path.join(out_dir, 'NO_CRASH_MATCH.txt'), 'w') as f:
+                f.write('No mutation reproduced the reference crash.\n')
+                f.write(f'input            : {input_file}\n')
+                f.write(f'target version   : '
+                        f'{config.get("version_b", "?")}\n')
+                f.write(f'reference version: '
+                        f'{config.get("version_a", "?")}\n')
+                f.write(f'timestamp        : '
+                        f'{time.strftime("%Y-%m-%d %H:%M:%S")}\n')
+            print(f'[*] No matches; marker written: '
+                  f'{os.path.join(out_dir, "NO_CRASH_MATCH.txt")}')
+    except Exception as _e:
+        print(f'[!] could not write no-match marker: {_e}')
+
 
 if __name__ == '__main__':
     main()
