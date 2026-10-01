@@ -6800,7 +6800,8 @@ def main():
     # fields are NOT merged into the full-sweep set (72 fields x 255 values
     # would explode); they get the directed-value mutation in Step 6a.
     _ifd_region = (chain_trace_results or {}).get('ifd_region') or {}
-    if not _ifd_region and input_file and os.path.isfile(input_file):
+    if (not _ifd_region.get('field_offsets')) and input_file \
+            and os.path.isfile(input_file):
         _ifd_region = _static_ifd_region(input_file) or {}
         if _ifd_region:
             print(f'  [*] IFD region from static TIFF parse (dynamic '
