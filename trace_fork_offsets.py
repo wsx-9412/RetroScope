@@ -6160,7 +6160,8 @@ def run_pairwise_mutation_stage(binary, binary_ref, input_file, program_args,
           f'{",".join(f"0x{v:x}" for v in PAIRWISE_PROBE)})')
     return test_pairwise_mutations_compare(
         binary, binary_ref, input_file, program_args, pairs, timeout=timeout,
-        version=version)
+        version=version, verify_fork=verify_fork, verify_hint=verify_hint,
+        verify_max=verify_max)
 
 
 
@@ -6181,6 +6182,14 @@ def main():
     ap.add_argument('--variables', nargs='+', help='variable names')
     ap.add_argument('--timeout', type=int, default=30, help='GDB timeout seconds')
     ap.add_argument('--test-offsets', nargs='*', help='additional hex offsets for byte mutation testing (e.g. 0xe8 0xec 0xf0)')
+    ap.add_argument('--verify-fork', action='store_true',
+                    help='after each accepted mutation, re-run it under GDB to '
+                         'certify that the target reaches the fork statement, '
+                         'satisfies the reference-side outcome, and crashes '
+                         'afterwards')
+    ap.add_argument('--verify-fork-max', type=int, default=16,
+                    help='maximum number of accepted mutants to verify '
+                         '(default 16, at most one per offset)')
     ap.add_argument('--args', nargs=argparse.REMAINDER, default=[],
                     help='program args (must be last)')
 
@@ -6274,6 +6283,29 @@ def main():
     print(f'[*] Target fork spec: {fork_spec_b}')
     if binary_ref:
         print(f'[*] Reference fork spec: {fork_spec_a}')
+
+    # Fork verification hint: the identified invocation and the reference-side
+    # outcome of the fork condition (last fork point "satisfied" = the target
+    # now evaluates the same way the reference did).
+    verify_hint = None
+    if a.verify_fork:
+        _dyn = config.get('dynamic_fork') or {}
+        _diff = _dyn.get('diff') or {}
+        _bside = _diff.get('b') or {}
+        _aside = _diff.get('a') or {}
+        _cond_stmt = _bside.get('text') or config.get('root_cause_statement_b') or ''
+        _exp = _aside.get('outcome')
+        verify_hint = {
+            'fork_spec': fork_spec_b,
+            'cond_expr': _fork_condition_expr(_cond_stmt),
+            'expected_outcome': _exp if isinstance(_exp, bool) else None,
+            'invocation': _dyn.get('invocation'),
+            'var_exprs': variables[:6],
+        }
+        print(f'[*] Fork verification: spec={fork_spec_b} '
+              f'invocation={verify_hint["invocation"]} '
+              f'cond={verify_hint["cond_expr"]} '
+              f'expected_outcome={verify_hint["expected_outcome"]}')
 
     # Each run keeps only its own mutation artifacts: clear the
     # out/<input-name>-<target-version>/ folder for this CVE + version
@@ -7058,7 +7090,9 @@ def main():
             sorted(stage1_offsets), a.timeout,
             title='Step 6: Byte mutation crash testing '
                   '(fork-variable offsets)',
-            version=config.get('version_b'))
+            version=config.get('version_b'),
+            verify_fork=a.verify_fork, verify_hint=verify_hint,
+            verify_max=a.verify_fork_max)
 
     # Step 6a: directed structural mutation of the IFD region fields
     # (tag/type/count/offset of every entry of the fork-point IFD).  Each
@@ -7085,7 +7119,9 @@ def main():
                 binary, binary_ref, input_file, program_args,
                 _ifd_probe_offsets, timeout=a.timeout,
                 probe_values=_all_probes,
-                version=config.get('version_b'))
+                version=config.get('version_b'),
+                verify_fork=a.verify_fork, verify_hint=verify_hint,
+                verify_max=a.verify_fork_max)
             for offset, info in sorted(
                     (k, v) for k, v in ifd_crash_results.items()
                     if isinstance(k, int)):
@@ -7115,7 +7151,9 @@ def main():
             sorted(stage1_offsets), _var_spans, a.timeout,
             title='Step 6b: Two-offset combined byte mutation '
                   '(pairwise)',
-            version=config.get('version_b'))
+            version=config.get('version_b'),
+            verify_fork=a.verify_fork, verify_hint=verify_hint,
+            verify_max=a.verify_fork_max)
 
     print(f'{"="*60}')
 
