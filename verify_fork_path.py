@@ -227,9 +227,19 @@ def verify_one(binary, hint, mutant_path, program_args, original_input,
     return res
 
 
-def default_mutants_dir(input_file):
-    """out/<input-basename>-<version...> produced by the mutation stage."""
+def default_mutants_dir(input_file, version=None):
+    """out/<input-basename>-<version-numeric> produced by the mutation stage.
+
+    When the target version is known (e.g. ``tiff-4.0.7``) the exact directory
+    is required: a missing directory means this target produced no PoCs, and
+    falling back to another version's directory would audit the wrong files.
+    """
     stem = os.path.basename(input_file)
+    if version:
+        m = re.search(r"(\d+\.\d+(?:\.\d+)*)", str(version))
+        if m:
+            exact = str(BASE / "out" / (stem + "-" + m.group(1).replace(".", "-")))
+            return exact if os.path.isdir(exact) else None
     cands = sorted(glob.glob(str(BASE / "out" / (stem + "-*"))),
                    key=os.path.getmtime, reverse=True)
     return cands[0] if cands else None
@@ -465,12 +475,16 @@ def main():
     # collect mutant files
     files = list(a.mutants)
     if not files:
-        mdir = a.mutants_dir or default_mutants_dir(input_file)
+        mdir = a.mutants_dir or default_mutants_dir(input_file,
+                                                    div.get("version_b"))
         if mdir and os.path.isdir(mdir):
             files = sorted(str(p) for p in Path(mdir).iterdir() if p.is_file())
             print("[*] mutants dir : %s (%d files)" % (mdir, len(files)))
         else:
-            print("[!] no mutants directory found; pass --mutants-dir/--mutants")
+            print("[!] no mutants directory for this target version "
+                  "(expected out/%s-%s*); pass --mutants-dir/--mutants to "
+                  "override" % (os.path.basename(input_file),
+                                str(div.get("version_b") or "?")))
     if a.include_original:
         files = [input_file] + files
     if a.limit > 0:
