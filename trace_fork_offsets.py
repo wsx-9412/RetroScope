@@ -64,8 +64,13 @@ def build_run_env(binary):
     # the fork breakpoint is actually reachable during GDB tracing.
     _asan = env.get("ASAN_OPTIONS", "")
     if "detect_leaks=0" not in _asan:
-        env["ASAN_OPTIONS"] = ("detect_leaks=0" +
-                               (":" + _asan if _asan else ""))
+        _asan = "detect_leaks=0" + (":" + _asan if _asan else "")
+    # A single runaway mutant (huge allocation, unbounded loop) must not
+    # exhaust the host: ASan kills the child once its RSS exceeds this cap.
+    if "hard_rss_limit_mb" not in _asan:
+        _asan += ":hard_rss_limit_mb=" + os.environ.get(
+            "RETROSCOPE_ASAN_RSS_MB", "512")
+    env["ASAN_OPTIONS"] = _asan
     d = os.path.dirname(os.path.abspath(binary))
     for _ in range(6):
         lib_dirs = []
@@ -5524,7 +5529,11 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
     }
     observed = {}      # verdict -> count across all mutations
     total_tests = 0
-    n_workers = min(8, max(2, os.cpu_count() or 2))
+    try:
+        n_workers = int(os.environ.get("RETROSCOPE_MUTATION_WORKERS", "2"))
+    except ValueError:
+        n_workers = 2
+    n_workers = max(1, min(n_workers, 8))
 
     from concurrent.futures import ProcessPoolExecutor, as_completed
 
@@ -5912,7 +5921,11 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
     }
     observed = {}
     total_tests = 0
-    n_workers = min(8, max(2, os.cpu_count() or 2))
+    try:
+        n_workers = int(os.environ.get("RETROSCOPE_MUTATION_WORKERS", "2"))
+    except ValueError:
+        n_workers = 2
+    n_workers = max(1, min(n_workers, 8))
 
     from concurrent.futures import ProcessPoolExecutor, as_completed
 
