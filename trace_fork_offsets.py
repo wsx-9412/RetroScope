@@ -5445,6 +5445,7 @@ def _verify_fork_reached(binary, hint, input_path, program_args,
     res = {
         "status": "ok",
         "reached": bool(hits),
+        "fork_conditions": [h.get("cond") for h in hits if "cond" in h],
         "hit_count": len(hits),
         "hits": hits[:8],
         "invocation": cfg["ignore"] + 1,
@@ -5484,8 +5485,15 @@ def _make_fork_verifier(real_target, program_args, timeout, enabled, hint,
                                      timeout=timeout)
             exp = hint.get("expected_outcome")
             cond = v.get("fork_condition")
-            v["satisfied"] = (cond == exp) if (cond is not None
-                                               and exp is not None) else None
+            conds = v.get("fork_conditions") or []
+            if exp is not None and conds:
+                # strict: every recorded evaluation of the fork condition in
+                # the mutant must be on the reference side (the target no
+                # longer takes the divergent branch at this point)
+                v["satisfied"] = all(c == exp for c in conds)
+                v["satisfied_any"] = any(c == exp for c in conds)
+            else:
+                v["satisfied"] = None
             csig = v.pop("_crash_signature", None)
             if v.get("reached") and csig is not None and comp_ref_sig:
                 cverdict, _ = compare_crash_signatures(comp_ref_sig, csig)
