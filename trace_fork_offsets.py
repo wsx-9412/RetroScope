@@ -5312,6 +5312,198 @@ def _map_ref_crash_function(binary_target, binary_ref, ref_crash):
     return None
 
 
+
+# ---------------------------------------------------------------------------
+# Fork verification: after a mutation is accepted (target reproduces the
+# reference crash), re-run the mutated input under GDB and certify:
+#   1. the fork statement is actually executed,
+#   2. at the identified invocation the fork condition now evaluates to the
+#      reference-side outcome (the last fork point is *satisfied*),
+#   3. the crash occurs after that point (the same GDB run hits the fork and
+#      then dies with the reference crash signature).
+# ---------------------------------------------------------------------------
+_FORK_VERIFY_GDB_SCRIPT = r"""
+import gdb, json, os
+CFG = json.load(open(os.environ["FORK_VERIFY_CFG"]))
+gdb.execute("set pagination off")
+gdb.execute("set confirm off")
+gdb.execute("set breakpoint pending on")
+try:
+    gdb.execute("set disable-randomization on")
+except Exception:
+    pass
+
+class ForkBP(gdb.Breakpoint):
+    def __init__(self, spec):
+        super(ForkBP, self).__init__(spec)
+        self.n = 0
+        self.ignore_count = CFG.get("ignore", 0)
+
+    def stop(self):
+        self.n += 1
+        rec = {"hit": self.n + CFG.get("ignore", 0)}
+        try:
+            rec["pc"] = int(gdb.parse_and_eval("$pc"))
+        except Exception:
+            pass
+        if CFG.get("cond_expr"):
+            try:
+                rec["cond"] = bool(int(gdb.parse_and_eval(CFG["cond_expr"])))
+            except Exception as e:
+                rec["cond_error"] = str(e)[:120]
+        vals = {}
+        for e in (CFG.get("var_exprs") or []):
+            try:
+                vals[e] = int(gdb.parse_and_eval(e))
+            except Exception:
+                pass
+        if vals:
+            rec["vars"] = vals
+        print("FORK_HIT " + json.dumps(rec))
+        return False
+
+bp = None
+for spec in CFG.get("specs", []):
+    try:
+        cand = ForkBP(spec)
+    except Exception:
+        continue
+    try:
+        if getattr(cand, "pending", False):
+            cand.delete()
+            continue
+    except Exception:
+        pass
+    bp = cand
+    break
+if bp is None:
+    print("FORK_BP_UNRESOLVED")
+gdb.execute("run")
+gdb.execute("quit")
+"""
+
+
+def _verify_fork_reached(binary, hint, input_path, program_args,
+                         timeout=60):
+    """GDB re-run of *input_path* to certify fork reachability/satisfaction.
+
+    Returns a dict with reached/hits/fork_condition/crash_signature, or an
+    error marker when the run could not be performed.
+    """
+    import re as _re
+    real = resolve_binary(binary)
+    if not real or not os.path.isfile(real):
+        return {"status": "error", "error": "binary not found"}
+    spec = hint.get("fork_spec") or ""
+    specs = []
+    if spec:
+        specs.append(spec)
+        base = os.path.basename(spec.rsplit(":", 1)[0])
+        if base:
+            specs.append("%s:%s" % (base, spec.rsplit(":", 1)[1]))
+    cfg = {
+        "specs": list(dict.fromkeys(specs)),
+        "cond_expr": hint.get("cond_expr"),
+        "var_exprs": hint.get("var_exprs") or [],
+        "ignore": max(0, int(hint.get("invocation") or 1) - 1),
+    }
+    tmpdir = tempfile.mkdtemp(prefix="fork_verify_")
+    cfg_path = os.path.join(tmpdir, "cfg.json")
+    script_path = os.path.join(tmpdir, "verify.py")
+    with open(cfg_path, "w") as f:
+        json.dump(cfg, f)
+    with open(script_path, "w") as f:
+        f.write(_FORK_VERIFY_GDB_SCRIPT)
+    env = build_run_env(real)
+    env["ASAN_OPTIONS"] = "detect_leaks=0:abort_on_error=0"
+    env["FORK_VERIFY_CFG"] = cfg_path
+    try:
+        proc = subprocess.run(
+            ["gdb", "-batch", "-nx", "-q", "-x", script_path,
+             "--args", str(real)] + [str(a) for a in program_args],
+            env=env, capture_output=True, text=True, timeout=timeout)
+        out = proc.stdout + proc.stderr
+    except subprocess.TimeoutExpired:
+        return {"status": "timeout"}
+    except Exception as e:
+        return {"status": "error", "error": str(e)[:160]}
+    hits = []
+    for m in _re.finditer(r"FORK_HIT (\{.*\})", out):
+        try:
+            hits.append(json.loads(m.group(1)))
+        except Exception:
+            pass
+    sig = extract_crash_signature(out)
+    crash = sig["crash_frames"][0] if (sig and sig.get("crash_frames")) else {}
+    res = {
+        "status": "ok",
+        "reached": bool(hits),
+        "hit_count": len(hits),
+        "hits": hits[:8],
+        "invocation": cfg["ignore"] + 1,
+        "fork_condition": hits[0].get("cond") if hits else None,
+        "bp_unresolved": "FORK_BP_UNRESOLVED" in out,
+        "crash": ({"type": sig["type"],
+                   "function": crash.get("function"),
+                   "file": _path_basename(crash.get("file")),
+                   "line": crash.get("line")} if sig else None),
+    }
+    if hits and hits[0].get("cond_error"):
+        res["fork_condition_error"] = hits[0]["cond_error"]
+    res["_crash_signature"] = sig
+    return res
+
+
+def _make_fork_verifier(real_target, program_args, timeout, enabled, hint,
+                        max_checks, comp_ref_sig):
+    """Build a closure that verifies accepted mutants (at most one per offset
+    key, up to max_checks in total)."""
+    state = {"n": 0, "keys": set()}
+
+    def verify(key, data, match):
+        if not enabled or not hint:
+            return
+        if state["n"] >= max_checks or key in state["keys"]:
+            return
+        state["keys"].add(key)
+        state["n"] += 1
+        safe = re.sub(r"[^0-9A-Za-z_.-]+", "_", str(key))
+        path = os.path.join(tempfile.gettempdir(),
+                            "fork_verify_%s_%s" % (os.getpid(), safe))
+        try:
+            with open(path, "wb") as f:
+                f.write(data)
+            v = _verify_fork_reached(real_target, hint, path, program_args,
+                                     timeout=timeout)
+            exp = hint.get("expected_outcome")
+            cond = v.get("fork_condition")
+            v["satisfied"] = (cond == exp) if (cond is not None
+                                               and exp is not None) else None
+            csig = v.pop("_crash_signature", None)
+            if v.get("reached") and csig is not None and comp_ref_sig:
+                cverdict, _ = compare_crash_signatures(comp_ref_sig, csig)
+                v["crash_after_fork"] = cverdict in ("same_func", "same_site")
+                v["crash_verdict"] = cverdict
+            elif v.get("reached"):
+                v["crash_after_fork"] = None
+            else:
+                v["crash_after_fork"] = False
+            match["fork_verified"] = v
+            print(f'      [fork-verify] reached={v.get("reached")} '
+                  f'hits={v.get("hit_count")} cond={cond} '
+                  f'expected={exp} satisfied={v.get("satisfied")} '
+                  f'crash_after_fork={v.get("crash_after_fork")}'
+                  + (f' [{v.get("error") or v.get("status")}]'
+                     if v.get("status") != "ok" else ''))
+        finally:
+            try:
+                os.unlink(path)
+            except Exception:
+                pass
+
+    return verify
+
+
 def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                 program_args, offsets, timeout=10,
                                 probe_values=None, version=None):
