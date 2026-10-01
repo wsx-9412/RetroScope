@@ -251,14 +251,16 @@ def collect_analysis_summary(div, input_file, trace_json):
               or div.get("fork_statement") or "")
     stmt_a = div.get("root_cause_statement_a") or ""
 
-    try:
-        from trace_fork_offsets import extract_variables_from_statement
-        stmt_vars = list(dict.fromkeys(extract_variables_from_statement(stmt_b)))
-    except Exception:
-        stmt_vars = [v for v in re.findall(r"[A-Za-z_]\w*", stmt_b)
-                     if v not in ("if", "while", "for", "return", "sizeof",
-                                  "NULL", "else")]
-    stmt_vars = [v for v in stmt_vars if v and not v.isdigit()]
+    _C_KEYWORDS = {
+        "if", "else", "while", "for", "do", "switch", "case", "break",
+        "continue", "return", "sizeof", "NULL", "true", "false", "goto",
+        "int", "char", "long", "short", "unsigned", "signed", "float",
+        "double", "void", "const", "static", "extern", "struct", "union",
+        "enum", "typedef",
+    }
+    stmt_vars = list(dict.fromkeys(
+        v for v in re.findall(r"[A-Za-z_]\w*", stmt_b)
+        if v not in _C_KEYWORDS and not v.isdigit()))
 
     origin_json = _sibling(trace_json, "_origin.json")
     pt_json = _sibling(trace_json, "_polytracker_offsets.json")
@@ -343,17 +345,27 @@ def collect_analysis_summary(div, input_file, trace_json):
             md = json.load(open(src))
         except Exception:
             continue
+        def _scan(container):
+            got = []
+            if not isinstance(container, dict):
+                return got
+            for res in container.values():
+                if not isinstance(res, dict):
+                    continue
+                for m in (res.get("matches") or {}).values():
+                    if isinstance(m, dict) \
+                            and m.get("time_to_success") is not None:
+                        got.append(float(m["time_to_success"]))
+            return got
+
         vals = []
-        for res in (md.get("crash_results") or {}).values():
-            if isinstance(res, dict):
-                for m in (res.get("matches") or {}).values():
-                    if isinstance(m, dict) and m.get("time_to_success") is not None:
-                        vals.append(float(m["time_to_success"]))
-        for res in (md.get("pairwise_results") or {}).values():
-            if isinstance(res, dict):
-                for m in (res.get("matches") or {}).values():
-                    if isinstance(m, dict) and m.get("time_to_success") is not None:
-                        vals.append(float(m["time_to_success"]))
+        for key in ("crash_results", "pairwise_results",
+                    "ifd_region_mutation"):
+            vals += _scan(md.get(key))
+        # dynamic mutation JSON dumps the result map directly (offset keys)
+        direct = {k: v for k, v in md.items()
+                  if isinstance(k, str) and k.isdigit()}
+        vals += _scan(direct)
         if vals:
             v = min(vals)
             if t_success is None or v < t_success:
