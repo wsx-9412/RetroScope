@@ -150,8 +150,9 @@ def build_hint(div, binary_target, fork_file=None, fork_line=None,
 def verify_one(binary, hint, mutant_path, program_args, original_input,
                timeout=60):
     real = resolve_binary(binary)
-    if not real:
-        return {"status": "error", "error": "binary not found"}
+    if not real or not os.path.isfile(real) or not os.access(real, os.X_OK):
+        return {"status": "binary_missing",
+                "error": "target binary not found: %s" % (real or binary)}
     spec = hint.get("fork_spec") or ""
     specs = []
     if spec:
@@ -189,6 +190,13 @@ def verify_one(binary, hint, mutant_path, program_args, original_input,
         return {"status": "timeout"}
     except Exception as e:
         return {"status": "error", "error": str(e)[:160]}
+    # gdb could not load/exec the target: do not report this as "not reached"
+    for marker in ("No such file", "not in executable format",
+                   "Cannot exec", "not found"):
+        if marker in out and "FORK_HIT" not in out:
+            tail = [l for l in out.strip().splitlines() if l.strip()]
+            return {"status": "gdb_error",
+                    "error": (tail[-1] if tail else marker)[:160]}
     hits = []
     seen = set()
     for m in re.finditer(r"FORK_HIT (\{.*\})", out):
