@@ -5018,7 +5018,8 @@ def _reset_mutation_out_dir(input_file, version, out_root=None):
 
 def run_byte_mutation_stage(binary, binary_ref, input_file, program_args,
                             offsets, timeout, title='Byte mutation crash testing',
-                            version=None):
+                            version=None, verify_fork=False, verify_hint=None,
+                            verify_max=16):
     """Run the exhaustive 255-value mutation sweep for the given input
     offsets and print the match summary.
 
@@ -5042,7 +5043,9 @@ def run_byte_mutation_stage(binary, binary_ref, input_file, program_args,
 
     crash_results = test_byte_mutations_compare(
         binary, binary_ref, input_file, program_args,
-        offsets, timeout=timeout, version=version)
+        offsets, timeout=timeout, version=version,
+        verify_fork=verify_fork, verify_hint=verify_hint,
+        verify_max=verify_max)
 
     any_match = False
     for offset, info in sorted((k, v) for k, v in crash_results.items()
@@ -5506,7 +5509,9 @@ def _make_fork_verifier(real_target, program_args, timeout, enabled, hint,
 
 def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                 program_args, offsets, timeout=10,
-                                probe_values=None, version=None):
+                                probe_values=None, version=None,
+                                verify_fork=False, verify_hint=None,
+                                verify_max=16):
     """Mutate each byte at each offset and check whether the *target* binary
     (e.g. 4.0.8) reproduces the *reference* binary's (4.4.0) crash type.
 
@@ -5593,6 +5598,10 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
         import copy as _copy
         _comp_ref_sig = _copy.deepcopy(ref_sig)
         _comp_ref_sig['crash_frames'][0]['function'] = _mapped_ref_func
+
+    _verify = _make_fork_verifier(real_target, program_args, timeout,
+                                  verify_fork, verify_hint, verify_max,
+                                  _comp_ref_sig)
 
     # Baseline target outcome on the ORIGINAL file.  A mutation with no crash
     # signature is only "unchanged" if its exit code matches the baseline;
@@ -5689,6 +5698,8 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                     print(f'    0x{byte_val:02x} -> MATCHES ref crash '
                           f'({verdict}: {diff})  [took {_t_mut:.3f}s]')
                     _archive(offset, byte_val, _t_mut)
+                    _verify(offset, data,
+                            results[offset]['matches'][byte_val])
                 else:
                     observed.setdefault(verdict or 'no_crash', 0)
                     observed[verdict or 'no_crash'] += 1
@@ -5715,6 +5726,8 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                   f'(same_type at other site: {key})  '
                                   f'[took {_t_mut:.3f}s]')
                             _archive(offset, byte_val, _t_mut)
+                            _verify(offset, data,
+                                    results[offset]['matches'][byte_val])
                             continue
                         observed.setdefault('same_type_sites', {})
                         sites = observed['same_type_sites']
@@ -5768,6 +5781,8 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                         print(f'    0x{byte_val:02x} -> MATCHES ref crash '
                               f'({verdict}: {diff})  [took {_t_mut:.3f}s]')
                         _archive(offset, byte_val, _t_mut)
+                        _verify(offset, data,
+                                results[offset]['matches'][byte_val])
                     else:
                         observed.setdefault(verdict or 'no_crash', 0)
                         observed[verdict or 'no_crash'] += 1
@@ -5801,6 +5816,8 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                       f'(same_type at other site: {key})  '
                                       f'[took {_t_mut:.3f}s]')
                                 _archive(offset, byte_val, _t_mut)
+                                _verify(offset, data,
+                                        results[offset]['matches'][byte_val])
                                 continue
                             # Near-miss: same ASan kind at the baseline (own
                             # crash) site — the mutation did not steer the
@@ -5907,7 +5924,9 @@ def _build_mutation_pairs(offsets, var_spans, max_pairs=60):
 
 def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                                     program_args, pairs, timeout=10,
-                                    probe_values=None, version=None):
+                                    probe_values=None, version=None,
+                                    verify_fork=False, verify_hint=None,
+                                    verify_max=16):
     """Two-offset combined byte mutation.
 
     For every (offA, offB) pair, mutate BOTH bytes simultaneously (sweeping a
@@ -5964,6 +5983,10 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
         import copy as _copy
         _comp_ref_sig = _copy.deepcopy(ref_sig)
         _comp_ref_sig['crash_frames'][0]['function'] = _mapped_ref_func
+
+    _verify = _make_fork_verifier(real_target, program_args, timeout,
+                                  verify_fork, verify_hint, verify_max,
+                                  _comp_ref_sig)
 
     # Baseline target outcome on the ORIGINAL file (for fork-flip detection).
     base_tgt_out, base_tgt_rc, _ = _run_mutation_worker(
@@ -6052,6 +6075,8 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                     print(f'    ({va:02x},{vb:02x}) -> MATCHES ref crash '
                           f'({verdict}: {diff})')
                     _archive(offA, offB, va, vb, _t_mut)
+                    _verify(f'{offA:x}+{offB:x}', data,
+                            results[key]['matches'][f'{va:02x},{vb:02x}'])
                 else:
                     observed.setdefault(verdict or 'no_crash', 0)
                     observed[verdict or 'no_crash'] += 1
@@ -6075,6 +6100,8 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                             print(f'    ({va:02x},{vb:02x}) -> MATCHES ref crash '
                                   f'(same_type at other site: {skey})')
                             _archive(offA, offB, va, vb, _t_mut)
+                            _verify(f'{offA:x}+{offB:x}', data,
+                                    results[key]['matches'][f'{va:02x},{vb:02x}'])
                             continue
                         observed.setdefault('same_type_sites', {})
                         sites = observed['same_type_sites']
@@ -6113,7 +6140,9 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
 
 def run_pairwise_mutation_stage(binary, binary_ref, input_file, program_args,
                                 offsets, var_spans, timeout,
-                                title='Pairwise mutation', version=None):
+                                title='Pairwise mutation', version=None,
+                                verify_fork=False, verify_hint=None,
+                                verify_max=16):
     """Combined two-offset mutation over the fork-variable offsets."""
     if not offsets or len(offsets) < 2 or not input_file \
             or not os.path.isfile(input_file) or not binary:
