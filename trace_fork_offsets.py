@@ -5312,6 +5312,21 @@ def _map_ref_crash_function(binary_target, binary_ref, ref_crash):
     return None
 
 
+# Time-to-success is measured from the FIRST mutation attempt of the process
+# (across all mutation stages), not from the start of each individual run.
+_MUTATION_T0 = None
+
+
+def _mutation_clock_start():
+    global _MUTATION_T0
+    if _MUTATION_T0 is None:
+        _MUTATION_T0 = time.time()
+
+
+def _mutation_elapsed():
+    return (time.time() - _MUTATION_T0) if _MUTATION_T0 else 0.0
+
+
 def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                 program_args, offsets, timeout=10,
                                 probe_values=None, version=None):
@@ -5464,6 +5479,9 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
             modified[offset] = byte_val
             tasks.append((byte_val, bytes(modified)))
 
+        if tasks:
+            _mutation_clock_start()
+
         if len(tasks) <= 1:
             for byte_val, data in tasks:
                 out, rc, _t_mut = _run_mutation_worker(
@@ -5487,15 +5505,19 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                         'line': crash.get('line'),
                         'rc': rc,
                     }
+                    _tot = _mutation_elapsed()
+                    results[offset]['matches'][byte_val]['time_to_success'] = round(_tot, 3)
+                    results[offset]['matches'][byte_val]['time_this_mutation'] = round(_t_mut, 3)
                     try:
                         import stage_timing
                         stage_timing.record(
                             f"mutation succeeded offset=0x{offset:x} byte=0x{byte_val:02x}",
-                            _t_mut)
+                            _tot)
                     except Exception:
                         pass
                     print(f'    0x{byte_val:02x} -> MATCHES ref crash '
-                          f'({verdict}: {diff})  [took {_t_mut:.3f}s]')
+                          f'({verdict}: {diff})  [since first mutation {_tot:.3f}s, '
+                          f'this run {_t_mut:.3f}s]')
                     _archive(offset, byte_val, _t_mut)
                 else:
                     observed.setdefault(verdict or 'no_crash', 0)
@@ -5519,9 +5541,13 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                 'line': crash.get('line'),
                                 'rc': rc,
                             }
+                            _tot = _mutation_elapsed()
+                            results[offset]['matches'][byte_val]['time_to_success'] = round(_tot, 3)
+                            results[offset]['matches'][byte_val]['time_this_mutation'] = round(_t_mut, 3)
                             print(f'    0x{byte_val:02x} -> MATCHES ref crash '
                                   f'(same_type at other site: {key})  '
-                                  f'[took {_t_mut:.3f}s]')
+                                  f'[since first mutation {_tot:.3f}s, '
+                                  f'this run {_t_mut:.3f}s]')
                             _archive(offset, byte_val, _t_mut)
                             continue
                         observed.setdefault('same_type_sites', {})
@@ -5566,15 +5592,19 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                             'line': crash.get('line'),
                             'rc': rc,
                         }
+                        _tot = _mutation_elapsed()
+                        results[offset]['matches'][byte_val]['time_to_success'] = round(_tot, 3)
+                        results[offset]['matches'][byte_val]['time_this_mutation'] = round(_t_mut, 3)
                         try:
                             import stage_timing
                             stage_timing.record(
                                 f"mutation succeeded offset=0x{offset:x} byte=0x{byte_val:02x}",
-                                _t_mut)
+                                _tot)
                         except Exception:
                             pass
                         print(f'    0x{byte_val:02x} -> MATCHES ref crash '
-                              f'({verdict}: {diff})  [took {_t_mut:.3f}s]')
+                              f'({verdict}: {diff})  [since first mutation {_tot:.3f}s, '
+                              f'this run {_t_mut:.3f}s]')
                         _archive(offset, byte_val, _t_mut)
                     else:
                         observed.setdefault(verdict or 'no_crash', 0)
@@ -5598,16 +5628,20 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                     'line': crash.get('line'),
                                     'rc': rc,
                                 }
+                                _tot = _mutation_elapsed()
+                                results[offset]['matches'][byte_val]['time_to_success'] = round(_tot, 3)
+                                results[offset]['matches'][byte_val]['time_this_mutation'] = round(_t_mut, 3)
                                 try:
                                     import stage_timing
                                     stage_timing.record(
                                         f"mutation succeeded offset=0x{offset:x} byte=0x{byte_val:02x}",
-                                        _t_mut)
+                                        _tot)
                                 except Exception:
                                     pass
                                 print(f'    0x{byte_val:02x} -> MATCHES ref crash '
                                       f'(same_type at other site: {key})  '
-                                      f'[took {_t_mut:.3f}s]')
+                                      f'[since first mutation {_tot:.3f}s, '
+                                      f'this run {_t_mut:.3f}s]')
                                 _archive(offset, byte_val, _t_mut)
                                 continue
                             # Near-miss: same ASan kind at the baseline (own
@@ -5828,6 +5862,9 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                     continue
                 tasks.append(((va, vb), bytes(modified)))
 
+        if tasks:
+            _mutation_clock_start()
+
         with ProcessPoolExecutor(max_workers=n_workers) as ex:
             futures = {}
             for combo, data in tasks:
@@ -5857,8 +5894,12 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                         'line': crash.get('line'),
                         'rc': rc,
                     }
+                    _tot = _mutation_elapsed()
+                    results[key]['matches'][f'{va:02x},{vb:02x}']['time_to_success'] = round(_tot, 3)
+                    results[key]['matches'][f'{va:02x},{vb:02x}']['time_this_mutation'] = round(_t_mut, 3)
                     print(f'    ({va:02x},{vb:02x}) -> MATCHES ref crash '
-                          f'({verdict}: {diff})')
+                          f'({verdict}: {diff})  [since first mutation {_tot:.3f}s, '
+                          f'this run {_t_mut:.3f}s]')
                     _archive(offA, offB, va, vb, _t_mut)
                 else:
                     observed.setdefault(verdict or 'no_crash', 0)
@@ -5880,8 +5921,13 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                                 'line': crash.get('line'),
                                 'rc': rc,
                             }
+                            _tot = _mutation_elapsed()
+                            results[key]['matches'][f'{va:02x},{vb:02x}']['time_to_success'] = round(_tot, 3)
+                            results[key]['matches'][f'{va:02x},{vb:02x}']['time_this_mutation'] = round(_t_mut, 3)
                             print(f'    ({va:02x},{vb:02x}) -> MATCHES ref crash '
-                                  f'(same_type at other site: {skey})')
+                                  f'(same_type at other site: {skey})  '
+                                  f'[since first mutation {_tot:.3f}s, '
+                                  f'this run {_t_mut:.3f}s]')
                             _archive(offA, offB, va, vb, _t_mut)
                             continue
                         observed.setdefault('same_type_sites', {})
