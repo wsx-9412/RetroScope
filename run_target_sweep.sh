@@ -32,13 +32,21 @@ if [ ! -d "$REF_DIR" ]; then
     echo "reference dir not found: $REF_DIR"; exit 1
 fi
 
-# all versions strictly older than the reference, newest first
-mapfile -t TARGETS < <(
-    printf '%s\n' tiff-versions/tiff-* \
-    | sed 's|.*/||' | sort -V \
-    | awk -v ref="$REF_NAME" 'BEGIN{f=1}{if($0==ref){f=0;next} if(f) print}' \
-    | tac
-)
+# explicit target list on the command line force-reruns those versions
+# (previous pass archived as <target>.first_pass.*); otherwise sweep all
+# versions strictly older than the reference, newest first.
+FORCE=0
+if [ "$#" -gt 0 ]; then
+    TARGETS=("$@")
+    FORCE=1
+else
+    mapfile -t TARGETS < <(
+        printf '%s\n' tiff-versions/tiff-* \
+        | sed 's|.*/||' | sort -V \
+        | awk -v ref="$REF_NAME" 'BEGIN{f=1}{if($0==ref){f=0;next} if(f) print}' \
+        | tac
+    )
+fi
 if [ "${#TARGETS[@]}" -eq 0 ]; then
     echo "no target versions older than $REF_NAME"; exit 1
 fi
@@ -54,9 +62,18 @@ for T in "${TARGETS[@]}"; do
     [ -d "$TDIR" ] || { echo "[skip] $T (dir missing)"; continue; }
     MARK="$SWEEP_DIR/${T}.done"
     LOG="$SWEEP_DIR/${T}.log"
-    if [ -f "$MARK" ]; then
+    if [ -f "$MARK" ] && [ "$FORCE" -eq 0 ]; then
         echo "[skip] $T (already completed: $MARK)"
         continue
+    fi
+    if [ "$FORCE" -eq 1 ]; then
+        # keep the previous pass for the record, then rerun from scratch
+        [ -f "$LOG" ] && [ ! -f "$SWEEP_DIR/${T}.first_pass.log" ] \
+            && cp -f "$LOG" "$SWEEP_DIR/${T}.first_pass.log"
+        [ -d "$SWEEP_DIR/$T" ] && [ ! -d "$SWEEP_DIR/${T}.first_pass" ] \
+            && mv "$SWEEP_DIR/$T" "$SWEEP_DIR/${T}.first_pass"
+        rm -f "$MARK"
+        echo "[force] $T (previous pass kept as ${T}.first_pass.*)"
     fi
     echo "=============================================================="
     echo "[run ] target=$T  reference=$REF_NAME  $(date '+%F %T')"
