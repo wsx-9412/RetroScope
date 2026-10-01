@@ -5365,21 +5365,19 @@ class ForkBP(gdb.Breakpoint):
         print("FORK_HIT " + json.dumps(rec))
         return False
 
-bp = None
+# The fork statement usually lives in a shared library (e.g. libtiff), which
+# is not mapped before run; creating the breakpoints as *pending* is correct:
+# gdb resolves them when the library is loaded.  Keep every candidate spec
+# (absolute pipeline path and basename) and let the resolvable one fire.
+bps = []
 for spec in CFG.get("specs", []):
     try:
-        cand = ForkBP(spec)
+        b = ForkBP(spec)
+        b.ignore_count = CFG.get("ignore", 0)
+        bps.append(b)
     except Exception:
         continue
-    try:
-        if getattr(cand, "pending", False):
-            cand.delete()
-            continue
-    except Exception:
-        pass
-    bp = cand
-    break
-if bp is None:
+if not bps:
     print("FORK_BP_UNRESOLVED")
 gdb.execute("run")
 gdb.execute("quit")
@@ -5431,11 +5429,17 @@ def _verify_fork_reached(binary, hint, input_path, program_args,
     except Exception as e:
         return {"status": "error", "error": str(e)[:160]}
     hits = []
+    _seen = set()
     for m in _re.finditer(r"FORK_HIT (\{.*\})", out):
         try:
-            hits.append(json.loads(m.group(1)))
+            rec = json.loads(m.group(1))
         except Exception:
-            pass
+            continue
+        k = (rec.get("hit"), rec.get("pc"))
+        if k in _seen:
+            continue
+        _seen.add(k)
+        hits.append(rec)
     sig = extract_crash_signature(out)
     crash = sig["crash_frames"][0] if (sig and sig.get("crash_frames")) else {}
     res = {
