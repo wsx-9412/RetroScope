@@ -203,7 +203,7 @@
 #define PACKBITS_SUPPORT 1
 
 /* Support Pixar log-format algorithm (requires Zlib) */
-/* #undef PIXARLOG_SUPPORT */
+#define PIXARLOG_SUPPORT 1
 
 /* Define to necessary symbol if this constant uses a non-standard name on
    your system. */
@@ -334,10 +334,10 @@
 #define X_DISPLAY_MISSING 1
 
 /* Support Deflate compression */
-/* #undef ZIP_SUPPORT */
+#define ZIP_SUPPORT 1
 
 /* Support zstd compression */
-/* #undef ZSTD_SUPPORT */
+#define ZSTD_SUPPORT 1
 
 /* Enable large inode numbers on Mac OS X 10.5.  */
 #ifndef _DARWIN_USE_64_BIT_INODE
