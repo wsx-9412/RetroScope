@@ -1251,10 +1251,40 @@ def build_var_dump_block(variables):
 import gdb
 _vars = [{var_list}]
 _roots = set(_vars)
-def _dump_var(_v, _depth=0):
+def _eval_var(_v):
+    # Evaluate in the current (fork) frame first; context expressions such as
+    # image->length live in an ancestor frame when the fork statement only
+    # uses callee locals (start/end/cols), so walk up a few frames.
     try:
-        _val = gdb.parse_and_eval(_v)
+        return gdb.parse_and_eval(_v)
     except Exception:
+        pass
+    try:
+        _sel = gdb.selected_frame()
+    except Exception:
+        return None
+    _f = _sel.older() if _sel is not None else None
+    _n = 0
+    _val = None
+    while _f is not None and _n < 4:
+        try:
+            _f.select()
+            _val = gdb.parse_and_eval(_v)
+            break
+        except Exception:
+            _val = None
+            _f = _f.older()
+            _n += 1
+    try:
+        if _sel is not None:
+            _sel.select()
+    except Exception:
+        pass
+    return _val
+
+def _dump_var(_v, _depth=0):
+    _val = _eval_var(_v)
+    if _val is None:
         return
     _t = _val.type
     # Resolve typedefs (e.g. AFframecount -> unsigned long, or a typedef'd
@@ -1482,6 +1512,19 @@ quit
 """
 
 
+# Input-controlling TIFF context expressions tried on every trace in
+# addition to the fork statement's own variables.  The crashed value often
+# lives in the caller context (e.g. image->length) while the fork statement
+# itself only uses callee locals (start/end/cols); without these the
+# value-pattern mapping cannot find the input bytes steering the crash.
+# Undefined expressions are skipped silently by the dumper.
+_TIFF_CONTEXT_VARS = (
+    'image->width', 'image->length', 'image->bps', 'image->spp',
+    'image->compression', 'image->photometric',
+    'crop->bufftotal', 'crop->combined_width', 'crop->combined_length',
+)
+
+
 def run_gdb_trace(binary, fork_spec, variables, input_file, program_args, timeout=30):
     real_binary = resolve_binary(binary)
     run_parts = [a.replace('{input_file}', input_file).replace('{input}', input_file)
@@ -1500,9 +1543,13 @@ def run_gdb_trace(binary, fork_spec, variables, input_file, program_args, timeou
     env = build_run_env(real_binary)
     output = ''
     for spec in specs:
+        _vars_for_dump = list(variables or [])
+        for _cv in _TIFF_CONTEXT_VARS:
+            if _cv not in _vars_for_dump:
+                _vars_for_dump.append(_cv)
         script = GDB_SCRIPT.format(
             fork_spec=spec,
-            var_dump=build_var_dump_block(variables),
+            var_dump=build_var_dump_block(_vars_for_dump),
             strip_offset=build_strip_offset_block(),
             heap_scan=build_heap_scan_block(),
             run_args=' '.join(run_parts),
