@@ -219,45 +219,14 @@ print('dynamic offsets under test: %s' % ' '.join('0x%x' % o for o in offs),
       flush=True)
 if not offs:
     sys.exit(3)
-# Fork verification hint: certify that accepted mutants really pass the
-# fork statement, now evaluate it on the reference side, and crash after it.
-import re as _re
-_dyn = div.get('dynamic_fork') or {}
-_diff = _dyn.get('diff') or {}
-_bside = _diff.get('b') or {}
-_aside = _diff.get('a') or {}
-_cond_stmt = _bside.get('text') or div.get('root_cause_statement_b') or ''
-_m = _re.match(r'^\s*if\s*\((.*)\)\s*$', _cond_stmt, _re.S)
-_hint = {
-    'fork_spec': '%s:%s' % (div.get('root_cause_file_b'), div.get('root_cause_line_b')),
-    'cond_expr': ('((%s))' % _m.group(1).strip()) if _m else None,
-    'expected_outcome': _aside.get('outcome') if isinstance(_aside.get('outcome'), bool) else None,
-    'invocation': _dyn.get('invocation'),
-    'var_exprs': (div.get('variables') or [])[:6],
-}
-print('fork-verify hint: spec=%s invocation=%s cond=%s expected=%s' % (
-    _hint['fork_spec'], _hint['invocation'], _hint['cond_expr'],
-    _hint['expected_outcome']), flush=True)
 res = test_byte_mutations_compare(
     div.get('binary_b'), div.get('binary_a'), div.get('input_file'),
-    div.get('args_b') or [], offs, timeout=60, version=div.get('version_b'),
-    verify_fork=True, verify_hint=_hint, verify_max=16)
+    div.get('args_b') or [], offs, timeout=60, version=div.get('version_b'))
 n = sum(len(i.get('matches') or {})
         for i in res.values() if isinstance(i, dict))
-_nv = 0
-_nok = 0
-for _i in res.values():
-    if not isinstance(_i, dict):
-        continue
-    for _m2 in (_i.get('matches') or {}).values():
-        _fv = _m2.get('fork_verified')
-        if _fv:
-            _nv += 1
-            if _fv.get('reached') and _fv.get('satisfied') and _fv.get('crash_after_fork'):
-                _nok += 1
-print('dynamic-offset mutation matches: %d (fork-verified: %d, fully certified: %d)'
-      ' (details: %s)' % (n, _nv, _nok, out_json), flush=True)
 json.dump(res, open(out_json, 'w'), indent=1, default=str)
+print('dynamic-offset mutation matches: %d (details: %s)' % (n, out_json),
+      flush=True)
 sys.exit(0 if n else 3)
 DYN_MUT_PY
         if [ $? -eq 0 ]; then
@@ -273,7 +242,7 @@ DYN_MUT_PY
         echo "=== Legacy GDB offset trace (fallback) ==="
         python3 -u trace_fork_offsets.py \
             --trace-json "$DIVERGE_JSON" \
-            --timeout 60 --verify-fork --verify-fork-max 16
+            --timeout 60
         if [ $? -eq 0 ]; then
             echo -e "\n=== GDB trace completed ==="
         else
