@@ -5364,11 +5364,11 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
         """Save a successful mutation to the out folder and report it.
 
         The ``time:`` component is the elapsed time from the FIRST mutation
-        attempt of the run to this successful one (seconds, one decimal),
+        attempt of the run to this successful one (integer seconds),
         matching the reported time-to-success metric."""
         _saved = _save_mutation_artifact(
             out_dir,
-            f'0x{offset:x}:-0x{byte_val:02x}:time:{t_success:.1f}',
+            f'0x{offset:x}:-0x{byte_val:02x}:time:{int(round(t_success))}',
             original_data, [(offset, byte_val)])
         if _saved:
             print(f'      saved: {_saved}')
@@ -5781,10 +5781,10 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
         """Save a successful two-offset mutation to the out folder.
 
         The ``time:`` component is the elapsed time from the first mutation
-        attempt of the run to this successful one (seconds, one decimal)."""
+        attempt of the run to this successful one (integer seconds)."""
         _saved = _save_mutation_artifact(
             out_dir,
-            f'0x{offA:x}+0x{offB:x}:-0x{va:02x}-0x{vb:02x}:time:{t_success:.1f}',
+            f'0x{offA:x}+0x{offB:x}:-0x{va:02x}-0x{vb:02x}:time:{int(round(t_success))}',
             original_data, [(offA, va), (offB, vb)])
         if _saved:
             print(f'      saved: {_saved}')
