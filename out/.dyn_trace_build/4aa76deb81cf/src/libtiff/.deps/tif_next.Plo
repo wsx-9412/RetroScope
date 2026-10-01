@@ -18,7 +18,6 @@ tif_next.lo: tif_next.c /usr/include/stdc-predef.h tiffiop.h tif_config.h \
  /usr/include/x86_64-linux-gnu/bits/types/time_t.h \
  /usr/include/x86_64-linux-gnu/bits/stat.h \
  /usr/include/x86_64-linux-gnu/bits/struct_stat.h \
- /usr/include/x86_64-linux-gnu/bits/fcntl2.h \
  /usr/include/x86_64-linux-gnu/sys/types.h \
  /usr/include/x86_64-linux-gnu/bits/types/clock_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/clockid_t.h \
@@ -32,7 +31,6 @@ tif_next.lo: tif_next.c /usr/include/stdc-predef.h tiffiop.h tif_config.h \
  /usr/include/x86_64-linux-gnu/bits/types/sigset_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/__sigset_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_timeval.h \
- /usr/include/x86_64-linux-gnu/bits/select2.h \
  /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h \
  /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h \
  /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h \
@@ -42,11 +40,8 @@ tif_next.lo: tif_next.c /usr/include/stdc-predef.h tiffiop.h tif_config.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
  /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
- /usr/include/strings.h \
- /usr/include/x86_64-linux-gnu/bits/strings_fortified.h \
- /usr/include/x86_64-linux-gnu/bits/string_fortified.h \
- /usr/include/assert.h /usr/include/search.h tiffio.h tiff.h tiffconf.h \
- tiffvers.h /usr/include/stdio.h \
+ /usr/include/strings.h /usr/include/assert.h /usr/include/search.h \
+ tiffio.h tiff.h tiffconf.h tiffvers.h /usr/include/stdio.h \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stdarg.h \
  /usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h \
@@ -56,9 +51,7 @@ tif_next.lo: tif_next.c /usr/include/stdc-predef.h tiffiop.h tif_config.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_FILE.h \
  /usr/include/x86_64-linux-gnu/bits/stdio_lim.h \
  /usr/include/x86_64-linux-gnu/bits/floatn.h \
- /usr/include/x86_64-linux-gnu/bits/floatn-common.h \
- /usr/include/x86_64-linux-gnu/bits/stdio.h \
- /usr/include/x86_64-linux-gnu/bits/stdio2.h tif_dir.h
+ /usr/include/x86_64-linux-gnu/bits/floatn-common.h tif_dir.h
 /usr/include/stdc-predef.h:
 tiffiop.h:
 tif_config.h:
@@ -82,7 +75,6 @@ tif_config.h:
 /usr/include/x86_64-linux-gnu/bits/types/time_t.h:
 /usr/include/x86_64-linux-gnu/bits/stat.h:
 /usr/include/x86_64-linux-gnu/bits/struct_stat.h:
-/usr/include/x86_64-linux-gnu/bits/fcntl2.h:
 /usr/include/x86_64-linux-gnu/sys/types.h:
 /usr/include/x86_64-linux-gnu/bits/types/clock_t.h:
 /usr/include/x86_64-linux-gnu/bits/types/clockid_t.h:
@@ -97,7 +89,6 @@ tif_config.h:
 /usr/include/x86_64-linux-gnu/bits/types/sigset_t.h:
 /usr/include/x86_64-linux-gnu/bits/types/__sigset_t.h:
 /usr/include/x86_64-linux-gnu/bits/types/struct_timeval.h:
-/usr/include/x86_64-linux-gnu/bits/select2.h:
 /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h:
 /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h:
 /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h:
@@ -109,8 +100,6 @@ tif_config.h:
 /usr/include/x86_64-linux-gnu/bits/types/locale_t.h:
 /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h:
 /usr/include/strings.h:
-/usr/include/x86_64-linux-gnu/bits/strings_fortified.h:
-/usr/include/x86_64-linux-gnu/bits/string_fortified.h:
 /usr/include/assert.h:
 /usr/include/search.h:
 tiffio.h:
@@ -128,6 +117,4 @@ tiffvers.h:
 /usr/include/x86_64-linux-gnu/bits/stdio_lim.h:
 /usr/include/x86_64-linux-gnu/bits/floatn.h:
 /usr/include/x86_64-linux-gnu/bits/floatn-common.h:
-/usr/include/x86_64-linux-gnu/bits/stdio.h:
-/usr/include/x86_64-linux-gnu/bits/stdio2.h:
 tif_dir.h:
