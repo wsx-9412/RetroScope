@@ -364,6 +364,23 @@ print(f'PolyTracker results saved to: {output_path}')
     fi
 fi
 
+# ============================================================================
+# Final step: post-hoc fork-path verification of the generated PoCs.
+# Runs after all mutation stages have finished and audits every produced input
+# file independently: does the target binary actually execute the fork
+# statement, does the fork condition now evaluate to the reference side, and
+# does the reference-compatible crash occur after the fork?
+# ============================================================================
+FINAL_DIVERGE_JSON="results/${CVE_ID}.diverge.json"
+if [ -f "$FINAL_DIVERGE_JSON" ]; then
+    echo ""
+    echo "=== Fork-path verification of generated PoCs (post-hoc) ==="
+    python3 -u verify_fork_path.py \
+        --trace-json "$FINAL_DIVERGE_JSON" \
+        --output "results/${CVE_ID}_fork_path_verification.json" \
+        --limit 32 --timeout 60 || true
+fi
+
 echo -e "\n=== Analysis completed ==="
 echo ""
 echo "=== Timing summary (since compilation finished) ==="
