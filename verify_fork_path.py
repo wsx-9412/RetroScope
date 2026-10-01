@@ -235,6 +235,145 @@ def default_mutants_dir(input_file):
     return cands[0] if cands else None
 
 
+
+def _sibling(trace_json, suffix):
+    d = os.path.dirname(os.path.abspath(trace_json))
+    stem = os.path.basename(trace_json)
+    stem = re.sub(r"\.json$", "", stem)
+    stem = re.sub(r"\.diverge$", "", stem)
+    path = os.path.join(d, stem + suffix)
+    return path if os.path.isfile(path) else None
+
+
+def collect_analysis_summary(div, input_file, trace_json):
+    """Fork statement / variables / located offsets / time-to-success."""
+    stmt_b = (div.get("root_cause_statement_b")
+              or div.get("fork_statement") or "")
+    stmt_a = div.get("root_cause_statement_a") or ""
+
+    try:
+        from trace_fork_offsets import extract_variables_from_statement
+        stmt_vars = list(dict.fromkeys(extract_variables_from_statement(stmt_b)))
+    except Exception:
+        stmt_vars = [v for v in re.findall(r"[A-Za-z_]\w*", stmt_b)
+                     if v not in ("if", "while", "for", "return", "sizeof",
+                                  "NULL", "else")]
+    stmt_vars = [v for v in stmt_vars if v and not v.isdigit()]
+
+    origin_json = _sibling(trace_json, "_origin.json")
+    pt_json = _sibling(trace_json, "_polytracker_offsets.json")
+    mut_dyn = _sibling(trace_json, "_origin_mutation.json")
+    legacy_mut = str(BASE / "in" / "fork_trace_result.json")
+
+    traced = []
+    if origin_json:
+        try:
+            od = json.load(open(origin_json))
+            events = od.get("events") or []
+            children = {}
+            for e in events:
+                children.setdefault(e.get("parent"), []).append(e)
+
+            def _has_real(eid):
+                for c in children.get(eid, []):
+                    if c.get("kind") not in ("unsupported", "visited"):
+                        return True
+                    if _has_real(c.get("id")):
+                        return True
+                return False
+
+            traced = [e.get("expr") for e in events
+                      if e.get("kind") == "variable" and e.get("size")
+                      and _has_real(e.get("id"))]
+        except Exception:
+            traced = []
+    if not traced and pt_json:
+        try:
+            pd = json.load(open(pt_json))
+            traced = list((pd.get("variable_offsets") or {}).keys())
+        except Exception:
+            traced = []
+    if not traced:
+        traced = [v for v in (div.get("variables") or [])
+                  if isinstance(v, str)]
+    traced = list(dict.fromkeys(traced))
+
+    located = set()
+    if origin_json:
+        try:
+            od = json.load(open(origin_json))
+            for o in od.get("offsets") or []:
+                off, ln = o.get("offset"), o.get("length") or 1
+                if off is None:
+                    continue
+                located.update(range(off, off + ln))
+        except Exception:
+            pass
+    if not located and pt_json:
+        try:
+            pd = json.load(open(pt_json))
+            for offs in (pd.get("variable_offsets") or {}).values():
+                for h in offs or []:
+                    if isinstance(h, (list, tuple)):
+                        off = h[0]
+                        ln = h[1] if len(h) > 1 else 1
+                    elif isinstance(h, dict):
+                        off = h.get("offset")
+                        ln = (h.get("length") or h.get("width") or 1)
+                    else:
+                        continue
+                    if off is None:
+                        continue
+                    located.update(range(off, off + max(1, int(ln))))
+        except Exception:
+            pass
+    if not located and os.path.isfile(legacy_mut):
+        try:
+            ld = json.load(open(legacy_mut))
+            for off in ld.get("mutation_offsets") or []:
+                located.add(int(off))
+        except Exception:
+            pass
+
+    t_success, t_src = None, None
+    for src in (mut_dyn, legacy_mut):
+        if not src or not os.path.isfile(src):
+            continue
+        try:
+            md = json.load(open(src))
+        except Exception:
+            continue
+        vals = []
+        for res in (md.get("crash_results") or {}).values():
+            if isinstance(res, dict):
+                for m in (res.get("matches") or {}).values():
+                    if isinstance(m, dict) and m.get("time_to_success") is not None:
+                        vals.append(float(m["time_to_success"]))
+        for res in (md.get("pairwise_results") or {}).values():
+            if isinstance(res, dict):
+                for m in (res.get("matches") or {}).values():
+                    if isinstance(m, dict) and m.get("time_to_success") is not None:
+                        vals.append(float(m["time_to_success"]))
+        if vals:
+            v = min(vals)
+            if t_success is None or v < t_success:
+                t_success, t_src = v, src
+
+    size = os.path.getsize(input_file) if os.path.isfile(input_file) else None
+    traced_stmt = [v for v in stmt_vars if v in traced]
+    return {
+        "fork_statement": stmt_b,
+        "fork_statement_reference": stmt_a,
+        "statement_operands": stmt_vars,
+        "traced_variables": traced,
+        "traced_statement_operands": traced_stmt,
+        "located_offsets": len(located),
+        "input_size": size,
+        "offset_ratio": ("%d/%d" % (len(located), size)) if size else None,
+        "time_to_first_success_seconds": t_success,
+        "time_to_first_success_source": (os.path.basename(t_src) if t_src else None),
+    }
+
 def main():
     ap = argparse.ArgumentParser(
         description="Verify that generated PoCs pass the fork statement "
@@ -397,6 +536,8 @@ def main():
                                         entry["error"]))
         report["mutants"].append(entry)
 
+    summary = collect_analysis_summary(div, input_file, a.trace_json)
+    report["analysis_summary"] = summary
     report["summary"] = {
         "checked": len(report["mutants"]),
         "reached_fork": n_reached,
@@ -404,6 +545,26 @@ def main():
         "crash_after_fork": n_caf,
         "fully_certified": n_pass,
     }
+    print("\n=== fork / tracing summary ===")
+    print("  fork statement (target) : %s" % (summary["fork_statement"] or "N/A"))
+    print("  fork statement (ref)    : %s"
+          % (summary["fork_statement_reference"] or "N/A"))
+    print("  statement operands      : %s"
+          % ", ".join(summary["statement_operands"]) or "N/A")
+    print("  traced variable(s)      : %s"
+          % ", ".join(summary["traced_variables"]) or "N/A")
+    print("  traced from statement   : %s"
+          % (", ".join(summary["traced_statement_operands"]) or "N/A"))
+    print("  located input offsets   : %s bytes"
+          % summary["located_offsets"]
+          + (" / %s bytes total (%s)" % (summary["input_size"],
+                                         summary["offset_ratio"])
+             if summary["input_size"] else ""))
+    if summary["time_to_first_success_seconds"] is not None:
+        print("  first mutation success  : %.3f s after the first mutation "
+              "started (%s)"
+              % (summary["time_to_first_success_seconds"],
+                 summary["time_to_first_success_source"]))
     out_path = a.output or str(
         Path(a.trace_json).with_name(
             os.path.splitext(os.path.basename(a.trace_json))[0]
