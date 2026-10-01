@@ -64,13 +64,8 @@ def build_run_env(binary):
     # the fork breakpoint is actually reachable during GDB tracing.
     _asan = env.get("ASAN_OPTIONS", "")
     if "detect_leaks=0" not in _asan:
-        _asan = "detect_leaks=0" + (":" + _asan if _asan else "")
-    # A single runaway mutant (huge allocation, unbounded loop) must not
-    # exhaust the host: ASan kills the child once its RSS exceeds this cap.
-    if "hard_rss_limit_mb" not in _asan:
-        _asan += ":hard_rss_limit_mb=" + os.environ.get(
-            "RETROSCOPE_ASAN_RSS_MB", "512")
-    env["ASAN_OPTIONS"] = _asan
+        env["ASAN_OPTIONS"] = ("detect_leaks=0" +
+                               (":" + _asan if _asan else ""))
     d = os.path.dirname(os.path.abspath(binary))
     for _ in range(6):
         lib_dirs = []
@@ -90,6 +85,23 @@ def build_run_env(binary):
         if parent == d:
             break
         d = parent
+    return env
+
+
+def _mutation_env(binary):
+    """Environment for a single mutation run.
+
+    Same as ``build_run_env`` plus an ASan RSS cap so a runaway mutant
+    (huge allocation, no crash) cannot exhaust the host.  GDB-trace runs
+    deliberately do NOT get the cap: a legitimately large target run must
+    be able to reach its fork breakpoint.
+    """
+    env = build_run_env(binary)
+    _asan = env.get("ASAN_OPTIONS", "")
+    if "hard_rss_limit_mb" not in _asan:
+        _asan += ":hard_rss_limit_mb=" + os.environ.get(
+            "RETROSCOPE_ASAN_RSS_MB", "512")
+    env["ASAN_OPTIONS"] = _asan
     return env
 
 
@@ -5228,7 +5240,7 @@ def test_value_level_mutations(binary_target, binary_ref, input_file,
             with open(script_file, 'w') as f:
                 f.write(script)
             try:
-                env = build_run_env(binary)
+                env = _mutation_env(binary)
                 proc = subprocess.run(
                     ['gdb', '-batch', '-nx', '-q', '-x', script_file,
                      '--', binary],
@@ -5345,7 +5357,7 @@ def _run_mutation_worker(task):
             f.write(data)
         cmd = [binary] + [_replace_input_arg(a, tmp_path, input_file)
                           for a in program_args]
-        env = build_run_env(binary)
+        env = _mutation_env(binary)
         proc = subprocess.run(cmd, capture_output=True, text=True,
                               timeout=timeout, env=env)
         return proc.stdout + proc.stderr, proc.returncode, time.time() - _t0
@@ -5456,7 +5468,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                 f.write(data)
             cmd = [binary] + [_replace_input_arg(a, tmp_path, input_file)
                               for a in program_args]
-            env = build_run_env(binary)
+            env = _mutation_env(binary)
             proc = subprocess.run(cmd, capture_output=True, text=True,
                                   timeout=timeout, env=env)
             return proc.stdout + proc.stderr, proc.returncode
