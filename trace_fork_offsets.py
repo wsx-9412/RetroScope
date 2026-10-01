@@ -5463,7 +5463,7 @@ def _verify_fork_reached(binary, hint, input_path, program_args,
 
 
 def _make_fork_verifier(real_target, program_args, timeout, enabled, hint,
-                        max_checks, comp_ref_sig):
+                        max_checks, comp_ref_sig, original_input=None):
     """Build a closure that verifies accepted mutants (at most one per offset
     key, up to max_checks in total)."""
     state = {"n": 0, "keys": set()}
@@ -5483,7 +5483,11 @@ def _make_fork_verifier(real_target, program_args, timeout, enabled, hint,
         try:
             with open(path, "wb") as f:
                 f.write(data)
-            v = _verify_fork_reached(real_target, hint, path, program_args,
+            run_args = program_args
+            if original_input:
+                run_args = [_replace_input_arg(a, path, original_input)
+                            for a in program_args]
+            v = _verify_fork_reached(real_target, hint, path, run_args,
                                      timeout=timeout)
             exp = hint.get("expected_outcome")
             cond = v.get("fork_condition")
@@ -5615,7 +5619,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
 
     _verify = _make_fork_verifier(real_target, program_args, timeout,
                                   verify_fork, verify_hint, verify_max,
-                                  _comp_ref_sig)
+                                  _comp_ref_sig, original_input=input_file)
 
     # Baseline target outcome on the ORIGINAL file.  A mutation with no crash
     # signature is only "unchanged" if its exit code matches the baseline;
@@ -6003,7 +6007,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
 
     _verify = _make_fork_verifier(real_target, program_args, timeout,
                                   verify_fork, verify_hint, verify_max,
-                                  _comp_ref_sig)
+                                  _comp_ref_sig, original_input=input_file)
 
     # Baseline target outcome on the ORIGINAL file (for fork-flip detection).
     base_tgt_out, base_tgt_rc, _ = _run_mutation_worker(
