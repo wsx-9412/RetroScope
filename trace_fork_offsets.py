@@ -5018,8 +5018,7 @@ def _reset_mutation_out_dir(input_file, version, out_root=None):
 
 def run_byte_mutation_stage(binary, binary_ref, input_file, program_args,
                             offsets, timeout, title='Byte mutation crash testing',
-                            version=None, verify_fork=False, verify_hint=None,
-                            verify_max=16):
+                            version=None):
     """Run the exhaustive 255-value mutation sweep for the given input
     offsets and print the match summary.
 
@@ -5043,9 +5042,7 @@ def run_byte_mutation_stage(binary, binary_ref, input_file, program_args,
 
     crash_results = test_byte_mutations_compare(
         binary, binary_ref, input_file, program_args,
-        offsets, timeout=timeout, version=version,
-        verify_fork=verify_fork, verify_hint=verify_hint,
-        verify_max=verify_max)
+        offsets, timeout=timeout, version=version)
 
     any_match = False
     for offset, info in sorted((k, v) for k, v in crash_results.items()
@@ -5315,221 +5312,9 @@ def _map_ref_crash_function(binary_target, binary_ref, ref_crash):
     return None
 
 
-
-# ---------------------------------------------------------------------------
-# Fork verification: after a mutation is accepted (target reproduces the
-# reference crash), re-run the mutated input under GDB and certify:
-#   1. the fork statement is actually executed,
-#   2. at the identified invocation the fork condition now evaluates to the
-#      reference-side outcome (the last fork point is *satisfied*),
-#   3. the crash occurs after that point (the same GDB run hits the fork and
-#      then dies with the reference crash signature).
-# ---------------------------------------------------------------------------
-_FORK_VERIFY_GDB_SCRIPT = r"""
-import gdb, json, os
-CFG = json.load(open(os.environ["FORK_VERIFY_CFG"]))
-gdb.execute("set pagination off")
-gdb.execute("set confirm off")
-gdb.execute("set breakpoint pending on")
-try:
-    gdb.execute("set disable-randomization on")
-except Exception:
-    pass
-
-class ForkBP(gdb.Breakpoint):
-    def __init__(self, spec):
-        super(ForkBP, self).__init__(spec)
-        self.n = 0
-        self.ignore_count = CFG.get("ignore", 0)
-
-    def stop(self):
-        self.n += 1
-        rec = {"hit": self.n + CFG.get("ignore", 0)}
-        try:
-            rec["pc"] = int(gdb.parse_and_eval("$pc"))
-        except Exception:
-            pass
-        if CFG.get("cond_expr"):
-            try:
-                rec["cond"] = bool(int(gdb.parse_and_eval(CFG["cond_expr"])))
-            except Exception as e:
-                rec["cond_error"] = str(e)[:120]
-        vals = {}
-        for e in (CFG.get("var_exprs") or []):
-            try:
-                vals[e] = int(gdb.parse_and_eval(e))
-            except Exception:
-                pass
-        if vals:
-            rec["vars"] = vals
-        print("FORK_HIT " + json.dumps(rec))
-        return False
-
-# The fork statement usually lives in a shared library (e.g. libtiff), which
-# is not mapped before run; creating the breakpoints as *pending* is correct:
-# gdb resolves them when the library is loaded.  Keep every candidate spec
-# (absolute pipeline path and basename) and let the resolvable one fire.
-bps = []
-for spec in CFG.get("specs", []):
-    try:
-        b = ForkBP(spec)
-        b.ignore_count = CFG.get("ignore", 0)
-        bps.append(b)
-    except Exception:
-        continue
-if not bps:
-    print("FORK_BP_UNRESOLVED")
-gdb.execute("run")
-gdb.execute("quit")
-"""
-
-
-def _verify_fork_reached(binary, hint, input_path, program_args,
-                         timeout=60):
-    """GDB re-run of *input_path* to certify fork reachability/satisfaction.
-
-    Returns a dict with reached/hits/fork_condition/crash_signature, or an
-    error marker when the run could not be performed.
-    """
-    import re as _re
-    real = resolve_binary(binary)
-    if not real or not os.path.isfile(real):
-        return {"status": "error", "error": "binary not found"}
-    spec = hint.get("fork_spec") or ""
-    specs = []
-    if spec:
-        specs.append(spec)
-        base = os.path.basename(spec.rsplit(":", 1)[0])
-        if base:
-            specs.append("%s:%s" % (base, spec.rsplit(":", 1)[1]))
-    cfg = {
-        "specs": list(dict.fromkeys(specs)),
-        "cond_expr": hint.get("cond_expr"),
-        "var_exprs": hint.get("var_exprs") or [],
-        "ignore": max(0, int(hint.get("invocation") or 1) - 1),
-    }
-    tmpdir = tempfile.mkdtemp(prefix="fork_verify_")
-    cfg_path = os.path.join(tmpdir, "cfg.json")
-    script_path = os.path.join(tmpdir, "verify.py")
-    with open(cfg_path, "w") as f:
-        json.dump(cfg, f)
-    with open(script_path, "w") as f:
-        f.write(_FORK_VERIFY_GDB_SCRIPT)
-    env = build_run_env(real)
-    env["ASAN_OPTIONS"] = "detect_leaks=0:abort_on_error=0"
-    env["FORK_VERIFY_CFG"] = cfg_path
-    try:
-        proc = subprocess.run(
-            ["gdb", "-batch", "-nx", "-q", "-x", script_path,
-             "--args", str(real)] + [str(a) for a in program_args],
-            env=env, capture_output=True, text=True, timeout=timeout)
-        out = proc.stdout + proc.stderr
-    except subprocess.TimeoutExpired:
-        return {"status": "timeout"}
-    except Exception as e:
-        return {"status": "error", "error": str(e)[:160]}
-    hits = []
-    _seen = set()
-    for m in _re.finditer(r"FORK_HIT (\{.*\})", out):
-        try:
-            rec = json.loads(m.group(1))
-        except Exception:
-            continue
-        k = (rec.get("hit"), rec.get("pc"))
-        if k in _seen:
-            continue
-        _seen.add(k)
-        hits.append(rec)
-    sig = extract_crash_signature(out)
-    crash = sig["crash_frames"][0] if (sig and sig.get("crash_frames")) else {}
-    res = {
-        "status": "ok",
-        "reached": bool(hits),
-        "fork_conditions": [h.get("cond") for h in hits if "cond" in h],
-        "hit_count": len(hits),
-        "hits": hits[:8],
-        "invocation": cfg["ignore"] + 1,
-        "fork_condition": hits[0].get("cond") if hits else None,
-        "bp_unresolved": "FORK_BP_UNRESOLVED" in out,
-        "crash": ({"type": sig["type"],
-                   "function": crash.get("function"),
-                   "file": _path_basename(crash.get("file")),
-                   "line": crash.get("line")} if sig else None),
-    }
-    if hits and hits[0].get("cond_error"):
-        res["fork_condition_error"] = hits[0]["cond_error"]
-    res["_crash_signature"] = sig
-    return res
-
-
-def _make_fork_verifier(real_target, program_args, timeout, enabled, hint,
-                        max_checks, comp_ref_sig, original_input=None):
-    """Build a closure that verifies accepted mutants (at most one per offset
-    key, up to max_checks in total)."""
-    state = {"n": 0, "keys": set()}
-
-    def verify(key, data, match):
-        if not enabled or not hint:
-            return
-        if state["n"] >= max_checks or key in state["keys"]:
-            return
-        if data is None:
-            return
-        state["keys"].add(key)
-        state["n"] += 1
-        safe = re.sub(r"[^0-9A-Za-z_.-]+", "_", str(key))
-        path = os.path.join(tempfile.gettempdir(),
-                            "fork_verify_%s_%s" % (os.getpid(), safe))
-        try:
-            with open(path, "wb") as f:
-                f.write(data)
-            run_args = program_args
-            if original_input:
-                run_args = [_replace_input_arg(a, path, original_input)
-                            for a in program_args]
-            v = _verify_fork_reached(real_target, hint, path, run_args,
-                                     timeout=timeout)
-            exp = hint.get("expected_outcome")
-            cond = v.get("fork_condition")
-            conds = v.get("fork_conditions") or []
-            if exp is not None and conds:
-                # strict: every recorded evaluation of the fork condition in
-                # the mutant must be on the reference side (the target no
-                # longer takes the divergent branch at this point)
-                v["satisfied"] = all(c == exp for c in conds)
-                v["satisfied_any"] = any(c == exp for c in conds)
-            else:
-                v["satisfied"] = None
-            csig = v.pop("_crash_signature", None)
-            if v.get("reached") and csig is not None and comp_ref_sig:
-                cverdict, _ = compare_crash_signatures(comp_ref_sig, csig)
-                v["crash_after_fork"] = cverdict in ("same_func", "same_site")
-                v["crash_verdict"] = cverdict
-            elif v.get("reached"):
-                v["crash_after_fork"] = None
-            else:
-                v["crash_after_fork"] = False
-            match["fork_verified"] = v
-            print(f'      [fork-verify] reached={v.get("reached")} '
-                  f'hits={v.get("hit_count")} cond={cond} '
-                  f'expected={exp} satisfied={v.get("satisfied")} '
-                  f'crash_after_fork={v.get("crash_after_fork")}'
-                  + (f' [{v.get("error") or v.get("status")}]'
-                     if v.get("status") != "ok" else ''))
-        finally:
-            try:
-                os.unlink(path)
-            except Exception:
-                pass
-
-    return verify
-
-
 def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                 program_args, offsets, timeout=10,
-                                probe_values=None, version=None,
-                                verify_fork=False, verify_hint=None,
-                                verify_max=16):
+                                probe_values=None, version=None):
     """Mutate each byte at each offset and check whether the *target* binary
     (e.g. 4.0.8) reproduces the *reference* binary's (4.4.0) crash type.
 
@@ -5617,10 +5402,6 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
         _comp_ref_sig = _copy.deepcopy(ref_sig)
         _comp_ref_sig['crash_frames'][0]['function'] = _mapped_ref_func
 
-    _verify = _make_fork_verifier(real_target, program_args, timeout,
-                                  verify_fork, verify_hint, verify_max,
-                                  _comp_ref_sig, original_input=input_file)
-
     # Baseline target outcome on the ORIGINAL file.  A mutation with no crash
     # signature is only "unchanged" if its exit code matches the baseline;
     # a different exit code means the mutation FLIPPED the fork outcome
@@ -5674,7 +5455,6 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
         # that subset is tested (a cheap screening pass that filters which
         # offsets deserve the full 255-value sweep).
         tasks = []
-        task_data = {}
         for byte_val in range(256):
             if byte_val == orig_byte:
                 continue
@@ -5682,9 +5462,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                 continue
             modified = bytearray(original_data)
             modified[offset] = byte_val
-            data = bytes(modified)
-            tasks.append((byte_val, data))
-            task_data[byte_val] = data
+            tasks.append((byte_val, bytes(modified)))
 
         if len(tasks) <= 1:
             for byte_val, data in tasks:
@@ -5719,8 +5497,6 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                     print(f'    0x{byte_val:02x} -> MATCHES ref crash '
                           f'({verdict}: {diff})  [took {_t_mut:.3f}s]')
                     _archive(offset, byte_val, _t_mut)
-                    _verify(offset, data,
-                            results[offset]['matches'][byte_val])
                 else:
                     observed.setdefault(verdict or 'no_crash', 0)
                     observed[verdict or 'no_crash'] += 1
@@ -5747,8 +5523,6 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                   f'(same_type at other site: {key})  '
                                   f'[took {_t_mut:.3f}s]')
                             _archive(offset, byte_val, _t_mut)
-                            _verify(offset, data,
-                                    results[offset]['matches'][byte_val])
                             continue
                         observed.setdefault('same_type_sites', {})
                         sites = observed['same_type_sites']
@@ -5802,8 +5576,6 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                         print(f'    0x{byte_val:02x} -> MATCHES ref crash '
                               f'({verdict}: {diff})  [took {_t_mut:.3f}s]')
                         _archive(offset, byte_val, _t_mut)
-                        _verify(offset, task_data.get(byte_val),
-                                results[offset]['matches'][byte_val])
                     else:
                         observed.setdefault(verdict or 'no_crash', 0)
                         observed[verdict or 'no_crash'] += 1
@@ -5837,8 +5609,6 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                       f'(same_type at other site: {key})  '
                                       f'[took {_t_mut:.3f}s]')
                                 _archive(offset, byte_val, _t_mut)
-                                _verify(offset, task_data.get(byte_val),
-                                        results[offset]['matches'][byte_val])
                                 continue
                             # Near-miss: same ASan kind at the baseline (own
                             # crash) site — the mutation did not steer the
@@ -5945,9 +5715,7 @@ def _build_mutation_pairs(offsets, var_spans, max_pairs=60):
 
 def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                                     program_args, pairs, timeout=10,
-                                    probe_values=None, version=None,
-                                    verify_fork=False, verify_hint=None,
-                                    verify_max=16):
+                                    probe_values=None, version=None):
     """Two-offset combined byte mutation.
 
     For every (offA, offB) pair, mutate BOTH bytes simultaneously (sweeping a
@@ -6005,10 +5773,6 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
         _comp_ref_sig = _copy.deepcopy(ref_sig)
         _comp_ref_sig['crash_frames'][0]['function'] = _mapped_ref_func
 
-    _verify = _make_fork_verifier(real_target, program_args, timeout,
-                                  verify_fork, verify_hint, verify_max,
-                                  _comp_ref_sig, original_input=input_file)
-
     # Baseline target outcome on the ORIGINAL file (for fork-flip detection).
     base_tgt_out, base_tgt_rc, _ = _run_mutation_worker(
         (real_target, bytes(original_data), program_args, input_file, timeout))
@@ -6055,7 +5819,6 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
               f'(original={oa:02x},{ob:02x})...')
 
         tasks = []
-        task_data = {}
         for va in probe:
             for vb in probe:
                 modified = bytearray(original_data)
@@ -6063,9 +5826,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                 modified[offB] = vb
                 if bytes(modified) == bytes(original_data):
                     continue
-                data = bytes(modified)
-                tasks.append(((va, vb), data))
-                task_data[(va, vb)] = data
+                tasks.append(((va, vb), bytes(modified)))
 
         with ProcessPoolExecutor(max_workers=n_workers) as ex:
             futures = {}
@@ -6099,8 +5860,6 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                     print(f'    ({va:02x},{vb:02x}) -> MATCHES ref crash '
                           f'({verdict}: {diff})')
                     _archive(offA, offB, va, vb, _t_mut)
-                    _verify(f'{offA:x}+{offB:x}', task_data.get((va, vb)),
-                            results[key]['matches'][f'{va:02x},{vb:02x}'])
                 else:
                     observed.setdefault(verdict or 'no_crash', 0)
                     observed[verdict or 'no_crash'] += 1
@@ -6124,8 +5883,6 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                             print(f'    ({va:02x},{vb:02x}) -> MATCHES ref crash '
                                   f'(same_type at other site: {skey})')
                             _archive(offA, offB, va, vb, _t_mut)
-                            _verify(f'{offA:x}+{offB:x}', task_data.get((va, vb)),
-                                    results[key]['matches'][f'{va:02x},{vb:02x}'])
                             continue
                         observed.setdefault('same_type_sites', {})
                         sites = observed['same_type_sites']
@@ -6164,9 +5921,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
 
 def run_pairwise_mutation_stage(binary, binary_ref, input_file, program_args,
                                 offsets, var_spans, timeout,
-                                title='Pairwise mutation', version=None,
-                                verify_fork=False, verify_hint=None,
-                                verify_max=16):
+                                title='Pairwise mutation', version=None):
     """Combined two-offset mutation over the fork-variable offsets."""
     if not offsets or len(offsets) < 2 or not input_file \
             or not os.path.isfile(input_file) or not binary:
@@ -6184,8 +5939,7 @@ def run_pairwise_mutation_stage(binary, binary_ref, input_file, program_args,
           f'{",".join(f"0x{v:x}" for v in PAIRWISE_PROBE)})')
     return test_pairwise_mutations_compare(
         binary, binary_ref, input_file, program_args, pairs, timeout=timeout,
-        version=version, verify_fork=verify_fork, verify_hint=verify_hint,
-        verify_max=verify_max)
+        version=version)
 
 
 
@@ -6206,14 +5960,6 @@ def main():
     ap.add_argument('--variables', nargs='+', help='variable names')
     ap.add_argument('--timeout', type=int, default=30, help='GDB timeout seconds')
     ap.add_argument('--test-offsets', nargs='*', help='additional hex offsets for byte mutation testing (e.g. 0xe8 0xec 0xf0)')
-    ap.add_argument('--verify-fork', action='store_true',
-                    help='after each accepted mutation, re-run it under GDB to '
-                         'certify that the target reaches the fork statement, '
-                         'satisfies the reference-side outcome, and crashes '
-                         'afterwards')
-    ap.add_argument('--verify-fork-max', type=int, default=16,
-                    help='maximum number of accepted mutants to verify '
-                         '(default 16, at most one per offset)')
     ap.add_argument('--args', nargs=argparse.REMAINDER, default=[],
                     help='program args (must be last)')
 
@@ -6307,29 +6053,6 @@ def main():
     print(f'[*] Target fork spec: {fork_spec_b}')
     if binary_ref:
         print(f'[*] Reference fork spec: {fork_spec_a}')
-
-    # Fork verification hint: the identified invocation and the reference-side
-    # outcome of the fork condition (last fork point "satisfied" = the target
-    # now evaluates the same way the reference did).
-    verify_hint = None
-    if a.verify_fork:
-        _dyn = config.get('dynamic_fork') or {}
-        _diff = _dyn.get('diff') or {}
-        _bside = _diff.get('b') or {}
-        _aside = _diff.get('a') or {}
-        _cond_stmt = _bside.get('text') or config.get('root_cause_statement_b') or ''
-        _exp = _aside.get('outcome')
-        verify_hint = {
-            'fork_spec': fork_spec_b,
-            'cond_expr': _fork_condition_expr(_cond_stmt),
-            'expected_outcome': _exp if isinstance(_exp, bool) else None,
-            'invocation': _dyn.get('invocation'),
-            'var_exprs': variables[:6],
-        }
-        print(f'[*] Fork verification: spec={fork_spec_b} '
-              f'invocation={verify_hint["invocation"]} '
-              f'cond={verify_hint["cond_expr"]} '
-              f'expected_outcome={verify_hint["expected_outcome"]}')
 
     # Each run keeps only its own mutation artifacts: clear the
     # out/<input-name>-<target-version>/ folder for this CVE + version
@@ -7114,9 +6837,7 @@ def main():
             sorted(stage1_offsets), a.timeout,
             title='Step 6: Byte mutation crash testing '
                   '(fork-variable offsets)',
-            version=config.get('version_b'),
-            verify_fork=a.verify_fork, verify_hint=verify_hint,
-            verify_max=a.verify_fork_max)
+            version=config.get('version_b'))
 
     # Step 6a: directed structural mutation of the IFD region fields
     # (tag/type/count/offset of every entry of the fork-point IFD).  Each
@@ -7143,9 +6864,7 @@ def main():
                 binary, binary_ref, input_file, program_args,
                 _ifd_probe_offsets, timeout=a.timeout,
                 probe_values=_all_probes,
-                version=config.get('version_b'),
-                verify_fork=a.verify_fork, verify_hint=verify_hint,
-                verify_max=a.verify_fork_max)
+                version=config.get('version_b'))
             for offset, info in sorted(
                     (k, v) for k, v in ifd_crash_results.items()
                     if isinstance(k, int)):
@@ -7175,9 +6894,7 @@ def main():
             sorted(stage1_offsets), _var_spans, a.timeout,
             title='Step 6b: Two-offset combined byte mutation '
                   '(pairwise)',
-            version=config.get('version_b'),
-            verify_fork=a.verify_fork, verify_hint=verify_hint,
-            verify_max=a.verify_fork_max)
+            version=config.get('version_b'))
 
     print(f'{"="*60}')
 
