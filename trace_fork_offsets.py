@@ -5473,6 +5473,8 @@ def _make_fork_verifier(real_target, program_args, timeout, enabled, hint,
             return
         if state["n"] >= max_checks or key in state["keys"]:
             return
+        if data is None:
+            return
         state["keys"].add(key)
         state["n"] += 1
         safe = re.sub(r"[^0-9A-Za-z_.-]+", "_", str(key))
@@ -5668,6 +5670,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
         # that subset is tested (a cheap screening pass that filters which
         # offsets deserve the full 255-value sweep).
         tasks = []
+        task_data = {}
         for byte_val in range(256):
             if byte_val == orig_byte:
                 continue
@@ -5675,7 +5678,9 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                 continue
             modified = bytearray(original_data)
             modified[offset] = byte_val
-            tasks.append((byte_val, bytes(modified)))
+            data = bytes(modified)
+            tasks.append((byte_val, data))
+            task_data[byte_val] = data
 
         if len(tasks) <= 1:
             for byte_val, data in tasks:
@@ -5793,7 +5798,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                         print(f'    0x{byte_val:02x} -> MATCHES ref crash '
                               f'({verdict}: {diff})  [took {_t_mut:.3f}s]')
                         _archive(offset, byte_val, _t_mut)
-                        _verify(offset, data,
+                        _verify(offset, task_data.get(byte_val),
                                 results[offset]['matches'][byte_val])
                     else:
                         observed.setdefault(verdict or 'no_crash', 0)
@@ -5828,7 +5833,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                       f'(same_type at other site: {key})  '
                                       f'[took {_t_mut:.3f}s]')
                                 _archive(offset, byte_val, _t_mut)
-                                _verify(offset, data,
+                                _verify(offset, task_data.get(byte_val),
                                         results[offset]['matches'][byte_val])
                                 continue
                             # Near-miss: same ASan kind at the baseline (own
@@ -6046,6 +6051,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
               f'(original={oa:02x},{ob:02x})...')
 
         tasks = []
+        task_data = {}
         for va in probe:
             for vb in probe:
                 modified = bytearray(original_data)
@@ -6053,7 +6059,9 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                 modified[offB] = vb
                 if bytes(modified) == bytes(original_data):
                     continue
-                tasks.append(((va, vb), bytes(modified)))
+                data = bytes(modified)
+                tasks.append(((va, vb), data))
+                task_data[(va, vb)] = data
 
         with ProcessPoolExecutor(max_workers=n_workers) as ex:
             futures = {}
@@ -6087,7 +6095,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                     print(f'    ({va:02x},{vb:02x}) -> MATCHES ref crash '
                           f'({verdict}: {diff})')
                     _archive(offA, offB, va, vb, _t_mut)
-                    _verify(f'{offA:x}+{offB:x}', data,
+                    _verify(f'{offA:x}+{offB:x}', task_data.get((va, vb)),
                             results[key]['matches'][f'{va:02x},{vb:02x}'])
                 else:
                     observed.setdefault(verdict or 'no_crash', 0)
@@ -6112,7 +6120,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                             print(f'    ({va:02x},{vb:02x}) -> MATCHES ref crash '
                                   f'(same_type at other site: {skey})')
                             _archive(offA, offB, va, vb, _t_mut)
-                            _verify(f'{offA:x}+{offB:x}', data,
+                            _verify(f'{offA:x}+{offB:x}', task_data.get((va, vb)),
                                     results[key]['matches'][f'{va:02x},{vb:02x}'])
                             continue
                         observed.setdefault('same_type_sites', {})
