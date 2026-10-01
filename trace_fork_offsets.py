@@ -4849,6 +4849,18 @@ def _extract_crash_type(output):
     return (sig["type"], crash.get("function"))
 
 
+# Cross-version equivalent crash functions: a refactor can rename the
+# function a vulnerability crashes in while keeping the same faulty write.
+# Keys are reference-side names; values are target-side equivalents.  The
+# comparator matches these at stack level (not only frame[0]) so old
+# versions still count as reproducing the reference crash.
+_CRASH_FUNC_EQUIV = {
+    # libtiff < 4.0 writes the ColorMap via TIFFWriteShortTable; 4.0 split
+    # the per-tag writers and renamed the path TIFFWriteDirectoryTagColormap.
+    'TIFFWriteDirectoryTagColormap': ('TIFFWriteShortTable',),
+}
+
+
 def compare_crash_signatures(ref_sig, tgt_sig):
     """Classify how close a target crash is to the reference crash.
 
@@ -4877,6 +4889,16 @@ def compare_crash_signatures(ref_sig, tgt_sig):
     if not rfunc or not tfunc:
         return "same_type", "type matches; no function info to compare"
     if rfunc != tfunc:
+        _ref_funcs = {f.get("function")
+                      for f in (ref_sig.get("crash_frames") or [])}
+        _tgt_funcs = {f.get("function")
+                      for f in (tgt_sig.get("crash_frames") or [])}
+        for _f in _ref_funcs:
+            for _eq in _CRASH_FUNC_EQUIV.get(_f, ()):
+                if _eq in _tgt_funcs:
+                    return "same_func", (
+                        f"equivalent crash function: {_f} ~ {_eq} "
+                        f"(ref={rfunc} target={tfunc})")
         return "same_type", (f"type matches but crash function differs: "
                              f"ref={rfunc} target={tfunc}")
     rfile = _path_basename(rf.get("file"))
@@ -4926,6 +4948,53 @@ def _ifd_field_probe_values(offset, entry_size, entries_base=None):
         return [0x00, 0x01, 0x02, 0x08, 0x10, 0x40, 0x7f, 0xff,
                 0x00, 0x01, 0x02, 0x10, 0xff, 0x7f, 0xff, 0xff]
     return None
+
+
+def _static_ifd_region(input_file):
+    """Parse the TIFF header/IFD of the input file (endian-aware).
+
+    Dynamic fork-point context is unavailable on some target versions
+    (record-full never reaches the fork breakpoint, read-offset mapping
+    fails), which leaves the structural IFD candidates empty.  The IFD is
+    plain on-disk structure, so it can be parsed without any runtime
+    information: returns {ifd_offset, count, entry_size, entries_base,
+    field_offsets} with the tag/type/count/value field start of every entry,
+    or {} when the file is not a parseable TIFF.
+    """
+    try:
+        with open(input_file, 'rb') as f:
+            data = f.read()
+        if len(data) < 8:
+            return {}
+        if data[:2] == b'II':
+            e = '<'
+        elif data[:2] == b'MM':
+            e = '>'
+        else:
+            return {}
+        if struct.unpack(e + 'H', data[2:4])[0] != 42:
+            return {}
+        ifd_off = struct.unpack(e + 'I', data[4:8])[0]
+        if ifd_off + 2 > len(data):
+            return {}
+        count = struct.unpack(e + 'H', data[ifd_off:ifd_off + 2])[0]
+        entries_base = ifd_off + 2
+        max_entries = max(0, (len(data) - entries_base) // 12)
+        count = min(count, max_entries)
+        if count <= 0:
+            return {}
+        field_offsets = [entries_base + i * 12 + j
+                         for i in range(count) for j in (0, 2, 4, 8)]
+        return {
+            'ifd_offset': ifd_off,
+            'count': count,
+            'entry_size': 12,
+            'entries_base': entries_base,
+            'field_offsets': field_offsets,
+            'source': 'static',
+        }
+    except Exception:
+        return {}
 
 
 def _replace_input_arg(arg, tmp_path, input_file):
@@ -6731,6 +6800,11 @@ def main():
     # fields are NOT merged into the full-sweep set (72 fields x 255 values
     # would explode); they get the directed-value mutation in Step 6a.
     _ifd_region = (chain_trace_results or {}).get('ifd_region') or {}
+    if not _ifd_region and input_file and os.path.isfile(input_file):
+        _ifd_region = _static_ifd_region(input_file) or {}
+        if _ifd_region:
+            print(f'  [*] IFD region from static TIFF parse (dynamic '
+                  f'fork-point context unavailable)')
     _ifd_fields = _ifd_region.get('field_offsets') or []
     if _ifd_fields:
         print(f'\n  5.1. IFD region offsets (dynamic, from fork-point context):')
