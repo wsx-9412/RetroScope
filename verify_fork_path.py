@@ -236,7 +236,7 @@ def default_mutants_dir(input_file, version=None):
     """
     stem = os.path.basename(input_file)
     if version:
-        m = re.search(r"(\d+\.\d+(?:\.\d+)*)", str(version))
+        m = re.search(r"(\d+\.\d+(?:\.\d+)*[A-Za-z]*)", str(version))
         if m:
             exact = str(BASE / "out" / (stem + "-" + m.group(1).replace(".", "-")))
             return exact if os.path.isdir(exact) else None

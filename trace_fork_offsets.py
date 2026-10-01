@@ -5037,7 +5037,7 @@ def _mutation_out_dir(input_file, version, out_root=None):
     base = os.path.basename(input_file) if input_file else 'unknown'
     ver = 'target'
     if version:
-        m = re.search(r'(\d+\.\d+(?:\.\d+)*)', str(version))
+        m = re.search(r'(\d+\.\d+(?:\.\d+)*[A-Za-z]*)', str(version))
         if m:
             ver = m.group(1).replace('.', '-')
     root = out_root or os.path.join(
