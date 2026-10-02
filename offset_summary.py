@@ -151,8 +151,14 @@ def main():
     if a.log:
         logs = [a.log]
     elif a.backfill:
-        logs = [p for p in glob.glob(os.path.join(a.backfill, '*.log'))
-                if not p.endswith('.first_pass.log')]
+        logs = []
+        for p in glob.glob(os.path.join(a.backfill, '*.log')):
+            if p.endswith('.first_pass.log'):
+                continue
+            with open(p, errors='replace') as f:
+                if 'exit_code=' not in f.read():
+                    continue  # still running / aborted mid-run
+            logs.append(p)
         logs.sort(key=os.path.getmtime)
     else:
         ap.error('need --log or --backfill')
