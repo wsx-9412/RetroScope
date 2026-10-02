@@ -41,6 +41,10 @@ def parse_log(path):
     m = re.search(r'^CVE:\s*(\S+)', text, re.M)
     if m:
         cve = m.group(1)
+    ref = ''
+    m = re.search(r'^Reference:\s*(\S+)', text, re.M)
+    if m:
+        ref = os.path.basename(m.group(1))
     target = ''
     m = re.search(r'^Target:\s*(\S+)', text, re.M)
     if m:
@@ -102,6 +106,7 @@ def parse_log(path):
     return {
         'cve': cve,
         'target': target,
+        'ref': ref,
         'input_size': input_size,
         'dyn_offsets': len(dyn_offsets),
         'fork': len(fork_offsets),
@@ -121,7 +126,7 @@ def parse_log(path):
 def format_line(r):
     denom = r['input_size'] if r['input_size'] is not None else '?'
     status = 'ok' if r['rc'] == 0 else ('FAIL' if r['rc'] is not None else 'incomplete')
-    return ('{completed}  {cve:<14} {target:<16} '
+    return ('{completed}  {cve:<14} {target:<16} {ref:<12} '
             'offsets={union}/{denom}  '
             '(fork={fork}, dyn={dyn_offsets}, ifd={ifd} '
             '[fields={ifd_fields}], union={union})  '
