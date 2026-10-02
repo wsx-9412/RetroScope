@@ -66,6 +66,11 @@ def parse_log(path):
             fork_offsets |= _hex_tokens(ln)
             break
 
+    dyn_offsets = set()
+    m = re.search(r'dynamic offsets under test: ([^\n]+)', text)
+    if m:
+        dyn_offsets = _hex_tokens(m.group(1))
+
     ifd_offsets = set()
     for ln in lines:
         if 'all entry fields (tag/type/count/offset):' in ln:
@@ -93,11 +98,12 @@ def parse_log(path):
     elif 'Analysis completed' in text:
         rc = 0
 
-    union = len(fork_offsets | ifd_offsets)
+    union = len(fork_offsets | ifd_offsets | dyn_offsets)
     return {
         'cve': cve,
         'target': target,
         'input_size': input_size,
+        'dyn_offsets': len(dyn_offsets),
         'fork': len(fork_offsets),
         'ifd': len(ifd_offsets),
         'ifd_fields': ifd_field_count,
@@ -117,7 +123,8 @@ def format_line(r):
     status = 'ok' if r['rc'] == 0 else ('FAIL' if r['rc'] is not None else 'incomplete')
     return ('{completed}  {cve:<14} {target:<16} '
             'offsets={union}/{denom}  '
-            '(fork={fork}, ifd={ifd} [fields={ifd_fields}], union={union})  '
+            '(fork={fork}, dyn={dyn_offsets}, ifd={ifd} '
+            '[fields={ifd_fields}], union={union})  '
             'dynamic={dynamic}  tested={tested}  matches={matches}  '
             'rc={rc}  {status}  run={run_id}').format(denom=denom, status=status, **r)
 
