@@ -91,6 +91,11 @@ for T in "${TARGETS[@]}"; do
     rc=$?
     echo "exit_code=$rc" >> "$LOG"
 
+    # one line per run: localized mutation offsets / input size, appended
+    # to results/offset_summary.log (and echoed under the sweep dir)
+    python3 -u offset_summary.py --log "$LOG" \
+        >> "$SWEEP_DIR/offset_summary.stdout" 2>&1 || true
+
     # archive the per-target result JSONs (results/ is overwritten each run)
     ARCH="$SWEEP_DIR/$T"
     mkdir -p "$ARCH"
