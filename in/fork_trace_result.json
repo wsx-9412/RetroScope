@@ -1,7 +1,7 @@
 {
-  "binary_target": "/tmp/fork_analysis_ansmtiul/target/tools/.libs/tiffcrop",
-  "binary_ref": "/tmp/fork_analysis_ansmtiul/ref/tools/.libs/tiffcrop",
-  "fork_spec": "/tmp/fork_analysis_ansmtiul/target/libtiff/tif_dirread.c:4141",
+  "binary_target": "/tmp/fork_analysis_yvpd914o/target/tools/.libs/tiffcrop",
+  "binary_ref": "/tmp/fork_analysis_yvpd914o/ref/tools/.libs/tiffcrop",
+  "fork_spec": "/tmp/fork_analysis_yvpd914o/target/libtiff/tif_dirread.c:4141",
   "variables": [
     "tif->tif_fields",
     "mb",
@@ -16,19 +16,19 @@
       "fd": 3,
       "offset": 0,
       "size": 832,
-      "buf_addr": 140724454646376
+      "buf_addr": 140730652410280
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 4096,
-      "buf_addr": 127783759331328
+      "buf_addr": 136979041357824
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 8192,
-      "buf_addr": 127783759069184
+      "buf_addr": 136979041095680
     },
     {
       "fd": 3,
@@ -46,133 +46,133 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140724454645232
+      "buf_addr": 140730652409136
     },
     {
       "fd": 3,
       "offset": 121,
       "size": 4096,
-      "buf_addr": 127783759331328
+      "buf_addr": 136979041357824
     },
     {
       "fd": 3,
       "offset": 121,
       "size": 3975,
-      "buf_addr": 127783759331449
+      "buf_addr": 136979041357945
     },
     {
       "fd": 3,
       "offset": 832,
       "size": 832,
-      "buf_addr": 140724454646376
+      "buf_addr": 140730652410280
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140724454645168
+      "buf_addr": 140730652409072
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140724454645088
+      "buf_addr": 140730652408992
     },
     {
       "fd": 3,
       "offset": 1838,
       "size": 4096,
-      "buf_addr": 127783759331328
+      "buf_addr": 136979041357824
     },
     {
       "fd": 3,
       "offset": 1838,
       "size": 2258,
-      "buf_addr": 127783759333166
+      "buf_addr": 136979041359662
     },
     {
       "fd": 3,
-      "offset": 4075,
+      "offset": 4034,
       "size": 4096,
-      "buf_addr": 127783759073280
+      "buf_addr": 136979041099776
     },
     {
       "fd": 3,
-      "offset": 4075,
-      "size": 21,
-      "buf_addr": 127783759077355
+      "offset": 4034,
+      "size": 62,
+      "buf_addr": 136979041103810
     },
     {
       "fd": 3,
-      "offset": 4075,
+      "offset": 4034,
       "size": 8192,
-      "buf_addr": 127783759069184
+      "buf_addr": 136979041095680
     },
     {
       "fd": 3,
-      "offset": 4075,
-      "size": 4117,
-      "buf_addr": 127783759073259
+      "offset": 4034,
+      "size": 4158,
+      "buf_addr": 136979041099714
     },
     {
       "fd": 3,
-      "offset": 4077,
+      "offset": 4070,
       "size": 4096,
-      "buf_addr": 127783759028224
+      "buf_addr": 136979041054720
     },
     {
       "fd": 3,
-      "offset": 4077,
-      "size": 19,
-      "buf_addr": 127783759032301
+      "offset": 4070,
+      "size": 26,
+      "buf_addr": 136979041058790
     },
     {
       "fd": 3,
-      "offset": 4077,
+      "offset": 4070,
       "size": 8192,
-      "buf_addr": 127783757881344
+      "buf_addr": 136979039567872
     },
     {
       "fd": 3,
-      "offset": 4077,
-      "size": 4115,
-      "buf_addr": 127783757885421
+      "offset": 4070,
+      "size": 4122,
+      "buf_addr": 136979039571942
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 21,
-      "buf_addr": 127783759077355
+      "size": 62,
+      "buf_addr": 136979041103810
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 19,
-      "buf_addr": 127783759032301
+      "size": 26,
+      "buf_addr": 136979041058790
     },
     {
       "fd": 3,
       "offset": 5891,
-      "size": 4117,
-      "buf_addr": 127783759073259
+      "size": 4158,
+      "buf_addr": 136979041099714
     },
     {
       "fd": 3,
       "offset": 5891,
       "size": 2301,
-      "buf_addr": 127783759075075
+      "buf_addr": 136979041101571
     },
     {
       "fd": 3,
-      "offset": 6220,
-      "size": 4115,
-      "buf_addr": 127783757885421
+      "offset": 6269,
+      "size": 4122,
+      "buf_addr": 136979039571942
     },
     {
       "fd": 3,
-      "offset": 6220,
-      "size": 1972,
-      "buf_addr": 127783757887564
+      "offset": 6269,
+      "size": 1923,
+      "buf_addr": 136979039574141
     }
   ],
   "ref_file_reads": [
@@ -180,19 +180,19 @@
       "fd": 3,
       "offset": 0,
       "size": 832,
-      "buf_addr": 140721265590808
+      "buf_addr": 140729731719928
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 4096,
-      "buf_addr": 132693277085696
+      "buf_addr": 131930636197888
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 8192,
-      "buf_addr": 132693276823552
+      "buf_addr": 131930635935744
     },
     {
       "fd": 3,
@@ -210,133 +210,133 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140721265589632
+      "buf_addr": 140729731718752
     },
     {
       "fd": 3,
       "offset": 118,
       "size": 4096,
-      "buf_addr": 132693277085696
+      "buf_addr": 131930636197888
     },
     {
       "fd": 3,
       "offset": 118,
       "size": 3978,
-      "buf_addr": 132693277085814
+      "buf_addr": 131930636198006
     },
     {
       "fd": 3,
       "offset": 832,
       "size": 832,
-      "buf_addr": 140721265590808
+      "buf_addr": 140729731719928
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140721265589568
+      "buf_addr": 140729731718688
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140721265589488
+      "buf_addr": 140729731718608
     },
     {
       "fd": 3,
       "offset": 1835,
       "size": 4096,
-      "buf_addr": 132693277085696
+      "buf_addr": 131930636197888
     },
     {
       "fd": 3,
       "offset": 1835,
       "size": 2261,
-      "buf_addr": 132693277087531
+      "buf_addr": 131930636199723
     },
     {
       "fd": 3,
-      "offset": 3994,
+      "offset": 3989,
       "size": 4096,
-      "buf_addr": 132693276782592
+      "buf_addr": 131930635939840
     },
     {
       "fd": 3,
-      "offset": 3994,
-      "size": 102,
-      "buf_addr": 132693276786586
+      "offset": 3989,
+      "size": 107,
+      "buf_addr": 131930635943829
     },
     {
       "fd": 3,
-      "offset": 3994,
+      "offset": 3989,
       "size": 8192,
-      "buf_addr": 132693262675968
+      "buf_addr": 131930635935744
     },
     {
       "fd": 3,
-      "offset": 3994,
-      "size": 4198,
-      "buf_addr": 132693262679962
+      "offset": 3989,
+      "size": 4203,
+      "buf_addr": 131930635939733
     },
     {
       "fd": 3,
-      "offset": 4053,
+      "offset": 4028,
       "size": 4096,
-      "buf_addr": 132693276827648
+      "buf_addr": 131930635894784
     },
     {
       "fd": 3,
-      "offset": 4053,
-      "size": 43,
-      "buf_addr": 132693276831701
+      "offset": 4028,
+      "size": 68,
+      "buf_addr": 131930635898812
     },
     {
       "fd": 3,
-      "offset": 4053,
+      "offset": 4028,
       "size": 8192,
-      "buf_addr": 132693276823552
+      "buf_addr": 131930634772480
     },
     {
       "fd": 3,
-      "offset": 4053,
-      "size": 4139,
-      "buf_addr": 132693276827605
+      "offset": 4028,
+      "size": 4164,
+      "buf_addr": 131930634776508
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 43,
-      "buf_addr": 132693276831701
+      "size": 107,
+      "buf_addr": 131930635943829
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 102,
-      "buf_addr": 132693276786586
+      "size": 68,
+      "buf_addr": 131930635898812
     },
     {
       "fd": 3,
-      "offset": 6389,
-      "size": 4139,
-      "buf_addr": 132693276827605
+      "offset": 6438,
+      "size": 4203,
+      "buf_addr": 131930635939733
     },
     {
       "fd": 3,
-      "offset": 6389,
-      "size": 1803,
-      "buf_addr": 132693276829941
+      "offset": 6438,
+      "size": 1754,
+      "buf_addr": 131930635942182
     },
     {
       "fd": 3,
-      "offset": 6718,
-      "size": 4198,
-      "buf_addr": 132693262679962
+      "offset": 6816,
+      "size": 4164,
+      "buf_addr": 131930634776508
     },
     {
       "fd": 3,
-      "offset": 6718,
-      "size": 1474,
-      "buf_addr": 132693262682686
+      "offset": 6816,
+      "size": 1376,
+      "buf_addr": 131930634779296
     }
   ],
   "chain_trace": {
@@ -781,7 +781,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -797,7 +797,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -813,7 +813,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -829,7 +829,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -845,7 +845,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -861,7 +861,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -877,7 +877,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -893,7 +893,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -909,7 +909,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -925,7 +925,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -941,7 +941,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -957,7 +957,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -973,7 +973,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -989,7 +989,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1005,7 +1005,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1021,7 +1021,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1037,7 +1037,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1053,7 +1053,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1069,7 +1069,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1085,7 +1085,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1101,7 +1101,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1117,7 +1117,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1133,7 +1133,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1149,7 +1149,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1165,7 +1165,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1181,7 +1181,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1197,7 +1197,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1213,7 +1213,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1229,7 +1229,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1245,7 +1245,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1261,7 +1261,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1277,7 +1277,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1293,7 +1293,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1309,7 +1309,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1325,7 +1325,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1341,7 +1341,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1357,7 +1357,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1373,7 +1373,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1389,7 +1389,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1405,7 +1405,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1421,7 +1421,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1437,7 +1437,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1453,7 +1453,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1469,7 +1469,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1485,7 +1485,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1501,7 +1501,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1517,7 +1517,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1533,7 +1533,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1549,7 +1549,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1565,7 +1565,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1581,7 +1581,7 @@
         "entry": null,
         "frame_dir": 89678917161088,
         "entsize": 24,
-        "flags": 8423705,
+        "flags": 35097,
         "dircount": 42
       },
       {
@@ -1597,7 +1597,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1613,7 +1613,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1629,7 +1629,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1645,7 +1645,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1661,7 +1661,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1677,7 +1677,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1693,7 +1693,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1709,7 +1709,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1725,7 +1725,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1741,7 +1741,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1757,7 +1757,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1773,7 +1773,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1789,7 +1789,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1805,7 +1805,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1821,7 +1821,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1837,7 +1837,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1853,7 +1853,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1869,7 +1869,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1885,7 +1885,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1901,7 +1901,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1917,7 +1917,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1933,7 +1933,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1949,7 +1949,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1965,7 +1965,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1981,7 +1981,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -1997,7 +1997,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2013,7 +2013,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2029,7 +2029,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2045,7 +2045,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2061,7 +2061,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2077,7 +2077,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2093,7 +2093,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2109,7 +2109,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2125,7 +2125,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2141,7 +2141,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2157,7 +2157,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2173,7 +2173,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2189,7 +2189,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2205,7 +2205,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2221,7 +2221,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2237,7 +2237,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2253,7 +2253,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2269,7 +2269,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2285,7 +2285,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2301,7 +2301,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2317,7 +2317,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2333,7 +2333,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2349,7 +2349,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2365,7 +2365,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2381,7 +2381,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2397,7 +2397,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2413,7 +2413,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2429,7 +2429,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2445,7 +2445,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2461,7 +2461,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2477,7 +2477,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2493,7 +2493,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2509,7 +2509,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2525,7 +2525,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2541,7 +2541,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2557,7 +2557,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2573,7 +2573,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2589,7 +2589,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2605,7 +2605,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2621,7 +2621,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2637,7 +2637,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2653,7 +2653,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2669,7 +2669,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2685,7 +2685,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2701,7 +2701,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2717,7 +2717,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2733,7 +2733,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2749,7 +2749,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2765,7 +2765,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2781,7 +2781,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2797,7 +2797,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2813,7 +2813,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2829,7 +2829,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2845,7 +2845,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2861,7 +2861,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2877,7 +2877,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2893,7 +2893,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       },
       {
@@ -2909,7 +2909,7 @@
         "entry": null,
         "frame_dir": 90366111908096,
         "entsize": 24,
-        "flags": 8423481,
+        "flags": 34873,
         "dircount": 284
       }
     ],
@@ -5798,7 +5798,7 @@
   },
   "deep_trace": {},
   "arithmetic_backtrace": {
-    "source": "/tmp/fork_analysis_ansmtiul/target/libtiff/tif_dirread.c",
+    "source": "/tmp/fork_analysis_yvpd914o/target/libtiff/tif_dirread.c",
     "fork_line": 4141,
     "nodes": {
       "tif->tif_fields": {
@@ -6043,11 +6043,11 @@
       "type": "heap-buffer-overflow",
       "crash_frame": {
         "function": "extractContigSamplesShifted32bits",
-        "file": "/tmp/fork_analysis_ansmtiul/ref/tools/tiffcrop.c",
+        "file": "/tmp/fork_analysis_yvpd914o/ref/tools/tiffcrop.c",
         "line": 3604
       },
       "summary": {
-        "file": "/tmp/fork_analysis_ansmtiul/ref/tools/tiffcrop.c",
+        "file": "/tmp/fork_analysis_yvpd914o/ref/tools/tiffcrop.c",
         "line": 3604,
         "function": "extractContigSamplesShifted32bits"
       }
@@ -6061,36 +6061,36 @@
       "matches": {},
       "no_crash": [],
       "fork_flip": [
-        1,
+        3,
         2,
         4,
+        1,
         5,
-        3,
         6,
         7,
-        9,
         8,
+        9,
         10,
-        13,
         11,
         12,
-        17,
         16,
+        13,
+        17,
         18,
-        19,
-        21,
-        20,
         22,
-        24,
+        21,
+        19,
+        20,
         23,
+        24,
         25,
         26,
         31,
         28,
-        40,
-        127,
-        64,
         32,
+        40,
+        64,
+        127,
         255
       ],
       "same_type": {},
@@ -6102,76 +6102,80 @@
       "no_crash": [
         1,
         4,
-        6,
         8,
         9
       ],
       "fork_flip": [
-        0,
         2,
+        0,
         5,
         7,
         10,
         11,
         12,
         13,
-        17,
-        18,
         16,
+        17,
         19,
-        22,
+        18,
         20,
         21,
+        22,
         24,
-        25,
         23,
+        25,
         26,
+        28,
         31,
         32,
-        28,
         40,
         64,
         127,
         255
       ],
       "same_type": {},
-      "different_type": []
+      "different_type": [
+        [
+          6,
+          "heap-use-after-free"
+        ]
+      ]
     },
     "104": {
       "original": 1,
       "matches": {},
       "no_crash": [],
       "fork_flip": [
-        0,
-        3,
         2,
-        4,
+        0,
         5,
+        3,
         6,
         7,
-        11,
+        4,
         8,
         10,
         9,
         12,
+        11,
         13,
-        17,
-        18,
         16,
+        18,
         19,
-        21,
+        17,
         20,
+        21,
         22,
         23,
-        25,
         24,
         26,
-        28,
         31,
-        40,
+        25,
+        28,
         32,
         64,
         127,
+        40,
         255
       ],
       "same_type": {},
@@ -6182,27 +6186,27 @@
       "matches": {},
       "no_crash": [
         1,
-        2,
-        3,
         4,
         5,
         6,
         7,
+        8,
         9,
         10,
-        11,
-        16,
+        12,
         13,
+        16,
         18,
+        17,
         19,
-        20,
-        22,
         21,
+        20,
         23,
+        22,
+        25,
         26,
         28,
         40,
-        31,
         64,
         127,
         255
@@ -6213,15 +6217,15 @@
       "same_type": {},
       "different_type": [
         [
-          8,
+          3,
           "heap-use-after-free"
         ],
         [
-          17,
+          2,
           "heap-use-after-free"
         ],
         [
-          12,
+          11,
           "heap-use-after-free"
         ],
         [
@@ -6229,7 +6233,7 @@
           "heap-use-after-free"
         ],
         [
-          25,
+          31,
           "heap-use-after-free"
         ]
       ]
@@ -6239,37 +6243,37 @@
       "matches": {},
       "no_crash": [],
       "fork_flip": [
-        2,
-        4,
         0,
         3,
+        2,
+        4,
         5,
-        7,
-        8,
         6,
+        7,
         9,
+        8,
         11,
         10,
         13,
-        16,
-        17,
         12,
+        17,
+        16,
         18,
         19,
         21,
         20,
         23,
         22,
-        25,
         24,
+        25,
         26,
-        31,
         28,
-        40,
         32,
+        31,
+        40,
         64,
-        127,
-        255
+        255,
+        127
       ],
       "same_type": {},
       "different_type": []
@@ -6278,38 +6282,38 @@
       "original": 3,
       "matches": {},
       "no_crash": [
-        1,
         4,
+        1,
         6,
-        8,
-        9
+        9,
+        8
       ],
       "fork_flip": [
-        0,
         2,
+        0,
         5,
         7,
-        11,
         10,
+        11,
         12,
-        18,
         13,
         16,
+        18,
         17,
-        20,
         19,
         21,
-        22,
         23,
-        24,
-        26,
+        20,
+        22,
         25,
+        26,
+        24,
         28,
         31,
         32,
-        127,
         40,
         64,
+        127,
         255
       ],
       "same_type": {},
@@ -6320,35 +6324,35 @@
       "matches": {},
       "no_crash": [],
       "fork_flip": [
-        0,
         2,
+        0,
         4,
         3,
+        5,
         6,
         7,
-        5,
+        9,
         8,
         11,
-        9,
         10,
         12,
-        13,
         16,
+        13,
         17,
         18,
         19,
-        20,
-        22,
         21,
-        25,
+        20,
         23,
+        22,
+        25,
         24,
+        26,
+        28,
+        40,
         32,
         31,
-        28,
         64,
-        26,
-        40,
         127,
         255
       ],
@@ -6359,43 +6363,52 @@
       "original": 32,
       "matches": {},
       "no_crash": [
-        3,
-        1,
         2,
+        1,
         4,
+        3,
         5,
         7,
         6,
-        8,
-        11,
         9,
         10,
+        11,
         12,
         16,
-        13,
+        17,
         18,
         20,
         19,
-        21,
         22,
-        23,
-        25,
+        21,
         24,
-        26,
-        31,
-        28
+        25,
+        28,
+        31
       ],
       "fork_flip": [
         0,
         40,
         64,
-        127,
-        255
+        255,
+        127
       ],
       "same_type": {},
       "different_type": [
         [
-          17,
+          8,
+          "heap-use-after-free"
+        ],
+        [
+          13,
+          "heap-use-after-free"
+        ],
+        [
+          23,
+          "heap-use-after-free"
+        ],
+        [
+          26,
           "heap-use-after-free"
         ]
       ]
@@ -6406,35 +6419,35 @@
       "no_crash": [],
       "fork_flip": [
         1,
-        2,
-        0,
         4,
-        7,
+        0,
+        2,
         5,
         6,
-        8,
-        12,
+        7,
         9,
-        11,
-        13,
+        8,
         10,
-        17,
+        11,
+        12,
         16,
+        13,
+        17,
+        18,
+        21,
         19,
         20,
-        21,
-        18,
-        23,
         22,
         24,
         25,
+        23,
         26,
-        32,
-        31,
-        40,
         28,
-        127,
+        40,
+        31,
         64,
+        32,
+        127,
         255
       ],
       "same_type": {},
@@ -6447,43 +6460,39 @@
         1,
         4,
         6,
-        8
+        8,
+        9
       ],
       "fork_flip": [
-        0,
         2,
+        0,
         5,
         7,
         10,
-        12,
         11,
+        12,
         16,
         13,
+        19,
         17,
         18,
         20,
-        19,
-        21,
-        22,
         23,
+        21,
         24,
+        22,
+        31,
         26,
         25,
         28,
-        31,
         32,
         64,
-        127,
         40,
+        127,
         255
       ],
       "same_type": {},
-      "different_type": [
-        [
-          9,
-          "heap-use-after-free"
-        ]
-      ]
+      "different_type": []
     },
     "128": {
       "original": 1,
@@ -6492,36 +6501,36 @@
         2
       ],
       "fork_flip": [
-        0,
-        3,
-        5,
         4,
-        8,
-        7,
+        3,
+        0,
         6,
+        7,
+        5,
+        8,
         9,
         11,
-        12,
-        13,
         10,
+        13,
+        12,
         16,
         17,
         18,
         19,
         21,
         20,
-        22,
-        23,
-        25,
         24,
+        22,
+        25,
+        23,
         28,
-        31,
         26,
         32,
-        64,
-        127,
         40,
-        255
+        31,
+        64,
+        255,
+        127
       ],
       "same_type": {},
       "different_type": []
@@ -6531,41 +6540,45 @@
       "matches": {},
       "no_crash": [
         1,
-        2,
         8
       ],
       "fork_flip": [
         0,
-        3,
         5,
+        3,
         6,
         7,
         9,
-        11,
-        12,
         10,
+        11,
         13,
-        17,
-        18,
+        12,
         16,
-        20,
+        18,
+        17,
         19,
-        22,
+        20,
         21,
-        24,
-        25,
         23,
+        22,
+        24,
         26,
+        25,
         28,
         31,
         32,
-        64,
         40,
+        64,
         255,
         127
       ],
       "same_type": {},
-      "different_type": []
+      "different_type": [
+        [
+          2,
+          "heap-use-after-free"
+        ]
+      ]
     },
     "136": {
       "original": 3,
@@ -6573,26 +6586,25 @@
       "no_crash": [
         0,
         1,
+        5,
         4,
         6,
-        5,
-        7,
         8,
-        9,
         10,
         11,
         12,
         13,
         16,
         18,
-        20,
         19,
-        31,
-        26,
+        20,
         25,
-        40,
-        64,
+        24,
+        26,
         32,
+        40,
+        31,
+        64,
         255,
         127
       ],
@@ -6607,7 +6619,11 @@
       "same_type": {},
       "different_type": [
         [
-          24,
+          7,
+          "heap-use-after-free"
+        ],
+        [
+          9,
           "heap-use-after-free"
         ]
       ]
@@ -6617,42 +6633,39 @@
       "matches": {},
       "no_crash": [
         0,
-        4,
         2,
         1,
-        7,
+        4,
         5,
+        6,
+        7,
         8,
-        9,
         10,
+        9,
         11,
-        16,
-        12,
         13,
+        12,
+        16,
+        18,
         17,
         19,
-        18,
-        20,
         21,
+        20,
         22,
         23,
-        26,
         24,
+        26,
         28,
-        40,
         31,
         32,
+        40,
         64,
-        255,
-        127
+        127,
+        255
       ],
       "fork_flip": [],
       "same_type": {},
       "different_type": [
-        [
-          6,
-          "heap-use-after-free"
-        ],
         [
           25,
           "heap-use-after-free"
@@ -6663,46 +6676,46 @@
       "original": 251,
       "matches": {},
       "no_crash": [
-        2,
+        1,
         3,
         0,
-        1,
-        4,
+        2,
+        6,
         7,
         5,
+        4,
         8,
-        9,
         10,
         11,
         12,
+        13,
+        18,
         16,
         17,
-        18,
         19,
-        21,
         20,
+        21,
         22,
-        23,
         24,
         25,
         28,
         26,
-        31,
         32,
+        31,
         40,
         64,
-        127,
-        255
+        255,
+        127
       ],
       "fork_flip": [],
       "same_type": {},
       "different_type": [
         [
-          6,
+          9,
           "heap-use-after-free"
         ],
         [
-          13,
+          23,
           "heap-use-after-free"
         ]
       ]
@@ -6712,41 +6725,47 @@
       "matches": {},
       "no_crash": [
         1,
+        4,
         0,
         2,
-        4,
-        5,
         6,
-        7,
         8,
+        5,
+        7,
         9,
-        10,
         11,
+        10,
         12,
-        16,
-        13,
         17,
         18,
-        19,
+        20,
         21,
         22,
         23,
         24,
         25,
         26,
-        28,
-        32,
         31,
+        32,
+        28,
         40,
+        255,
         64,
-        127,
-        255
+        127
       ],
       "fork_flip": [],
       "same_type": {},
       "different_type": [
         [
-          20,
+          16,
+          "heap-use-after-free"
+        ],
+        [
+          13,
+          "heap-use-after-free"
+        ],
+        [
+          19,
           "heap-use-after-free"
         ]
       ]
@@ -6755,48 +6774,41 @@
       "original": 3,
       "matches": {},
       "no_crash": [
+        2,
         0,
         1,
-        2,
         4,
         6,
         5,
         7,
-        8,
         9,
+        8,
+        12,
         10,
         11,
         13,
-        12,
-        16,
         17,
+        16,
         18,
         19,
-        20,
+        21,
         22,
+        20,
         23,
+        24,
         25,
         26,
-        28,
         31,
+        28,
         32,
         40,
-        127,
         64,
+        127,
         255
       ],
       "fork_flip": [],
       "same_type": {},
-      "different_type": [
-        [
-          21,
-          "heap-use-after-free"
-        ],
-        [
-          24,
-          "heap-use-after-free"
-        ]
-      ]
+      "different_type": []
     },
     "152": {
       "original": 1,
@@ -6804,30 +6816,29 @@
       "no_crash": [
         0,
         2,
+        4,
+        3,
         5,
+        9,
         6,
         7,
-        8,
-        9,
-        10,
-        11,
         12,
+        11,
+        10,
         13,
-        16,
-        17,
         18,
         19,
-        21,
         20,
+        21,
         22,
-        24,
         23,
+        24,
         25,
-        26,
         28,
+        26,
+        31,
         40,
         64,
-        31,
         32,
         127,
         255
@@ -6836,11 +6847,15 @@
       "same_type": {},
       "different_type": [
         [
-          3,
+          8,
           "heap-use-after-free"
         ],
         [
-          4,
+          17,
+          "heap-use-after-free"
+        ],
+        [
+          16,
           "heap-use-after-free"
         ]
       ]
@@ -6849,72 +6864,63 @@
       "original": 1,
       "matches": {},
       "no_crash": [
+        0,
         4,
         3,
         2,
-        0,
-        7,
         5,
         8,
-        9,
+        6,
+        7,
         10,
+        13,
+        9,
         11,
         12,
-        13,
         16,
-        17,
         18,
         19,
+        17,
         20,
-        21,
         22,
+        21,
         23,
         24,
         25,
         26,
-        31,
         28,
         40,
+        31,
         32,
         64,
-        255
+        255,
+        127
       ],
       "fork_flip": [],
       "same_type": {},
-      "different_type": [
-        [
-          6,
-          "heap-use-after-free"
-        ],
-        [
-          127,
-          "heap-use-after-free"
-        ]
-      ]
+      "different_type": []
     },
     "160": {
       "original": 13,
       "matches": {},
       "no_crash": [
-        3,
         1,
+        3,
         0,
         4,
-        6,
-        8,
-        7,
         5,
-        9,
-        12,
-        11,
+        8,
+        6,
+        7,
         10,
+        12,
         16,
-        18,
         19,
+        18,
         20,
         26,
-        32,
         31,
+        32,
         40,
         64,
         127,
@@ -6927,39 +6933,48 @@
         22,
         23,
         24,
-        28,
-        25
+        25,
+        28
       ],
       "same_type": {},
-      "different_type": []
+      "different_type": [
+        [
+          9,
+          "heap-use-after-free"
+        ],
+        [
+          11,
+          "heap-use-after-free"
+        ]
+      ]
     },
     "162": {
       "original": 2,
       "matches": {},
       "no_crash": [
-        3,
+        0,
         4,
-        1,
+        3,
         5,
         6,
         7,
-        8,
         9,
+        8,
         10,
         11,
         12,
         13,
-        17,
         16,
         18,
+        17,
         19,
-        20,
         21,
+        20,
         22,
         23,
-        26,
         24,
         25,
+        26,
         28,
         31,
         32,
@@ -6972,7 +6987,7 @@
       "same_type": {},
       "different_type": [
         [
-          0,
+          1,
           "heap-use-after-free"
         ]
       ]
@@ -6981,90 +6996,86 @@
       "original": 15,
       "matches": {},
       "no_crash": [
-        1,
         0,
         2,
+        1,
         3,
-        6,
-        7,
-        4,
         5,
+        4,
+        6,
         8,
+        7,
         9,
-        11,
         10,
         12,
+        11,
         13,
-        16,
         17,
+        18,
+        16,
         19,
         20,
+        23,
         21,
         22,
-        23,
-        24,
         25,
-        28,
+        24,
         26,
-        31,
-        64,
-        40,
+        28,
         32,
-        127,
-        255
+        31,
+        40,
+        64,
+        255,
+        127
       ],
       "fork_flip": [],
       "same_type": {},
-      "different_type": [
-        [
-          18,
-          "heap-use-after-free"
-        ]
-      ]
+      "different_type": []
     },
     "168": {
       "original": 64,
       "matches": {},
       "no_crash": [
         0,
-        2,
+        1,
         3,
+        2,
         5,
         6,
+        4,
         7,
         8,
         9,
         10,
         11,
-        13,
-        12,
         16,
-        18,
+        12,
         17,
+        18,
         19,
-        21,
         20,
+        21,
         22,
         23,
         24,
-        26,
         25,
-        31,
+        26,
         28,
-        40,
         32,
-        127,
-        255
+        31,
+        40,
+        127
       ],
       "fork_flip": [],
       "same_type": {},
       "different_type": [
         [
-          1,
+          13,
           "heap-use-after-free"
         ],
         [
-          4,
+          255,
           "heap-use-after-free"
         ]
       ]
@@ -7075,36 +7086,36 @@
       "no_crash": [],
       "fork_flip": [
         1,
-        0,
         2,
+        3,
+        0,
         4,
         5,
-        3,
         6,
-        8,
+        9,
         7,
         10,
+        8,
         11,
-        9,
         12,
-        13,
         16,
+        13,
         18,
-        21,
         19,
+        21,
         22,
         20,
+        23,
         24,
         25,
-        26,
-        23,
         28,
-        40,
-        64,
+        26,
         31,
         32,
-        255,
-        127
+        40,
+        127,
+        64,
+        255
       ],
       "same_type": {},
       "different_type": []
@@ -7113,42 +7124,46 @@
       "original": 4,
       "matches": {},
       "no_crash": [
-        1,
         3,
+        1,
         6,
-        9,
         8
       ],
       "fork_flip": [
         0,
-        5,
         2,
+        5,
         7,
         10,
         11,
         12,
         13,
-        17,
         16,
-        19,
+        17,
         18,
+        19,
         20,
-        22,
         21,
-        26,
+        22,
         23,
+        25,
         24,
         28,
-        25,
-        40,
-        32,
+        26,
         31,
+        32,
+        40,
         64,
         127,
         255
       ],
       "same_type": {},
-      "different_type": []
+      "different_type": [
+        [
+          9,
+          "heap-use-after-free"
+        ]
+      ]
     },
     "176": {
       "original": 1,
@@ -7157,35 +7172,35 @@
         0
       ],
       "fork_flip": [
-        4,
-        3,
         2,
-        6,
+        4,
         5,
-        7,
-        8,
+        3,
+        6,
         9,
+        8,
+        7,
         10,
-        11,
         12,
-        16,
+        11,
         13,
-        17,
+        16,
         18,
         19,
-        20,
-        23,
-        21,
+        17,
         22,
+        20,
+        21,
+        23,
         24,
-        25,
-        31,
         28,
+        25,
         26,
-        40,
+        31,
         32,
-        127,
+        40,
         64,
+        127,
         255
       ],
       "same_type": {},
@@ -7197,47 +7212,44 @@
       "no_crash": [
         0,
         1,
-        2,
         4,
-        10,
+        2,
         9,
-        12,
+        11,
+        10,
+        13,
         16,
-        17,
         18,
+        17,
         19,
-        21,
+        20,
         22,
         23,
         24,
         25,
         26,
-        28,
         31,
-        40,
+        28,
         32,
+        40,
         64
       ],
       "fork_flip": [
         3,
         5,
-        6,
         7,
-        255,
-        127
+        6,
+        127,
+        255
       ],
       "same_type": {},
       "different_type": [
         [
-          11,
+          12,
           "heap-use-after-free"
         ],
         [
-          13,
-          "heap-use-after-free"
-        ],
-        [
-          20,
+          21,
           "heap-use-after-free"
         ]
       ]
@@ -7246,32 +7258,33 @@
       "original": 18,
       "matches": {},
       "no_crash": [
-        0,
         3,
-        4,
         1,
+        0,
+        4,
         6,
         5,
         7,
-        8,
         9,
+        8,
         10,
-        12,
         11,
-        17,
-        19,
+        16,
         13,
+        12,
+        19,
+        17,
         20,
-        24,
         23,
+        24,
         25,
         26,
         31,
         32,
         40,
         64,
-        127,
-        255
+        255,
+        127
       ],
       "fork_flip": [
         2,
@@ -7280,41 +7293,82 @@
         28
       ],
       "same_type": {},
-      "different_type": [
-        [
-          16,
-          "heap-use-after-free"
-        ]
-      ]
+      "different_type": []
     },
     "186": {
       "original": 3,
       "matches": {},
       "no_crash": [
-        2,
         1,
         4,
+        0,
         6,
+        5,
+        7,
         8,
         9,
         10,
         11,
+        13,
         12,
         16,
-        13,
+        17,
+        18,
+        19,
         20,
+        21,
+        23,
+        22,
+        24,
+        25,
+        26,
+        28,
+        40,
+        32,
+        31,
+        64,
+        127,
+        255
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": [
+        [
+          2,
+          "heap-use-after-free"
+        ]
+      ]
+    },
+    "188": {
+      "original": 1,
+      "matches": {},
+      "no_crash": [
+        4,
+        2,
+        3,
+        0,
+        8,
+        7,
+        5,
+        6,
+        9,
+        10,
+        11,
+        12,
+        13,
         17,
         19,
         18,
+        20,
         21,
         22,
         23,
-        26,
         24,
         25,
-        28,
+        26,
         31,
         32,
+        28,
         40,
         64,
         127,
@@ -7324,65 +7378,7 @@
       "same_type": {},
       "different_type": [
         [
-          5,
-          "heap-use-after-free"
-        ],
-        [
-          7,
-          "heap-use-after-free"
-        ],
-        [
-          0,
-          "heap-use-after-free"
-        ]
-      ]
-    },
-    "188": {
-      "original": 1,
-      "matches": {},
-      "no_crash": [
-        2,
-        0,
-        4,
-        5,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        16,
-        17,
-        19,
-        20,
-        22,
-        21,
-        23,
-        24,
-        25,
-        26,
-        28,
-        31,
-        32,
-        64,
-        255,
-        40,
-        127
-      ],
-      "fork_flip": [],
-      "same_type": {},
-      "different_type": [
-        [
-          3,
-          "heap-use-after-free"
-        ],
-        [
-          6,
-          "heap-use-after-free"
-        ],
-        [
-          18,
+          16,
           "heap-use-after-free"
         ]
       ]
@@ -7391,19 +7387,17 @@
       "original": 4,
       "matches": {},
       "no_crash": [
-        0,
         1,
         3,
-        6,
-        5,
+        0,
         7,
+        6,
         8,
-        10,
         9,
-        11,
+        10,
         12,
-        16,
         13,
+        16,
         17,
         18,
         19,
@@ -7413,12 +7407,11 @@
         23,
         24,
         25,
+        26,
         28,
         31,
-        26,
-        32,
-        64,
         40,
+        32,
         255,
         127
       ],
@@ -7428,40 +7421,53 @@
           2
         ]
       },
-      "different_type": []
+      "different_type": [
+        [
+          5,
+          "heap-use-after-free"
+        ],
+        [
+          11,
+          "heap-use-after-free"
+        ],
+        [
+          64,
+          "heap-use-after-free"
+        ]
+      ]
     },
     "196": {
       "original": 85,
       "matches": {},
       "no_crash": [
-        2,
         0,
+        2,
         3,
         4,
-        6,
         5,
-        8,
+        6,
         7,
+        8,
         9,
         10,
         11,
-        13,
         12,
         16,
+        13,
         17,
         18,
         19,
         20,
         21,
-        24,
         23,
-        26,
         25,
+        24,
+        31,
+        32,
+        26,
         28,
         40,
         64,
-        31,
-        32,
         127,
         255
       ],
@@ -7480,14 +7486,14 @@
       "original": 3,
       "matches": {},
       "no_crash": [
-        4,
-        5,
         1,
+        4,
         6,
+        5,
         9,
         8,
-        11,
         10,
+        11,
         12,
         16,
         17
@@ -7498,21 +7504,21 @@
         7,
         13,
         18,
-        19,
         20,
+        19,
         21,
-        23,
-        24,
         22,
+        24,
         25,
-        31,
-        32,
+        23,
         26,
         28,
-        127,
+        32,
+        31,
         64,
         40,
-        255
+        255,
+        127
       ],
       "same_type": {},
       "different_type": []
@@ -7522,36 +7528,36 @@
       "matches": {},
       "no_crash": [],
       "fork_flip": [
+        3,
         0,
         2,
-        3,
         4,
         5,
         6,
+        8,
         7,
         9,
-        8,
         10,
-        12,
         11,
-        13,
-        17,
-        18,
         16,
+        12,
+        17,
+        13,
         19,
+        18,
         20,
         21,
         22,
+        23,
         24,
         25,
-        23,
-        28,
-        32,
-        26,
         31,
-        127,
-        64,
+        26,
+        32,
+        28,
         40,
+        64,
+        127,
         255
       ],
       "same_type": {},
@@ -7561,33 +7567,31 @@
       "original": 1,
       "matches": {},
       "no_crash": [
-        0,
-        3,
-        2,
         4,
         5,
-        7,
         6,
-        8,
+        7,
         9,
-        12,
+        8,
         10,
+        11,
         13,
         16,
-        18,
+        12,
         17,
         19,
+        18,
         20,
         21,
         22,
-        23,
         24,
+        23,
         25,
         26,
-        28,
-        32,
         31,
+        28,
         40,
+        32,
         64,
         127,
         255
@@ -7596,7 +7600,15 @@
       "same_type": {},
       "different_type": [
         [
-          11,
+          0,
+          "heap-use-after-free"
+        ],
+        [
+          2,
+          "heap-use-after-free"
+        ],
+        [
+          3,
           "heap-use-after-free"
         ]
       ]
@@ -7605,29 +7617,31 @@
       "original": 22,
       "matches": {},
       "no_crash": [
-        0,
         1,
         3,
+        0,
         4,
-        8,
+        6,
         5,
-        10,
+        8,
+        7,
         9,
-        12,
+        10,
         11,
         16,
-        13,
+        12,
         17,
+        13,
         18,
         19,
         20,
-        23,
         24,
         25,
+        23,
         26,
-        32,
         31,
         40,
+        32,
         64,
         127,
         255
@@ -7638,25 +7652,14 @@
         28
       ],
       "same_type": {},
-      "different_type": [
-        [
-          7,
-          "heap-use-after-free"
-        ],
-        [
-          6,
-          "heap-use-after-free"
-        ]
-      ]
+      "different_type": []
     },
     "210": {
       "original": 3,
       "matches": {},
       "no_crash": [
-        4,
-        1,
         6,
-        9,
+        1,
         8
       ],
       "fork_flip": [
@@ -7665,22 +7668,22 @@
         5,
         7,
         10,
-        12,
         11,
+        12,
         13,
-        17,
-        19,
-        18,
         16,
-        21,
+        17,
+        18,
+        19,
         20,
+        21,
         22,
+        24,
         23,
         26,
         25,
         28,
         31,
-        24,
         32,
         40,
         64,
@@ -7688,41 +7691,50 @@
         255
       ],
       "same_type": {},
-      "different_type": []
+      "different_type": [
+        [
+          4,
+          "heap-use-after-free"
+        ],
+        [
+          9,
+          "heap-use-after-free"
+        ]
+      ]
     },
     "212": {
       "original": 1,
       "matches": {},
       "no_crash": [],
       "fork_flip": [
-        0,
-        3,
         2,
+        3,
+        0,
         4,
-        6,
-        7,
-        8,
         5,
-        12,
-        9,
+        6,
+        8,
         10,
+        7,
+        9,
         11,
-        16,
         13,
+        12,
         17,
         18,
-        21,
-        19,
+        16,
         20,
-        22,
+        19,
         23,
+        22,
+        21,
+        24,
         26,
         25,
-        24,
-        31,
         28,
-        40,
+        31,
         32,
+        40,
         64,
         127,
         255
@@ -7735,41 +7747,45 @@
       "matches": {},
       "no_crash": [
         40,
-        64,
         127,
         255
       ],
       "fork_flip": [
-        0,
-        3,
         2,
         1,
-        5,
-        6,
-        7,
+        0,
+        3,
         4,
-        9,
+        5,
+        7,
+        6,
         8,
-        10,
-        16,
+        9,
         11,
+        10,
         12,
         13,
-        19,
+        16,
         18,
         17,
         20,
-        21,
+        19,
         22,
+        21,
         23,
         24,
         25,
         26,
-        31,
-        28
+        28,
+        31
       ],
       "same_type": {},
-      "different_type": []
+      "different_type": [
+        [
+          64,
+          "heap-use-after-free"
+        ]
+      ]
     },
     "220": {
       "original": 23,
@@ -7777,34 +7793,34 @@
       "no_crash": [],
       "fork_flip": [
         0,
-        1,
-        3,
         2,
-        5,
-        6,
+        1,
         4,
+        3,
+        6,
         7,
-        9,
-        10,
+        5,
         8,
+        10,
+        9,
         11,
         12,
-        18,
+        13,
         16,
         17,
-        13,
         19,
+        18,
         20,
         21,
-        22,
         24,
-        26,
+        22,
         25,
         28,
-        40,
+        26,
         31,
-        64,
         32,
+        40,
+        64,
         127,
         255
       ],
@@ -7818,35 +7834,35 @@
         1,
         3,
         6,
-        8,
-        9
+        9,
+        8
       ],
       "fork_flip": [
         2,
         0,
-        5,
         7,
+        5,
         10,
         11,
-        13,
         12,
-        16,
+        13,
         17,
-        19,
-        20,
-        21,
-        22,
+        16,
         18,
-        23,
+        19,
+        21,
+        20,
+        22,
         24,
         25,
-        28,
+        23,
         26,
+        28,
         31,
         32,
         40,
-        64,
         127,
+        64,
         255
       ],
       "same_type": {},
@@ -7857,37 +7873,37 @@
       "matches": {},
       "no_crash": [],
       "fork_flip": [
-        0,
-        2,
-        4,
         3,
+        2,
+        0,
+        4,
+        6,
         5,
         7,
-        6,
         8,
-        9,
-        10,
         11,
+        10,
+        12,
+        9,
         13,
         16,
         18,
-        12,
-        19,
         17,
-        22,
         20,
+        22,
+        19,
         21,
-        23,
         24,
         25,
+        23,
+        28,
         26,
         31,
-        28,
-        127,
+        40,
         32,
         64,
-        40,
-        255
+        255,
+        127
       ],
       "same_type": {},
       "different_type": []
@@ -7896,82 +7912,73 @@
       "original": 89,
       "matches": {},
       "no_crash": [
+        2,
         1,
+        3,
         4,
         5,
-        7,
         6,
+        7,
         8,
         9,
         10,
         11,
-        12,
         13,
+        12,
         16,
         17,
         19,
-        21,
+        18,
         20,
+        21,
         22,
         23,
         24,
-        26,
         25,
         28,
-        31,
         32,
+        26,
+        31,
         40,
-        255,
         64,
-        127
+        127,
+        255
       ],
       "fork_flip": [
         0
       ],
       "same_type": {},
-      "different_type": [
-        [
-          3,
-          "heap-use-after-free"
-        ],
-        [
-          2,
-          "heap-use-after-free"
-        ],
-        [
-          18,
-          "heap-use-after-free"
-        ]
-      ]
+      "different_type": []
     },
     "232": {
       "original": 26,
       "matches": {},
       "no_crash": [
+        0,
+        3,
         1,
         4,
-        6,
         5,
+        6,
         7,
         8,
         9,
         10,
         12,
         11,
-        17,
+        13,
         16,
         18,
+        17,
         19,
-        13,
         20,
-        22,
         23,
+        22,
+        31,
         32,
         40,
-        31,
-        64,
-        255,
-        127
+        127,
+        255
       ],
       "fork_flip": [
         2,
@@ -7983,11 +7990,7 @@
       "same_type": {},
       "different_type": [
         [
-          0,
-          "heap-use-after-free"
-        ],
-        [
-          3,
+          64,
           "heap-use-after-free"
         ]
       ]
@@ -7997,30 +8000,31 @@
       "matches": {},
       "no_crash": [
         3,
-        2,
-        1,
-        4,
-        7,
-        6,
         0,
+        1,
+        2,
+        4,
+        6,
+        7,
         8,
-        10,
         9,
-        11,
+        10,
         13,
+        11,
         12,
         16,
         17,
-        18,
+        19,
         21,
         20,
         22,
-        25,
         23,
         24,
-        31,
-        28,
         26,
+        25,
+        28,
+        32,
+        31,
         40,
         64,
         127,
@@ -8030,11 +8034,7 @@
       "same_type": {},
       "different_type": [
         [
-          19,
-          "heap-use-after-free"
-        ],
-        [
-          32,
+          18,
           "heap-use-after-free"
         ]
       ]
@@ -8043,42 +8043,45 @@
       "original": 1,
       "matches": {},
       "no_crash": [
+        3,
+        0,
         2,
         4,
-        5,
         6,
-        0,
+        5,
         7,
-        9,
-        11,
-        8,
         10,
-        12,
+        8,
+        11,
         13,
         16,
+        12,
         17,
-        18,
-        20,
         19,
+        20,
         21,
         23,
-        24,
         22,
+        24,
         25,
         26,
+        28,
         31,
         32,
-        28,
         40,
-        64,
         127,
-        255
+        255,
+        64
       ],
       "fork_flip": [],
       "same_type": {},
       "different_type": [
         [
-          3,
+          9,
+          "heap-use-after-free"
+        ],
+        [
+          18,
           "heap-use-after-free"
         ]
       ]
@@ -8087,33 +8090,34 @@
       "original": 80,
       "matches": {},
       "no_crash": [
-        1,
         0,
         2,
         3,
-        4,
+        6,
         5,
         7,
         8,
-        6,
         9,
         10,
         11,
         12,
         16,
-        17,
         13,
+        17,
         19,
         18,
         20,
+        22,
         21,
+        24,
+        23,
         25,
-        26,
         28,
-        31,
+        26,
         32,
-        127,
+        31,
         40,
+        127,
         64,
         255
       ],
@@ -8121,15 +8125,11 @@
       "same_type": {},
       "different_type": [
         [
-          24,
+          1,
           "heap-use-after-free"
         ],
         [
-          22,
-          "heap-use-after-free"
-        ],
-        [
-          23,
+          4,
           "heap-use-after-free"
         ]
       ]
@@ -8138,28 +8138,27 @@
       "original": 27,
       "matches": {},
       "no_crash": [
-        3,
-        0,
         1,
+        3,
         4,
         6,
-        5,
-        8,
         7,
-        10,
         9,
-        12,
+        8,
+        10,
         11,
-        17,
-        19,
+        12,
+        13,
+        16,
         18,
         20,
-        23,
+        19,
         22,
-        26,
+        23,
         31,
-        40,
         32,
+        26,
+        40,
         127,
         64,
         255
@@ -8174,11 +8173,15 @@
       "same_type": {},
       "different_type": [
         [
-          16,
+          5,
           "heap-use-after-free"
         ],
         [
-          13,
+          0,
+          "heap-use-after-free"
+        ],
+        [
+          17,
           "heap-use-after-free"
         ]
       ]
@@ -8187,34 +8190,34 @@
       "original": 5,
       "matches": {},
       "no_crash": [
-        1,
-        2,
-        0,
         3,
+        2,
         4,
-        6,
         7,
+        6,
         8,
         9,
         11,
-        13,
         16,
+        13,
         12,
         18,
-        20,
+        19,
+        17,
         21,
+        20,
         22,
-        24,
         23,
+        24,
         25,
-        26,
         28,
+        26,
         31,
-        32,
         40,
+        32,
         64,
-        127,
-        255
+        255,
+        127
       ],
       "fork_flip": [
         10
@@ -8222,11 +8225,11 @@
       "same_type": {},
       "different_type": [
         [
-          17,
+          0,
           "heap-use-after-free"
         ],
         [
-          19,
+          1,
           "heap-use-after-free"
         ]
       ]
@@ -8235,34 +8238,33 @@
       "original": 1,
       "matches": {},
       "no_crash": [
-        3,
-        4,
         0,
+        2,
         6,
         5,
-        2,
-        7,
         8,
+        7,
+        10,
         9,
         12,
-        10,
         11,
         13,
-        18,
         16,
-        19,
         17,
+        18,
+        19,
         21,
         20,
+        25,
         23,
         22,
         24,
-        25,
-        31,
         26,
-        32,
-        64,
         28,
+        31,
+        32,
+        40,
+        64,
         127,
         255
       ],
@@ -8270,7 +8272,11 @@
       "same_type": {},
       "different_type": [
         [
-          40,
+          4,
+          "heap-use-after-free"
+        ],
+        [
+          3,
           "heap-use-after-free"
         ]
       ]
@@ -8279,49 +8285,43 @@
       "original": 88,
       "matches": {},
       "no_crash": [
-        0,
-        1,
         3,
-        5,
-        4,
-        6,
+        0,
         2,
-        9,
+        1,
+        4,
+        5,
         7,
-        10,
         8,
-        11,
+        6,
+        9,
         12,
         13,
+        11,
+        10,
+        16,
+        19,
         17,
         18,
         20,
-        19,
         21,
-        22,
-        24,
         23,
+        24,
+        25,
         26,
-        28,
         31,
-        64,
+        28,
+        32,
         40,
         127,
+        64,
         255
       ],
       "fork_flip": [],
       "same_type": {},
       "different_type": [
         [
-          16,
-          "heap-use-after-free"
-        ],
-        [
-          25,
-          "heap-use-after-free"
-        ],
-        [
-          32,
+          22,
           "heap-use-after-free"
         ]
       ]
@@ -8329,15 +8329,15 @@
     "256": {
       "original": 28,
       "matches": {
-        "3": {
+        "0": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted32bits",
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 19.546,
-          "time_this_mutation": 0.221
+          "time_to_success": 19.476,
+          "time_this_mutation": 0.159
         },
         "1": {
           "verdict": "same_func",
@@ -8346,8 +8346,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 19.551,
-          "time_this_mutation": 0.223
+          "time_to_success": 19.52,
+          "time_this_mutation": 0.203
         },
         "2": {
           "verdict": "same_func",
@@ -8356,18 +8356,18 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 19.573,
-          "time_this_mutation": 0.248
+          "time_to_success": 19.554,
+          "time_this_mutation": 0.235
         },
-        "0": {
+        "3": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
           "function": "extractContigSamplesShifted32bits",
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 19.642,
-          "time_this_mutation": 0.317
+          "time_to_success": 19.568,
+          "time_this_mutation": 0.25
         },
         "7": {
           "verdict": "same_func",
@@ -8376,8 +8376,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 19.957,
-          "time_this_mutation": 0.317
+          "time_to_success": 19.782,
+          "time_this_mutation": 0.212
         },
         "8": {
           "verdict": "same_func",
@@ -8386,8 +8386,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 20.16,
-          "time_this_mutation": 0.2
+          "time_to_success": 19.958,
+          "time_this_mutation": 0.175
         },
         "9": {
           "verdict": "same_func",
@@ -8396,8 +8396,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 20.397,
-          "time_this_mutation": 0.236
+          "time_to_success": 20.138,
+          "time_this_mutation": 0.18
         },
         "10": {
           "verdict": "same_func",
@@ -8406,8 +8406,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 20.558,
-          "time_this_mutation": 0.165
+          "time_to_success": 20.33,
+          "time_this_mutation": 0.19
         },
         "11": {
           "verdict": "same_func",
@@ -8416,8 +8416,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 20.731,
-          "time_this_mutation": 0.168
+          "time_to_success": 20.507,
+          "time_this_mutation": 0.177
         },
         "12": {
           "verdict": "same_func",
@@ -8426,8 +8426,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 20.951,
-          "time_this_mutation": 0.222
+          "time_to_success": 20.752,
+          "time_this_mutation": 0.245
         },
         "13": {
           "verdict": "same_func",
@@ -8436,8 +8436,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 21.185,
-          "time_this_mutation": 0.229
+          "time_to_success": 20.909,
+          "time_this_mutation": 0.155
         },
         "16": {
           "verdict": "same_func",
@@ -8446,8 +8446,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 21.391,
-          "time_this_mutation": 0.205
+          "time_to_success": 21.317,
+          "time_this_mutation": 0.407
         },
         "17": {
           "verdict": "same_func",
@@ -8456,8 +8456,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 21.607,
-          "time_this_mutation": 0.216
+          "time_to_success": 21.562,
+          "time_this_mutation": 0.246
         },
         "18": {
           "verdict": "same_func",
@@ -8466,8 +8466,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 21.783,
-          "time_this_mutation": 0.175
+          "time_to_success": 21.785,
+          "time_this_mutation": 0.222
         },
         "19": {
           "verdict": "same_func",
@@ -8476,8 +8476,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 22.014,
-          "time_this_mutation": 0.233
+          "time_to_success": 22.013,
+          "time_this_mutation": 0.228
         },
         "20": {
           "verdict": "same_func",
@@ -8486,8 +8486,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 22.246,
-          "time_this_mutation": 0.23
+          "time_to_success": 22.231,
+          "time_this_mutation": 0.216
         },
         "21": {
           "verdict": "same_func",
@@ -8496,8 +8496,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 22.416,
-          "time_this_mutation": 0.17
+          "time_to_success": 22.48,
+          "time_this_mutation": 0.245
         },
         "22": {
           "verdict": "same_func",
@@ -8506,8 +8506,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 22.587,
-          "time_this_mutation": 0.171
+          "time_to_success": 22.817,
+          "time_this_mutation": 0.339
         },
         "23": {
           "verdict": "same_func",
@@ -8516,8 +8516,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 22.9,
-          "time_this_mutation": 0.309
+          "time_to_success": 23.194,
+          "time_this_mutation": 0.378
         },
         "24": {
           "verdict": "same_func",
@@ -8526,8 +8526,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 23.138,
-          "time_this_mutation": 0.24
+          "time_to_success": 23.522,
+          "time_this_mutation": 0.324
         },
         "25": {
           "verdict": "same_func",
@@ -8536,8 +8536,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 23.452,
-          "time_this_mutation": 0.309
+          "time_to_success": 23.792,
+          "time_this_mutation": 0.273
         }
       },
       "no_crash": [
@@ -8550,9 +8550,9 @@
         255
       ],
       "fork_flip": [
-        6,
         4,
-        5
+        5,
+        6
       ],
       "same_type": {},
       "different_type": []
@@ -8577,23 +8577,23 @@
         12,
         17,
         16,
-        13,
         18,
-        19,
+        13,
         20,
+        19,
         21,
-        23,
         22,
         24,
         25,
+        23,
+        26,
+        32,
         28,
         31,
-        32,
-        26,
-        64,
         40,
+        127,
         255,
-        127
+        64
       ],
       "same_type": {},
       "different_type": []
@@ -8603,37 +8603,37 @@
       "matches": {},
       "no_crash": [],
       "fork_flip": [
-        2,
         3,
-        0,
         4,
+        0,
+        2,
         7,
         6,
-        5,
         8,
-        9,
+        5,
         11,
+        9,
         10,
         12,
-        13,
         17,
-        16,
+        13,
         18,
+        16,
         19,
         20,
         21,
         22,
-        25,
-        23,
         24,
+        23,
         26,
+        25,
         28,
-        32,
         31,
         40,
+        32,
         64,
-        255,
-        127
+        127,
+        255
       ],
       "same_type": {},
       "different_type": []
@@ -8643,11 +8643,11 @@
       "matches": {},
       "no_crash": [],
       "fork_flip": [
-        3,
         0,
+        3,
         4,
-        6,
         5,
+        6,
         7,
         8,
         9,
@@ -8655,20 +8655,20 @@
         12,
         11,
         13,
-        16,
         17,
+        16,
         18,
         19,
-        21,
         20,
+        21,
         22,
         23,
         24,
         25,
-        28,
         26,
-        31,
+        28,
         32,
+        31,
         40,
         64,
         127,
@@ -8686,58 +8686,7 @@
       "original": 70,
       "matches": {},
       "no_crash": [
-        0,
-        1,
-        2,
         3,
-        5,
-        6,
-        4,
-        7,
-        10,
-        11,
-        13,
-        16,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23,
-        25,
-        24,
-        26,
-        28,
-        31,
-        32,
-        40,
-        64,
-        255,
-        127
-      ],
-      "fork_flip": [],
-      "same_type": {},
-      "different_type": [
-        [
-          8,
-          "heap-use-after-free"
-        ],
-        [
-          9,
-          "heap-use-after-free"
-        ],
-        [
-          12,
-          "heap-use-after-free"
-        ]
-      ]
-    },
-    "270": {
-      "original": 3,
-      "matches": {},
-      "no_crash": [
-        0,
         4,
         5,
         6,
@@ -8753,66 +8702,18 @@
         18,
         19,
         20,
-        21,
-        23,
-        25,
-        24,
-        26,
-        31,
-        28,
-        32,
-        40,
-        64,
-        127,
-        255
-      ],
-      "fork_flip": [],
-      "same_type": {},
-      "different_type": [
-        [
-          1,
-          "heap-use-after-free"
-        ],
-        [
-          2,
-          "heap-use-after-free"
-        ],
-        [
-          22,
-          "heap-use-after-free"
-        ]
-      ]
-    },
-    "272": {
-      "original": 1,
-      "matches": {},
-      "no_crash": [
-        3,
-        4,
-        2,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        12,
-        16,
-        17,
-        18,
-        20,
-        19,
         22,
         21,
-        24,
         23,
-        25,
+        24,
         26,
+        25,
+        28,
         31,
         40,
         32,
-        64,
         127,
+        64,
         255
       ],
       "fork_flip": [],
@@ -8823,51 +8724,97 @@
           "heap-use-after-free"
         ],
         [
-          11,
+          2,
           "heap-use-after-free"
         ],
+        [
+          1,
+          "heap-use-after-free"
+        ]
+      ]
+    },
+    "270": {
+      "original": 3,
+      "matches": {},
+      "no_crash": [
+        2,
+        1,
+        0,
+        4,
+        5,
+        6,
+        7,
+        8,
+        10,
+        9,
+        11,
+        12,
+        17,
+        18,
+        16,
+        19,
+        20,
+        21,
+        24,
+        23,
+        22,
+        25,
+        26,
+        28,
+        32,
+        31,
+        40,
+        255
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": [
         [
           13,
           "heap-use-after-free"
         ],
         [
-          28,
+          64,
+          "heap-use-after-free"
+        ],
+        [
+          127,
           "heap-use-after-free"
         ]
       ]
     },
-    "276": {
+    "272": {
       "original": 1,
       "matches": {},
       "no_crash": [
-        0,
         4,
         3,
-        6,
+        0,
         5,
         7,
+        6,
         8,
-        9,
         10,
+        9,
         11,
         12,
+        16,
         13,
         17,
-        16,
         18,
-        20,
         19,
+        20,
         21,
         23,
         22,
+        25,
         24,
         26,
-        25,
-        28,
         31,
         32,
-        64,
+        28,
         40,
+        64,
         127,
         255
       ],
@@ -8880,21 +8827,20 @@
         ]
       ]
     },
-    "280": {
-      "original": 41,
+    "276": {
+      "original": 1,
       "matches": {},
       "no_crash": [
-        1,
+        2,
+        4,
         0,
         3,
-        4,
         5,
         6,
         7,
         8,
         9,
         10,
-        11,
         12,
         13,
         16,
@@ -8902,16 +8848,64 @@
         18,
         19,
         20,
+        21,
         22,
         23,
-        24,
         25,
+        24,
         26,
         28,
-        31,
         32,
         40,
         64,
+        127,
+        255
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": [
+        [
+          11,
+          "heap-use-after-free"
+        ],
+        [
+          31,
+          "heap-use-after-free"
+        ]
+      ]
+    },
+    "280": {
+      "original": 41,
+      "matches": {},
+      "no_crash": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        7,
+        6,
+        8,
+        9,
+        11,
+        10,
+        13,
+        12,
+        17,
+        16,
+        19,
+        18,
+        20,
+        23,
+        24,
+        22,
+        25,
+        31,
+        26,
+        28,
+        64,
+        40,
+        127,
         255
       ],
       "fork_flip": [
@@ -8921,7 +8915,7 @@
       "same_type": {},
       "different_type": [
         [
-          127,
+          32,
           "heap-use-after-free"
         ]
       ]
@@ -8930,85 +8924,30 @@
       "original": 3,
       "matches": {},
       "no_crash": [
+        0,
+        1,
         4,
         2,
-        6,
-        5,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        16,
-        17,
-        21,
-        19,
-        22,
-        23,
-        25,
-        24,
-        28,
-        26,
-        31,
-        32,
-        64,
-        127,
-        255
-      ],
-      "fork_flip": [],
-      "same_type": {},
-      "different_type": [
-        [
-          0,
-          "heap-use-after-free"
-        ],
-        [
-          1,
-          "heap-use-after-free"
-        ],
-        [
-          18,
-          "heap-use-after-free"
-        ],
-        [
-          20,
-          "heap-use-after-free"
-        ],
-        [
-          40,
-          "heap-use-after-free"
-        ]
-      ]
-    },
-    "284": {
-      "original": 2,
-      "matches": {},
-      "no_crash": [
-        3,
         5,
         6,
         7,
         8,
-        9,
-        10,
         11,
         12,
         13,
         16,
         18,
         17,
-        19,
         20,
-        22,
+        19,
         21,
+        22,
         23,
         24,
         25,
-        28,
-        31,
+        26,
         32,
+        31,
         40,
         127,
         64,
@@ -9018,19 +8957,65 @@
       "same_type": {},
       "different_type": [
         [
-          1,
+          9,
           "heap-use-after-free"
         ],
         [
-          4,
+          10,
           "heap-use-after-free"
         ],
         [
-          0,
+          28,
+          "heap-use-after-free"
+        ]
+      ]
+    },
+    "284": {
+      "original": 2,
+      "matches": {},
+      "no_crash": [
+        1,
+        4,
+        0,
+        3,
+        8,
+        7,
+        10,
+        9,
+        12,
+        11,
+        13,
+        16,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        28,
+        31,
+        32,
+        40,
+        64,
+        127,
+        255
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": [
+        [
+          6,
           "heap-use-after-free"
         ],
         [
-          26,
+          5,
+          "heap-use-after-free"
+        ],
+        [
+          17,
           "heap-use-after-free"
         ]
       ]
@@ -9040,17 +9025,18 @@
       "matches": {},
       "no_crash": [
         2,
-        3,
         1,
-        5,
+        4,
+        3,
         7,
         6,
+        5,
         8,
-        9,
         10,
+        9,
         11,
-        13,
         12,
+        13,
         16,
         17,
         18,
@@ -9058,9 +9044,7 @@
         20,
         21,
         22,
-        23,
         24,
-        25,
         26,
         28,
         31,
@@ -9074,7 +9058,11 @@
       "same_type": {},
       "different_type": [
         [
-          4,
+          23,
+          "heap-use-after-free"
+        ],
+        [
+          25,
           "heap-use-after-free"
         ]
       ]
@@ -9083,28 +9071,29 @@
       "original": 64,
       "matches": {},
       "no_crash": [
+        0,
         3,
         1,
-        0,
         4,
-        6,
         7,
         8,
         9,
         10,
         11,
         12,
-        16,
         13,
+        16,
         17,
-        19,
         18,
+        19,
         20,
-        23,
         22,
+        23,
+        26,
         28,
-        40,
+        31,
         32,
+        40,
         127,
         255
       ],
@@ -9117,15 +9106,11 @@
       "same_type": {},
       "different_type": [
         [
+          6,
+          "heap-use-after-free"
+        ],
+        [
           5,
-          "heap-use-after-free"
-        ],
-        [
-          31,
-          "heap-use-after-free"
-        ],
-        [
-          26,
           "heap-use-after-free"
         ]
       ]
@@ -9146,68 +9131,14 @@
         16,
         17,
         18,
+        20,
         19,
         21,
-        20,
         22,
         23,
         24,
-        25,
-        28,
         26,
-        31,
-        32,
-        40,
-        64,
-        255,
-        127
-      ],
-      "fork_flip": [],
-      "same_type": {},
-      "different_type": [
-        [
-          0,
-          "heap-use-after-free"
-        ],
-        [
-          1,
-          "heap-use-after-free"
-        ],
-        [
-          2,
-          "heap-use-after-free"
-        ],
-        [
-          12,
-          "heap-use-after-free"
-        ]
-      ]
-    },
-    "296": {
-      "original": 48,
-      "matches": {},
-      "no_crash": [
-        2,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        16,
-        17,
-        19,
-        18,
-        21,
-        20,
-        22,
-        24,
         25,
-        26,
         28,
         31,
         32,
@@ -9220,7 +9151,7 @@
       "same_type": {},
       "different_type": [
         [
-          1,
+          2,
           "heap-use-after-free"
         ],
         [
@@ -9228,11 +9159,59 @@
           "heap-use-after-free"
         ],
         [
-          3,
+          1,
           "heap-use-after-free"
         ],
         [
-          23,
+          12,
+          "heap-use-after-free"
+        ]
+      ]
+    },
+    "296": {
+      "original": 48,
+      "matches": {},
+      "no_crash": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        24,
+        23,
+        26,
+        25,
+        28,
+        31,
+        32,
+        40,
+        127,
+        64,
+        255
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": [
+        [
+          2,
+          "heap-use-after-free"
+        ],
+        [
+          0,
           "heap-use-after-free"
         ]
       ]
@@ -9249,20 +9228,19 @@
         7,
         8,
         9,
-        11,
         10,
-        13,
+        11,
         12,
+        13,
         16,
-        17,
         18,
         19,
         20,
         21,
         22,
         23,
-        25,
         24,
+        25,
         26,
         31,
         28,
@@ -9276,11 +9254,15 @@
       "same_type": {},
       "different_type": [
         [
+          1,
+          "heap-use-after-free"
+        ],
+        [
           2,
           "heap-use-after-free"
         ],
         [
-          1,
+          17,
           "heap-use-after-free"
         ]
       ]
@@ -9289,31 +9271,33 @@
       "original": 42,
       "matches": {},
       "no_crash": [
+        0,
         1,
         3,
-        5,
         4,
+        5,
         6,
         7,
-        8,
         9,
+        8,
         10,
         11,
-        13,
         12,
-        17,
         16,
+        17,
         18,
-        20,
-        21,
         19,
+        21,
+        20,
         22,
+        23,
+        24,
         25,
         26,
         28,
         31,
-        32,
         40,
+        32,
         64,
         127,
         255
@@ -9326,15 +9310,7 @@
           "heap-use-after-free"
         ],
         [
-          0,
-          "heap-use-after-free"
-        ],
-        [
-          23,
-          "heap-use-after-free"
-        ],
-        [
-          24,
+          13,
           "heap-use-after-free"
         ]
       ]
@@ -9343,14 +9319,12 @@
       "original": 98,
       "matches": {},
       "no_crash": [
-        0,
         1,
-        2,
+        0,
         3,
+        2,
         4,
-        5,
         7,
-        6,
         8,
         9,
         10,
@@ -9363,53 +9337,15 @@
         19,
         20,
         21,
-        23,
         22,
+        23,
         24,
         25,
         26,
-        28,
         31,
+        28,
         32,
         40,
-        64,
-        127,
-        255
-      ],
-      "fork_flip": [],
-      "same_type": {},
-      "different_type": []
-    },
-    "308": {
-      "original": 0,
-      "matches": {},
-      "no_crash": [
-        1,
-        4,
-        2,
-        3,
-        6,
-        8,
-        7,
-        5,
-        10,
-        12,
-        11,
-        9,
-        18,
-        13,
-        17,
-        16,
-        19,
-        21,
-        22,
-        24,
-        25,
-        23,
-        28,
-        31,
-        40,
-        32,
         127,
         64,
         255
@@ -9418,11 +9354,58 @@
       "same_type": {},
       "different_type": [
         [
-          20,
+          5,
           "heap-use-after-free"
         ],
         [
-          26,
+          6,
+          "heap-use-after-free"
+        ]
+      ]
+    },
+    "308": {
+      "original": 0,
+      "matches": {},
+      "no_crash": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        8,
+        7,
+        11,
+        12,
+        13,
+        16,
+        17,
+        18,
+        19,
+        21,
+        20,
+        23,
+        22,
+        25,
+        24,
+        26,
+        31,
+        28,
+        32,
+        40,
+        64,
+        127,
+        255
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": [
+        [
+          9,
+          "heap-use-after-free"
+        ],
+        [
+          10,
           "heap-use-after-free"
         ]
       ]
@@ -9431,33 +9414,32 @@
       "original": 189,
       "matches": {},
       "no_crash": [
-        0,
+        1,
         2,
-        3,
         4,
         5,
-        6,
         7,
-        8,
+        6,
         9,
+        8,
         10,
         11,
         12,
         13,
         16,
-        17,
         18,
+        17,
         19,
         20,
-        21,
         22,
         23,
         24,
-        26,
         25,
+        26,
         28,
-        40,
+        31,
         32,
+        40,
         64,
         127,
         255
@@ -9466,17 +9448,21 @@
       "same_type": {},
       "different_type": [
         [
-          1,
+          3,
           "heap-use-after-free"
         ],
         [
-          31,
+          0,
+          "heap-use-after-free"
+        ],
+        [
+          21,
           "heap-use-after-free"
         ]
       ]
     },
     "target_crash_summary": {
-      "no_crash": 100,
+      "no_crash": 95,
       "same_type": 1,
       "same_type_sites": {
         "reverseSamples16bits:tiffcrop.c:8595": 1
@@ -9491,11 +9477,11 @@
       "type": "heap-buffer-overflow",
       "crash_frame": {
         "function": "extractContigSamplesShifted32bits",
-        "file": "/tmp/fork_analysis_ansmtiul/ref/tools/tiffcrop.c",
+        "file": "/tmp/fork_analysis_yvpd914o/ref/tools/tiffcrop.c",
         "line": 3604
       },
       "summary": {
-        "file": "/tmp/fork_analysis_ansmtiul/ref/tools/tiffcrop.c",
+        "file": "/tmp/fork_analysis_yvpd914o/ref/tools/tiffcrop.c",
         "line": 3604,
         "function": "extractContigSamplesShifted32bits"
       }
@@ -9509,240 +9495,235 @@
       "matches": {},
       "no_crash": [
         0,
-        3,
         1,
-        2,
-        5,
         4,
+        5,
         6,
-        8,
         7,
+        8,
         9,
+        12,
         11,
-        14,
         13,
-        16,
-        17,
         15,
-        18,
+        14,
+        16,
         20,
-        19,
+        18,
         21,
         23,
         24,
         25,
         26,
         27,
-        30,
         28,
+        30,
         29,
         32,
-        31,
         33,
-        34,
         35,
+        31,
+        34,
         36,
-        39,
+        37,
         38,
+        39,
         40,
-        41,
         42,
-        44,
+        41,
         43,
+        44,
         45,
         47,
         46,
-        48,
-        49,
         50,
         51,
+        49,
+        52,
         53,
+        54,
         55,
-        56,
-        57,
         58,
-        59,
+        57,
         60,
+        59,
         61,
+        63,
         62,
         65,
-        63,
         64,
-        69,
         68,
+        69,
         70,
         71,
         72,
+        74,
         73,
         75,
-        74,
         76,
-        77,
         78,
-        81,
         79,
         80,
         82,
-        85,
-        84,
         83,
+        84,
         86,
-        89,
+        85,
         88,
         87,
         90,
+        89,
         91,
-        93,
         92,
+        93,
         94,
-        95,
+        97,
         96,
+        95,
         98,
         99,
         100,
         102,
         101,
-        103,
         104,
+        103,
         105,
         106,
         107,
-        109,
-        108,
         110,
-        112,
+        108,
+        109,
         111,
-        114,
+        112,
         113,
+        114,
         115,
         116,
-        119,
         117,
+        119,
+        120,
         118,
         121,
         122,
-        123,
-        120,
         124,
+        123,
+        125,
+        127,
         126,
         128,
-        127,
         129,
-        132,
-        133,
+        131,
         134,
+        133,
+        132,
         135,
-        136,
         137,
-        138,
-        141,
+        136,
         139,
+        138,
         140,
-        144,
         142,
+        141,
         143,
+        144,
         145,
-        147,
         146,
-        148,
+        147,
         149,
+        148,
         150,
         151,
-        153,
         152,
+        153,
         154,
         155,
-        158,
         156,
-        159,
         157,
-        163,
+        158,
+        159,
         160,
+        163,
         161,
         162,
-        165,
         164,
-        166,
         167,
+        166,
         168,
+        169,
         170,
         171,
-        169,
+        173,
         172,
         174,
-        173,
         175,
         176,
+        177,
         178,
         179,
-        180,
         181,
-        182,
+        180,
         183,
         184,
-        185,
+        182,
         186,
         187,
+        185,
         188,
         190,
-        189,
         192,
-        191,
         193,
         195,
+        194,
         196,
         197,
-        194,
+        199,
         198,
         200,
         201,
         202,
         203,
-        204,
         205,
+        204,
         206,
         207,
         208,
-        210,
         209,
         211,
-        212,
-        215,
+        210,
         213,
+        212,
         214,
-        216,
+        215,
         217,
         218,
         219,
         220,
         221,
-        223,
         222,
         224,
         225,
         226,
-        228,
         227,
+        228,
         229,
-        230,
         231,
-        232,
+        230,
         233,
+        232,
         234,
         235,
+        238,
         236,
         237,
         239,
-        238,
-        240,
         242,
+        241,
+        240,
         243,
-        244,
         245,
         246,
+        244,
         247,
-        249,
-        248,
         250,
         251,
         252,
@@ -9755,34 +9736,38 @@
         66,
         67
       ],
-      "same_type": {},
+      "same_type": {
+        "checkInkNamesString:tif_dir.c:135": [
+          77
+        ]
+      },
       "different_type": [
         [
-          12,
+          2,
           "heap-use-after-free"
         ],
         [
-          37,
+          3,
           "heap-use-after-free"
         ],
         [
-          54,
+          17,
           "heap-use-after-free"
         ],
         [
-          52,
+          19,
           "heap-use-after-free"
         ],
         [
-          97,
+          48,
           "heap-use-after-free"
         ],
         [
-          125,
+          56,
           "heap-use-after-free"
         ],
         [
-          131,
+          81,
           "heap-use-after-free"
         ],
         [
@@ -9790,21 +9775,41 @@
           "heap-use-after-free"
         ],
         [
-          177,
+          165,
           "heap-use-after-free"
         ],
         [
-          199,
+          191,
           "heap-use-after-free"
         ],
         [
-          241,
+          189,
+          "heap-use-after-free"
+        ],
+        [
+          216,
+          "heap-use-after-free"
+        ],
+        [
+          223,
+          "heap-use-after-free"
+        ],
+        [
+          249,
+          "heap-use-after-free"
+        ],
+        [
+          248,
           "heap-use-after-free"
         ]
       ]
     },
     "target_crash_summary": {
-      "no_crash": 11
+      "no_crash": 15,
+      "same_type": 1,
+      "same_type_sites": {
+        "checkInkNamesString:tif_dir.c:135": 1
+      }
     }
   },
   "pairwise_results": {},
