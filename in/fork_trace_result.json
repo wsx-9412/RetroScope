@@ -1,7 +1,7 @@
 {
-  "binary_target": "/tmp/fork_analysis_yvpd914o/target/tools/.libs/tiffcrop",
-  "binary_ref": "/tmp/fork_analysis_yvpd914o/ref/tools/.libs/tiffcrop",
-  "fork_spec": "/tmp/fork_analysis_yvpd914o/target/libtiff/tif_dirread.c:4141",
+  "binary_target": "/tmp/fork_analysis_mvbt4ft5/target/tools/.libs/tiffcrop",
+  "binary_ref": "/tmp/fork_analysis_mvbt4ft5/ref/tools/.libs/tiffcrop",
+  "fork_spec": "/tmp/fork_analysis_mvbt4ft5/target/libtiff/tif_dirread.c:4138",
   "variables": [
     "tif->tif_fields",
     "mb",
@@ -16,19 +16,19 @@
       "fd": 3,
       "offset": 0,
       "size": 832,
-      "buf_addr": 140730652410280
+      "buf_addr": 140736604021064
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 4096,
-      "buf_addr": 136979041357824
+      "buf_addr": 136504292274176
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 8192,
-      "buf_addr": 136979041095680
+      "buf_addr": 136504292012032
     },
     {
       "fd": 3,
@@ -46,133 +46,133 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140730652409136
+      "buf_addr": 140736604019920
     },
     {
       "fd": 3,
       "offset": 121,
       "size": 4096,
-      "buf_addr": 136979041357824
+      "buf_addr": 136504292274176
     },
     {
       "fd": 3,
       "offset": 121,
       "size": 3975,
-      "buf_addr": 136979041357945
+      "buf_addr": 136504292274297
     },
     {
       "fd": 3,
       "offset": 832,
       "size": 832,
-      "buf_addr": 140730652410280
+      "buf_addr": 140736604021064
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140730652409072
+      "buf_addr": 140736604019856
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140730652408992
+      "buf_addr": 140736604019776
     },
     {
       "fd": 3,
       "offset": 1838,
       "size": 4096,
-      "buf_addr": 136979041357824
+      "buf_addr": 136504292274176
     },
     {
       "fd": 3,
       "offset": 1838,
       "size": 2258,
-      "buf_addr": 136979041359662
+      "buf_addr": 136504292276014
     },
     {
       "fd": 3,
       "offset": 4034,
       "size": 4096,
-      "buf_addr": 136979041099776
+      "buf_addr": 136504292016128
     },
     {
       "fd": 3,
       "offset": 4034,
       "size": 62,
-      "buf_addr": 136979041103810
+      "buf_addr": 136504292020162
     },
     {
       "fd": 3,
       "offset": 4034,
       "size": 8192,
-      "buf_addr": 136979041095680
+      "buf_addr": 136504292012032
     },
     {
       "fd": 3,
       "offset": 4034,
       "size": 4158,
-      "buf_addr": 136979041099714
+      "buf_addr": 136504292016066
     },
     {
       "fd": 3,
       "offset": 4070,
       "size": 4096,
-      "buf_addr": 136979041054720
+      "buf_addr": 136504291971072
     },
     {
       "fd": 3,
       "offset": 4070,
       "size": 26,
-      "buf_addr": 136979041058790
+      "buf_addr": 136504291975142
     },
     {
       "fd": 3,
       "offset": 4070,
       "size": 8192,
-      "buf_addr": 136979039567872
+      "buf_addr": 136504290484224
     },
     {
       "fd": 3,
       "offset": 4070,
       "size": 4122,
-      "buf_addr": 136979039571942
+      "buf_addr": 136504290488294
     },
     {
       "fd": 3,
       "offset": 4096,
       "size": 62,
-      "buf_addr": 136979041103810
+      "buf_addr": 136504292020162
     },
     {
       "fd": 3,
       "offset": 4096,
       "size": 26,
-      "buf_addr": 136979041058790
+      "buf_addr": 136504291975142
     },
     {
       "fd": 3,
       "offset": 5891,
       "size": 4158,
-      "buf_addr": 136979041099714
+      "buf_addr": 136504292016066
     },
     {
       "fd": 3,
       "offset": 5891,
       "size": 2301,
-      "buf_addr": 136979041101571
+      "buf_addr": 136504292017923
     },
     {
       "fd": 3,
       "offset": 6269,
       "size": 4122,
-      "buf_addr": 136979039571942
+      "buf_addr": 136504290488294
     },
     {
       "fd": 3,
       "offset": 6269,
       "size": 1923,
-      "buf_addr": 136979039574141
+      "buf_addr": 136504290490493
     }
   ],
   "ref_file_reads": [
@@ -180,19 +180,19 @@
       "fd": 3,
       "offset": 0,
       "size": 832,
-      "buf_addr": 140729731719928
+      "buf_addr": 140722613913560
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 4096,
-      "buf_addr": 131930636197888
+      "buf_addr": 125397127413760
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 8192,
-      "buf_addr": 131930635935744
+      "buf_addr": 125397127151616
     },
     {
       "fd": 3,
@@ -210,133 +210,133 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140729731718752
+      "buf_addr": 140722613912384
     },
     {
       "fd": 3,
       "offset": 118,
       "size": 4096,
-      "buf_addr": 131930636197888
+      "buf_addr": 125397127413760
     },
     {
       "fd": 3,
       "offset": 118,
       "size": 3978,
-      "buf_addr": 131930636198006
+      "buf_addr": 125397127413878
     },
     {
       "fd": 3,
       "offset": 832,
       "size": 832,
-      "buf_addr": 140729731719928
+      "buf_addr": 140722613913560
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140729731718688
+      "buf_addr": 140722613912320
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140729731718608
+      "buf_addr": 140722613912240
     },
     {
       "fd": 3,
       "offset": 1835,
       "size": 4096,
-      "buf_addr": 131930636197888
+      "buf_addr": 125397127413760
     },
     {
       "fd": 3,
       "offset": 1835,
       "size": 2261,
-      "buf_addr": 131930636199723
+      "buf_addr": 125397127415595
     },
     {
       "fd": 3,
-      "offset": 3989,
+      "offset": 3988,
       "size": 4096,
-      "buf_addr": 131930635939840
+      "buf_addr": 125397127155712
     },
     {
       "fd": 3,
-      "offset": 3989,
-      "size": 107,
-      "buf_addr": 131930635943829
+      "offset": 3988,
+      "size": 108,
+      "buf_addr": 125397127159700
     },
     {
       "fd": 3,
-      "offset": 3989,
+      "offset": 3988,
       "size": 8192,
-      "buf_addr": 131930635935744
+      "buf_addr": 125397127151616
     },
     {
       "fd": 3,
-      "offset": 3989,
-      "size": 4203,
-      "buf_addr": 131930635939733
+      "offset": 3988,
+      "size": 4204,
+      "buf_addr": 125397127155604
     },
     {
       "fd": 3,
-      "offset": 4028,
+      "offset": 4085,
       "size": 4096,
-      "buf_addr": 131930635894784
+      "buf_addr": 125397127110656
     },
     {
       "fd": 3,
-      "offset": 4028,
-      "size": 68,
-      "buf_addr": 131930635898812
+      "offset": 4085,
+      "size": 11,
+      "buf_addr": 125397127114741
     },
     {
       "fd": 3,
-      "offset": 4028,
+      "offset": 4085,
       "size": 8192,
-      "buf_addr": 131930634772480
+      "buf_addr": 125397125492736
     },
     {
       "fd": 3,
-      "offset": 4028,
-      "size": 4164,
-      "buf_addr": 131930634776508
+      "offset": 4085,
+      "size": 4107,
+      "buf_addr": 125397125496821
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 107,
-      "buf_addr": 131930635943829
+      "size": 108,
+      "buf_addr": 125397127159700
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 68,
-      "buf_addr": 131930635898812
+      "size": 11,
+      "buf_addr": 125397127114741
     },
     {
       "fd": 3,
-      "offset": 6438,
-      "size": 4203,
-      "buf_addr": 131930635939733
+      "offset": 6389,
+      "size": 4204,
+      "buf_addr": 125397127155604
     },
     {
       "fd": 3,
-      "offset": 6438,
-      "size": 1754,
-      "buf_addr": 131930635942182
+      "offset": 6389,
+      "size": 1803,
+      "buf_addr": 125397127158005
     },
     {
       "fd": 3,
-      "offset": 6816,
-      "size": 4164,
-      "buf_addr": 131930634776508
+      "offset": 6718,
+      "size": 4107,
+      "buf_addr": 125397125496821
     },
     {
       "fd": 3,
-      "offset": 6816,
-      "size": 1376,
-      "buf_addr": 131930634779296
+      "offset": 6718,
+      "size": 1474,
+      "buf_addr": 125397125499454
     }
   ],
   "chain_trace": {
@@ -5798,37 +5798,37 @@
   },
   "deep_trace": {},
   "arithmetic_backtrace": {
-    "source": "/tmp/fork_analysis_yvpd914o/target/libtiff/tif_dirread.c",
-    "fork_line": 4141,
+    "source": "/tmp/fork_analysis_mvbt4ft5/target/libtiff/tif_dirread.c",
+    "fork_line": 4138,
     "nodes": {
       "tif->tif_fields": {
         "kind": "unknown",
-        "line": 4141,
+        "line": 4138,
         "rhs": null
       },
       "mb": {
         "kind": "assign",
-        "line": 4129,
+        "line": 4126,
         "rhs": "(ma+mc)/2"
       },
       "ma": {
         "kind": "assign",
-        "line": 4133,
+        "line": 4130,
         "rhs": "mb"
       },
       "mc": {
         "kind": "assign",
-        "line": 4135,
+        "line": 4132,
         "rhs": "mb"
       },
       "tif->tif_nfields": {
         "kind": "unknown",
-        "line": 4121,
+        "line": 4118,
         "rhs": null
       },
       "tagid": {
         "kind": "unknown",
-        "line": 4141,
+        "line": 4138,
         "rhs": null
       }
     },
@@ -5866,10 +5866,10 @@
         "tif->tif_fields [GDB: 89747636747904]"
       ],
       "mb": [
-        "mb [GDB: 16] <- (ma+mc)/2  (line 4129)",
-        "  ma [GDB: 15] <- mb  (line 4133)",
-        "    mb [GDB: 16] <- (ma+mc)/2  (line 4129)",
-        "      mc [GDB: 17] <- mb  (line 4135)",
+        "mb [GDB: 16] <- (ma+mc)/2  (line 4126)",
+        "  ma [GDB: 15] <- mb  (line 4130)",
+        "    mb [GDB: 16] <- (ma+mc)/2  (line 4126)",
+        "      mc [GDB: 17] <- mb  (line 4132)",
         "        tif->tif_nfields [GDB: 171] -> unknown"
       ],
       "tagid": [
@@ -6043,11 +6043,11 @@
       "type": "heap-buffer-overflow",
       "crash_frame": {
         "function": "extractContigSamplesShifted32bits",
-        "file": "/tmp/fork_analysis_yvpd914o/ref/tools/tiffcrop.c",
+        "file": "/tmp/fork_analysis_mvbt4ft5/ref/tools/tiffcrop.c",
         "line": 3604
       },
       "summary": {
-        "file": "/tmp/fork_analysis_yvpd914o/ref/tools/tiffcrop.c",
+        "file": "/tmp/fork_analysis_mvbt4ft5/ref/tools/tiffcrop.c",
         "line": 3604,
         "function": "extractContigSamplesShifted32bits"
       }
@@ -6062,31 +6062,31 @@
       "no_crash": [],
       "fork_flip": [
         3,
-        2,
-        4,
         1,
+        4,
+        2,
         5,
         6,
         7,
         8,
         9,
-        10,
         11,
         12,
-        16,
+        10,
         13,
+        16,
         17,
         18,
-        22,
-        21,
         19,
         20,
+        21,
+        22,
         23,
-        24,
         25,
+        24,
         26,
-        31,
         28,
+        31,
         32,
         40,
         64,
@@ -6102,80 +6102,76 @@
       "no_crash": [
         1,
         4,
-        8,
-        9
+        6,
+        9,
+        8
       ],
       "fork_flip": [
-        2,
         0,
+        2,
         5,
         7,
         10,
         11,
         12,
-        13,
-        16,
         17,
-        19,
+        16,
+        13,
         18,
         20,
+        19,
         21,
         22,
-        24,
         23,
         25,
+        24,
         26,
         28,
+        40,
         31,
         32,
-        40,
-        64,
         127,
-        255
+        255,
+        64
       ],
       "same_type": {},
-      "different_type": [
-        [
-          6,
-          "heap-use-after-free"
-        ]
-      ]
+      "different_type": []
     },
     "104": {
       "original": 1,
       "matches": {},
       "no_crash": [],
       "fork_flip": [
-        2,
         0,
-        5,
+        2,
         3,
-        6,
-        7,
         4,
+        6,
         8,
+        7,
+        5,
         10,
-        9,
-        12,
         11,
-        13,
+        12,
+        9,
+        17,
         16,
         18,
-        19,
-        17,
-        20,
-        21,
+        13,
         22,
-        23,
-        24,
+        20,
+        19,
+        21,
         26,
-        31,
+        24,
+        23,
         25,
-        28,
         32,
-        64,
-        127,
+        31,
+        28,
         40,
+        127,
+        64,
         255
       ],
       "same_type": {},
@@ -6185,7 +6181,7 @@
       "original": 32,
       "matches": {},
       "no_crash": [
-        1,
+        2,
         4,
         5,
         6,
@@ -6193,19 +6189,20 @@
         8,
         9,
         10,
+        11,
         12,
         13,
         16,
-        18,
         17,
         19,
         21,
-        20,
-        23,
         22,
+        23,
+        24,
         25,
         26,
         28,
+        31,
         40,
         64,
         127,
@@ -6217,23 +6214,19 @@
       "same_type": {},
       "different_type": [
         [
+          1,
+          "heap-use-after-free"
+        ],
+        [
           3,
           "heap-use-after-free"
         ],
         [
-          2,
+          18,
           "heap-use-after-free"
         ],
         [
-          11,
-          "heap-use-after-free"
-        ],
-        [
-          24,
-          "heap-use-after-free"
-        ],
-        [
-          31,
+          20,
           "heap-use-after-free"
         ]
       ]
@@ -6244,20 +6237,20 @@
       "no_crash": [],
       "fork_flip": [
         0,
-        3,
-        2,
         4,
+        2,
+        3,
         5,
-        6,
         7,
-        9,
+        6,
         8,
+        9,
         11,
-        10,
-        13,
         12,
-        17,
+        10,
         16,
+        13,
+        17,
         18,
         19,
         21,
@@ -6272,8 +6265,8 @@
         31,
         40,
         64,
-        255,
-        127
+        127,
+        255
       ],
       "same_type": {},
       "different_type": []
@@ -6282,39 +6275,39 @@
       "original": 3,
       "matches": {},
       "no_crash": [
-        4,
         1,
+        4,
         6,
-        9,
-        8
+        8,
+        9
       ],
       "fork_flip": [
-        2,
         0,
+        2,
         5,
         7,
         10,
         11,
         12,
-        13,
         16,
-        18,
+        13,
         17,
+        18,
         19,
         21,
-        23,
         20,
+        23,
         22,
         25,
-        26,
         24,
+        26,
         28,
-        31,
         32,
+        31,
+        255,
         40,
         64,
-        127,
-        255
+        127
       ],
       "same_type": {},
       "different_type": []
@@ -6327,33 +6320,33 @@
         2,
         0,
         4,
+        6,
         3,
         5,
-        6,
         7,
+        10,
         9,
         8,
         11,
-        10,
-        12,
         16,
         13,
+        12,
         17,
         18,
+        20,
         19,
         21,
-        20,
-        23,
-        22,
-        25,
         24,
+        22,
+        23,
+        25,
+        31,
         26,
         28,
-        40,
         32,
-        31,
-        64,
+        40,
         127,
+        64,
         255
       ],
       "same_type": {},
@@ -6363,52 +6356,46 @@
       "original": 32,
       "matches": {},
       "no_crash": [
-        2,
         1,
-        4,
         3,
-        5,
+        2,
+        4,
         7,
-        6,
+        8,
         9,
         10,
         11,
         12,
+        13,
         16,
         17,
         18,
-        20,
         19,
-        22,
+        20,
         21,
+        23,
+        22,
         24,
         25,
+        26,
         28,
         31
       ],
       "fork_flip": [
         0,
         40,
+        127,
         64,
-        255,
-        127
+        255
       ],
       "same_type": {},
       "different_type": [
         [
-          8,
+          6,
           "heap-use-after-free"
         ],
         [
-          13,
-          "heap-use-after-free"
-        ],
-        [
-          23,
-          "heap-use-after-free"
-        ],
-        [
-          26,
+          5,
           "heap-use-after-free"
         ]
       ]
@@ -6418,15 +6405,15 @@
       "matches": {},
       "no_crash": [],
       "fork_flip": [
-        1,
         4,
-        0,
         2,
+        1,
+        0,
         5,
         6,
         7,
-        9,
         8,
+        9,
         10,
         11,
         12,
@@ -6434,21 +6421,21 @@
         13,
         17,
         18,
-        21,
         19,
+        21,
         20,
         22,
+        23,
         24,
         25,
-        23,
         26,
         28,
-        40,
         31,
-        64,
         32,
+        40,
         127,
-        255
+        255,
+        64
       ],
       "same_type": {},
       "different_type": []
@@ -6471,23 +6458,23 @@
         10,
         11,
         12,
-        16,
         13,
-        19,
         17,
+        16,
         18,
+        19,
         20,
-        23,
         21,
-        24,
         22,
-        31,
-        26,
+        23,
+        24,
         25,
+        26,
         28,
+        31,
         32,
-        64,
         40,
+        64,
         127,
         255
       ],
@@ -6501,36 +6488,36 @@
         2
       ],
       "fork_flip": [
-        4,
-        3,
         0,
+        3,
+        4,
+        5,
         6,
         7,
-        5,
         8,
-        9,
-        11,
         10,
-        13,
+        11,
+        9,
         12,
+        13,
         16,
         17,
         18,
         19,
-        21,
         20,
-        24,
+        21,
         22,
-        25,
         23,
-        28,
+        25,
         26,
+        24,
+        28,
+        31,
         32,
         40,
-        31,
+        127,
         64,
-        255,
-        127
+        255
       ],
       "same_type": {},
       "different_type": []
@@ -6540,56 +6527,53 @@
       "matches": {},
       "no_crash": [
         1,
+        2,
         8
       ],
       "fork_flip": [
         0,
-        5,
         3,
         6,
-        7,
+        5,
         9,
+        7,
         10,
         11,
-        13,
         12,
+        13,
         16,
-        18,
         17,
         19,
+        18,
         20,
         21,
-        23,
         22,
+        23,
         24,
         26,
-        25,
         28,
+        25,
         31,
+        64,
         32,
         40,
-        64,
-        255,
-        127
+        127,
+        255
       ],
       "same_type": {},
-      "different_type": [
-        [
-          2,
-          "heap-use-after-free"
-        ]
-      ]
+      "different_type": []
     },
     "136": {
       "original": 3,
       "matches": {},
       "no_crash": [
         0,
-        1,
-        5,
         4,
+        5,
         6,
+        7,
         8,
+        9,
         10,
         11,
         12,
@@ -6598,32 +6582,28 @@
         18,
         19,
         20,
-        25,
         24,
         26,
-        32,
-        40,
+        25,
         31,
+        40,
+        32,
         64,
-        255,
-        127
+        127,
+        255
       ],
       "fork_flip": [
         2,
         17,
-        21,
         22,
+        21,
         23,
         28
       ],
       "same_type": {},
       "different_type": [
         [
-          7,
-          "heap-use-after-free"
-        ],
-        [
-          9,
+          1,
           "heap-use-after-free"
         ]
       ]
@@ -6632,42 +6612,45 @@
       "original": 3,
       "matches": {},
       "no_crash": [
-        0,
         2,
         1,
+        0,
         4,
         5,
         6,
         7,
         8,
-        10,
         9,
         11,
-        13,
+        10,
         12,
         16,
         18,
-        17,
         19,
-        21,
         20,
         22,
-        23,
+        21,
         24,
+        23,
+        25,
         26,
         28,
         31,
         32,
         40,
         64,
-        127,
-        255
+        255,
+        127
       ],
       "fork_flip": [],
       "same_type": {},
       "different_type": [
         [
-          25,
+          17,
+          "heap-use-after-free"
+        ],
+        [
+          13,
           "heap-use-after-free"
         ]
       ]
@@ -6676,68 +6659,21 @@
       "original": 251,
       "matches": {},
       "no_crash": [
-        1,
-        3,
         0,
+        1,
         2,
+        4,
+        5,
         6,
         7,
-        5,
-        4,
         8,
-        10,
-        11,
-        12,
-        13,
-        18,
-        16,
-        17,
-        19,
-        20,
-        21,
-        22,
-        24,
-        25,
-        28,
-        26,
-        32,
-        31,
-        40,
-        64,
-        255,
-        127
-      ],
-      "fork_flip": [],
-      "same_type": {},
-      "different_type": [
-        [
-          9,
-          "heap-use-after-free"
-        ],
-        [
-          23,
-          "heap-use-after-free"
-        ]
-      ]
-    },
-    "144": {
-      "original": 3,
-      "matches": {},
-      "no_crash": [
-        1,
-        4,
-        0,
-        2,
-        6,
-        8,
-        5,
-        7,
         9,
         11,
         10,
         12,
+        16,
+        13,
         17,
-        18,
         20,
         21,
         22,
@@ -6745,23 +6681,23 @@
         24,
         25,
         26,
+        28,
         31,
         32,
-        28,
         40,
-        255,
         64,
-        127
+        127,
+        255
       ],
       "fork_flip": [],
       "same_type": {},
       "different_type": [
         [
-          16,
+          3,
           "heap-use-after-free"
         ],
         [
-          13,
+          18,
           "heap-use-after-free"
         ],
         [
@@ -6770,76 +6706,35 @@
         ]
       ]
     },
-    "150": {
+    "144": {
       "original": 3,
       "matches": {},
       "no_crash": [
-        2,
-        0,
-        1,
         4,
-        6,
         5,
+        6,
         7,
-        9,
         8,
-        12,
+        9,
         10,
         11,
+        12,
         13,
-        17,
         16,
         18,
+        17,
+        20,
         19,
         21,
         22,
-        20,
-        23,
         24,
+        23,
         25,
         26,
-        31,
         28,
         32,
         40,
         64,
-        127,
-        255
-      ],
-      "fork_flip": [],
-      "same_type": {},
-      "different_type": []
-    },
-    "152": {
-      "original": 1,
-      "matches": {},
-      "no_crash": [
-        0,
-        2,
-        4,
-        3,
-        5,
-        9,
-        6,
-        7,
-        12,
-        11,
-        10,
-        13,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23,
-        24,
-        25,
-        28,
-        26,
-        31,
-        40,
-        64,
-        32,
         127,
         255
       ],
@@ -6847,15 +6742,122 @@
       "same_type": {},
       "different_type": [
         [
-          8,
+          2,
+          "heap-use-after-free"
+        ],
+        [
+          1,
+          "heap-use-after-free"
+        ],
+        [
+          0,
+          "heap-use-after-free"
+        ],
+        [
+          31,
+          "heap-use-after-free"
+        ]
+      ]
+    },
+    "150": {
+      "original": 3,
+      "matches": {},
+      "no_crash": [
+        1,
+        2,
+        5,
+        6,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        16,
+        17,
+        18,
+        20,
+        19,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        31,
+        28,
+        32,
+        40,
+        64,
+        127,
+        255
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": [
+        [
+          0,
+          "heap-use-after-free"
+        ],
+        [
+          4,
+          "heap-use-after-free"
+        ],
+        [
+          7,
+          "heap-use-after-free"
+        ]
+      ]
+    },
+    "152": {
+      "original": 1,
+      "matches": {},
+      "no_crash": [
+        2,
+        3,
+        5,
+        6,
+        8,
+        7,
+        10,
+        11,
+        12,
+        13,
+        16,
+        18,
+        19,
+        20,
+        22,
+        21,
+        23,
+        24,
+        26,
+        25,
+        28,
+        31,
+        32,
+        40,
+        64,
+        127,
+        255
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": [
+        [
+          0,
+          "heap-use-after-free"
+        ],
+        [
+          4,
+          "heap-use-after-free"
+        ],
+        [
+          9,
           "heap-use-after-free"
         ],
         [
           17,
-          "heap-use-after-free"
-        ],
-        [
-          16,
           "heap-use-after-free"
         ]
       ]
@@ -6864,23 +6866,21 @@
       "original": 1,
       "matches": {},
       "no_crash": [
-        0,
-        4,
         3,
-        2,
+        4,
+        6,
         5,
         8,
-        6,
         7,
-        10,
-        13,
         9,
-        11,
+        10,
         12,
+        11,
         16,
+        13,
+        17,
         18,
         19,
-        17,
         20,
         22,
         21,
@@ -6889,36 +6889,6 @@
         25,
         26,
         28,
-        40,
-        31,
-        32,
-        64,
-        255,
-        127
-      ],
-      "fork_flip": [],
-      "same_type": {},
-      "different_type": []
-    },
-    "160": {
-      "original": 13,
-      "matches": {},
-      "no_crash": [
-        1,
-        3,
-        0,
-        4,
-        5,
-        8,
-        6,
-        7,
-        10,
-        12,
-        16,
-        19,
-        18,
-        20,
-        26,
         31,
         32,
         40,
@@ -6926,12 +6896,52 @@
         127,
         255
       ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": [
+        [
+          0,
+          "heap-use-after-free"
+        ],
+        [
+          2,
+          "heap-use-after-free"
+        ]
+      ]
+    },
+    "160": {
+      "original": 13,
+      "matches": {},
+      "no_crash": [
+        1,
+        0,
+        3,
+        4,
+        6,
+        7,
+        8,
+        10,
+        9,
+        11,
+        12,
+        16,
+        18,
+        19,
+        20,
+        26,
+        32,
+        31,
+        40,
+        127,
+        64,
+        255
+      ],
       "fork_flip": [
         2,
         17,
         21,
-        22,
         23,
+        22,
         24,
         25,
         28
@@ -6939,11 +6949,7 @@
       "same_type": {},
       "different_type": [
         [
-          9,
-          "heap-use-after-free"
-        ],
-        [
-          11,
+          5,
           "heap-use-after-free"
         ]
       ]
@@ -6953,13 +6959,13 @@
       "matches": {},
       "no_crash": [
         0,
-        4,
         3,
+        4,
         5,
         6,
         7,
-        9,
         8,
+        9,
         10,
         11,
         12,
@@ -6968,26 +6974,29 @@
         18,
         17,
         19,
-        21,
         20,
+        21,
         22,
         23,
-        24,
         25,
+        24,
         26,
         28,
         31,
-        32,
         40,
         64,
-        255,
-        127
+        127,
+        255
       ],
       "fork_flip": [],
       "same_type": {},
       "different_type": [
         [
           1,
+          "heap-use-after-free"
+        ],
+        [
+          32,
           "heap-use-after-free"
         ]
       ]
@@ -6996,86 +7005,93 @@
       "original": 15,
       "matches": {},
       "no_crash": [
-        0,
         2,
         1,
         3,
         5,
-        4,
         6,
-        8,
+        4,
         7,
+        8,
         9,
         10,
-        12,
         11,
+        12,
         13,
-        17,
-        18,
         16,
+        17,
         19,
         20,
-        23,
+        18,
         21,
         22,
-        25,
         24,
+        23,
+        25,
         26,
         28,
-        32,
         31,
+        32,
         40,
         64,
-        255,
-        127
-      ],
-      "fork_flip": [],
-      "same_type": {},
-      "different_type": []
-    },
-    "168": {
-      "original": 64,
-      "matches": {},
-      "no_crash": [
-        0,
-        1,
-        3,
-        2,
-        5,
-        6,
-        4,
-        7,
-        8,
-        9,
-        10,
-        11,
-        16,
-        12,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23,
-        24,
-        25,
-        26,
-        28,
-        32,
-        31,
-        40,
-        127
+        127,
+        255
       ],
       "fork_flip": [],
       "same_type": {},
       "different_type": [
         [
-          13,
+          0,
+          "heap-use-after-free"
+        ]
+      ]
+    },
+    "168": {
+      "original": 64,
+      "matches": {},
+      "no_crash": [
+        1,
+        3,
+        0,
+        2,
+        6,
+        7,
+        9,
+        8,
+        10,
+        11,
+        12,
+        13,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        23,
+        22,
+        24,
+        25,
+        26,
+        31,
+        32,
+        40,
+        127,
+        255
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": [
+        [
+          5,
           "heap-use-after-free"
         ],
         [
-          255,
+          4,
+          "heap-use-after-free"
+        ],
+        [
+          28,
           "heap-use-after-free"
         ]
       ]
@@ -7087,34 +7103,34 @@
       "fork_flip": [
         1,
         2,
-        3,
         0,
-        4,
-        5,
+        3,
         6,
-        9,
+        5,
         7,
-        10,
+        4,
         8,
+        9,
+        10,
         11,
         12,
         16,
         13,
         18,
         19,
-        21,
-        22,
         20,
+        22,
+        21,
         23,
         24,
-        25,
-        28,
         26,
+        28,
+        25,
         31,
         32,
         40,
-        127,
         64,
+        127,
         255
       ],
       "same_type": {},
@@ -7124,10 +7140,10 @@
       "original": 4,
       "matches": {},
       "no_crash": [
-        3,
         1,
+        3,
         6,
-        8
+        9
       ],
       "fork_flip": [
         0,
@@ -7145,22 +7161,22 @@
         20,
         21,
         22,
+        24,
         23,
         25,
-        24,
         28,
         26,
         31,
         32,
-        40,
         64,
+        40,
         127,
         255
       ],
       "same_type": {},
       "different_type": [
         [
-          9,
+          8,
           "heap-use-after-free"
         ]
       ]
@@ -7172,25 +7188,25 @@
         0
       ],
       "fork_flip": [
-        2,
         4,
-        5,
+        2,
         3,
         6,
+        5,
+        7,
         9,
         8,
-        7,
-        10,
-        12,
         11,
+        10,
         13,
+        12,
+        17,
         16,
         18,
         19,
-        17,
-        22,
         20,
         21,
+        22,
         23,
         24,
         28,
@@ -7210,46 +7226,55 @@
       "original": 8,
       "matches": {},
       "no_crash": [
-        0,
+        2,
         1,
         4,
-        2,
-        9,
-        11,
         10,
+        11,
         13,
         16,
-        18,
         17,
+        18,
         19,
         20,
+        21,
         22,
         23,
         24,
         25,
         26,
-        31,
         28,
-        32,
         40,
         64
       ],
       "fork_flip": [
         3,
         5,
-        7,
         6,
+        7,
         127,
         255
       ],
       "same_type": {},
       "different_type": [
         [
+          0,
+          "heap-use-after-free"
+        ],
+        [
+          9,
+          "heap-use-after-free"
+        ],
+        [
           12,
           "heap-use-after-free"
         ],
         [
-          21,
+          32,
+          "heap-use-after-free"
+        ],
+        [
+          31,
           "heap-use-after-free"
         ]
       ]
@@ -7259,32 +7284,30 @@
       "matches": {},
       "no_crash": [
         3,
-        1,
-        0,
         4,
-        6,
         5,
+        6,
         7,
-        9,
         8,
+        9,
         10,
         11,
-        16,
-        13,
         12,
-        19,
+        13,
+        16,
         17,
+        19,
         20,
         23,
-        24,
         25,
+        24,
         26,
         31,
         32,
         40,
         64,
-        255,
-        127
+        127,
+        255
       ],
       "fork_flip": [
         2,
@@ -7293,7 +7316,16 @@
         28
       ],
       "same_type": {},
-      "different_type": []
+      "different_type": [
+        [
+          1,
+          "heap-use-after-free"
+        ],
+        [
+          0,
+          "heap-use-after-free"
+        ]
+      ]
     },
     "186": {
       "original": 3,
@@ -7301,31 +7333,29 @@
       "no_crash": [
         1,
         4,
-        0,
-        6,
+        2,
         5,
         7,
-        8,
         9,
+        8,
         10,
         11,
-        13,
         12,
+        13,
         16,
         17,
-        18,
         19,
         20,
         21,
-        23,
         22,
+        23,
         24,
         25,
         26,
         28,
-        40,
-        32,
         31,
+        32,
+        40,
         64,
         127,
         255
@@ -7334,7 +7364,15 @@
       "same_type": {},
       "different_type": [
         [
-          2,
+          0,
+          "heap-use-after-free"
+        ],
+        [
+          6,
+          "heap-use-after-free"
+        ],
+        [
+          18,
           "heap-use-after-free"
         ]
       ]
@@ -7343,32 +7381,29 @@
       "original": 1,
       "matches": {},
       "no_crash": [
-        4,
         2,
-        3,
-        0,
-        8,
-        7,
-        5,
+        4,
         6,
+        5,
+        7,
+        8,
         9,
         10,
         11,
         12,
         13,
+        16,
         17,
         19,
         18,
         20,
-        21,
         22,
-        23,
         24,
-        25,
+        23,
         26,
+        28,
         31,
         32,
-        28,
         40,
         64,
         127,
@@ -7378,7 +7413,19 @@
       "same_type": {},
       "different_type": [
         [
-          16,
+          3,
+          "heap-use-after-free"
+        ],
+        [
+          0,
+          "heap-use-after-free"
+        ],
+        [
+          21,
+          "heap-use-after-free"
+        ],
+        [
+          25,
           "heap-use-after-free"
         ]
       ]
@@ -7387,33 +7434,32 @@
       "original": 4,
       "matches": {},
       "no_crash": [
-        1,
-        3,
         0,
-        7,
+        3,
         6,
+        5,
         8,
         9,
         10,
+        11,
         12,
         13,
         16,
         17,
-        18,
         19,
-        20,
+        18,
         21,
-        22,
         23,
         24,
         25,
         26,
         28,
         31,
-        40,
         32,
-        255,
-        127
+        40,
+        64,
+        127,
+        255
       ],
       "fork_flip": [],
       "same_type": {
@@ -7423,15 +7469,19 @@
       },
       "different_type": [
         [
-          5,
+          1,
           "heap-use-after-free"
         ],
         [
-          11,
+          7,
           "heap-use-after-free"
         ],
         [
-          64,
+          20,
+          "heap-use-after-free"
+        ],
+        [
+          22,
           "heap-use-after-free"
         ]
       ]
@@ -7441,8 +7491,6 @@
       "matches": {},
       "no_crash": [
         0,
-        2,
-        3,
         4,
         5,
         6,
@@ -7453,19 +7501,18 @@
         11,
         12,
         16,
-        13,
         17,
         18,
         19,
         20,
         21,
         23,
-        25,
         24,
-        31,
-        32,
+        25,
         26,
         28,
+        31,
+        32,
         40,
         64,
         127,
@@ -7479,6 +7526,18 @@
         [
           1,
           "heap-use-after-free"
+        ],
+        [
+          3,
+          "heap-use-after-free"
+        ],
+        [
+          2,
+          "heap-use-after-free"
+        ],
+        [
+          13,
+          "heap-use-after-free"
         ]
       ]
     },
@@ -7488,15 +7547,15 @@
       "no_crash": [
         1,
         4,
-        6,
         5,
-        9,
+        6,
         8,
         10,
+        9,
         11,
         12,
-        16,
-        17
+        17,
+        16
       ],
       "fork_flip": [
         0,
@@ -7504,19 +7563,19 @@
         7,
         13,
         18,
-        20,
         19,
         21,
+        20,
         22,
+        23,
         24,
         25,
-        23,
         26,
         28,
-        32,
         31,
-        64,
         40,
+        32,
+        64,
         255,
         127
       ],
@@ -7528,37 +7587,37 @@
       "matches": {},
       "no_crash": [],
       "fork_flip": [
-        3,
         0,
         2,
+        3,
         4,
         5,
         6,
         8,
         7,
-        9,
         10,
+        9,
         11,
-        16,
         12,
-        17,
+        16,
         13,
-        19,
+        17,
         18,
-        20,
+        19,
         21,
         22,
         23,
+        20,
         24,
         25,
-        31,
         26,
-        32,
+        31,
         28,
+        32,
         40,
         64,
-        127,
-        255
+        255,
+        127
       ],
       "same_type": {},
       "different_type": []
@@ -7568,30 +7627,30 @@
       "matches": {},
       "no_crash": [
         4,
-        5,
+        2,
+        3,
         6,
+        5,
         7,
         9,
-        8,
         10,
+        8,
         11,
         13,
         16,
-        12,
         17,
         19,
         18,
         20,
         21,
         22,
-        24,
         23,
-        25,
+        24,
         26,
-        31,
         28,
-        40,
+        31,
         32,
+        40,
         64,
         127,
         255
@@ -7604,11 +7663,11 @@
           "heap-use-after-free"
         ],
         [
-          2,
+          12,
           "heap-use-after-free"
         ],
         [
-          3,
+          25,
           "heap-use-after-free"
         ]
       ]
@@ -7617,31 +7676,28 @@
       "original": 22,
       "matches": {},
       "no_crash": [
-        1,
         3,
-        0,
         4,
-        6,
         5,
-        8,
+        6,
         7,
+        8,
         9,
         10,
+        12,
         11,
         16,
-        12,
-        17,
         13,
+        17,
         18,
         19,
         20,
+        23,
         24,
         25,
-        23,
         26,
-        31,
-        40,
         32,
+        40,
         64,
         127,
         255
@@ -7652,55 +7708,61 @@
         28
       ],
       "same_type": {},
-      "different_type": []
+      "different_type": [
+        [
+          1,
+          "heap-use-after-free"
+        ],
+        [
+          0,
+          "heap-use-after-free"
+        ],
+        [
+          31,
+          "heap-use-after-free"
+        ]
+      ]
     },
     "210": {
       "original": 3,
       "matches": {},
       "no_crash": [
-        6,
         1,
+        4,
+        6,
+        9,
         8
       ],
       "fork_flip": [
-        0,
         2,
+        0,
         5,
         7,
         10,
         11,
-        12,
         13,
-        16,
         17,
+        12,
+        16,
         18,
         19,
         20,
         21,
         22,
-        24,
         23,
-        26,
+        24,
         25,
         28,
+        26,
         31,
-        32,
-        40,
         64,
+        40,
+        32,
         127,
         255
       ],
       "same_type": {},
-      "different_type": [
-        [
-          4,
-          "heap-use-after-free"
-        ],
-        [
-          9,
-          "heap-use-after-free"
-        ]
-      ]
+      "different_type": []
     },
     "212": {
       "original": 1,
@@ -7708,35 +7770,35 @@
       "no_crash": [],
       "fork_flip": [
         2,
-        3,
         0,
+        3,
         4,
-        5,
         6,
+        5,
         8,
-        10,
         7,
         9,
+        10,
+        12,
         11,
         13,
-        12,
-        17,
-        18,
         16,
+        18,
+        17,
         20,
         19,
-        23,
         22,
         21,
         24,
-        26,
+        23,
         25,
-        28,
+        26,
         31,
-        32,
+        28,
         40,
-        64,
+        32,
         127,
+        64,
         255
       ],
       "same_type": {},
@@ -7748,80 +7810,76 @@
       "no_crash": [
         40,
         127,
+        64,
         255
       ],
       "fork_flip": [
-        2,
-        1,
         0,
+        2,
         3,
+        1,
         4,
         5,
         7,
         6,
         8,
+        10,
         9,
         11,
-        10,
         12,
-        13,
         16,
-        18,
+        13,
         17,
+        18,
         20,
         19,
-        22,
         21,
-        23,
         24,
+        22,
+        23,
         25,
         26,
         28,
         31
       ],
       "same_type": {},
-      "different_type": [
-        [
-          64,
-          "heap-use-after-free"
-        ]
-      ]
+      "different_type": []
     },
     "220": {
       "original": 23,
       "matches": {},
       "no_crash": [],
       "fork_flip": [
+        1,
         0,
         2,
-        1,
-        4,
         3,
         6,
-        7,
+        4,
         5,
+        7,
         8,
-        10,
         9,
+        10,
         11,
-        12,
         13,
+        12,
         16,
-        17,
-        19,
         18,
+        19,
+        17,
         20,
         21,
-        24,
         22,
+        24,
         25,
-        28,
         26,
-        31,
         32,
+        28,
+        31,
         40,
-        64,
         127,
+        64,
         255
       ],
       "same_type": {},
@@ -7831,38 +7889,38 @@
       "original": 4,
       "matches": {},
       "no_crash": [
-        1,
         3,
+        1,
         6,
-        9,
-        8
+        8,
+        9
       ],
       "fork_flip": [
-        2,
         0,
-        7,
+        2,
         5,
+        7,
         10,
         11,
         12,
-        13,
         17,
         16,
+        13,
         18,
-        19,
-        21,
         20,
+        21,
+        19,
+        23,
         22,
         24,
         25,
-        23,
-        26,
         28,
-        31,
         32,
-        40,
-        127,
+        26,
+        31,
         64,
+        127,
+        40,
         255
       ],
       "same_type": {},
@@ -7873,37 +7931,37 @@
       "matches": {},
       "no_crash": [],
       "fork_flip": [
+        0,
         3,
         2,
-        0,
         4,
-        6,
-        5,
         7,
         8,
-        11,
-        10,
-        12,
+        5,
+        6,
         9,
-        13,
+        10,
+        11,
+        12,
         16,
-        18,
+        13,
         17,
-        20,
-        22,
+        18,
         19,
+        20,
         21,
+        22,
+        23,
         24,
         25,
-        23,
-        28,
         26,
+        28,
         31,
-        40,
         32,
         64,
-        255,
-        127
+        40,
+        127,
+        255
       ],
       "same_type": {},
       "different_type": []
@@ -7912,33 +7970,33 @@
       "original": 89,
       "matches": {},
       "no_crash": [
-        2,
         1,
+        2,
         3,
         4,
         5,
         6,
         7,
         8,
-        9,
         10,
+        9,
         11,
-        13,
         12,
         16,
+        13,
         17,
-        19,
         18,
         20,
+        19,
         21,
         22,
         23,
         24,
         25,
-        28,
-        32,
         26,
+        28,
         31,
+        32,
         40,
         64,
         127,
@@ -7955,42 +8013,42 @@
       "matches": {},
       "no_crash": [
         0,
-        3,
         1,
+        3,
         4,
         5,
         6,
-        7,
-        8,
         9,
+        8,
+        7,
         10,
-        12,
-        11,
         13,
+        12,
         16,
-        18,
         17,
-        19,
+        18,
         20,
-        23,
+        19,
         22,
+        23,
         31,
-        32,
         40,
+        32,
+        64,
         127,
         255
       ],
       "fork_flip": [
         2,
         21,
-        25,
         24,
+        25,
         28
       ],
       "same_type": {},
       "different_type": [
         [
-          64,
+          11,
           "heap-use-after-free"
         ]
       ]
@@ -7999,42 +8057,42 @@
       "original": 5,
       "matches": {},
       "no_crash": [
-        3,
         0,
         1,
-        2,
-        4,
-        6,
+        3,
         7,
+        6,
+        4,
         8,
         9,
         10,
-        13,
         11,
         12,
+        13,
         16,
         17,
+        18,
         19,
-        21,
         20,
         22,
+        21,
         23,
         24,
-        26,
         25,
+        26,
         28,
-        32,
         31,
+        32,
         40,
+        255,
         64,
-        127,
-        255
+        127
       ],
       "fork_flip": [],
       "same_type": {},
       "different_type": [
         [
-          18,
+          2,
           "heap-use-after-free"
         ]
       ]
@@ -8043,45 +8101,51 @@
       "original": 1,
       "matches": {},
       "no_crash": [
-        3,
+        4,
         0,
         2,
-        4,
-        6,
+        3,
         5,
+        6,
         7,
-        10,
         8,
-        11,
+        9,
+        10,
+        12,
         13,
         16,
-        12,
         17,
         19,
-        20,
         21,
-        23,
         22,
+        23,
         24,
         25,
         26,
         28,
         31,
-        32,
         40,
+        64,
         127,
-        255,
-        64
+        255
       ],
       "fork_flip": [],
       "same_type": {},
       "different_type": [
         [
-          9,
+          11,
+          "heap-use-after-free"
+        ],
+        [
+          20,
           "heap-use-after-free"
         ],
         [
           18,
+          "heap-use-after-free"
+        ],
+        [
+          32,
           "heap-use-after-free"
         ]
       ]
@@ -8090,46 +8154,43 @@
       "original": 80,
       "matches": {},
       "no_crash": [
+        1,
         0,
-        2,
         3,
-        6,
         5,
-        7,
+        4,
+        6,
         8,
+        7,
         9,
-        10,
         11,
+        10,
         12,
-        16,
         13,
         17,
-        19,
+        16,
         18,
         20,
-        22,
+        19,
         21,
-        24,
         23,
+        22,
+        24,
+        26,
         25,
         28,
-        26,
-        32,
         31,
+        32,
         40,
-        127,
         64,
+        127,
         255
       ],
       "fork_flip": [],
       "same_type": {},
       "different_type": [
         [
-          1,
-          "heap-use-after-free"
-        ],
-        [
-          4,
+          2,
           "heap-use-after-free"
         ]
       ]
@@ -8138,29 +8199,32 @@
       "original": 27,
       "matches": {},
       "no_crash": [
+        0,
         1,
         3,
-        4,
         6,
+        4,
         7,
-        9,
+        5,
         8,
         10,
+        9,
         11,
-        12,
         13,
+        12,
         16,
+        17,
         18,
-        20,
         19,
+        20,
         22,
         23,
-        31,
-        32,
         26,
+        31,
         40,
-        127,
+        32,
         64,
+        127,
         255
       ],
       "fork_flip": [
@@ -8171,26 +8235,14 @@
         28
       ],
       "same_type": {},
-      "different_type": [
-        [
-          5,
-          "heap-use-after-free"
-        ],
-        [
-          0,
-          "heap-use-after-free"
-        ],
-        [
-          17,
-          "heap-use-after-free"
-        ]
-      ]
+      "different_type": []
     },
     "246": {
       "original": 5,
       "matches": {},
       "no_crash": [
-        3,
+        0,
+        1,
         2,
         4,
         7,
@@ -8198,26 +8250,24 @@
         8,
         9,
         11,
+        12,
         16,
         13,
-        12,
         18,
-        19,
         17,
-        21,
+        19,
         20,
+        21,
         22,
         23,
         24,
-        25,
         28,
-        26,
         31,
-        40,
         32,
+        40,
         64,
-        255,
-        127
+        127,
+        255
       ],
       "fork_flip": [
         10
@@ -8225,11 +8275,15 @@
       "same_type": {},
       "different_type": [
         [
-          0,
+          3,
           "heap-use-after-free"
         ],
         [
-          1,
+          26,
+          "heap-use-after-free"
+        ],
+        [
+          25,
           "heap-use-after-free"
         ]
       ]
@@ -8238,28 +8292,27 @@
       "original": 1,
       "matches": {},
       "no_crash": [
-        0,
         2,
-        6,
+        3,
+        0,
+        4,
         5,
         8,
-        7,
-        10,
         9,
-        12,
+        10,
         11,
+        12,
         13,
         16,
         17,
         18,
+        20,
         19,
         21,
-        20,
-        25,
-        23,
         22,
+        23,
         24,
-        26,
+        25,
         28,
         31,
         32,
@@ -8272,11 +8325,15 @@
       "same_type": {},
       "different_type": [
         [
-          4,
+          7,
           "heap-use-after-free"
         ],
         [
-          3,
+          6,
+          "heap-use-after-free"
+        ],
+        [
+          26,
           "heap-use-after-free"
         ]
       ]
@@ -8286,42 +8343,45 @@
       "matches": {},
       "no_crash": [
         3,
-        0,
-        2,
         1,
+        2,
+        6,
         4,
-        5,
         7,
         8,
-        6,
         9,
+        10,
+        11,
         12,
         13,
-        11,
-        10,
         16,
-        19,
         17,
         18,
+        19,
         20,
         21,
+        22,
         23,
         24,
         25,
         26,
-        31,
         28,
+        31,
         32,
         40,
-        127,
         64,
+        127,
         255
       ],
       "fork_flip": [],
       "same_type": {},
       "different_type": [
         [
-          22,
+          0,
+          "heap-use-after-free"
+        ],
+        [
+          5,
           "heap-use-after-free"
         ]
       ]
@@ -8329,16 +8389,6 @@
     "256": {
       "original": 28,
       "matches": {
-        "0": {
-          "verdict": "same_func",
-          "type": "heap-buffer-overflow",
-          "function": "extractContigSamplesShifted32bits",
-          "file": "tiffcrop.c",
-          "line": 3393,
-          "rc": 1,
-          "time_to_success": 19.476,
-          "time_this_mutation": 0.159
-        },
         "1": {
           "verdict": "same_func",
           "type": "heap-buffer-overflow",
@@ -8346,8 +8396,18 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 19.52,
-          "time_this_mutation": 0.203
+          "time_to_success": 14.311,
+          "time_this_mutation": 0.143
+        },
+        "0": {
+          "verdict": "same_func",
+          "type": "heap-buffer-overflow",
+          "function": "extractContigSamplesShifted32bits",
+          "file": "tiffcrop.c",
+          "line": 3393,
+          "rc": 1,
+          "time_to_success": 14.318,
+          "time_this_mutation": 0.147
         },
         "2": {
           "verdict": "same_func",
@@ -8356,8 +8416,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 19.554,
-          "time_this_mutation": 0.235
+          "time_to_success": 14.338,
+          "time_this_mutation": 0.17
         },
         "3": {
           "verdict": "same_func",
@@ -8366,8 +8426,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 19.568,
-          "time_this_mutation": 0.25
+          "time_to_success": 14.343,
+          "time_this_mutation": 0.175
         },
         "7": {
           "verdict": "same_func",
@@ -8376,8 +8436,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 19.782,
-          "time_this_mutation": 0.212
+          "time_to_success": 14.516,
+          "time_this_mutation": 0.172
         },
         "8": {
           "verdict": "same_func",
@@ -8386,8 +8446,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 19.958,
-          "time_this_mutation": 0.175
+          "time_to_success": 14.722,
+          "time_this_mutation": 0.201
         },
         "9": {
           "verdict": "same_func",
@@ -8396,8 +8456,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 20.138,
-          "time_this_mutation": 0.18
+          "time_to_success": 14.986,
+          "time_this_mutation": 0.267
         },
         "10": {
           "verdict": "same_func",
@@ -8406,8 +8466,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 20.33,
-          "time_this_mutation": 0.19
+          "time_to_success": 15.21,
+          "time_this_mutation": 0.225
         },
         "11": {
           "verdict": "same_func",
@@ -8416,8 +8476,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 20.507,
-          "time_this_mutation": 0.177
+          "time_to_success": 15.501,
+          "time_this_mutation": 0.287
         },
         "12": {
           "verdict": "same_func",
@@ -8426,8 +8486,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 20.752,
-          "time_this_mutation": 0.245
+          "time_to_success": 15.758,
+          "time_this_mutation": 0.26
         },
         "13": {
           "verdict": "same_func",
@@ -8436,8 +8496,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 20.909,
-          "time_this_mutation": 0.155
+          "time_to_success": 16.086,
+          "time_this_mutation": 0.327
         },
         "16": {
           "verdict": "same_func",
@@ -8446,8 +8506,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 21.317,
-          "time_this_mutation": 0.407
+          "time_to_success": 16.258,
+          "time_this_mutation": 0.172
         },
         "17": {
           "verdict": "same_func",
@@ -8456,8 +8516,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 21.562,
-          "time_this_mutation": 0.246
+          "time_to_success": 16.503,
+          "time_this_mutation": 0.244
         },
         "18": {
           "verdict": "same_func",
@@ -8466,8 +8526,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 21.785,
-          "time_this_mutation": 0.222
+          "time_to_success": 16.729,
+          "time_this_mutation": 0.226
         },
         "19": {
           "verdict": "same_func",
@@ -8476,8 +8536,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 22.013,
-          "time_this_mutation": 0.228
+          "time_to_success": 16.94,
+          "time_this_mutation": 0.209
         },
         "20": {
           "verdict": "same_func",
@@ -8486,8 +8546,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 22.231,
-          "time_this_mutation": 0.216
+          "time_to_success": 17.115,
+          "time_this_mutation": 0.172
         },
         "21": {
           "verdict": "same_func",
@@ -8496,8 +8556,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 22.48,
-          "time_this_mutation": 0.245
+          "time_to_success": 17.349,
+          "time_this_mutation": 0.234
         },
         "22": {
           "verdict": "same_func",
@@ -8506,8 +8566,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 22.817,
-          "time_this_mutation": 0.339
+          "time_to_success": 17.725,
+          "time_this_mutation": 0.375
         },
         "23": {
           "verdict": "same_func",
@@ -8516,8 +8576,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 23.194,
-          "time_this_mutation": 0.378
+          "time_to_success": 18.126,
+          "time_this_mutation": 0.399
         },
         "24": {
           "verdict": "same_func",
@@ -8526,8 +8586,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 23.522,
-          "time_this_mutation": 0.324
+          "time_to_success": 18.357,
+          "time_this_mutation": 0.234
         },
         "25": {
           "verdict": "same_func",
@@ -8536,8 +8596,8 @@
           "file": "tiffcrop.c",
           "line": 3393,
           "rc": 1,
-          "time_to_success": 23.792,
-          "time_this_mutation": 0.273
+          "time_to_success": 18.593,
+          "time_this_mutation": 0.237
         }
       },
       "no_crash": [
@@ -8575,25 +8635,25 @@
         10,
         11,
         12,
-        17,
+        13,
         16,
         18,
-        13,
+        17,
         20,
         19,
         21,
         22,
-        24,
-        25,
         23,
+        25,
+        24,
+        28,
         26,
         32,
-        28,
         31,
+        64,
         40,
         127,
-        255,
-        64
+        255
       ],
       "same_type": {},
       "different_type": []
@@ -8603,37 +8663,37 @@
       "matches": {},
       "no_crash": [],
       "fork_flip": [
-        3,
         4,
         0,
-        2,
-        7,
         6,
-        8,
+        2,
         5,
-        11,
-        9,
+        3,
+        8,
+        7,
         10,
+        9,
         12,
-        17,
-        13,
-        18,
         16,
+        13,
+        11,
+        17,
         19,
-        20,
-        21,
-        22,
-        24,
+        18,
         23,
+        22,
+        20,
+        24,
+        21,
         26,
         25,
         28,
-        31,
-        40,
         32,
+        31,
         64,
         127,
-        255
+        255,
+        40
       ],
       "same_type": {},
       "different_type": []
@@ -8644,35 +8704,35 @@
       "no_crash": [],
       "fork_flip": [
         0,
-        3,
         4,
+        3,
         5,
-        6,
         7,
-        8,
         9,
+        6,
         10,
+        8,
         12,
         11,
-        13,
-        17,
         16,
+        13,
         18,
-        19,
+        17,
         20,
         21,
         22,
-        23,
+        19,
         24,
+        23,
         25,
         26,
         28,
-        32,
         31,
-        40,
+        32,
         64,
-        127,
-        255
+        40,
+        255,
+        127
       ],
       "same_type": {},
       "different_type": [
@@ -8686,6 +8746,282 @@
       "original": 70,
       "matches": {},
       "no_crash": [
+        0,
+        1,
+        3,
+        2,
+        4,
+        8,
+        6,
+        7,
+        5,
+        10,
+        9,
+        12,
+        11,
+        17,
+        13,
+        16,
+        18,
+        19,
+        20,
+        23,
+        21,
+        24,
+        26,
+        25,
+        31,
+        32,
+        28,
+        64,
+        40,
+        127,
+        255
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": [
+        [
+          22,
+          "heap-use-after-free"
+        ]
+      ]
+    },
+    "270": {
+      "original": 3,
+      "matches": {},
+      "no_crash": [
+        2,
+        1,
+        5,
+        6,
+        7,
+        8,
+        9,
+        11,
+        10,
+        13,
+        12,
+        17,
+        16,
+        19,
+        18,
+        22,
+        20,
+        21,
+        23,
+        24,
+        25,
+        28,
+        26,
+        31,
+        32,
+        127,
+        255
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": [
+        [
+          4,
+          "heap-use-after-free"
+        ],
+        [
+          0,
+          "heap-use-after-free"
+        ],
+        [
+          64,
+          "heap-use-after-free"
+        ],
+        [
+          40,
+          "heap-use-after-free"
+        ]
+      ]
+    },
+    "272": {
+      "original": 1,
+      "matches": {},
+      "no_crash": [
+        2,
+        0,
+        3,
+        5,
+        6,
+        7,
+        8,
+        10,
+        9,
+        12,
+        11,
+        16,
+        13,
+        17,
+        18,
+        19,
+        20,
+        21,
+        23,
+        22,
+        24,
+        25,
+        26,
+        28,
+        31,
+        32,
+        40,
+        127,
+        64,
+        255
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": [
+        [
+          4,
+          "heap-use-after-free"
+        ]
+      ]
+    },
+    "276": {
+      "original": 1,
+      "matches": {},
+      "no_crash": [
+        3,
+        0,
+        2,
+        4,
+        5,
+        7,
+        6,
+        9,
+        10,
+        8,
+        11,
+        13,
+        12,
+        16,
+        18,
+        17,
+        19,
+        20,
+        21,
+        22,
+        24,
+        25,
+        23,
+        26,
+        28,
+        31,
+        64,
+        32,
+        40,
+        127
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": [
+        [
+          255,
+          "heap-use-after-free"
+        ]
+      ]
+    },
+    "280": {
+      "original": 41,
+      "matches": {},
+      "no_crash": [
+        0,
+        3,
+        1,
+        6,
+        7,
+        5,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        16,
+        17,
+        19,
+        18,
+        20,
+        22,
+        23,
+        24,
+        25,
+        26,
+        28,
+        31,
+        127,
+        40,
+        32,
+        64,
+        255
+      ],
+      "fork_flip": [
+        2,
+        21
+      ],
+      "same_type": {},
+      "different_type": [
+        [
+          4,
+          "heap-use-after-free"
+        ]
+      ]
+    },
+    "282": {
+      "original": 3,
+      "matches": {},
+      "no_crash": [
+        0,
+        4,
+        1,
+        2,
+        5,
+        6,
+        8,
+        10,
+        9,
+        12,
+        11,
+        16,
+        17,
+        13,
+        18,
+        19,
+        20,
+        21,
+        24,
+        22,
+        23,
+        25,
+        26,
+        31,
+        28,
+        40,
+        32,
+        255,
+        64,
+        127
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": [
+        [
+          7,
+          "heap-use-after-free"
+        ]
+      ]
+    },
+    "284": {
+      "original": 2,
+      "matches": {},
+      "no_crash": [
         3,
         4,
         5,
@@ -8700,18 +9036,17 @@
         16,
         17,
         18,
-        19,
-        20,
-        22,
         21,
-        23,
+        20,
         24,
-        26,
+        22,
+        23,
         25,
+        26,
         28,
+        32,
         31,
         40,
-        32,
         127,
         64,
         255
@@ -8724,298 +9059,11 @@
           "heap-use-after-free"
         ],
         [
-          2,
-          "heap-use-after-free"
-        ],
-        [
           1,
           "heap-use-after-free"
-        ]
-      ]
-    },
-    "270": {
-      "original": 3,
-      "matches": {},
-      "no_crash": [
-        2,
-        1,
-        0,
-        4,
-        5,
-        6,
-        7,
-        8,
-        10,
-        9,
-        11,
-        12,
-        17,
-        18,
-        16,
-        19,
-        20,
-        21,
-        24,
-        23,
-        22,
-        25,
-        26,
-        28,
-        32,
-        31,
-        40,
-        255
-      ],
-      "fork_flip": [],
-      "same_type": {},
-      "different_type": [
-        [
-          13,
-          "heap-use-after-free"
         ],
         [
-          64,
-          "heap-use-after-free"
-        ],
-        [
-          127,
-          "heap-use-after-free"
-        ]
-      ]
-    },
-    "272": {
-      "original": 1,
-      "matches": {},
-      "no_crash": [
-        4,
-        3,
-        0,
-        5,
-        7,
-        6,
-        8,
-        10,
-        9,
-        11,
-        12,
-        16,
-        13,
-        17,
-        18,
-        19,
-        20,
-        21,
-        23,
-        22,
-        25,
-        24,
-        26,
-        31,
-        32,
-        28,
-        40,
-        64,
-        127,
-        255
-      ],
-      "fork_flip": [],
-      "same_type": {},
-      "different_type": [
-        [
-          2,
-          "heap-use-after-free"
-        ]
-      ]
-    },
-    "276": {
-      "original": 1,
-      "matches": {},
-      "no_crash": [
-        2,
-        4,
-        0,
-        3,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        12,
-        13,
-        16,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23,
-        25,
-        24,
-        26,
-        28,
-        32,
-        40,
-        64,
-        127,
-        255
-      ],
-      "fork_flip": [],
-      "same_type": {},
-      "different_type": [
-        [
-          11,
-          "heap-use-after-free"
-        ],
-        [
-          31,
-          "heap-use-after-free"
-        ]
-      ]
-    },
-    "280": {
-      "original": 41,
-      "matches": {},
-      "no_crash": [
-        0,
-        1,
-        3,
-        4,
-        5,
-        7,
-        6,
-        8,
-        9,
-        11,
-        10,
-        13,
-        12,
-        17,
-        16,
-        19,
-        18,
-        20,
-        23,
-        24,
-        22,
-        25,
-        31,
-        26,
-        28,
-        64,
-        40,
-        127,
-        255
-      ],
-      "fork_flip": [
-        2,
-        21
-      ],
-      "same_type": {},
-      "different_type": [
-        [
-          32,
-          "heap-use-after-free"
-        ]
-      ]
-    },
-    "282": {
-      "original": 3,
-      "matches": {},
-      "no_crash": [
-        0,
-        1,
-        4,
-        2,
-        5,
-        6,
-        7,
-        8,
-        11,
-        12,
-        13,
-        16,
-        18,
-        17,
-        20,
-        19,
-        21,
-        22,
-        23,
-        24,
-        25,
-        26,
-        32,
-        31,
-        40,
-        127,
-        64,
-        255
-      ],
-      "fork_flip": [],
-      "same_type": {},
-      "different_type": [
-        [
-          9,
-          "heap-use-after-free"
-        ],
-        [
-          10,
-          "heap-use-after-free"
-        ],
-        [
-          28,
-          "heap-use-after-free"
-        ]
-      ]
-    },
-    "284": {
-      "original": 2,
-      "matches": {},
-      "no_crash": [
-        1,
-        4,
-        0,
-        3,
-        8,
-        7,
-        10,
-        9,
-        12,
-        11,
-        13,
-        16,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23,
-        24,
-        25,
-        26,
-        28,
-        31,
-        32,
-        40,
-        64,
-        127,
-        255
-      ],
-      "fork_flip": [],
-      "same_type": {},
-      "different_type": [
-        [
-          6,
-          "heap-use-after-free"
-        ],
-        [
-          5,
-          "heap-use-after-free"
-        ],
-        [
-          17,
+          19,
           "heap-use-after-free"
         ]
       ]
@@ -9024,41 +9072,47 @@
       "original": 0,
       "matches": {},
       "no_crash": [
-        2,
-        1,
         4,
         3,
-        7,
-        6,
         5,
+        6,
         8,
+        7,
         10,
         9,
-        11,
         12,
-        13,
+        11,
         16,
-        17,
+        13,
         18,
+        17,
         19,
         20,
-        21,
         22,
-        24,
+        21,
+        23,
         26,
         28,
         31,
         32,
         40,
         64,
-        127,
-        255
+        255,
+        127
       ],
       "fork_flip": [],
       "same_type": {},
       "different_type": [
         [
-          23,
+          1,
+          "heap-use-after-free"
+        ],
+        [
+          2,
+          "heap-use-after-free"
+        ],
+        [
+          24,
           "heap-use-after-free"
         ],
         [
@@ -9072,9 +9126,11 @@
       "matches": {},
       "no_crash": [
         0,
-        3,
         1,
+        3,
         4,
+        6,
+        5,
         7,
         8,
         9,
@@ -9089,13 +9145,13 @@
         20,
         22,
         23,
+        31,
         26,
         28,
-        31,
         32,
-        40,
         127,
-        255
+        255,
+        40
       ],
       "fork_flip": [
         2,
@@ -9104,44 +9160,36 @@
         25
       ],
       "same_type": {},
-      "different_type": [
-        [
-          6,
-          "heap-use-after-free"
-        ],
-        [
-          5,
-          "heap-use-after-free"
-        ]
-      ]
+      "different_type": []
     },
     "294": {
       "original": 3,
       "matches": {},
       "no_crash": [
-        4,
-        5,
+        0,
+        2,
         6,
         7,
         8,
         9,
         10,
         11,
+        12,
         13,
         16,
         17,
         18,
-        20,
         19,
         21,
+        20,
         22,
         23,
         24,
-        26,
         25,
+        26,
         28,
-        31,
         32,
+        31,
         40,
         64,
         127,
@@ -9151,11 +9199,7 @@
       "same_type": {},
       "different_type": [
         [
-          2,
-          "heap-use-after-free"
-        ],
-        [
-          0,
+          5,
           "heap-use-after-free"
         ],
         [
@@ -9163,13 +9207,54 @@
           "heap-use-after-free"
         ],
         [
-          12,
+          4,
           "heap-use-after-free"
         ]
       ]
     },
     "296": {
       "original": 48,
+      "matches": {},
+      "no_crash": [
+        0,
+        2,
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        17,
+        16,
+        19,
+        18,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        28,
+        31,
+        32,
+        64,
+        40,
+        127,
+        255
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": []
+    },
+    "300": {
+      "original": 96,
       "matches": {},
       "no_crash": [
         1,
@@ -9184,24 +9269,24 @@
         11,
         12,
         13,
-        16,
         17,
-        18,
+        16,
         19,
+        18,
         20,
         21,
         22,
-        24,
         23,
-        26,
+        24,
         25,
+        26,
         28,
-        31,
         32,
+        31,
         40,
-        127,
         64,
-        255
+        255,
+        127
       ],
       "fork_flip": [],
       "same_type": {},
@@ -9212,57 +9297,6 @@
         ],
         [
           0,
-          "heap-use-after-free"
-        ]
-      ]
-    },
-    "300": {
-      "original": 96,
-      "matches": {},
-      "no_crash": [
-        0,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        16,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23,
-        24,
-        25,
-        26,
-        31,
-        28,
-        32,
-        40,
-        64,
-        127,
-        255
-      ],
-      "fork_flip": [],
-      "same_type": {},
-      "different_type": [
-        [
-          1,
-          "heap-use-after-free"
-        ],
-        [
-          2,
-          "heap-use-after-free"
-        ],
-        [
-          17,
           "heap-use-after-free"
         ]
       ]
@@ -9273,126 +9307,30 @@
       "no_crash": [
         0,
         1,
-        3,
-        4,
-        5,
-        6,
-        7,
-        9,
-        8,
-        10,
-        11,
-        12,
-        16,
-        17,
-        18,
-        19,
-        21,
-        20,
-        22,
-        23,
-        24,
-        25,
-        26,
-        28,
-        31,
-        40,
-        32,
-        64,
-        127,
-        255
-      ],
-      "fork_flip": [],
-      "same_type": {},
-      "different_type": [
-        [
-          2,
-          "heap-use-after-free"
-        ],
-        [
-          13,
-          "heap-use-after-free"
-        ]
-      ]
-    },
-    "306": {
-      "original": 98,
-      "matches": {},
-      "no_crash": [
-        1,
-        0,
-        3,
-        2,
-        4,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        16,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23,
-        24,
-        25,
-        26,
-        31,
-        28,
-        32,
-        40,
-        127,
-        64,
-        255
-      ],
-      "fork_flip": [],
-      "same_type": {},
-      "different_type": [
-        [
-          5,
-          "heap-use-after-free"
-        ],
-        [
-          6,
-          "heap-use-after-free"
-        ]
-      ]
-    },
-    "308": {
-      "original": 0,
-      "matches": {},
-      "no_crash": [
-        1,
         2,
         3,
         4,
         5,
+        7,
         6,
         8,
-        7,
+        10,
         11,
-        12,
-        13,
         16,
         17,
         18,
         19,
-        21,
         20,
-        23,
+        21,
         22,
-        25,
+        23,
         24,
+        25,
         26,
-        31,
         28,
-        32,
+        31,
         40,
+        32,
         64,
         127,
         255
@@ -9405,32 +9343,87 @@
           "heap-use-after-free"
         ],
         [
-          10,
+          13,
+          "heap-use-after-free"
+        ],
+        [
+          12,
           "heap-use-after-free"
         ]
       ]
     },
-    "312": {
-      "original": 189,
+    "306": {
+      "original": 98,
       "matches": {},
       "no_crash": [
-        1,
         2,
+        1,
+        3,
         4,
         5,
-        7,
         6,
-        9,
+        7,
         8,
+        9,
         10,
         11,
         12,
         13,
+        17,
         16,
         18,
-        17,
+        20,
+        19,
+        23,
+        24,
+        25,
+        26,
+        28,
+        31,
+        32,
+        40,
+        64,
+        127,
+        255
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": [
+        [
+          0,
+          "heap-use-after-free"
+        ],
+        [
+          22,
+          "heap-use-after-free"
+        ],
+        [
+          21,
+          "heap-use-after-free"
+        ]
+      ]
+    },
+    "308": {
+      "original": 0,
+      "matches": {},
+      "no_crash": [
+        1,
+        3,
+        4,
+        2,
+        5,
+        7,
+        8,
+        6,
+        10,
+        9,
+        12,
+        11,
+        13,
+        18,
         19,
         20,
+        21,
         22,
         23,
         24,
@@ -9448,21 +9441,68 @@
       "same_type": {},
       "different_type": [
         [
-          3,
+          17,
           "heap-use-after-free"
         ],
         [
-          0,
+          16,
+          "heap-use-after-free"
+        ]
+      ]
+    },
+    "312": {
+      "original": 189,
+      "matches": {},
+      "no_crash": [
+        2,
+        0,
+        1,
+        3,
+        4,
+        7,
+        8,
+        9,
+        10,
+        11,
+        13,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        28,
+        31,
+        40,
+        32,
+        64,
+        127,
+        255
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": [
+        [
+          6,
           "heap-use-after-free"
         ],
         [
-          21,
+          5,
+          "heap-use-after-free"
+        ],
+        [
+          12,
           "heap-use-after-free"
         ]
       ]
     },
     "target_crash_summary": {
-      "no_crash": 95,
+      "no_crash": 109,
       "same_type": 1,
       "same_type_sites": {
         "reverseSamples16bits:tiffcrop.c:8595": 1
@@ -9477,11 +9517,11 @@
       "type": "heap-buffer-overflow",
       "crash_frame": {
         "function": "extractContigSamplesShifted32bits",
-        "file": "/tmp/fork_analysis_yvpd914o/ref/tools/tiffcrop.c",
+        "file": "/tmp/fork_analysis_mvbt4ft5/ref/tools/tiffcrop.c",
         "line": 3604
       },
       "summary": {
-        "file": "/tmp/fork_analysis_yvpd914o/ref/tools/tiffcrop.c",
+        "file": "/tmp/fork_analysis_mvbt4ft5/ref/tools/tiffcrop.c",
         "line": 3604,
         "function": "extractContigSamplesShifted32bits"
       }
@@ -9494,22 +9534,22 @@
       "original": 10,
       "matches": {},
       "no_crash": [
-        0,
         1,
-        4,
-        5,
+        3,
+        0,
         6,
+        4,
         7,
         8,
         9,
-        12,
         11,
+        12,
         13,
-        15,
         14,
-        16,
-        20,
+        15,
         18,
+        19,
+        20,
         21,
         23,
         24,
@@ -9517,216 +9557,215 @@
         26,
         27,
         28,
-        30,
         29,
+        30,
+        31,
+        34,
         32,
         33,
         35,
-        31,
-        34,
         36,
-        37,
         38,
+        37,
         39,
         40,
         42,
-        41,
         43,
-        44,
         45,
-        47,
+        44,
         46,
+        47,
+        48,
+        49,
         50,
         51,
-        49,
-        52,
         53,
+        52,
         54,
         55,
-        58,
+        56,
         57,
-        60,
+        58,
         59,
+        60,
         61,
-        63,
         62,
-        65,
+        63,
         64,
+        65,
         68,
-        69,
-        70,
         71,
         72,
-        74,
         73,
+        74,
         75,
         76,
         78,
         79,
         80,
+        81,
         82,
-        83,
         84,
-        86,
+        83,
         85,
+        86,
         88,
-        87,
-        90,
         89,
         91,
+        90,
         92,
         93,
         94,
+        95,
         97,
         96,
-        95,
         98,
         99,
         100,
-        102,
         101,
-        104,
+        102,
         103,
+        104,
         105,
         106,
         107,
-        110,
         108,
         109,
         111,
+        110,
         112,
         113,
-        114,
         115,
+        114,
         116,
-        117,
-        119,
-        120,
         118,
+        117,
+        120,
         121,
         122,
-        124,
         123,
-        125,
-        127,
+        124,
         126,
+        127,
         128,
         129,
+        130,
         131,
-        134,
-        133,
         132,
+        133,
+        134,
         135,
-        137,
         136,
-        139,
+        137,
         138,
+        139,
         140,
-        142,
         141,
-        143,
+        142,
         144,
+        143,
         145,
-        146,
         147,
-        149,
+        146,
         148,
-        150,
+        149,
         151,
+        150,
         152,
         153,
         154,
         155,
         156,
         157,
-        158,
         159,
+        158,
         160,
-        163,
         161,
         162,
+        163,
         164,
-        167,
+        165,
         166,
-        168,
+        167,
         169,
-        170,
         171,
-        173,
         172,
+        173,
         174,
-        175,
         176,
-        177,
+        175,
         178,
+        177,
         179,
-        181,
         180,
-        183,
-        184,
+        181,
         182,
+        183,
+        185,
+        184,
         186,
         187,
-        185,
         188,
+        189,
+        191,
         190,
-        192,
         193,
         195,
-        194,
         196,
         197,
-        199,
         198,
+        199,
         200,
         201,
         202,
         203,
-        205,
         204,
+        205,
         206,
         207,
         208,
         209,
-        211,
         210,
-        213,
+        211,
         212,
         214,
+        213,
         215,
+        216,
         217,
         218,
         219,
         220,
         221,
         222,
+        223,
         224,
-        225,
         226,
+        225,
         227,
         228,
-        229,
-        231,
         230,
-        233,
+        231,
         232,
+        233,
         234,
         235,
-        238,
-        236,
         237,
+        238,
         239,
-        242,
-        241,
         240,
+        241,
+        242,
         243,
+        244,
         245,
         246,
-        244,
         247,
+        248,
+        249,
         250,
-        251,
         252,
+        251,
         253,
         254,
         255
@@ -9747,7 +9786,7 @@
           "heap-use-after-free"
         ],
         [
-          3,
+          5,
           "heap-use-after-free"
         ],
         [
@@ -9755,57 +9794,61 @@
           "heap-use-after-free"
         ],
         [
-          19,
+          16,
           "heap-use-after-free"
         ],
         [
-          48,
+          41,
           "heap-use-after-free"
         ],
         [
-          56,
+          69,
           "heap-use-after-free"
         ],
         [
-          81,
+          70,
           "heap-use-after-free"
         ],
         [
-          130,
+          87,
           "heap-use-after-free"
         ],
         [
-          165,
+          119,
           "heap-use-after-free"
         ],
         [
-          191,
+          125,
           "heap-use-after-free"
         ],
         [
-          189,
+          168,
           "heap-use-after-free"
         ],
         [
-          216,
+          170,
           "heap-use-after-free"
         ],
         [
-          223,
+          192,
           "heap-use-after-free"
         ],
         [
-          249,
+          194,
           "heap-use-after-free"
         ],
         [
-          248,
+          229,
+          "heap-use-after-free"
+        ],
+        [
+          236,
           "heap-use-after-free"
         ]
       ]
     },
     "target_crash_summary": {
-      "no_crash": 15,
+      "no_crash": 16,
       "same_type": 1,
       "same_type_sites": {
         "checkInkNamesString:tif_dir.c:135": 1
