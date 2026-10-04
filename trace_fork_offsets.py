@@ -234,6 +234,7 @@ def read_source_fork_statement(source_file, target_line, target_binary=None,
 
     # Try to locate the source file
     p = Path(source_file)
+    _resolved_in_version_root = False
     if not p.is_absolute():
         # First, try to find in the target binary's version directory
         if target_binary:
@@ -244,21 +245,25 @@ def read_source_fork_statement(source_file, target_line, target_binary=None,
                 candidate = parent / 'libtiff' / p.name
                 if candidate.is_file():
                     p = candidate
+                    _resolved_in_version_root = True
                     break
                 # Also check tools subdir (for tiffcrop)
                 candidate = parent / 'tools' / p.name
                 if candidate.is_file():
                     p = candidate
+                    _resolved_in_version_root = True
                     break
                 # Check if this is the version root
                 if (parent / 'configure').exists() or (parent / '.build_ok').exists():
                     candidate = parent / 'libtiff' / p.name
                     if candidate.is_file():
                         p = candidate
+                        _resolved_in_version_root = True
                         break
                     candidate = parent / 'tools' / p.name
                     if candidate.is_file():
                         p = candidate
+                        _resolved_in_version_root = True
                         break
                     # Any project layout (e.g. audiofile's libaudiofile/):
                     # resolve inside THIS version's tree only, so another
@@ -271,6 +276,7 @@ def read_source_fork_statement(source_file, target_line, target_binary=None,
                         _hit = None
                     if _hit is not None:
                         p = _hit
+                        _resolved_in_version_root = True
                         break
 
         # If not found, search in version directories (prefer target binary's version)
@@ -315,7 +321,7 @@ def read_source_fork_statement(source_file, target_line, target_binary=None,
     # make sure the resolved file really contains it at the requested line.
     # A wrong-version same-named file (relative-name resolution) would
     # otherwise silently yield the wrong variables.
-    if expected_statement:
+    if expected_statement and not _resolved_in_version_root:
         _exp = ' '.join(str(expected_statement).split())[:40]
         if _exp:
             _lo = max(0, target_line - 3)
