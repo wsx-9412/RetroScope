@@ -214,7 +214,8 @@ def extract_variables_from_statement(stmt):
     return result
 
 
-def read_source_fork_statement(source_file, target_line, target_binary=None, search_range=30):
+def read_source_fork_statement(source_file, target_line, target_binary=None,
+                               search_range=30, expected_statement=None):
     """Read source file around target_line and extract the full fork statement.
 
     Handles preprocessor conditionals (#if/#else/#endif) by extracting
@@ -259,6 +260,18 @@ def read_source_fork_statement(source_file, target_line, target_binary=None, sea
                     if candidate.is_file():
                         p = candidate
                         break
+                    # Any project layout (e.g. audiofile's libaudiofile/):
+                    # resolve inside THIS version's tree only, so another
+                    # version's same-named file can never be picked.
+                    _hit = None
+                    try:
+                        _hit = next((m for m in parent.rglob(p.name)
+                                     if m.is_file()), None)
+                    except Exception:
+                        _hit = None
+                    if _hit is not None:
+                        p = _hit
+                        break
 
         # If not found, search in version directories (prefer target binary's version)
         if not p.is_file():
@@ -297,6 +310,19 @@ def read_source_fork_statement(source_file, target_line, target_binary=None, sea
         lines = p.read_text(errors='replace').splitlines()
     except Exception:
         return None
+
+    # Guard: when the caller knows the analysis' expected statement text,
+    # make sure the resolved file really contains it at the requested line.
+    # A wrong-version same-named file (relative-name resolution) would
+    # otherwise silently yield the wrong variables.
+    if expected_statement:
+        _exp = ' '.join(str(expected_statement).split())[:40]
+        if _exp:
+            _lo = max(0, target_line - 3)
+            _hi = min(len(lines), target_line + 2)
+            _window = ' '.join(' '.join(lines[_lo:_hi]).split())
+            if _exp not in _window:
+                return None
 
     n = len(lines)
 
@@ -481,9 +507,15 @@ def read_trace_json(json_path):
         if variables:
             print(f'  [*] Extracted {len(variables)} variables from code-change fork statement')
     elif source_file and root_cause_line:
-        # Data-dependent fork: read source for the full fork statement
+        # Data-dependent fork: read source for the full fork statement.
+        # Pass the analysis' statement (when non-synthetic) so a wrong
+        # same-named source file from another version is rejected.
+        _exp_stmt = None
+        if root_cause_stmt and not div.get('statement_b_synthetic'):
+            _exp_stmt = root_cause_stmt
         result = read_source_fork_statement(
-            source_file, root_cause_line, target_binary=binary, search_range=100)
+            source_file, root_cause_line, target_binary=binary,
+            search_range=100, expected_statement=_exp_stmt)
         if result:
             full_fork_stmt, variables, actual_line = result
             root_cause_line = actual_line
