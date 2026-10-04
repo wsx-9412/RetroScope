@@ -162,7 +162,7 @@ AUTOMAKE = ${SHELL} /home/ws/Desktop/RetroScope/audiofile-versions/audiofile-0.3
 AWK = mawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -O1 -g -fsanitize=address -fno-omit-frame-pointer -fcommon
+CFLAGS = -fsanitize=address -g -fno-omit-frame-pointer -finstrument-functions -Wno-error
 COVERAGE_CFLAGS = 
 COVERAGE_LIBS = 
 CPP = gcc -E
@@ -170,7 +170,7 @@ CPPFLAGS =
 CXX = g++
 CXXCPP = g++ -E
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS = -g -O2
+CXXFLAGS = -fsanitize=address -g -fno-omit-frame-pointer -finstrument-functions -Wno-error -fpermissive
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
@@ -191,7 +191,7 @@ INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 LCOV = 
 LD = /usr/bin/ld -m elf_x86_64
-LDFLAGS = -fsanitize=address
+LDFLAGS = -fsanitize=address -ldl -lm
 LIBOBJS = 
 LIBS = 
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
@@ -228,7 +228,7 @@ abs_srcdir = /home/ws/Desktop/RetroScope/audiofile-versions/audiofile-0.3.3/liba
 abs_top_builddir = /home/ws/Desktop/RetroScope/audiofile-versions/audiofile-0.3.3
 abs_top_srcdir = /home/ws/Desktop/RetroScope/audiofile-versions/audiofile-0.3.3
 ac_ct_CC = gcc
-ac_ct_CXX = 
+ac_ct_CXX = g++
 ac_ct_DUMPBIN = 
 am__include = include
 am__leading_dot = .
