@@ -25,7 +25,7 @@ PROJECT_ROOT="${PROJECT_ROOT:-tiff-versions}"
 VERSION_PREFIX="${VERSION_PREFIX:-tiff-}"
 CVE_ID=$(grep -m1 '^CVE_ID' "$CONFIG" | sed 's/.*"\(.*\)".*/\1/')
 REF_NAME="${REF_NAME:-tiff-4.0.9}"
-REF_DIR="tiff-versions/$REF_NAME"
+REF_DIR="$PROJECT_ROOT/$REF_NAME"
 INITIAL_TARGET="${INITIAL_TARGET:-tiff-4.0.8}"
 SWEEP_DIR="${SWEEP_DIR:-$BASE_DIR/results/version_sweep}"
 mkdir -p "$SWEEP_DIR"
