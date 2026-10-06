@@ -156,10 +156,10 @@
 #define HAVE_SYS_TYPES_H 1
 
 /* have termcap */
-/* #undef HAVE_TERMCAP */
+#define HAVE_TERMCAP 1
 
 /* Define to 1 if you have the <termcap.h> header file. */
-/* #undef HAVE_TERMCAP_H */
+#define HAVE_TERMCAP_H 1
 
 /* add uint16_t type */
 #define HAVE_UINT16_T 1
