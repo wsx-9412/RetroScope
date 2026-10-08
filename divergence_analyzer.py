@@ -3661,15 +3661,31 @@ def _compare_step_traces(trace_a, trace_b):
     if not all_divs:
         return None
 
-    # Find the first divergence that's followed by many consecutive differences.
-    # The root cause is the first divergence that causes permanent splitting.
+    # Find the first divergence followed by >= consecutive_threshold further
+    # differences at nearly consecutive steps.  A transient divergence that
+    # later rejoins shows up as a run of non-differing steps before the next
+    # recorded difference; a permanent split keeps differing, so its followers
+    # are step-adjacent (small gaps only, for brace/formatting-only steps
+    # filtered out above).  This is the permanent-split (point-of-no-return)
+    # divergence.
     consecutive_threshold = 3
+    max_step_gap = 3  # 3+ non-differing steps in a row => the paths rejoined
     for idx, div in enumerate(all_divs):
-        # Check if there are enough consecutive differences after this one
-        if idx + consecutive_threshold <= len(all_divs):
+        followers = all_divs[idx + 1: idx + 1 + consecutive_threshold]
+        if len(followers) < consecutive_threshold:
+            break
+        prev_step = div["step"]
+        permanent = True
+        for f in followers:
+            gap = f["step"] - prev_step
+            if gap <= 0 or gap > max_step_gap:
+                permanent = False
+                break
+            prev_step = f["step"]
+        if permanent:
             return div
 
-    # If no divergence has enough followers, return the first one
+    # No permanent split detected — fall back to the first divergence.
     return all_divs[0]
 
 
