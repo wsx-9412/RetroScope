@@ -3738,7 +3738,7 @@ def _trace_from_common_ancestor(matches, gaps, trace_a, trace_b,
     b_line = b_info.get("line") if b_info else None
     b_text = b_info.get("line_text", "") if b_info else ""
 
-    print(f"  Last divergence at step {div['step']}:")
+    print(f"  Permanent-split divergence at step {div['step']}:")
     print(f"    A: {a_file}:{a_line} {a_text}")
     print(f"    B: {b_file}:{b_line} {b_text}")
 
@@ -3754,11 +3754,11 @@ def _trace_from_common_ancestor(matches, gaps, trace_a, trace_b,
         "root_cause_statement_b": b_text.strip(),
         "description": (
             f"Common ancestor: {func_name}\n"
-            f"Last divergence at step {div['step']}:\n"
+            f"Permanent-split divergence at step {div['step']}:\n"
             f"  {_LABEL_A}: {a_text.strip()}  ({a_file}:{a_line})\n"
             f"  {_LABEL_B}: {b_text.strip()}  ({b_file}:{b_line})"
         ),
-        "note": f"Step trace last divergence at step {div['step']}",
+        "note": f"Step trace permanent-split divergence at step {div['step']}",
     }
 
     # Check if same line text (same statement, different condition value)
