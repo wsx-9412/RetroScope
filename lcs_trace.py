@@ -869,6 +869,10 @@ def _annotate_divergence_confidence(div):
         path = 'gap_condition'
     elif div.get('fork_chain'):
         path = 'crash_anchor'
+    elif div.get('step_trace_split'):
+        path = 'step_trace_split'
+        notes.append('fork located inside the last common function at the '
+                     'permanent-split point (source-level step traces, GDB)')
     else:
         path = 'gap_or_step'
 
@@ -886,7 +890,9 @@ def _annotate_divergence_confidence(div):
     elif path == 'dynamic_fork' and notes:
         level = 'medium'
 
-    if not div.get('variables'):
+    if not div.get('variables') and not div.get('step_trace_split'):
+        # step_trace_split results carry no pre-resolved variable list; the
+        # offset stage extracts fork variables from the source statement.
         notes.append('no fork variables reported — offset localization has '
                      'nothing to trace')
     if not div.get('root_cause_line'):
