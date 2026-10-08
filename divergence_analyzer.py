@@ -3694,12 +3694,18 @@ def _trace_from_common_ancestor(matches, gaps, trace_a, trace_b,
                                 lib_path_a, lib_path_b,
                                 source_dirs_a, source_dirs_b,
                                 gdb_timeout=120):
-    """Find deepest common function, break at entry, step through both versions,
-    compare step traces to find the LAST divergence point.
+    """Primary locator: last common function call -> permanent-split fork.
+
+    Takes the LAST gap's forking caller (the deepest common call still on the
+    stack when the two traces diverged — the last identical call shared by
+    both traces), breaks at that function's entry in both versions, steps
+    through them and returns the divergence after which the two step traces
+    never rejoin (the permanent-split / point-of-no-return statement).
 
     Returns a result dict or None.
     """
-    func_name, match_info = _find_last_common_function(matches, gaps, trace_a, trace_b)
+    func_name, match_info = _find_last_common_function(
+        matches, gaps, trace_a, trace_b, prefer_tail=True)
     if not func_name:
         print("  Could not find common ancestor function")
         return None
@@ -3723,7 +3729,7 @@ def _trace_from_common_ancestor(matches, gaps, trace_a, trace_b,
         print("  Step tracing produced no results")
         return None
 
-    # Compare traces — find LAST divergence
+    # Compare traces — permanent-split (point of no return) divergence
     div = _compare_step_traces(step_trace_a, step_trace_b)
     if not div:
         print("  Step traces are identical — no divergence found inside function")
@@ -3759,6 +3765,7 @@ def _trace_from_common_ancestor(matches, gaps, trace_a, trace_b,
             f"  {_LABEL_B}: {b_text.strip()}  ({b_file}:{b_line})"
         ),
         "note": f"Step trace permanent-split divergence at step {div['step']}",
+        "step_trace_split": True,
     }
 
     # Check if same line text (same statement, different condition value)
@@ -5926,11 +5933,56 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
         args_b = []
 
     # ========================================================
-    # UNIFIED: the backward tracer is the PRIMARY fork locator.
-    # Recursively follows the return-value dependency chain from the last
-    # common entry function (e.g. TIFFOpen) down to the fork statement (the
-    # input-read statement in the target version).  The crash-based / semantic
-    # / gap-based analyses below remain only as a fallback.
+    # PRIMARY: last common function call -> permanent-split fork
+    # statement.  Take the LAST gap's forking caller (the deepest
+    # common call still on the stack when the traces diverged),
+    # step through that function in both versions and locate the
+    # statement after which the two step traces never rejoin.
+    # Everything below (backward tracer, crash-based, gap walk,
+    # sub-function) remains as the fallback chain.
+    # ========================================================
+    print("\n=== Primary locator: last common call -> permanent-split fork ===")
+    try:
+        _t_ps = time.time()
+        ancestor_result = _trace_from_common_ancestor(
+            matches, gaps, trace_a, trace_b,
+            binary_a, binary_b, args_a, args_b,
+            lib_path_a, lib_path_b,
+            source_dirs_a, source_dirs_b, gdb_timeout,
+        )
+        stage_timing.record("find fork statement - permanent split",
+                            time.time() - _t_ps)
+    except Exception as e:
+        print(f"  [Primary locator] failed: {e}")
+        ancestor_result = None
+    if ancestor_result:
+        ancestor_result["divergence_function"] = func_name
+        ancestor_result["trace_a_index"] = a_idx
+        ancestor_result["trace_b_index"] = b_idx
+        if input_file:
+            ancestor_result["input_file"] = str(input_file)
+        if not skip_polytracker:
+            try:
+                ancestor_result = _polytracker_locate_input_offsets(
+                    ancestor_result, config=config, binary_b=binary_b,
+                    binary_a=binary_a)
+            except Exception as e:
+                print(f"  [PolyTracker] Analysis failed: {e}")
+                ancestor_result["polytracker_offsets"] = {
+                    "status": "error", "error": str(e)}
+        print(f"\n  Primary locator: fork in "
+              f"{ancestor_result.get('root_cause_function')}() at "
+              f"{ancestor_result.get('root_cause_file')}:"
+              f"{ancestor_result.get('root_cause_line')}")
+        return ancestor_result
+
+    # ========================================================
+    # FALLBACK: the backward tracer (first fallback).  Recursively
+    # follows the return-value dependency chain from the last
+    # common entry function (e.g. TIFFOpen) down to the fork
+    # statement (the input-read statement in the target version).
+    # The crash-based / semantic / gap-based analyses below remain
+    # further fallbacks.
     # ========================================================
     last_common = _find_last_common_entry_function(matches)
     if last_common:
@@ -6713,22 +6765,10 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
         return result
 
     # ========================================================
-    # FALLBACK 1: Trace from common ancestor
-    # Break at deepest common function, step through both
-    # versions, compare step traces to find first divergence.
+    # (Former FALLBACK 1 — _trace_from_common_ancestor: last
+    # common call -> permanent-split fork — is now the PRIMARY
+    # locator at the top of analyze_lcs_result.)
     # ========================================================
-    ancestor_result = _trace_from_common_ancestor(
-        matches, gaps, trace_a, trace_b,
-        binary_a, binary_b, args_a, args_b,
-        lib_path_a, lib_path_b,
-        source_dirs_a, source_dirs_b, gdb_timeout,
-    )
-    if ancestor_result:
-        ancestor_result["divergence_function"] = func_name
-        ancestor_result["trace_a_index"] = a_idx
-        ancestor_result["trace_b_index"] = b_idx
-        print(f"\n  Common ancestor divergence: {ancestor_result.get('root_cause_function')}()")
-        return ancestor_result
 
     # ========================================================
     # FALLBACK 2: Trace candidate sub-functions
