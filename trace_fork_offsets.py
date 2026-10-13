@@ -5157,6 +5157,15 @@ def compare_crash_signatures(ref_sig, tgt_sig):
         # (memcpy/malloc/etc.) are filtered out.
         return "same_type", (f"type matches but crash function differs: "
                              f"ref={rfunc} target={tfunc}")
+    # Same crash function: line numbers differ across versions, so compare
+    # the statements at both crash points (best effort — skipped when a
+    # source line is unresolvable).  Same function but unrelated statements
+    # means the two crashes are at different points of the same function
+    # and must NOT count as the same vulnerability.
+    if not _statements_similar(rf.get("statement"), tf.get("statement")):
+        return "same_type", (
+            f"same crash function {rfunc} but statements differ: "
+            f"ref={rf.get('statement')!r} target={tf.get('statement')!r}")
     rfile = _path_basename(rf.get("file"))
     tfile = _path_basename(tf.get("file"))
     if rfile == tfile and rf.get("line") == tf.get("line"):
