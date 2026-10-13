@@ -7750,7 +7750,7 @@ def main():
             'A_direct_pointer', 'A_dynamic_callsite', 'A_deep_open_critical',
             'A_deep_open_read', 'B_value_field', 'B_arithmetic_tag',
             'C_value_pattern', 'C_open_read_fallback',
-            'S_structural_ifd_region',
+            'S_structural_ifd_region', 'S_structural_format',
         )
         _TIER_DESC = {
             'A_direct_pointer': 'pointer value inside a recorded read buffer (exact)',
@@ -7762,6 +7762,7 @@ def main():
             'C_value_pattern': 'ambiguous/narrow value-pattern match (likely noise)',
             'C_open_read_fallback': 'whole-run read set (deep trace produced nothing)',
             'S_structural_ifd_region': 'directory region from fork context (not swept)',
+            'S_structural_format': 'input-format structure fields (static parse, directed probes only)',
         }
         for _tier in _TIER_ORDER:
             _offs = sorted(candidate_tiers.get(_tier) or [])
