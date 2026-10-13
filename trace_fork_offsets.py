@@ -10,6 +10,11 @@ For TIFF:
   - Reads the IFD to find tag entry file offsets
   - Uses StripOffsets tag value to map strip data buffer → file
   - Reports which IFD entry bytes influence the vulnerable computation
+
+For the non-TIFF targets (binutils/ELF, giflib/GIF, libxml2/XML,
+freetype/sfnt+WOFF) the on-disk structure is parsed statically
+(static_structure_region) and its field positions feed the directed
+mutation in Step 6a — the same role _static_ifd_region plays for TIFF.
 """
 
 import subprocess
