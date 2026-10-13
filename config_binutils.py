@@ -12,11 +12,11 @@
 # =====================================================
 # CVE configuration: change this section for each CVE
 # =====================================================
-CVE_ID = "CVE-2025-0840"          # CVE number
-INPUT_FILE = "in/CVE-2025-0840"   # input file path (relative to RetroScope/)
+CVE_ID = "CVE-2018-18605"          # CVE number
+INPUT_FILE = "in/CVE-2018-18605"   # input file path (relative to RetroScope/)
 OUTPUT_FILE = "/tmp/foo"          # program output file
 # Program arguments template: {program_path}, {input_file}, {output_file}
-COMMAND_FORMAT = "{program_path} --insn-width 64 -d {input_file}"
+COMMAND_FORMAT = "{program_path} readelf -w {input_file}"
 
 # =====================================================
 # Compilation configuration (usually no need to change)
