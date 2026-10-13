@@ -5442,10 +5442,12 @@ def _static_xml_region(data):
                 else:
                     i = gt + 1 if gt >= 0 else n
             else:
-                # Quote-aware '>' search: ENTITY values may contain '>'.
-                # Malformed decls without '>' resync after the '<!' so the
-                # scan does not abort at the end of file.
+                # Quote-aware '>' scan: ENTITY values may contain '>'.
+                # Resync at an unquoted '<' (the decl ended abnormally) or
+                # after the '<!' (no '>' at all) instead of aborting the
+                # whole scan at end of file.
                 end = -1
+                resync = lt + 2
                 j = lt + 1
                 while j < n:
                     c = data[j]
@@ -5457,8 +5459,11 @@ def _static_xml_region(data):
                     elif c == 0x3e:
                         end = j
                         break
+                    elif c == 0x3c:
+                        resync = j
+                        break
                     j += 1
-                i = end + 1 if end >= 0 else lt + 2
+                i = end + 1 if end >= 0 else resync
         else:
             add(lt, 'markup', 'open')
             k = lt + 1
