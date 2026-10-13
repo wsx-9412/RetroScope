@@ -10,6 +10,10 @@
 #   ./run_analysis.sh config_lame.py
 #   ./run_analysis.sh config_audiofile.py
 #   ./run_analysis.sh config_jasper.py
+#   ./run_analysis.sh config_libxml2.py
+#   ./run_analysis.sh config_giflib.py
+#   ./run_analysis.sh config_binutils.py
+#   ./run_analysis.sh config_freetype.py
 
 PROJECT_CONFIG="${1:-config_libtiff.py}"
 GDB_MODE=true      # Default: GDB mode (full pipeline)
