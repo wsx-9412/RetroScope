@@ -53,6 +53,7 @@ sys.path.insert(0, str(BASE))
 from trace_fork_offsets import (  # noqa: E402
     resolve_binary, build_run_env, extract_crash_signature,
     compare_crash_signatures, _replace_input_arg, _path_basename,
+    _attach_crash_statement,
 )
 
 GDB_VERIFY_SCRIPT = r"""
@@ -210,6 +211,7 @@ def verify_one(binary, hint, mutant_path, program_args, original_input,
         seen.add(k)
         hits.append(rec)
     sig = extract_crash_signature(out)
+    _attach_crash_statement(sig, real)
     crash = sig["crash_frames"][0] if (sig and sig.get("crash_frames")) else {}
     res = {
         "status": "ok",
@@ -464,6 +466,7 @@ def main():
                                   env=env, capture_output=True, text=True,
                                   timeout=a.timeout)
             ref_sig = extract_crash_signature(proc.stdout + proc.stderr)
+            _attach_crash_statement(ref_sig, resolve_binary(binary_ref))
             if ref_sig:
                 fr = ref_sig["crash_frames"][0] if ref_sig["crash_frames"] else {}
                 print("[*] reference crash: %s in %s (%s:%s)" % (

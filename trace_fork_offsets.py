@@ -5951,6 +5951,7 @@ def test_value_level_mutations(binary_target, binary_ref, input_file,
 
     base_out, base_vals, _, _ = _run_outcome(real_target, original_data)
     ref_out, ref_vals, ref_sig, _ = _run_outcome(real_ref, original_data)
+    _attach_crash_statement(ref_sig, real_ref)
 
     # Candidate replacement values: corner values, value-range flips, and
     # the values that matter for size guards (-1 / 0 / 1 / huge).
@@ -5983,6 +5984,7 @@ def test_value_level_mutations(binary_target, binary_ref, input_file,
                 _t_mut = time.time() - _t_trial
                 verdict = None
                 if sig is not None and ref_sig is not None:
+                    _attach_crash_statement(sig, real_target)
                     verdict, _ = compare_crash_signatures(ref_sig, sig)
                 if verdict in ('same_func', 'same_site'):
                     _archive(off, width, v, _t_mut)
@@ -6319,6 +6321,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                     out, rc, _t_mut = fut.result()
                     total_tests += 1
                     sig = extract_crash_signature(out)
+                    _attach_crash_statement(sig, real_target)
                     if sig is None:
                         if base_tgt_rc is not None and rc != base_tgt_rc:
                             results[offset]['fork_flip'].append(byte_val)
@@ -6361,39 +6364,10 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                                      _path_basename(crash.get('file')),
                                      crash.get('line'))
                             key = f"{_site[0]}:{_site[1]}:{_site[2]}"
-                            # Case C: the target's baseline crash is at its
-                            # own (fork) site.  A same-type crash at a
-                            # DIFFERENT site means the mutation steered the
-                            # target past its own crash into the reference's
-                            # failure — count it as a reproduction.
-                            if base_crash_site and _site != base_crash_site:
-                                results[offset]['matches'][byte_val] = {
-                                    'verdict': 'same_type_cross',
-                                    'type': sig['type'],
-                                    'function': crash.get('function'),
-                                    'file': _path_basename(crash.get('file')),
-                                    'line': crash.get('line'),
-                                    'rc': rc,
-                                }
-                                _tot = _mutation_elapsed()
-                                results[offset]['matches'][byte_val]['time_to_success'] = round(_tot, 3)
-                                results[offset]['matches'][byte_val]['time_this_mutation'] = round(_t_mut, 3)
-                                try:
-                                    import stage_timing
-                                    stage_timing.record(
-                                        f"mutation succeeded offset=0x{offset:x} byte=0x{byte_val:02x}",
-                                        _tot)
-                                except Exception:
-                                    pass
-                                print(f'    0x{byte_val:02x} -> MATCHES ref crash '
-                                      f'(same_type at other site: {key})  '
-                                      f'[since first mutation {_tot:.3f}s, '
-                                      f'this run {_t_mut:.3f}s]')
-                                _archive(offset, byte_val, _tot)
-                                continue
-                            # Near-miss: same ASan kind at the baseline (own
-                            # crash) site — the mutation did not steer the
-                            # target into the reference's failure.
+                            # Near-miss: same ASan type at some other site —
+                            # not a match unless the crash POINT (function +
+                            # statement) equals the reference's, which
+                            # compare_crash_signatures already decided above.
                             observed.setdefault('same_type_sites', {})
                             sites = observed['same_type_sites']
                             sites.setdefault(key, 0)
@@ -6798,6 +6772,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
         print(f'  [!] Reference binary did not produce an ASan crash '
               f'(rc={ref_rc}); cannot compare.')
         return {}
+    _attach_crash_statement(ref_sig, real_ref)
     ref_crash = ref_sig["crash_frames"][0] if ref_sig["crash_frames"] else {}
     print(f'  Reference crash: {ref_sig["type"]} in '
           f'{ref_crash.get("function")} '
@@ -6823,12 +6798,6 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
     print(f'  Target baseline (original file): rc={base_tgt_rc}'
           + (f', crash={base_tgt_sig["type"]}'
              if base_tgt_sig else ', no crash (unchanged if rc matches)'))
-    # Case-C marker: see test_byte_mutations_compare.
-    base_crash_site = None
-    if base_tgt_sig and base_tgt_sig.get('crash_frames'):
-        _bc = base_tgt_sig['crash_frames'][0]
-        base_crash_site = (_bc.get('function'),
-                           _path_basename(_bc.get('file')), _bc.get('line'))
 
     probe = probe_values  # explicit override; None -> per-offset derivation
     results = {
@@ -6892,11 +6861,12 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                                 (real_target, data, program_args,
                                  input_file, timeout))
                 futures[fut] = combo
-            for fut in as_completed(futures):
-                va, vb = futures[fut]
-                out, rc, _t_mut = fut.result()
-                total_tests += 1
-                sig = extract_crash_signature(out)
+                for fut in as_completed(futures):
+                    va, vb = futures[fut]
+                    out, rc, _t_mut = fut.result()
+                    total_tests += 1
+                    sig = extract_crash_signature(out)
+                    _attach_crash_statement(sig, real_target)
                 if sig is None:
                     if base_tgt_rc is not None and rc != base_tgt_rc:
                         results[key]['fork_flip'].append((va, vb))
@@ -6929,27 +6899,10 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                                  _path_basename(crash.get('file')),
                                  crash.get('line'))
                         skey = f"{_site[0]}:{_site[1]}:{_site[2]}"
-                        # Case C: same-type crash away from the target's own
-                        # baseline (fork) site = reproduction of the
-                        # reference's failure.
-                        if base_crash_site and _site != base_crash_site:
-                            results[key]['matches'][f'{va:02x},{vb:02x}'] = {
-                                'verdict': 'same_type_cross',
-                                'type': sig['type'],
-                                'function': crash.get('function'),
-                                'file': _path_basename(crash.get('file')),
-                                'line': crash.get('line'),
-                                'rc': rc,
-                            }
-                            _tot = _mutation_elapsed()
-                            results[key]['matches'][f'{va:02x},{vb:02x}']['time_to_success'] = round(_tot, 3)
-                            results[key]['matches'][f'{va:02x},{vb:02x}']['time_this_mutation'] = round(_t_mut, 3)
-                            print(f'    ({va:02x},{vb:02x}) -> MATCHES ref crash '
-                                  f'(same_type at other site: {skey})  '
-                                  f'[since first mutation {_tot:.3f}s, '
-                                  f'this run {_t_mut:.3f}s]')
-                            _archive(offA, offB, va, vb, _tot)
-                            continue
+                        # Near-miss: same ASan type at some other site —
+                        # not a match unless the crash POINT (function +
+                        # statement) equals the reference's, which
+                        # compare_crash_signatures already decided above.
                         observed.setdefault('same_type_sites', {})
                         sites = observed['same_type_sites']
                         sites.setdefault(skey, 0)
