@@ -20,9 +20,11 @@
 # =====================================================
 CVE_ID = "CVE-2018-18605"          # CVE number
 INPUT_FILE = "in/CVE-2018-18605"   # input file path (relative to RetroScope/)
-OUTPUT_FILE = " "          # program output file
+OUTPUT_FILE = "/tmp/foo"          # program output file
 # Program arguments template: {program_path}, {input_file}, {output_file}
-COMMAND_FORMAT = "{program_path} readelf -w {input_file}"
+# {program_path} already IS the tool binary selected by EXECUTION_CONFIG
+# "program_name"; do NOT write the tool name into the format string.
+COMMAND_FORMAT = "{program_path} -w {input_file}"
 
 # =====================================================
 # Compilation configuration (usually no need to change)
