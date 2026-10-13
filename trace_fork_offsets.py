@@ -5107,7 +5107,9 @@ def compare_crash_signatures(ref_sig, tgt_sig):
       * 'same_site' — type, function, file AND line all match (identical
                       crash point; requires identical/mapped code lines),
       * 'same_func' — type + crash-point function match (line/file may differ
-                      between versions); this is the level used as "success".
+                      between versions) AND the statements at both crash
+                      points are similar (or unresolvable); this is the
+                      level used as "success".
                       The crash point is the innermost user frame of the fault
                       stack (sanitizer/libc interceptors filtered out), so a
                       fault one wrapper deeper on the same path still matches,
