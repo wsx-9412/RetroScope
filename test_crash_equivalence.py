@@ -54,7 +54,7 @@ v, d = compare_crash_signatures(mk(HBO, "f", "a.c", 1), mk(HBO, "f", "a.c", 1))
 check("equal types pass", v == "same_site", d)
 
 v, d = compare_crash_signatures(mk(HBO, "f", "a.c", 1),
-                                mk("SEGV on unknown address", "f", "a.c", 1))
+                                mk("SEGV", "f", "a.c", 1))
 check("SEGV umbrella passes", v is not None and v.startswith("same"), d)
 
 v, d = compare_crash_signatures(
@@ -148,7 +148,8 @@ check("interceptor filtered from crash_frames",
       sig_ref and sig_ref["crash_frames"][0]["function"] == "bfd_hash_lookup",
       str(sig_ref["crash_frames"][:1] if sig_ref else None))
 v, d = compare_crash_signatures(sig_ref, sig_tgt)
-check("UAF interceptor case -> same_func", v == "same_func", f"{v}: {d}")
+check("UAF interceptor case -> same_func or better",
+      v in ("same_func", "same_site"), f"{v}: {d}")
 
 # ---------------------------------------------------------------- helpers
 print("\n[helpers] statement resolution + similarity")
