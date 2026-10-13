@@ -33,7 +33,7 @@ COMPILE_COMMANDS = {
             "rm -rf build",
             "bash -c 'cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=\"-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer\" -DCMAKE_EXE_LINKER_FLAGS=\"-fsanitize=address\" -DCMAKE_SHARED_LINKER_FLAGS=\"-fsanitize=address\" -DFT_DISABLE_ZLIB=TRUE -DFT_DISABLE_BZIP2=TRUE -DFT_DISABLE_PNG=TRUE -DFT_DISABLE_HARFBUZZ=TRUE -DFT_DISABLE_BROTLI=TRUE'",
             "make -C build -j2",
-            "bash -c 'gcc -finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -I./include HARNESS_SRC build/libfreetyped.a -lz -lm -fsanitize=address -o build/fttest'",
+            f"gcc -finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -I./include {HARNESS_SRC} build/libfreetyped.a -lz -lm -fsanitize=address -o build/fttest",
         ],
         "compile_flags": {
             "CFLAGS": "-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer",
@@ -45,7 +45,7 @@ COMPILE_COMMANDS = {
             "rm -rf build",
             "bash -c 'cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=\"-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer\" -DCMAKE_EXE_LINKER_FLAGS=\"-fsanitize=address\" -DCMAKE_SHARED_LINKER_FLAGS=\"-fsanitize=address\" -DFT_DISABLE_ZLIB=TRUE -DFT_DISABLE_BZIP2=TRUE -DFT_DISABLE_PNG=TRUE -DFT_DISABLE_HARFBUZZ=TRUE -DFT_DISABLE_BROTLI=TRUE'",
             "make -C build -j2",
-            "bash -c 'gcc -finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -I./include HARNESS_SRC build/libfreetyped.a -lz -lm -fsanitize=address -o build/fttest'",
+            f"gcc -finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -I./include {HARNESS_SRC} build/libfreetyped.a -lz -lm -fsanitize=address -o build/fttest",
         ],
         "compile_flags": {
             "CFLAGS": "-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer",
