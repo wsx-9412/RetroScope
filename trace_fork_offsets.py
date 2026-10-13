@@ -218,6 +218,11 @@ def extract_variables_from_statement(stmt):
             _after = cleaned[m.end():].lstrip()
             if not _after or _after[0] in '(*' or re.match(r'^[A-Za-z_]', _after):
                 continue
+            # Expression position: keep CamelCase variables (BufferP,
+            # ColorMapEntry->Red) but still skip ALL-CAPS macro constants
+            # (TIFF_SHORT, TIFFTAG_STRIPOFFSETS).
+            if expr.isupper():
+                continue
         # Skip function calls: identifier immediately followed by '('.
         if cleaned[m.end():].lstrip().startswith('('):
             continue
