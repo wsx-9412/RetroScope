@@ -5024,6 +5024,82 @@ def _is_noise_stack_frame(func):
     return func.startswith('__libc_') or func.startswith('__cxa_')
 
 
+def _resolve_source_file(file_field, binary):
+    """Resolve an ASan frame's ``file`` field to a readable source path.
+
+    Frame files are either absolute (harness temp dirs) or build-relative
+    such as ``../../binutils/dwarf.c``; relative paths are resolved by
+    walking up from the binary's directory until a hit is found.
+    """
+    if not file_field:
+        return None
+    if os.path.isabs(file_field):
+        return file_field if os.path.isfile(file_field) else None
+    if not binary:
+        return None
+    d = os.path.dirname(os.path.abspath(binary))
+    for _ in range(8):
+        cand = os.path.normpath(os.path.join(d, file_field))
+        if os.path.isfile(cand):
+            return cand
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        d = parent
+    return None
+
+
+def _attach_crash_statement(sig, binary):
+    """Fill ``sig['crash_frames'][0]['statement']`` in place (best effort).
+
+    Stores the trimmed source line at the crash frame's file:line so
+    ``compare_crash_signatures`` can apply the statement-similarity half
+    of the same-vulnerability criterion.  Unresolvable source simply
+    leaves the key absent; the check is then skipped (function match alone
+    decides).
+    """
+    if not sig or not binary:
+        return sig
+    frames = sig.get('crash_frames') or []
+    if not frames:
+        return sig
+    f = frames[0]
+    src = _resolve_source_file(f.get('file'), binary)
+    if not src:
+        return sig
+    try:
+        with open(src, 'r', encoding='utf-8', errors='replace') as fh:
+            lines = fh.readlines()
+        ln = f.get('line')
+        if isinstance(ln, int) and 1 <= ln <= len(lines):
+            stmt = lines[ln - 1].strip()
+            if stmt and not stmt.startswith('//'):
+                f['statement'] = stmt
+    except OSError:
+        pass
+    return sig
+
+
+def _statements_similar(a, b):
+    """Whether two crash-point statements denote the same failure point
+    modulo version drift (whitespace, added guards, renames).
+
+    Fails open when a statement is unavailable on either side (source not
+    resolvable): the function match alone then decides, as before.  Two
+    resolved but clearly different statements inside the same function
+    mean the crash points are NOT the same vulnerability.
+    """
+    a = re.sub(r'\s+', ' ', a or '').strip()
+    b = re.sub(r'\s+', ' ', b or '').strip()
+    if not a or not b:
+        return True
+    if a == b:
+        return True
+    if len(a) >= 8 and len(b) >= 8 and (a in b or b in a):
+        return True
+    return difflib.SequenceMatcher(None, a, b).ratio() >= 0.5
+
+
 def compare_crash_signatures(ref_sig, tgt_sig):
     """Classify how close a target crash is to the reference crash.
 
