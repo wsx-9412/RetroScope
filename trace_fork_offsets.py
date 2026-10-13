@@ -5047,27 +5047,20 @@ def compare_crash_signatures(ref_sig, tgt_sig):
                     return "same_func", (
                         f"equivalent crash function: {_f} ~ {_eq} "
                         f"(ref={rfunc} target={tfunc})")
-        # Stack-level match: the two FAULT stacks share a real project
-        # frame.  This covers a fault one wrapper deeper on the same path
-        # (ref crashes in extractImageSection, target in the _TIFFmemcpy
-        # it called — #2 is still extractImageSection).  Only the fault
-        # stack counts (the allocation stack restarts at #0) and generic
-        # frames (entry points, memcpy/malloc wrappers) are ignored, so
-        # two unrelated crashes sharing only main() do not match.
-        _ref_fault = {f.get("function")
-                      for f in _fault_stack_frames(ref_sig)
-                      if f.get("function") and not _is_sanitizer_frame(f)
-                      and not _is_noise_stack_frame(f.get("function"))}
-        _tgt_fault = {f.get("function")
-                      for f in _fault_stack_frames(tgt_sig)
-                      if f.get("function") and not _is_sanitizer_frame(f)
-                      and not _is_noise_stack_frame(f.get("function"))}
-        _shared = _ref_fault & _tgt_fault
-        if _shared:
-            return "same_func", (
-                f"shared fault-stack frame(s): "
-                f"{', '.join(sorted(_shared))} "
-                f"(ref={rfunc} target={tfunc})")
+        # The two top frames differ, so the crash points are different.
+        #
+        # NOTE: there used to be a "shared fault-stack frame" fallback here
+        # (any common non-generic project frame => same_func).  That is far
+        # too permissive for tools with deep generic dispatch stacks, e.g.
+        # binutils readelf/objdump: every DWARF-parsing crash shares
+        # display_debug_section -> process_section_contents -> process_object
+        # -> process_file, so two COMPLETELY different crash sites (e.g.
+        # get_line_filename_and_dirname vs display_debug_lines_raw) were
+        # wrongly classified as the same vulnerability.  The equivalence
+        # standard is: same ASan type AND same crash point (innermost user
+        # frame).  A fault one wrapper deeper on the same path is already
+        # covered by the top-frame match after sanitizer/noise frames
+        # (memcpy/malloc/etc.) are filtered out.
         return "same_type", (f"type matches but crash function differs: "
                              f"ref={rfunc} target={tfunc}")
     rfile = _path_basename(rf.get("file"))
