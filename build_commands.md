@@ -1046,3 +1046,13 @@ cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-O1 -g -fsanitize=address -fn
 mkdir -p objs && ./configure --with-png=yes --without-zlib --without-bzip2 --without-harfbuzz CFLAGS="-O1 -g -fsanitize=address -fno-omit-frame-pointer" LDFLAGS="-fsanitize=address" && make -j2
 ```
 - Programs: objs/.libs/libfreetype.a (linked into build/test_face_ft291)
+
+# 新增版本 (2026-10 扩充)
+- binutils: 新增 2.41 2.42 2.43 2.44 2.45 2.47（同上 out-of-tree 命令；
+  `--disable-ld` 构建位于 build-asan/；**带 ld 的构建位于 build-asan-ld/**，
+  命令为 `make -j2 all-ld`，产物 `ld/ld-new`）。
+  注：2.46 下载失败未构建。
+- libxml2: 新增 2.10.4 2.11.5 2.12.10 2.13.6 2.14.5（configure/make xmllint，同前）。
+- freetype: 新增 2.13.1 2.13.2 2.13.3 2.14.0 2.14.1（cmake 构建，同前；无 PNG）。
+- giflib: 新增 6.1.3（同 5.x：make libgif.a gif2rgb giffix gifsponge gifbuild；
+  6.x 的 getarg.c 已修复 varargs 问题，无需 no_sanitize_address 补丁）。
