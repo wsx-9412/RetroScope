@@ -5431,8 +5431,34 @@ def _static_xml_region(data):
             i = end + 2 if end >= 0 else n
         elif data.startswith(b'<!', lt):
             add(lt, 'markup', 'decl')
-            end = data.find(b'>', lt)
-            i = end + 1 if end >= 0 else n
+            # DOCTYPE may carry an internal subset '[ ... ]' whose nested
+            # <!ENTITY/<!ELEMENT decls are structure too — continue scanning
+            # right after the '[' instead of after the first '>'.
+            if data[lt:lt + 9].upper() == b'<!DOCTYPE':
+                lb = data.find(b'[', lt)
+                gt = data.find(b'>', lt)
+                if lb != -1 and (gt == -1 or lb < gt):
+                    i = lb + 1
+                else:
+                    i = gt + 1 if gt >= 0 else n
+            else:
+                # Quote-aware '>' search: ENTITY values may contain '>'.
+                # Malformed decls without '>' resync after the '<!' so the
+                # scan does not abort at the end of file.
+                end = -1
+                j = lt + 1
+                while j < n:
+                    c = data[j]
+                    if c in (0x22, 0x27):
+                        q = c
+                        j += 1
+                        while j < n and data[j] != q:
+                            j += 1
+                    elif c == 0x3e:
+                        end = j
+                        break
+                    j += 1
+                i = end + 1 if end >= 0 else lt + 2
         else:
             add(lt, 'markup', 'open')
             k = lt + 1
