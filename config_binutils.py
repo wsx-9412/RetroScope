@@ -18,11 +18,11 @@
 # =====================================================
 # CVE configuration: change this section for each CVE
 # =====================================================
-CVE_ID = "CVE-2025-0840"          # CVE number
-INPUT_FILE = "in/CVE-2025-0840"   # input file path (relative to RetroScope/)
-OUTPUT_FILE = "/tmp/foo"          # program output file
+CVE_ID = "CVE-2018-18605"          # CVE number
+INPUT_FILE = "in/CVE-2018-18605"   # input file path (relative to RetroScope/)
+OUTPUT_FILE = " "          # program output file
 # Program arguments template: {program_path}, {input_file}, {output_file}
-COMMAND_FORMAT = "{program_path} --insn-width 64 -d {input_file}"
+COMMAND_FORMAT = "{program_path} readelf -w {input_file}"
 
 # =====================================================
 # Compilation configuration (usually no need to change)
@@ -36,7 +36,7 @@ COMPILE_COMMANDS = {
             "mkdir -p build-asan",
             "bash -c 'cd build-asan && MAKEINFO=true ../configure --disable-nls --disable-werror --disable-gdb --disable-gold --disable-ld --disable-gas --disable-sim --disable-gprof --disable-gprofng --enable-targets=all CFLAGS=\"-g -O0 -fsanitize=address -fno-omit-frame-pointer -fcommon\" LDFLAGS=\"-fsanitize=address\"'",
             "bash -c 'cd build-asan && mkdir -p bfd/doc binutils/doc && touch bfd/doc/bfd.info binutils/doc/binutils.info'",
-            "bash -c 'cd build-asan && ASAN_OPTIONS=detect_leaks=0 MAKEINFO=true make -j2 CFLAGS=\"-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -fcommon\" all-binutils'",
+            "bash -c 'cd build-asan && ASAN_OPTIONS=detect_leaks=0 make -j2 MAKEINFO=true CFLAGS=\"-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -fcommon\" all-binutils'",
         ],
         "compile_flags": {
             "CFLAGS": "-g -O0 -fsanitize=address -fno-omit-frame-pointer -fcommon",
@@ -49,7 +49,7 @@ COMPILE_COMMANDS = {
             "mkdir -p build-asan",
             "bash -c 'cd build-asan && MAKEINFO=true ../configure --disable-nls --disable-werror --disable-gdb --disable-gold --disable-ld --disable-gas --disable-sim --disable-gprof --disable-gprofng --enable-targets=all CFLAGS=\"-g -O0 -fsanitize=address -fno-omit-frame-pointer -fcommon\" LDFLAGS=\"-fsanitize=address\"'",
             "bash -c 'cd build-asan && mkdir -p bfd/doc binutils/doc && touch bfd/doc/bfd.info binutils/doc/binutils.info'",
-            "bash -c 'cd build-asan && ASAN_OPTIONS=detect_leaks=0 MAKEINFO=true make -j2 CFLAGS=\"-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -fcommon\" all-binutils'",
+            "bash -c 'cd build-asan && ASAN_OPTIONS=detect_leaks=0 make -j2 MAKEINFO=true CFLAGS=\"-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -fcommon\" all-binutils'",
         ],
         "compile_flags": {
             "CFLAGS": "-g -O0 -fsanitize=address -fno-omit-frame-pointer -fcommon",
