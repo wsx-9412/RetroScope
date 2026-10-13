@@ -87,7 +87,7 @@ case "$PROJECT_NAME" in
     "libxml2")
         REFERENCE_VERSION_PATH="$BASE_DIR/libxml2-versions/libxml2-2.9.4"
         TARGET_VERSION_PATH="$BASE_DIR/libxml2-versions/libxml2-2.9.5"
-        DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2017-9047"
+        DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2017-9049"
         EXTRA_ARGS=(--include-exits)
         ;;
     "giflib")
