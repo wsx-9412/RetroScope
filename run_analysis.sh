@@ -49,8 +49,8 @@ CONFIG_MODULE="$PROJECT_CONFIG"
 # Per-project: reference/target version paths + default input file
 case "$PROJECT_NAME" in
     "libtiff")
-        REFERENCE_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.0.7"
-        TARGET_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-3.9.6"
+        REFERENCE_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.4.0"
+        TARGET_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.0.4beta"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2022-0891"
         EXTRA_ARGS=(--include-exits --refactor-detect)
         ;;
@@ -137,6 +137,10 @@ DIVERGE_JSON="results/${CVE_ID}.diverge.json"
 
 # Always regenerate - delete old diverge JSON
 rm -f "$DIVERGE_JSON"
+# The dynamic stage's single-byte results are only meaningful for THIS
+# target run; delete any stale copy (written by the previous target) so
+# the legacy stage below never consumes another version's classification.
+rm -f "results/${CVE_ID}_origin_mutation.json"
 
 mkdir -p results
 POLYTRACKER_OUTPUT="results/${CVE_ID}.json"
@@ -240,8 +244,17 @@ DYN_MUT_PY
     if [ "${SKIP_LEGACY:-0}" != "1" ]; then
         echo ""
         echo "=== Legacy GDB offset trace (fallback) ==="
+        # Feed the dynamic stage's single-byte classification (when this
+        # run produced one) into the legacy tracer: its active/inert
+        # offsets extend the two-offset mutation pool and define the
+        # interaction pairs.
+        ORIGIN_MUT_ARGS=()
+        if [ -f "results/${CVE_ID}_origin_mutation.json" ]; then
+            ORIGIN_MUT_ARGS=(--origin-mutation "results/${CVE_ID}_origin_mutation.json")
+        fi
         python3 -u trace_fork_offsets.py \
             --trace-json "$DIVERGE_JSON" \
+            ${ORIGIN_MUT_ARGS[@]+"${ORIGIN_MUT_ARGS[@]}"} \
             --timeout 60
         if [ $? -eq 0 ]; then
             echo -e "\n=== GDB trace completed ==="

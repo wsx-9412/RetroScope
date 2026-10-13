@@ -23,3 +23,20 @@ results/
 output/
 {output}
 out.mp3
+
+# ---- large/regenerable: per-software target trees (source + ASAN build output) ----
+binutils-versions/
+giflib-versions/
+libxml2-versions/
+freetype-versions/
+third_party/
+jarvis-versions/
+# build artifacts (belt and suspenders)
+build-asan/
+objs/
+.libs/
+.deps/
+*.lo
+*.la
+*.Po
+*.Plo

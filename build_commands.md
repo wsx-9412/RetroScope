@@ -980,3 +980,69 @@ sh ./configure CFLAGS="-O1 -g -fsanitize=address -fno-omit-frame-pointer" LDFLAG
 ```
 - Programs: src/appl/jasper, src/appl/imginfo
 
+
+# giflib
+Versions built: 4.1.6 5.1.1 5.1.2 5.1.4 (autotools, tools in util/) ; 5.1.7 5.1.8 5.1.9 5.2.1 5.2.2 (plain Makefile).
+Extra patch: add `__attribute__((no_sanitize_address))` to `GAGetArgs()` in getarg.c
+(ASAN otherwise trips on the caller's va_arg under-read before the real bug).
+
+## autotools versions (4.1.6, 5.1.1, 5.1.2, 5.1.4)
+- Status: success
+- Commands:
+```bash
+./configure --disable-shared CFLAGS="-O1 -g -fsanitize=address -fno-omit-frame-pointer" LDFLAGS="-fsanitize=address" && make -j2
+```
+- Programs: util/gif2rgb, util/giffix, util/gifcolor, ...
+
+## Makefile versions (5.1.7, 5.1.8, 5.1.9, 5.2.1, 5.2.2)
+- Status: success (build static lib + tools; the shared libgif.so target fails under ASAN, skip it)
+- Commands:
+```bash
+make CFLAGS="-O1 -g -fsanitize=address -fno-omit-frame-pointer -Wall" libgif.a gif2rgb giffix gifsponge gifbuild
+```
+
+# libxml2
+Versions built: 2.9.0 2.9.1 2.9.2 2.9.4 2.9.5 2.9.7 2.9.8 2.9.9 2.9.10 2.9.11 2.9.12 2.9.14
+- Status: success
+- Commands:
+```bash
+./configure --without-python --without-zlib --without-lzma --disable-shared CFLAGS="-O1 -g -fsanitize=address -fno-omit-frame-pointer" LDFLAGS="-fsanitize=address" && make -j2 xmllint
+```
+- Programs: xmllint
+
+# binutils
+Versions built: 2.24 2.27 2.30 2.31.1 2.34 2.35 2.35.1 2.36 2.38 2.40
+- Status: success (out-of-tree, all-binutils only)
+- Commands:
+```bash
+mkdir -p build-asan && cd build-asan
+MAKEINFO=true ../configure --disable-nls --disable-werror --enable-targets=all CFLAGS="-O1 -g -fsanitize=address -fno-omit-frame-pointer -fcommon" LDFLAGS="-fsanitize=address"
+ASAN_OPTIONS=detect_leaks=0 MAKEINFO=true make -j2 all-binutils
+```
+- Programs: binutils/objdump, binutils/readelf, binutils/nm
+- Notes: `-fcommon` needed for old trees (crx/cr16 duplicate globals under GCC 10+);
+  `--disable-werror` and `MAKEINFO=true` avoid old-code warning/doc build failures.
+
+# freetype
+Versions built: 2.4.11 2.5.5 2.6.5 2.7.1 2.8.1 2.9.1 2.10.4 2.11.1 2.12.1
+- Status: success
+- Commands (autotools, <= 2.9.x; create objs/ first):
+```bash
+mkdir -p objs
+./configure --without-zlib --without-bzip2 --without-png --without-harfbuzz CFLAGS="-O1 -g -fsanitize=address -fno-omit-frame-pointer" LDFLAGS="-fsanitize=address" && make -j2
+```
+- Commands (cmake, >= 2.10):
+```bash
+mkdir -p build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-O1 -g -fsanitize=address -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" -DFT_DISABLE_ZLIB=TRUE -DFT_DISABLE_BZIP2=TRUE -DFT_DISABLE_PNG=TRUE -DFT_DISABLE_HARFBUZZ=TRUE && make -j2
+```
+- PNG-enabled build for CVE-2020-15999 (freetype 2.9.1):
+```bash
+# 1. build libpng (no install) under third_party/
+./configure --disable-shared --prefix=$PWD/../libpng-install CFLAGS="-O1 -g -fsanitize=address -fno-omit-frame-pointer -fPIC" && make -j2 && make install
+# 2. build freetype with PNG
+#    enable "#define FT_CONFIG_OPTION_USE_PNG" in include/freetype/config/ftoption.h,
+#    provide a libpng-config that points at the local libpng, then:
+mkdir -p objs && ./configure --with-png=yes --without-zlib --without-bzip2 --without-harfbuzz CFLAGS="-O1 -g -fsanitize=address -fno-omit-frame-pointer" LDFLAGS="-fsanitize=address" && make -j2
+```
+- Programs: objs/.libs/libfreetype.a (linked into build/test_face_ft291)

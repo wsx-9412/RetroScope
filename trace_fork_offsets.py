@@ -4963,6 +4963,48 @@ _CRASH_FUNC_EQUIV = {
 }
 
 
+def _fault_stack_frames(sig):
+    """Frames of the FAULTING stack only (the first stack of the report).
+
+    ASan follows the fault stack with ``allocated by`` / ``freed by``
+    stacks whose frame numbers restart at #0; those must not take part in
+    the crash comparison (``crash_frames`` spans every stack and would
+    otherwise intersect on the allocation path, e.g. ``loadImage``).
+    """
+    frames = sig.get('frames') or []
+    out = []
+    prev_no = -1
+    for f in frames:
+        no = f.get('no')
+        if not isinstance(no, int):
+            continue
+        if out and no <= prev_no:
+            break
+        out.append(f)
+        prev_no = no
+    return out
+
+
+# Frames that appear in (nearly) every stack: process entry points and
+# generic memory wrappers.  A shared generic frame alone does not identify
+# the vulnerability — the CALLER does — so such frames never justify a
+# same_func verdict on their own.
+_CRASH_STACK_NOISE = frozenset({
+    'main', '_start', 'exit', 'abort',
+    '__libc_start_call_main', '__libc_start_main', '__libc_start_main_impl',
+    'memcpy', 'memmove', 'memset', 'memcmp',
+    '_TIFFmemcpy', '_TIFFmemset', '_TIFFmalloc', '_TIFFrealloc', '_TIFFfree',
+    'malloc', 'free', 'realloc', 'calloc',
+    '_Znwm', '_Znam', '_ZdlPv', '_ZdaPv',
+})
+
+
+def _is_noise_stack_frame(func):
+    if not func or func in _CRASH_STACK_NOISE:
+        return True
+    return func.startswith('__libc_') or func.startswith('__cxa_')
+
+
 def compare_crash_signatures(ref_sig, tgt_sig):
     """Classify how close a target crash is to the reference crash.
 
@@ -4971,6 +5013,10 @@ def compare_crash_signatures(ref_sig, tgt_sig):
                       crash point; requires identical/mapped code lines),
       * 'same_func' — type + crash function match (line/file may differ
                       between versions), this is the level used as "success",
+                      or the two FAULT stacks share at least one real
+                      (non-generic) project frame — e.g. the reference
+                      faults in ``extractImageSection`` while the target
+                      faults in the memory wrapper called FROM it,
       * 'same_type' — only the ASan error type matches,
       * None        — different types (a genuinely different crash).
     Also returns a human-readable diff line for reporting.
@@ -5001,6 +5047,27 @@ def compare_crash_signatures(ref_sig, tgt_sig):
                     return "same_func", (
                         f"equivalent crash function: {_f} ~ {_eq} "
                         f"(ref={rfunc} target={tfunc})")
+        # Stack-level match: the two FAULT stacks share a real project
+        # frame.  This covers a fault one wrapper deeper on the same path
+        # (ref crashes in extractImageSection, target in the _TIFFmemcpy
+        # it called — #2 is still extractImageSection).  Only the fault
+        # stack counts (the allocation stack restarts at #0) and generic
+        # frames (entry points, memcpy/malloc wrappers) are ignored, so
+        # two unrelated crashes sharing only main() do not match.
+        _ref_fault = {f.get("function")
+                      for f in _fault_stack_frames(ref_sig)
+                      if f.get("function") and not _is_sanitizer_frame(f)
+                      and not _is_noise_stack_frame(f.get("function"))}
+        _tgt_fault = {f.get("function")
+                      for f in _fault_stack_frames(tgt_sig)
+                      if f.get("function") and not _is_sanitizer_frame(f)
+                      and not _is_noise_stack_frame(f.get("function"))}
+        _shared = _ref_fault & _tgt_fault
+        if _shared:
+            return "same_func", (
+                f"shared fault-stack frame(s): "
+                f"{', '.join(sorted(_shared))} "
+                f"(ref={rfunc} target={tfunc})")
         return "same_type", (f"type matches but crash function differs: "
                              f"ref={rfunc} target={tfunc}")
     rfile = _path_basename(rf.get("file"))
@@ -5874,67 +5941,326 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
 # Pairwise (two-offset) probe values.  A full 255x255 sweep per pair is
 # usually prohibitive; these boundary/corner values capture the meaningful
 # two-byte interactions (e.g. flipping the sign byte AND the low byte of a
-# corrupt sample-rate field).
+# corrupt sample-rate field).  They form the TAIL of the derived per-offset
+# probe sets built by _pairwise_probe_values.
 PAIRWISE_PROBE = (0x00, 0x01, 0x02, 0x04, 0x08, 0x7f, 0x80, 0xfe, 0xff)
 
 
-def _build_mutation_pairs(offsets, var_spans, max_pairs=60):
+def _pairwise_probe_cap():
+    """Per-offset probe-set size for the two-offset mutation (env-tunable)."""
+    try:
+        return max(4, min(64,
+                          int(os.environ.get('RETROSCOPE_PAIR_PROBE_MAX',
+                                             '12'))))
+    except ValueError:
+        return 12
+
+
+def _pairwise_probe_values(orig, hints=None, cap=None):
+    """Interesting byte values for ONE side of a two-offset mutation.
+
+    Order (truncated to ``cap``):
+      1. the eight single-bit flips of the original byte — a tag/flag class
+         change such as 0x14 -> 0x16 or 0x01 -> 0x21 is exactly one bit,
+         and the bit flips are the only values an INERT offset (one whose
+         single-byte sweep crashed nowhere) can still contribute;
+      2. the fork-flipping / crash-changing values the single-byte sweeps
+         already observed at this offset (when available);
+      3. +1/-1/+2/-2 neighbours of the original;
+      4. the classic boundary values (PAIRWISE_PROBE).
+
+    Capped so a pair stays within ``cap*cap`` target runs.
+    """
+    if cap is None:
+        cap = _pairwise_probe_cap()
+    vals = []
+
+    def _add(v):
+        if isinstance(v, int) and 0 <= v <= 255 and v != orig \
+                and v not in vals:
+            vals.append(v)
+
+    for bit in (0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80):
+        if len(vals) >= cap:
+            break
+        _add(orig ^ bit)
+    for h in (hints or ()):
+        if len(vals) >= cap:
+            break
+        _add(h)
+    for d in (1, -1, 2, -2, 0x10, -0x10):
+        if len(vals) >= cap:
+            break
+        _add(orig + d)
+    for b in PAIRWISE_PROBE:
+        if len(vals) >= cap:
+            break
+        _add(b)
+    return vals or [orig]
+
+
+def _mutation_offset_effects(info):
+    """``(matched, changed)`` counters of a single-offset sweep record.
+
+    ``matched`` = single-byte values reproducing the reference crash;
+    ``changed`` = values that changed the target's outcome (fork flips,
+    same-type crashes, different-type crashes).
+    """
+    if not isinstance(info, dict):
+        return 0, 0
+    matched = len(info.get('matches') or ())
+    changed = (len(info.get('fork_flip') or ())
+               + sum(len(v) for v in (info.get('same_type') or {}).values())
+               + len(info.get('different_type') or ()))
+    return matched, changed
+
+
+# Minimum number of behavior-changing single-byte runs for an offset to be
+# treated as a pairwise GATE ("active").  Offsets below the threshold (but
+# with SOME effect) are "weak" — they still get coverage pairs, they just
+# do not multiply into every interaction pair.
+_ACTIVE_MIN_EFFECTS = 4
+
+
+def _classify_sweep_results(*result_maps):
+    """Classify offsets across single-byte sweep result dicts.
+
+    Accepts any number of result maps keyed by offset (in-memory
+    ``crash_results`` with int keys, and/or a JSON
+    ``*_origin_mutation.json`` with digit-string keys).
+
+    Returns ``(active, inert, weak, hints)``:
+      * ``active`` — {offset: strength}: matched the reference or changed
+        the target's behavior in >= _ACTIVE_MIN_EFFECTS runs.  These are
+        the gates a two-offset combination must turn "on";
+      * ``inert``  — offsets swept with NO effect at all (uniform
+        no-crash): the pool the gates must be combined with — a single-byte
+        sweep can never discover what one of these bytes does TOGETHER
+        with a gate;
+      * ``weak``   — some effect, but below the gate threshold;
+      * ``hints``  — {offset: sorted values}: observed fork-flipping /
+        crash-changing byte values, used to enrich the probe sets.
+    """
+    stats = {}   # offset -> [matched, changed, no_crash]
+    hints = {}
+    for results in result_maps:
+        if not isinstance(results, dict):
+            continue
+        for k, info in results.items():
+            if isinstance(k, str):
+                if not k.isdigit():
+                    continue
+                k = int(k)
+            if not isinstance(k, int) or not isinstance(info, dict) \
+                    or 'no_crash' not in info:
+                continue
+            matched, changed = _mutation_offset_effects(info)
+            st = stats.setdefault(k, [0, 0, 0])
+            st[0] += matched
+            st[1] += changed
+            st[2] += len(info.get('no_crash') or ())
+            if matched or changed:
+                hv = hints.setdefault(k, [])
+                for v in (info.get('fork_flip') or ()):
+                    if isinstance(v, int) and v not in hv:
+                        hv.append(v)
+                for v in (info.get('different_type') or ()):
+                    if isinstance(v, int):
+                        if v not in hv:
+                            hv.append(v)
+                    elif isinstance(v, (list, tuple)) and v \
+                            and isinstance(v[0], int) and v[0] not in hv:
+                        hv.append(v[0])
+                for mkey in (info.get('matches') or {}):
+                    try:
+                        mv = int(str(mkey), 16)
+                    except ValueError:
+                        continue
+                    if mv not in hv:
+                        hv.append(mv)
+    active, inert, weak = {}, set(), set()
+    for o, (matched, changed, no_crash) in stats.items():
+        if matched or matched + changed >= _ACTIVE_MIN_EFFECTS:
+            active[o] = matched + changed
+        elif matched + changed > 0:
+            weak.add(o)
+        elif no_crash:
+            inert.add(o)
+    for hv in hints.values():
+        hv.sort()
+    return active, inert, weak, hints
+
+
+def _build_interaction_pairs(active, partners, cap=None):
+    """Gate x partner pairs for the two-offset mutation.
+
+    ``active`` = {offset: strength} behaviour-changing gates, ``partners``
+    = the offsets each gate should be combined with (inert/weak offsets —
+    and the other gates, so gate x gate is covered too).
+
+    Partners are visited nearest-to-any-gate first and every partner is
+    paired with every gate (strongest first) before moving on, so a total
+    cap (``RETROSCOPE_INTERACTION_MAX``, default 200) keeps the local
+    combinations and spreads the budget across gates instead of letting
+    the strongest gate consume it.
+    """
+    if not active:
+        return []
+    if cap is None:
+        try:
+            cap = max(0, int(os.environ.get('RETROSCOPE_INTERACTION_MAX',
+                                            '200')))
+        except ValueError:
+            cap = 200
+    gates = sorted(active, key=lambda o: (-active[o], o))
+    pool = set(partners) | set(active)
+    partners_ordered = sorted(pool,
+                              key=lambda x: (min(abs(x - a) for a in gates),
+                                             x))
+    pairs, seen = [], set()
+    for b in partners_ordered:
+        for a in gates:
+            if a == b:
+                continue
+            key = (min(a, b), max(a, b))
+            if key in seen:
+                continue
+            seen.add(key)
+            pairs.append(key)
+            if cap and len(pairs) >= cap:
+                return pairs
+    return pairs
+
+
+def _build_mutation_pairs(offsets, var_spans, max_pairs=60,
+                          interaction_pairs=None):
     """Build (offA, offB) pairs for the combined two-offset mutation.
 
-    Prioritizes pairs WITHIN a single fork variable's matched span (multi-byte
-    value manipulation — e.g. the four bytes of a corrupt sample-rate field),
-    then neighbouring cross-variable pairs, then generic pairs (bounded).
+    Three passes, in priority order:
+
+      1) INTERACTION pairs supplied by the caller — a behaviour-changing
+         gate combined with an inert offset is exactly the class of
+         combination no single-byte sweep can discover;
+      2) COVERAGE: every candidate offset participates in at least one
+         pair (same fork-variable span first, then the nearest other
+         offset).  This pass may push the list past ``max_pairs`` so that
+         no candidate is ever silently untested;
+      3) the HISTORICAL pairs (within-span multi-byte manipulation,
+         neighbouring cross-variable pairs, generic pairs for small offset
+         sets), bounded by ``max_pairs`` ADDITIONS — the same budget the
+         historical code applied to the whole list.
+
+    ``RETROSCOPE_MAX_PAIR_TOTAL`` (default 400) is a hard ceiling over the
+    finished list; it only ever truncates the low-priority tail.
     """
-    offsets = sorted(set(offsets))
+    def _norm(o):
+        try:
+            return int(o)
+        except (TypeError, ValueError):
+            return None
+
+    offsets = sorted({o for o in map(_norm, offsets) if o is not None})
+    off_set = set(offsets)
     pairs = []
     seen = set()
 
     def _add(a, b):
-        if a == b:
-            return
+        if a == b or a not in off_set or b not in off_set:
+            return False
         key = (min(a, b), max(a, b))
-        if key not in seen:
-            seen.add(key)
-            pairs.append(key)
+        if key in seen:
+            return False
+        seen.add(key)
+        pairs.append(key)
+        return True
 
-    # 1) within-span pairs (each variable's multi-byte value bytes).
-    for offs in var_spans.values():
-        offs = sorted(set(offs))
+    # 1) caller-provided interaction pairs (strongest signal first).
+    for a, b in (interaction_pairs or ()):
+        _add(_norm(a), _norm(b))
+
+    # 2) coverage: every offset in >= one pair.
+    span_of = {}
+    for offs in (var_spans or {}).values():
+        offs = sorted({o for o in map(_norm, offs) if o in off_set}
+                      if offs else set())
+        for o in offs:
+            span_of.setdefault(o, set()).update(offs)
+    covered = {x for p in pairs for x in p}
+    for o in offsets:
+        if o in covered:
+            continue
+        cand = [x for x in sorted(span_of.get(o, ()))
+                if x != o and x not in covered]
+        if cand:
+            partner = cand[0]
+        else:
+            others = [x for x in offsets if x != o and x not in covered]
+            if not others:
+                others = [x for x in offsets if x != o]
+            partner = min(others, key=lambda x: (abs(x - o), x)) \
+                if others else None
+        if partner is not None:
+            _add(o, partner)
+            covered.update((o, partner))
+
+    # 3) historical passes, bounded by max_pairs ADDITIONS.
+    _base = len(pairs)
+
+    # 3a) within-span pairs (each variable's multi-byte value bytes).
+    for offs in (var_spans or {}).values():
+        offs = sorted({o for o in map(_norm, offs) if o in off_set}
+                      if offs else set())
         if len(offs) > 8:
             offs = offs[:8]
         for i in range(len(offs)):
             for j in range(i + 1, len(offs)):
                 _add(offs[i], offs[j])
-        if len(pairs) >= max_pairs:
-            return pairs[:max_pairs]
+        if len(pairs) - _base >= max_pairs:
+            break
 
-    # 2) neighbouring cross-variable pairs.
-    for i in range(len(offsets)):
-        for j in range(i + 1, len(offsets)):
-            if offsets[j] - offsets[i] <= 2:
-                _add(offsets[i], offsets[j])
-        if len(pairs) >= max_pairs:
-            return pairs[:max_pairs]
+    # 3b) neighbouring cross-variable pairs.
+    if len(pairs) - _base < max_pairs:
+        for i in range(len(offsets)):
+            for j in range(i + 1, len(offsets)):
+                if offsets[j] - offsets[i] <= 2:
+                    _add(offsets[i], offsets[j])
+            if len(pairs) - _base >= max_pairs:
+                break
 
-    # 3) generic pairs (only when the total offset set is small).
-    if len(offsets) <= 16:
+    # 3c) generic pairs (only when the total offset set is small).
+    if len(pairs) - _base < max_pairs and len(offsets) <= 16:
         for i in range(len(offsets)):
             for j in range(i + 1, len(offsets)):
                 _add(offsets[i], offsets[j])
-                if len(pairs) >= max_pairs:
-                    return pairs[:max_pairs]
-    return pairs[:max_pairs]
+                if len(pairs) - _base >= max_pairs:
+                    break
+            if len(pairs) - _base >= max_pairs:
+                break
+
+    # hard ceiling (env-overridable) — truncates the tail only.
+    try:
+        _total_cap = max(0, int(os.environ.get('RETROSCOPE_MAX_PAIR_TOTAL',
+                                               '400')))
+    except ValueError:
+        _total_cap = 400
+    if _total_cap and len(pairs) > _total_cap:
+        pairs = pairs[:_total_cap]
+    return pairs
 
 
 def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
                                     program_args, pairs, timeout=10,
-                                    probe_values=None, version=None):
+                                    probe_values=None, version=None,
+                                    value_hints=None):
     """Two-offset combined byte mutation.
 
-    For every (offA, offB) pair, mutate BOTH bytes simultaneously (sweeping a
-    bounded probe-value set on each) and check whether the combined mutation
-    makes the target reproduce the reference's crash — or produces a new
-    outcome that neither single-byte mutation alone achieves.
+    For every (offA, offB) pair, mutate BOTH bytes simultaneously (each
+    side sweeping its own derived probe set — single-bit flips first, then
+    the observed fork-flipping values for that offset, then neighbours and
+    boundary values; ``probe_values`` overrides both sides) and check
+    whether the combined mutation makes the target reproduce the
+    reference's crash — or produces a new outcome that neither single-byte
+    mutation alone achieves.
 
     Successful combinations are archived under
     ``out/<input-name>-<target-version>/`` named
@@ -6003,7 +6329,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
         base_crash_site = (_bc.get('function'),
                            _path_basename(_bc.get('file')), _bc.get('line'))
 
-    probe = probe_values or PAIRWISE_PROBE
+    probe = probe_values  # explicit override; None -> per-offset derivation
     results = {
         'ref_signature': {
             'type': ref_sig['type'],
@@ -6038,9 +6364,16 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
         print(f'\n  [*] Testing pair {key} '
               f'(original={oa:02x},{ob:02x})...')
 
+        if probe is not None:
+            probe_a = probe_b = list(probe)
+        else:
+            probe_a = _pairwise_probe_values(
+                oa, (value_hints or {}).get(offA))
+            probe_b = _pairwise_probe_values(
+                ob, (value_hints or {}).get(offB))
         tasks = []
-        for va in probe:
-            for vb in probe:
+        for va in probe_a:
+            for vb in probe_b:
                 modified = bytearray(original_data)
                 modified[offA] = va
                 modified[offB] = vb
@@ -6153,25 +6486,46 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
 
 def run_pairwise_mutation_stage(binary, binary_ref, input_file, program_args,
                                 offsets, var_spans, timeout,
-                                title='Pairwise mutation', version=None):
-    """Combined two-offset mutation over the fork-variable offsets."""
+                                title='Pairwise mutation', version=None,
+                                interaction_pairs=None, value_hints=None,
+                                max_pairs=None):
+    """Combined two-offset mutation over the fork-variable offsets.
+
+    ``interaction_pairs`` (see _build_interaction_pairs) are added to the
+    pair list ahead of the historical pairs; ``value_hints`` (see
+    _classify_sweep_results) enrich the per-offset probe sets.
+    """
     if not offsets or len(offsets) < 2 or not input_file \
             or not os.path.isfile(input_file) or not binary:
         return {}
-    pairs = _build_mutation_pairs(offsets, var_spans)
+    if max_pairs is None:
+        try:
+            max_pairs = max(0, int(os.environ.get('RETROSCOPE_PAIR_BUDGET',
+                                                  '60')))
+        except ValueError:
+            max_pairs = 60
+    pairs = _build_mutation_pairs(offsets, var_spans,
+                                  max_pairs=max_pairs,
+                                  interaction_pairs=interaction_pairs)
     if not pairs:
         return {}
+    _ix = {p for p in map(lambda ab: (min(ab), max(ab)),
+                          interaction_pairs or ())}
+    n_ix = sum(1 for p in pairs if p in _ix)
     print(f'\n{"="*60}')
     print(f'  {title}')
     print(f'{"="*60}')
     print(f'  Input file: {input_file}')
     print(f'  Target binary: {resolve_binary(binary)}')
     print(f'  Reference binary: {resolve_binary(binary_ref)}')
-    print(f'  Pairs to test: {len(pairs)} (probe set: '
-          f'{",".join(f"0x{v:x}" for v in PAIRWISE_PROBE)})')
+    print(f'  Pairs to test: {len(pairs)} '
+          f'(interaction: {n_ix}, historical/coverage: {len(pairs) - n_ix}; '
+          f'probe: per-offset derived '
+          f'[bit-flips -> observed values -> +-1/+-2 -> boundaries], '
+          f'cap {_pairwise_probe_cap()}/side)')
     return test_pairwise_mutations_compare(
         binary, binary_ref, input_file, program_args, pairs, timeout=timeout,
-        version=version)
+        version=version, value_hints=value_hints)
 
 
 
@@ -6192,6 +6546,14 @@ def main():
     ap.add_argument('--variables', nargs='+', help='variable names')
     ap.add_argument('--timeout', type=int, default=30, help='GDB timeout seconds')
     ap.add_argument('--test-offsets', nargs='*', help='additional hex offsets for byte mutation testing (e.g. 0xe8 0xec 0xf0)')
+    ap.add_argument('--origin-mutation',
+                    help='results/<CVE>_origin_mutation.json from the '
+                         'dynamic stage: its active/inert single-byte '
+                         'results extend the two-offset pool, supply the '
+                         'interaction pairs and the per-offset value hints')
+    ap.add_argument('--pair-offsets', nargs='*', default=[],
+                    help='additional hex offsets for the two-offset '
+                         '(pairwise) pool only')
     ap.add_argument('--args', nargs=argparse.REMAINDER, default=[],
                     help='program args (must be last)')
 
@@ -6214,6 +6576,30 @@ def main():
     if a.fork_file: config['fork_file'] = a.fork_file
     if a.fork_line: config['fork_line'] = a.fork_line
     if a.variables: config['variables'] = a.variables
+
+    # Single-byte results of the dynamic stage (if supplied): they classify
+    # the offsets into gates/inert for the two-offset stage below and add
+    # the dynamically found offsets to its pool.
+    origin_results = {}
+    if a.origin_mutation:
+        if os.path.isfile(a.origin_mutation):
+            try:
+                with open(a.origin_mutation) as _f:
+                    origin_results = json.load(_f) or {}
+                _n_off = sum(1 for k in origin_results if str(k).isdigit())
+                print(f'[*] origin mutation results: {a.origin_mutation} '
+                      f'({_n_off} offsets)')
+            except Exception as _e:
+                print(f'[!] origin mutation results unreadable: {_e}')
+        else:
+            print(f'[!] --origin-mutation file not found: '
+                  f'{a.origin_mutation}')
+    pair_extra = set()
+    for _h in (a.pair_offsets or []):
+        try:
+            pair_extra.add(int(_h, 16))
+        except ValueError:
+            print(f'[!] ignoring invalid --pair-offsets value: {_h}')
 
     is_code_change = config.get('_code_change', False)
 
@@ -7122,17 +7508,34 @@ def main():
 
     # Step 6b: two-offset combined mutation — single-byte sweeps miss
     # interactions that need TWO bytes changed (e.g. the sign byte AND the
-    # low byte of a corrupt sample-rate field).
+    # low byte of a corrupt sample-rate field).  The pool covers every
+    # single-byte candidate: the fork-variable/IFD-adjacent stage-1 offsets
+    # PLUS the dynamically traced offsets and their gate/inert
+    # classification from --origin-mutation, so a gate discovered by one
+    # sweep is always combinable with an inert byte discovered by another.
     pairwise_results = {}
-    if len(stage1_offsets) >= 2:
+    _active_offs, _inert_offs, _weak_offs, _value_hints = \
+        _classify_sweep_results(crash_results, origin_results)
+    _pair_pool = sorted(set(stage1_offsets) | set(_active_offs)
+                        | _inert_offs | _weak_offs | pair_extra)
+    _interaction_pairs = _build_interaction_pairs(
+        _active_offs, _inert_offs | _weak_offs | set(_active_offs))
+    if _active_offs:
+        print(f'\n  Pairwise gates (behavior-changing single-byte offsets): '
+              f'{", ".join(f"0x{o:x}" for o in sorted(_active_offs))}')
+        print(f'  Pairwise inert pool: {len(_inert_offs)} offset(s); '
+              f'interaction pairs: {len(_interaction_pairs)}')
+    if len(_pair_pool) >= 2:
         _var_spans = {v: [h['offset'] for h in hits]
                       for v, hits in (var_offsets or {}).items()}
         pairwise_results = run_pairwise_mutation_stage(
             binary, binary_ref, input_file, program_args,
-            sorted(stage1_offsets), _var_spans, a.timeout,
+            _pair_pool, _var_spans, a.timeout,
             title='Step 6b: Two-offset combined byte mutation '
                   '(pairwise)',
-            version=config.get('version_b'))
+            version=config.get('version_b'),
+            interaction_pairs=_interaction_pairs,
+            value_hints=_value_hints)
 
     print(f'{"="*60}')
 
