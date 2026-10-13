@@ -5283,12 +5283,12 @@ def _static_elf_region(data):
     else:
         add(0x1c, 4, 'offset', 'e_phoff')
         add(0x20, 4, 'offset', 'e_shoff')
-        add(0x2e, 2, 'count', 'e_phentsize')
-        add(0x30, 2, 'count', 'e_phnum')
-        add(0x32, 2, 'count', 'e_shentsize')
-        add(0x34, 2, 'count', 'e_shnum')
-        add(0x36, 2, 'index', 'e_shstrndx')
-        shoff, shentsize, shnum = u32(0x20), u16(0x32), u16(0x34)
+        add(0x2a, 2, 'count', 'e_phentsize')
+        add(0x2c, 2, 'count', 'e_phnum')
+        add(0x2e, 2, 'count', 'e_shentsize')
+        add(0x30, 2, 'count', 'e_shnum')
+        add(0x32, 2, 'index', 'e_shstrndx')
+        shoff, shentsize, shnum = u32(0x20), u16(0x2e), u16(0x30)
         min_shdr, sz_w = 40, 4
         rel = {'name': 0, 'type': 4, 'offset': 16, 'size': 20}
     if shoff and shentsize >= min_shdr and shoff < len(data):
