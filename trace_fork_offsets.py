@@ -5011,12 +5011,11 @@ def compare_crash_signatures(ref_sig, tgt_sig):
     Returns one of:
       * 'same_site' — type, function, file AND line all match (identical
                       crash point; requires identical/mapped code lines),
-      * 'same_func' — type + crash function match (line/file may differ
-                      between versions), this is the level used as "success",
-                      or the two FAULT stacks share at least one real
-                      (non-generic) project frame — e.g. the reference
-                      faults in ``extractImageSection`` while the target
-                      faults in the memory wrapper called FROM it,
+      * 'same_func' — type + crash-point function match (line/file may differ
+                      between versions); this is the level used as "success".
+                      The crash point is the innermost user frame of the fault
+                      stack (sanitizer/libc interceptors filtered out), so a
+                      fault one wrapper deeper on the same path still matches,
       * 'same_type' — only the ASan error type matches,
       * None        — different types (a genuinely different crash).
     Also returns a human-readable diff line for reporting.
