@@ -7881,8 +7881,9 @@ def main():
                   '(fork-variable offsets)',
             version=config.get('version_b'))
 
-    # Step 6a: directed structural mutation of the IFD region fields
-    # (tag/type/count/offset of every entry of the fork-point IFD).  Each
+    # Step 6a: directed structural mutation of the region fields — TIFF IFD
+    # tag/type/count/offset of every entry of the fork-point IFD, or the
+    # ELF/GIF/XML/font structure fields from the static format parse.  Each
     # field is tested only with its meaning-bearing values, so a tag rewrite
     # (e.g. RowsPerStrip 278 -> StripByteCounts 279 at 0xDC) is exercised
     # without a 255-value sweep.
@@ -7890,14 +7891,17 @@ def main():
     ifd_any_match = False
     if _ifd_probe_offsets and binary and binary_ref and input_file \
             and os.path.isfile(input_file):
-        _esz = _ifd_region.get('entry_size') or 12
-        _probe_map = {o: _ifd_field_probe_values(
-            o, _esz, _ifd_region.get('entries_base'))
-            for o in _ifd_probe_offsets}
+        _probe_map = {o: _structure_probe_values(_ifd_region, o)
+                      for o in _ifd_probe_offsets}
+        _probe_map = {o: v for o, v in _probe_map.items() if v}
         _all_probes = sorted({v for vals in _probe_map.values()
                               for v in vals})
+        _is_tiff_region = (_ifd_region.get('format') or 'tiff') == 'tiff'
+        _struct_title = ('IFD-region' if _is_tiff_region
+                         else (_ifd_region.get('label') or 'structure'))
+        _struct_field = 'IFD-field' if _is_tiff_region else 'structure-field'
         print(f'\n{"="*60}')
-        print(f'  Step 6a: Directed IFD-region mutation '
+        print(f'  Step 6a: Directed {_struct_title} mutation '
               f'({len(_ifd_probe_offsets)} structural fields, '
               f'{len(_all_probes)} directed values)')
         print(f'{"="*60}')
