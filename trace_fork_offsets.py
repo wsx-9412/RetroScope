@@ -7921,7 +7921,7 @@ def main():
                     for byte_val, m in sorted(info['matches'].items()):
                         print(f'    0x{byte_val:02x} -> {m}')
             if not ifd_any_match:
-                print(f'\n  No directed IFD-field value reproduces the '
+                print(f'\n  No directed {_struct_field} value reproduces the '
                       f'reference crash')
         except Exception as _e:
             print(f'  [!] IFD-region mutation failed: {_e}')
