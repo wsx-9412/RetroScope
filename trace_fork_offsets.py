@@ -6168,6 +6168,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
         print(f'  [!] Reference binary did not produce an ASan crash '
               f'(rc={ref_rc}); cannot compare.')
         return {}
+    _attach_crash_statement(ref_sig, real_ref)
     ref_crash = ref_sig["crash_frames"][0] if ref_sig["crash_frames"] else {}
     print(f'  Reference crash: {ref_sig["type"]} in '
           f'{ref_crash.get("function")} '
