@@ -207,9 +207,17 @@ def extract_variables_from_statement(stmt):
         root = expr.split('->')[0].split('.')[0].split('[')[0]
         if root in _KEYWORDS or expr in seen or root.isdigit():
             continue
-        # Skip type names / typedefs (CamelCase identifiers like TIFFField).
+        # Skip type names / typedefs (CamelCase identifiers like TIFFField),
+        # but only in type context — followed by a declarator, '(' or '*',
+        # or at the end of the statement.  In expression position (an
+        # operator or punctuation follows) an uppercase identifier is a real
+        # variable: e.g. '*BufferP++ = ColorMapEntry->Red;' must yield
+        # BufferP and ColorMapEntry->Red, while 'TIFFField field;' must not
+        # yield TIFFField.
         if re.match(r'^[A-Z]', root):
-            continue
+            _after = cleaned[m.end():].lstrip()
+            if not _after or _after[0] in '(*' or re.match(r'^[A-Za-z_]', _after):
+                continue
         # Skip function calls: identifier immediately followed by '('.
         if cleaned[m.end():].lstrip().startswith('('):
             continue
