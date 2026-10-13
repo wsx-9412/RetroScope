@@ -7858,13 +7858,12 @@ def main():
     # full 255-value sweep per field would explode (N entries x 4 fields x
     # 255 runs).  Each field type gets the small meaning-bearing value set
     # from _ifd_field_probe_values (tag rewrites like 278->279, common
-    # types, boundary counts, in-file offsets).  Offsets already covered by
-    # the fork-variable sweep (stage1) are skipped here.
+    # types, boundary counts, in-file offsets); the non-TIFF formats get
+    # their kind-based set from _structure_probe_values.  Offsets already
+    # covered by the fork-variable sweep (stage1) are skipped here.
     _ifd_field_offsets = [
         o for o in _ifd_fields
-        if _ifd_region.get('entry_size') and
-        _ifd_field_probe_values(o, _ifd_region['entry_size'],
-                                _ifd_region.get('entries_base')) is not None]
+        if _structure_probe_values(_ifd_region, o) is not None]
     _ifd_probe_offsets = sorted(set(_ifd_field_offsets) - stage1_offsets)
 
     # End of the offset-localization phase (GDB tracing / mapping above);
