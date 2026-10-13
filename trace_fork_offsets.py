@@ -5163,6 +5163,404 @@ def _static_ifd_region(input_file):
         return {}
 
 
+# ---------------------------------------------------------------------------
+# Static input-format structure analysis for the non-TIFF targets:
+# binutils (ELF), giflib (GIF), libxml2 (XML), freetype (sfnt/TTF/OTF/TTC
+# and WOFF).  Same role as _static_ifd_region: when the dynamic fork-point
+# context produced no structural region, parse the plain on-disk structure
+# and hand the field positions to the directed-value mutation in Step 6a.
+# ---------------------------------------------------------------------------
+
+# Cap on structural field positions per format: every position is screened
+# with the directed probe set in Step 6a, so unbounded structures (a
+# 256-entry colour table, a 1000-section ELF) must not explode the run
+# count.  Fields are sorted by offset, so the header/marker positions —
+# the semantically critical ones — are kept first.
+_STATIC_FIELD_CAP = 100
+
+# Directed probe bytes per field kind — the non-TIFF counterpart of
+# _ifd_field_probe_values (meaning-bearing bytes, not the 255 sweep).
+_FORMAT_PROBE_KINDS = {
+    'magic':  [0x00, 0x01, 0x02, 0x03, 0x7f],
+    'index':  [0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x40, 0x80, 0xff],
+    'enum':   [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+               0x0b, 0x0e, 0x11, 0x64, 0x65, 0x66, 0x67, 0x68, 0x6b,
+               0x71, 0x80, 0x81, 0xff],
+    'offset': [0x00, 0x01, 0x02, 0x3f, 0x40, 0x7f, 0x80, 0xff],
+    'size':   [0x00, 0x01, 0x02, 0x7f, 0x80, 0xff],
+    'count':  [0x00, 0x01, 0x02, 0x03, 0x08, 0x7f, 0x80, 0xff],
+    'tag':    [0x00, 0x01, 0x20, 0x41, 0x61, 0x63, 0x66, 0x67, 0x68,
+               0x6c, 0x6d, 0x70, 0xfe, 0xff],
+    'markup': [0x00, 0x20, 0x21, 0x22, 0x23, 0x27, 0x2d, 0x2f, 0x3c,
+               0x3d, 0x3e, 0x3f, 0xff],
+    'name':   [0x00, 0x20, 0x2d, 0x2e, 0x2f, 0x3a, 0x5f, 0x61, 0xff],
+    'attr':   [0x00, 0x22, 0x27, 0x26, 0x2f, 0x3c, 0x3e, 0xff],
+    'desc':   [0x00, 0x01, 0x40, 0x7f, 0x80, 0xff],
+}
+_FORMAT_PROBE_DEFAULT = [0x00, 0x01, 0x7f, 0x80, 0xff]
+
+
+def _pack_static_region(fmt, label, region_offset, count, entry_size,
+                        entries_base, fields):
+    """Build the region dict shared by all static format parsers.
+
+    Same keys the Step 5.1/6a flow already consumes (field_offsets,
+    entry_size, entries_base, count) plus ``format``/``label``/``fields``
+    for the non-TIFF probes and prints.  Returns None when nothing usable
+    was parsed.
+    """
+    seen = set()
+    positions = []
+    for f in sorted(fields, key=lambda x: x['offset']):
+        if f['offset'] in seen:
+            continue
+        seen.add(f['offset'])
+        positions.append(f['offset'])
+    if not positions:
+        return None
+    return {
+        'format': fmt,
+        'label': label,
+        'region_offset': region_offset,
+        'count': count,
+        'entry_size': entry_size,
+        'entries_base': entries_base,
+        'field_offsets': positions[:_STATIC_FIELD_CAP],
+        'fields': fields,
+        'source': 'static',
+    }
+
+
+def _static_elf_region(data):
+    """ELF header + section-header field positions (32/64-bit, LE/BE).
+
+    The fields readelf/objdump do their bound checks on: e_type/e_machine,
+    e_phoff/e_shoff, e_phnum/e_shnum/e_shstrndx, and per section
+    sh_name/sh_type/sh_offset/sh_size.
+    """
+    if len(data) < 52 or data[:4] != b'\x7fELF':
+        return None
+    cls, enc = data[4], data[5]
+    if cls not in (1, 2) or enc not in (1, 2):
+        return None
+    e = '<' if enc == 1 else '>'
+    is64 = cls == 2
+
+    def u16(o):
+        return struct.unpack_from(e + 'H', data, o)[0] \
+            if o + 2 <= len(data) else 0
+
+    def u32(o):
+        return struct.unpack_from(e + 'I', data, o)[0] \
+            if o + 4 <= len(data) else 0
+
+    def u64(o):
+        return struct.unpack_from(e + 'Q', data, o)[0] \
+            if o + 8 <= len(data) else 0
+
+    fields = []
+
+    def add(off, size, kind, name):
+        if 0 <= off and off + size <= len(data):
+            fields.append({'offset': off, 'size': size, 'kind': kind,
+                           'name': name})
+
+    add(4, 1, 'magic', 'EI_CLASS')
+    add(5, 1, 'magic', 'EI_DATA')
+    add(0x10, 2, 'enum', 'e_type')
+    add(0x12, 2, 'enum', 'e_machine')
+    if is64:
+        add(0x20, 8, 'offset', 'e_phoff')
+        add(0x28, 8, 'offset', 'e_shoff')
+        add(0x36, 2, 'count', 'e_phentsize')
+        add(0x38, 2, 'count', 'e_phnum')
+        add(0x3a, 2, 'count', 'e_shentsize')
+        add(0x3c, 2, 'count', 'e_shnum')
+        add(0x3e, 2, 'index', 'e_shstrndx')
+        shoff, shentsize, shnum = u64(0x28), u16(0x3a), u16(0x3c)
+        min_shdr, sz_w = 64, 8
+        rel = {'name': 0, 'type': 4, 'offset': 24, 'size': 32}
+    else:
+        add(0x1c, 4, 'offset', 'e_phoff')
+        add(0x20, 4, 'offset', 'e_shoff')
+        add(0x2e, 2, 'count', 'e_phentsize')
+        add(0x30, 2, 'count', 'e_phnum')
+        add(0x32, 2, 'count', 'e_shentsize')
+        add(0x34, 2, 'count', 'e_shnum')
+        add(0x36, 2, 'index', 'e_shstrndx')
+        shoff, shentsize, shnum = u32(0x20), u16(0x32), u16(0x34)
+        min_shdr, sz_w = 40, 4
+        rel = {'name': 0, 'type': 4, 'offset': 16, 'size': 20}
+    if shoff and shentsize >= min_shdr and shoff < len(data):
+        n = min(shnum, (len(data) - shoff) // shentsize)
+        n = min(n, max(0, (_STATIC_FIELD_CAP - len(fields)) // 4))
+        for i in range(n):
+            base = shoff + i * shentsize
+            add(base + rel['name'], 4, 'index', f'shdr[{i}].sh_name')
+            add(base + rel['type'], 4, 'enum', f'shdr[{i}].sh_type')
+            add(base + rel['offset'], sz_w, 'offset', f'shdr[{i}].sh_offset')
+            add(base + rel['size'], sz_w, 'size', f'shdr[{i}].sh_size')
+    return _pack_static_region(
+        'elf', f'ELF{64 if is64 else 32}-bit header/section headers',
+        shoff, shnum, shentsize, shoff, fields)
+
+
+def _static_gif_region(data):
+    """GIF87a/89a: logical screen descriptor, colour tables, image blocks.
+
+    Field positions of the LSD (width/height/packed/bg), the first colour
+    table entries, and every image descriptor (separator/left/top/width/
+    height/packed/LZW-min) up to a bounded block count.
+    """
+    if len(data) < 13 or data[:6] not in (b'GIF87a', b'GIF89a'):
+        return None
+    fields = []
+
+    def add(off, size, kind, name):
+        if 0 <= off and off + size <= len(data):
+            fields.append({'offset': off, 'size': size, 'kind': kind,
+                           'name': name})
+
+    add(0, 6, 'magic', 'signature')
+    add(6, 2, 'size', 'screen_width')
+    add(8, 2, 'size', 'screen_height')
+    packed = data[10]
+    add(10, 1, 'desc', 'packed')
+    add(11, 1, 'index', 'bg_color')
+    pos = 13
+    if packed & 0x80:
+        gct_len = 3 * (2 ** ((packed & 7) + 1))
+        for i in range(min(8, gct_len // 3)):
+            add(13 + i * 3, 3, 'desc', f'gct[{i}]')
+        pos = 13 + gct_len
+    images = 0
+    while 0 <= pos < len(data) and len(fields) < _STATIC_FIELD_CAP:
+        b = data[pos]
+        if b == 0x3b:                      # trailer
+            add(pos, 1, 'desc', 'trailer')
+            break
+        if b == 0x21:                      # extension
+            add(pos, 2, 'desc', 'extension')
+            pos += 2
+            while pos < len(data):
+                sz = data[pos]
+                if sz == 0:
+                    pos += 1
+                    break
+                pos += 1 + sz
+            continue
+        if b == 0x2c:                      # image descriptor
+            add(pos, 1, 'desc', 'image_separator')
+            add(pos + 1, 2, 'size', 'image_left')
+            add(pos + 3, 2, 'size', 'image_top')
+            add(pos + 5, 2, 'size', 'image_width')
+            add(pos + 7, 2, 'size', 'image_height')
+            add(pos + 9, 1, 'desc', 'image_packed')
+            lct = 0
+            if pos + 10 <= len(data) and data[pos + 9] & 0x80:
+                lct = 3 * (2 ** ((data[pos + 9] & 7) + 1))
+            add(pos + 10 + lct, 1, 'count', 'lzw_min_code')
+            pos = pos + 11 + lct
+            while pos < len(data):
+                sz = data[pos]
+                if sz == 0:
+                    pos += 1
+                    break
+                pos += 1 + sz
+            images += 1
+            if images >= 16:
+                break
+            continue
+        break                             # not a block start (corrupt data)
+    return _pack_static_region('gif', 'GIF screen/image descriptors',
+                               6, images, None, 6, fields)
+
+
+def _static_xml_region(data):
+    """XML markup positions (element/attribute/entity bytes).
+
+    Tolerant linear scan instead of a validating parser: crash PoCs are
+    deliberately malformed, so a real parser would reject them.  Records the
+    '<' of each construct, element/attribute name starts, attribute value
+    starts — the structural bytes of the file.
+    """
+    if not data:
+        return None
+    head = data[:512].lstrip(b'\xef\xbb\xbf \t\r\n')
+    if not head.startswith(b'<'):
+        return None
+    fields = []
+    seen = set()
+
+    def add(off, kind, name):
+        if off in seen or not (0 <= off < len(data)):
+            return
+        seen.add(off)
+        fields.append({'offset': off, 'size': 1, 'kind': kind, 'name': name})
+
+    n = len(data)
+    i = 0
+    while i < n and len(fields) < _STATIC_FIELD_CAP:
+        lt = data.find(b'<', i)
+        if lt < 0:
+            break
+        if data.startswith(b'<!--', lt):
+            add(lt, 'markup', 'comment')
+            end = data.find(b'-->', lt)
+            i = end + 3 if end >= 0 else n
+        elif data.startswith(b'<![CDATA[', lt):
+            add(lt, 'markup', 'cdata')
+            end = data.find(b']]', lt)
+            i = end + 2 if end >= 0 else n
+        elif data.startswith(b'<?', lt):
+            add(lt, 'markup', 'pi')
+            end = data.find(b'?>', lt)
+            i = end + 2 if end >= 0 else n
+        elif data.startswith(b'<!', lt):
+            add(lt, 'markup', 'decl')
+            end = data.find(b'>', lt)
+            i = end + 1 if end >= 0 else n
+        else:
+            add(lt, 'markup', 'open')
+            k = lt + 1
+            if k < n and data[k] == 0x2f:   # '/'
+                k += 1
+            name_start = k
+            while k < n and data[k] not in b' \t\r\n/>':
+                k += 1
+            if k > name_start:
+                add(name_start, 'name', 'element')
+            end = lt + 1
+            while end < n and data[end] != 0x3e:   # '>'
+                if data[end] in (0x22, 0x27):      # '"' "'"
+                    quote = data[end]
+                    end += 1
+                    while end < n and data[end] != quote:
+                        end += 1
+                end += 1
+            if end < n:
+                add(end, 'markup', 'close')
+            i = end + 1 if end < n else n
+    for m in re.finditer(
+            rb'([A-Za-z_][\w.:-]*)\s*=\s*(?:"([^"]*)"|\'([^\']*)\')', data):
+        if len(fields) >= _STATIC_FIELD_CAP:
+            break
+        add(m.start(1), 'name', 'attribute')
+        if m.group(2):
+            add(m.start(2), 'attr', 'value')
+        elif m.group(3):
+            add(m.start(3), 'attr', 'value')
+    return _pack_static_region('xml', 'XML element/attribute marks',
+                               None, None, None, None, fields)
+
+
+def _static_font_region(data):
+    """sfnt (TTF/OTF/TTC) and WOFF table-directory field positions.
+
+    Offset table (numTables), then per table tag/offset/length — the fields
+    freetype's file-format loaders do their range checks on.
+    """
+    if len(data) < 12:
+        return None
+    sig = data[:4]
+    fields = []
+
+    def add(off, size, kind, name):
+        if 0 <= off and off + size <= len(data):
+            fields.append({'offset': off, 'size': size, 'kind': kind,
+                           'name': name})
+
+    def u16be(o):
+        return struct.unpack_from('>H', data, o)[0] \
+            if o + 2 <= len(data) else 0
+
+    def u32be(o):
+        return struct.unpack_from('>I', data, o)[0] \
+            if o + 4 <= len(data) else 0
+
+    if sig in (b'\x00\x01\x00\x00', b'OTTO', b'true', b'typ1'):
+        base, fmt_name = 0, 'sfnt'
+    elif sig == b'ttcf':
+        num_fonts = u32be(8)
+        if num_fonts < 1:
+            return None
+        base, fmt_name = u32be(12), 'ttc'
+        add(8, 4, 'count', 'numFonts')
+        add(12, 4, 'offset', 'font[0]')
+    elif sig == b'wOFF':
+        add(4, 4, 'magic', 'flavor')
+        add(8, 4, 'size', 'length')
+        add(12, 2, 'count', 'numTables')
+        num = u16be(12)
+        for i in range(min(num, 32)):
+            rec = 44 + i * 20
+            add(rec, 4, 'tag', 'table.tag')
+            add(rec + 4, 4, 'offset', 'table.offset')
+            add(rec + 8, 4, 'size', 'compLength')
+            add(rec + 12, 4, 'size', 'origLength')
+        return _pack_static_region('woff', 'WOFF table directory',
+                                   44, num, 20, 44, fields)
+    else:
+        return None
+    if base == 0:
+        add(0, 4, 'magic', 'sfnt_version')
+    num = u16be(base + 4)
+    add(base + 4, 2, 'count', 'numTables')
+    add(base + 6, 2, 'count', 'searchRange')
+    add(base + 10, 2, 'count', 'rangeShift')
+    for i in range(min(num, 32)):
+        rec = base + 12 + i * 16
+        add(rec, 4, 'tag', 'table.tag')
+        add(rec + 8, 4, 'offset', 'table.offset')
+        add(rec + 12, 4, 'size', 'table.length')
+    return _pack_static_region(fmt_name, f'{fmt_name} table directory',
+                               base + 12, num, 16, base + 12, fields)
+
+
+def static_structure_region(input_file):
+    """Static structure analysis for the non-TIFF input formats.
+
+    Detects the format by magic (ELF, GIF, XML, sfnt/TTC/WOFF) and returns
+    the structural field positions of the on-disk file — same contract as
+    _static_ifd_region plus format/label/fields — or None when the format
+    has no parser here (then only the format-agnostic value search applies).
+    """
+    try:
+        with open(input_file, 'rb') as f:
+            data = f.read()
+    except Exception:
+        return None
+    for parser in (_static_elf_region, _static_gif_region,
+                   _static_xml_region, _static_font_region):
+        try:
+            region = parser(data)
+        except Exception:
+            region = None
+        if region:
+            return region
+    return None
+
+
+def _structure_probe_values(region, offset):
+    """Directed probe values for one structural field offset.
+
+    TIFF keeps the original IFD semantics (_ifd_field_probe_values); the
+    other formats look up the field kind recorded by their static parser.
+    """
+    if not region:
+        return None
+    if (region.get('format') or 'tiff') == 'tiff':
+        if not region.get('entry_size'):
+            return None
+        return _ifd_field_probe_values(offset, region['entry_size'],
+                                       region.get('entries_base'))
+    for f in region.get('fields') or []:
+        if f.get('offset') == offset:
+            return _FORMAT_PROBE_KINDS.get(f.get('kind'),
+                                           _FORMAT_PROBE_DEFAULT)
+    return _FORMAT_PROBE_DEFAULT
+
+
 def _replace_input_arg(arg, tmp_path, input_file):
     """Map a program argument to the mutated temp file.
 
