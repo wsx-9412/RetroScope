@@ -325,3 +325,65 @@ CVE-2026-91782   ld -o /dev/null                                    2.44
 CVE-2024-57360, CVE-2025-1147–1152, CVE-2025-1176–1182, CVE-2025-3198,
 CVE-2025-69644/69646/69647–69651（需 2.46(HEAD) 构建）, CVE-2025-7545/7546,
 CVE-2025-8224, CVE-2026-4647, CVE-2026-90804。附件保留于 /tmp/bu_recent/poc/。
+
+------------------------------------------------------------------------
+
+## 最新补充 (2026-10-13 第二轮): giflib / libxml2 / freetype 近年 CVE
+
+### giflib (新增 2)
+
+```
+CVE-2024-45993   gif2rgb -o /tmp/o in/CVE-2024-45993   5.1.9, 5.2.1, 5.2.2 (DumpScreen2RGB 堆溢出)
+                 source: gitlab.com/mthandazo/project-pov (crashes.zip/sample)
+CVE-2026-26740   giftool -d 1 < in/CVE-2026-26740      5.2.1, 5.2.2 (EGifGCBToExtension 堆写越界)
+                 source: github.com/zakkanijia/POC/giflib/giftool (poc.gif)
+                 giftool 需单独构建: make CFLAGS="-O1 -g -fsanitize=address ..." giftool
+```
+
+### libxml2 (新增 7, 来源均为 gitlab.gnome.org/GNOME/libxml2 官方 issue 附件)
+
+```
+CVE-2024-56171   xmllint --noout --schema <版本自带 test/schemas/bug322411_1.xsd> in/CVE-2024-56171
+                 触发: 2.10.4, 2.11.5   (2.12.10 起修复)
+CVE-2024-34459   xmllint --htmlout in/CVE-2024-34459
+                 触发: 2.11.5           (2.12.7 起修复; 仅 2.11.5)
+CVE-2025-27113   xmllint --walker --pattern '/child::info/.' in/CVE-2025-27113
+                 触发: 2.9.14, 2.10.4, 2.11.5   (2.12.10 起修复)
+CVE-2024-25062   见 harness: build/fuzz_main.c + build/schema_cve25062.c + 版本 fuzz/fuzz.c
+                 输入 in/CVE-2024-25062 (repro.bin); 触发: 2.11.5 (xmlValidatePopElement UAF)
+CVE-2025-49794   编译 in/CVE-2025-49794.c 链接 libxml2 后直接运行 (payload 内嵌)
+                 触发: 2.9.14, 2.11.5, 2.13.6 (xmlSchematronFormatReport UAF)
+CVE-2025-49795   编译 in/CVE-2025-49795.c 直接运行
+                 触发: 2.11.5, 2.13.6 (xmlSchematronFormatReport NULL 解引用)
+CVE-2025-49796   编译 in/CVE-2025-49796.c 直接运行
+                 触发: 2.9.14, 2.11.5, 2.13.6 (type confusion)
+```
+
+编译 .c PoC 示例:
+```bash
+gcc -O1 -g -fsanitize=address -Ilibxml2-versions/libxml2-2.13.6/include \
+  in/CVE-2025-49795.c libxml2-versions/libxml2-2.13.6/.libs/libxml2.a \
+  -lz -lm -fsanitize=address -o /tmp/t && ASAN_OPTIONS=detect_leaks=0 /tmp/t
+```
+
+### freetype (新增 4)
+
+```
+CVE-2022-27404   harness build/test_face_idx.c (FT_New_Face + 非法 face index -4939615758108852224)
+                 触发: 2.11.1 (sfnt_init_face 堆读越界)   (2.12.1 起修复)
+                 source: gitlab.freedesktop.org/freetype/freetype/-/issues/1138 (testface)
+CVE-2026-23865   harness build/test_var.c (FT_New_Face + FT_Get_MM_Var + 变体坐标)
+                 触发: 2.13.1, 2.13.2, 2.13.3, 2.14.0, 2.14.1 (tt_var_get_item_delta 堆读越界)
+                 source: gitlab issue 1382 (tests/poc_itemvar_store/poc_itemvar.ttf)
+CVE-2026-50811   harness build/ft_get_design_dump.c <font> 64
+                 触发: 2.14.0, 2.14.1 (TT_Get_Var_Design OOB 读)   (2.13.3 不触发)
+                 source: gitlab issue 1436 (PoC.zip, crash_reproducer_rep01.font)
+CVE-2026-95512   harness build/test_face_all.c
+                 2.14.1: FT_New_Face 时内存峰值 ~1.1GB (CID subr 重叠资源耗尽, 非崩溃)
+                 source: gitlab issue 1457 (example.ps)
+```
+
+### 未能复现（附件已下载, 需特定 HEAD 版本）
+CVE-2025-32415 (libxml2, 需 2.13.7/2.14.0 精确版本), CVE-2025-67812 (libxml2),
+CVE-2025-6170/0990/0992/0989 (libxml2, 无文件型 PoC), CVE-2023-39742 (giflib getarg,
+本环境 ASAN 不报), CVE-2023-48161/2025-31344 (giflib, sourceforge 不可达)。
