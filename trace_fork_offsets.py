@@ -7697,16 +7697,39 @@ def main():
         if _ifd_region:
             print(f'  [*] IFD region from static TIFF parse (dynamic '
                   f'fork-point context unavailable)')
+        else:
+            _ifd_region = static_structure_region(input_file) or {}
+            if _ifd_region:
+                print(f"  [*] {_ifd_region.get('label')} from static "
+                      f"{_ifd_region.get('format')} parse (dynamic "
+                      f"fork-point context unavailable)")
     _ifd_fields = _ifd_region.get('field_offsets') or []
     if _ifd_fields:
-        print(f'\n  5.1. IFD region offsets (dynamic, from fork-point context):')
-        print(f'      IFD at file offset 0x{_ifd_region.get("ifd_offset"):x}, '
-              f'{_ifd_region.get("count")} entries x '
-              f'{_ifd_region.get("entry_size")} bytes')
-        _fo = ', '.join(f'0x{o:x}' for o in sorted(_ifd_fields))
-        print(f'      all entry fields (tag/type/count/offset): {_fo}')
+        if (_ifd_region.get('format') or 'tiff') == 'tiff':
+            print(f'\n  5.1. IFD region offsets (dynamic, from fork-point context):')
+            print(f'      IFD at file offset 0x{_ifd_region.get("ifd_offset"):x}, '
+                  f'{_ifd_region.get("count")} entries x '
+                  f'{_ifd_region.get("entry_size")} bytes')
+            _fo = ', '.join(f'0x{o:x}' for o in sorted(_ifd_fields))
+            print(f'      all entry fields (tag/type/count/offset): {_fo}')
+            _s_tier = 'S_structural_ifd_region'
+        else:
+            _lab = _ifd_region.get('label') or 'structure region'
+            _base = _ifd_region.get('region_offset')
+            _base_s = (f' at file offset 0x{_base:x}'
+                       if isinstance(_base, int) else '')
+            print(f'\n  5.1. {_lab} offsets (static format parse):')
+            if _ifd_region.get('count') and _ifd_region.get('entry_size'):
+                print(f'      {_lab}{_base_s}, {_ifd_region.get("count")} '
+                      f'records x {_ifd_region.get("entry_size")} bytes')
+            else:
+                print(f'      {_lab}{_base_s}, {len(_ifd_fields)} '
+                      f'field position(s)')
+            _fo = ', '.join(f'0x{o:x}' for o in sorted(_ifd_fields))
+            print(f'      structure fields: {_fo}')
+            _s_tier = 'S_structural_format'
         for _off in _ifd_fields:
-            _add_tier('S_structural_ifd_region', _off)
+            _add_tier(_s_tier, _off)
 
     # Validation candidates = exactly the offsets derived from the fork
     # variables (no read-region expansion).
