@@ -8,15 +8,21 @@
 #
 # binutils is built out-of-tree (build-asan/); objdump/readelf live under
 # build-asan/binutils/.  The first compilation is slow (~10-20 min/version).
+#
+# NOTE: -finstrument-functions is NOT passed to configure.  Exporting it in
+# the configure environment breaks config.guess's link probes (undefined
+# __cyg_profile_func_enter), which misdetects the host triple and makes the
+# doc/makeinfo machinery fail.  It is injected only at make time, where a
+# command-line CFLAGS override propagates to all sub-makes via MAKEFLAGS.
 
 # =====================================================
 # CVE configuration: change this section for each CVE
 # =====================================================
-CVE_ID = "CVE-2018-18605"          # CVE number
-INPUT_FILE = "in/CVE-2018-18605"   # input file path (relative to RetroScope/)
+CVE_ID = "CVE-2025-0840"          # CVE number
+INPUT_FILE = "in/CVE-2025-0840"   # input file path (relative to RetroScope/)
 OUTPUT_FILE = "/tmp/foo"          # program output file
 # Program arguments template: {program_path}, {input_file}, {output_file}
-COMMAND_FORMAT = "{program_path} readelf -w {input_file}"
+COMMAND_FORMAT = "{program_path} --insn-width 64 -d {input_file}"
 
 # =====================================================
 # Compilation configuration (usually no need to change)
@@ -28,11 +34,12 @@ COMPILE_COMMANDS = {
         "pre_build": [
             "rm -rf build-asan",
             "mkdir -p build-asan",
-            "bash -c 'cd build-asan && MAKEINFO=true ../configure --disable-nls --disable-werror --disable-gdb --disable-gold --disable-ld --disable-gas --disable-sim --disable-gprof --disable-gprofng --enable-targets=all CFLAGS=\"-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -fcommon\" LDFLAGS=\"-fsanitize=address\"'",
-            "bash -c 'cd build-asan && ASAN_OPTIONS=detect_leaks=0 MAKEINFO=true make -j2 all-binutils'",
+            "bash -c 'cd build-asan && MAKEINFO=true ../configure --disable-nls --disable-werror --disable-gdb --disable-gold --disable-ld --disable-gas --disable-sim --disable-gprof --disable-gprofng --enable-targets=all CFLAGS=\"-g -O0 -fsanitize=address -fno-omit-frame-pointer -fcommon\" LDFLAGS=\"-fsanitize=address\"'",
+            "bash -c 'cd build-asan && mkdir -p bfd/doc binutils/doc && touch bfd/doc/bfd.info binutils/doc/binutils.info'",
+            "bash -c 'cd build-asan && ASAN_OPTIONS=detect_leaks=0 MAKEINFO=true make -j2 CFLAGS=\"-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -fcommon\" all-binutils'",
         ],
         "compile_flags": {
-            "CFLAGS": "-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -fcommon",
+            "CFLAGS": "-g -O0 -fsanitize=address -fno-omit-frame-pointer -fcommon",
             "LDFLAGS": "-fsanitize=address"
         }
     },
@@ -40,11 +47,12 @@ COMPILE_COMMANDS = {
         "pre_build": [
             "rm -rf build-asan",
             "mkdir -p build-asan",
-            "bash -c 'cd build-asan && MAKEINFO=true ../configure --disable-nls --disable-werror --disable-gdb --disable-gold --disable-ld --disable-gas --disable-sim --disable-gprof --disable-gprofng --enable-targets=all CFLAGS=\"-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -fcommon\" LDFLAGS=\"-fsanitize=address\"'",
-            "bash -c 'cd build-asan && ASAN_OPTIONS=detect_leaks=0 MAKEINFO=true make -j2 all-binutils'",
+            "bash -c 'cd build-asan && MAKEINFO=true ../configure --disable-nls --disable-werror --disable-gdb --disable-gold --disable-ld --disable-gas --disable-sim --disable-gprof --disable-gprofng --enable-targets=all CFLAGS=\"-g -O0 -fsanitize=address -fno-omit-frame-pointer -fcommon\" LDFLAGS=\"-fsanitize=address\"'",
+            "bash -c 'cd build-asan && mkdir -p bfd/doc binutils/doc && touch bfd/doc/bfd.info binutils/doc/binutils.info'",
+            "bash -c 'cd build-asan && ASAN_OPTIONS=detect_leaks=0 MAKEINFO=true make -j2 CFLAGS=\"-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -fcommon\" all-binutils'",
         ],
         "compile_flags": {
-            "CFLAGS": "-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -fcommon",
+            "CFLAGS": "-g -O0 -fsanitize=address -fno-omit-frame-pointer -fcommon",
             "LDFLAGS": "-fsanitize=address"
         }
     }
