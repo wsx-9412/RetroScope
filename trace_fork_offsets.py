@@ -6197,15 +6197,6 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
     print(f'  Target baseline (original file): rc={base_tgt_rc}'
           + (f', crash={base_tgt_sig["type"]}'
              if base_tgt_sig else ', no crash (unchanged if rc matches)'))
-    # Case-C marker: the target crashes on its own (at the fork site) with the
-    # original input.  A mutation that makes it crash with the REFERENCE's
-    # type at a DIFFERENT site means it got past its own crash and died the
-    # reference's way — that counts as reproducing the reference crash.
-    base_crash_site = None
-    if base_tgt_sig and base_tgt_sig.get('crash_frames'):
-        _bc = base_tgt_sig['crash_frames'][0]
-        base_crash_site = (_bc.get('function'),
-                           _path_basename(_bc.get('file')), _bc.get('line'))
 
     results = {
         'ref_signature': {
@@ -6262,6 +6253,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                     (real_target, data, program_args, input_file, timeout))
                 total_tests += 1
                 sig = extract_crash_signature(out)
+                _attach_crash_statement(sig, real_target)
                 if sig is None:
                     if base_tgt_rc is not None and rc != base_tgt_rc:
                         results[offset]['fork_flip'].append(byte_val)
