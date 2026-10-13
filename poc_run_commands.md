@@ -272,3 +272,56 @@ built, or exploit-style PoC):
 - CVE-2017-12450/12452/... tar-group members outside the mapped set.
 - CVE-2025-27363 (freetype) — github.com/zhuowei/... (`rf2.ttf`), not triggered on 2.11.1/2.12.1/2.13.0 here.
 - CVE-2026-18220 (binutils objdump DLX OOB write → RCE) — needs `--target=dlx-elf` build; exploit-style, no clean ASAN crash.
+
+------------------------------------------------------------------------
+
+## 近年新增 (2023–2026, 全部为 sourceware Bugzilla 公开附件)
+
+Newer toolchains built for this batch: binutils 2.41–2.45, 2.47
+(`build-asan/` for objdump/readelf; `build-asan-ld/ld/ld-new` for the ld CVEs),
+libxml2 2.10.4–2.14.5, freetype 2.13.1–2.14.1, giflib 6.1.3.
+
+### objdump / readelf 类
+
+```
+CVE-2023-25588   objdump -d                      2.34 2.35 2.35.1 2.36 2.38
+CVE-2025-0840    objdump --insn-width 64 -d      2.27–2.43            (fixed 2.44+)
+CVE-2025-11081 * objdump -S -D -x -s -Z -g -e -G -T -t -L -R --disassemble-zeroes --insn-width=32 --disassembler-color=extended   仅 2.45
+CVE-2025-11839 * objdump 同上参数                2.42–2.45 (SIGABRT)
+CVE-2025-69645 * objdump --source-comment        2.42–2.45 (SIGABRT, assert)
+CVE-2025-69652 * readelf -w abbrev              2.42 (ASAN) / 2.45 (SIGABRT)
+```
+
+### ld 类 (ld-new 位于 binutils-<ver>/build-asan-ld/ld/ld-new)
+
+```
+CVE-2025-5244    ld --no-undefined --orphan-handling discard --gc-sections --no-print-gc-sections -w -r -d   2.44
+CVE-2025-11412   ld --gc-sections --no-print-gc-sections -w        2.44–2.45
+CVE-2025-11413   ld --gc-sections --no-print-gc-sections -w        2.44–2.45
+CVE-2025-11414   ld --gc-sections --no-print-gc-sections -w        2.44–2.45
+CVE-2025-11082   ld --gc-sections --no-print-gc-sections -w        2.44–2.45
+CVE-2025-11495   ld --gc-sections --no-print-gc-sections -w        2.45
+CVE-2025-11083   ld --version-exports-section symbol --shared       2.44–2.45
+CVE-2025-11840   ld --version-exports-section symbol --shared       2.44–2.45
+CVE-2025-11494   ld --version-exports-section symbol --shared       2.44–2.45
+CVE-2026-6846    ld -o /dev/null                                    2.44–2.45
+CVE-2026-15003   ld --gc-sections -o /dev/null                      2.44–2.45
+CVE-2026-90801   ld --gc-sections -w                                2.44–2.47
+CVE-2026-90802   ld -o /dev/null                                    2.44–2.47
+CVE-2026-90803   ld -o /dev/null                                    2.45, 2.47
+CVE-2026-90828   ld -r -o /dev/null                                 2.44–2.47
+CVE-2026-90829   ld -r -o /dev/null                                 2.44–2.47
+CVE-2026-90830   ld --shared -z now -o /dev/null                    2.44–2.47
+CVE-2026-90831   ld --version-exports-section symbol --shared -o /dev/null   2.45, 2.47
+CVE-2026-91779   ld -r -o /dev/null                                 2.44–2.47
+CVE-2026-91780   ld -o /dev/null                                    2.44–2.47
+CVE-2026-91781   ld -r -o /dev/null                                 2.44–2.47
+CVE-2026-91782   ld -o /dev/null                                    2.44
+```
+
+(2025 的 ld 批次在 2.47 已修复；2026 的 ld 批次 2.47 仍触发。`*` = 仅部分版本触发。)
+
+### 未能复现的近年 CVE（附件已下载，但需特定 HEAD 版本或精确参数）
+CVE-2024-57360, CVE-2025-1147–1152, CVE-2025-1176–1182, CVE-2025-3198,
+CVE-2025-69644/69646/69647–69651（需 2.46(HEAD) 构建）, CVE-2025-7545/7546,
+CVE-2025-8224, CVE-2026-4647, CVE-2026-90804。附件保留于 /tmp/bu_recent/poc/。
