@@ -79,27 +79,32 @@ case "$PROJECT_NAME" in
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2021-26926"
         EXTRA_ARGS=(--include-exits)
         ;;
+    # Convention (see lcs_trace/divergence_analyzer): REFERENCE = the version
+    # that CRASHES on the CVE's PoC (vulnerable); TARGET = the version where
+    # the crash is unreachable (fixed).  The fork is located in the target.
+    # For another CVE, update both paths so one version crashes and the other
+    # does not, and pick the matching tool in the config's EXECUTION_CONFIG.
     "libxml2")
-        REFERENCE_VERSION_PATH="$BASE_DIR/libxml2-versions/libxml2-2.9.5"
-        TARGET_VERSION_PATH="$BASE_DIR/libxml2-versions/libxml2-2.9.4"
+        REFERENCE_VERSION_PATH="$BASE_DIR/libxml2-versions/libxml2-2.9.4"
+        TARGET_VERSION_PATH="$BASE_DIR/libxml2-versions/libxml2-2.9.5"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2017-9047"
         EXTRA_ARGS=(--include-exits)
         ;;
     "giflib")
-        REFERENCE_VERSION_PATH="$BASE_DIR/giflib-versions/giflib-5.2.2"
-        TARGET_VERSION_PATH="$BASE_DIR/giflib-versions/giflib-5.2.1"
+        REFERENCE_VERSION_PATH="$BASE_DIR/giflib-versions/giflib-5.2.1"
+        TARGET_VERSION_PATH="$BASE_DIR/giflib-versions/giflib-5.2.2"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2022-28506"
         EXTRA_ARGS=(--include-exits)
         ;;
     "binutils")
-        REFERENCE_VERSION_PATH="$BASE_DIR/binutils-versions/binutils-2.27"
-        TARGET_VERSION_PATH="$BASE_DIR/binutils-versions/binutils-2.25"
+        REFERENCE_VERSION_PATH="$BASE_DIR/binutils-versions/binutils-2.29"
+        TARGET_VERSION_PATH="$BASE_DIR/binutils-versions/binutils-2.30"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2018-18605"
         EXTRA_ARGS=(--include-exits)
         ;;
     "freetype")
-        REFERENCE_VERSION_PATH="$BASE_DIR/freetype-versions/freetype-2.12.1"
-        TARGET_VERSION_PATH="$BASE_DIR/freetype-versions/freetype-2.11.1"
+        REFERENCE_VERSION_PATH="$BASE_DIR/freetype-versions/freetype-2.11.1"
+        TARGET_VERSION_PATH="$BASE_DIR/freetype-versions/freetype-2.12.1"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2022-27404"
         EXTRA_ARGS=(--include-exits)
         ;;
