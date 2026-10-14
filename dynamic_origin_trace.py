@@ -1720,6 +1720,7 @@ def load_diverge_json(path):
 def basename_candidates(div):
     """Build fork breakpoint specs from a divergence result."""
     cands = []
+    dyn = div.get("dynamic_fork") or {}
     pt = div.get("polytracker_offsets") or {}
     pairs = [
         (pt.get("source_file"), pt.get("source_line")),
@@ -1734,6 +1735,18 @@ def basename_candidates(div):
         # exact path, then path suffix, then basename
         cands.append("%s:%d" % (f, ln))
         cands.append("%s:%d" % (Path(f).name, ln))
+    # a crash_point_hits anchor carries the line the breakpoint REALLY
+    # resolved to on the reference (continuation lines often have no code);
+    # prepend it so the invocation-count alignment holds on the target
+    _delta = dyn.get("anchor_delta")
+    if isinstance(_delta, int) and _delta:
+        rf = div.get("root_cause_file") or div.get("root_cause_file_b")
+        rl = div.get("root_cause_line") or div.get("root_cause_line_b")
+        if rf and rl:
+            adj = int(rl) + _delta
+            rf = str(rf)
+            cands.insert(0, "%s:%d" % (Path(rf).name, adj))
+            cands.insert(0, "%s:%d" % (rf, adj))
     # dedupe preserving order
     seen, out = set(), []
     for c in cands:
