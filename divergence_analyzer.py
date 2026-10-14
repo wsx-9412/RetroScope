@@ -6173,6 +6173,16 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 f"  Statement: {crash_stmt or source_line}"
             ),
         }
+        if invocation:
+            result["dynamic_fork"] = {
+                "status": "crash_point_hits",
+                "invocation": invocation,
+                "crash_file": crash_b["file"],
+                "crash_line": crash_b["line"],
+                "note": ("hit count of the target's own crash statement "
+                         "before the crash; origin tracing anchors at this "
+                         "invocation"),
+            }
         if input_file:
             result["input_file"] = str(input_file)
         if not skip_polytracker:
