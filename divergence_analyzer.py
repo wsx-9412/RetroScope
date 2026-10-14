@@ -4377,11 +4377,16 @@ def _count_crash_point_hits(binary, args, crash_file, crash_line,
 
     Runs the binary under GDB with a counting breakpoint on the crash
     location; the loop stops when the program crashes (ASan report / fatal
-    signal).  Returns the invocation number, or None when it cannot be
+    signal).  Returns ``(invocation, anchor_delta)`` where ``anchor_delta``
+    is the difference between the line that ACTUALLY resolved in the binary
+    (continuation lines like ``&& strcmp (...)`` often have no code and GDB
+    moves the breakpoint elsewhere) and the requested crash line — the
+    origin tracer must anchor at ``crash_line + anchor_delta`` for the hit
+    counts to line up.  Returns ``(None, None)`` when it cannot be
     determined (unresolvable breakpoint, no crash, timeout, ...).
     """
     if not crash_file or not crash_line:
-        return None
+        return None, None
     _count_gdb_run(binary)
     env = os.environ.copy()
     env["ASAN_OPTIONS"] = "detect_leaks=0"
@@ -4397,41 +4402,66 @@ def _count_crash_point_hits(binary, args, crash_file, crash_line,
         env["LD_LIBRARY_PATH"] = ":".join(lib_dirs +
                                           ([old_ld] if old_ld else []))
 
-    spec = "%s:%d" % (os.path.basename(str(crash_file)), crash_line)
-    cmds = ["set pagination off", "set confirm off"]
-    for d in (source_dirs or []):
-        cmds.append("directory %s" % d)
-    cmds += [
-        "set $rscp_n = 0",
-        "break " + spec,
-        "commands",
-        "silent",
-        "set $rscp_n = $rscp_n + 1",
-        "continue",
-        "end",
-        "run " + " ".join(str(a) for a in args),
-        "printf \"__RSCP_HITS__=%d\\n\", $rscp_n",
-    ]
-    gdb_cmds = ["gdb", "-batch"]
-    for c in cmds:
-        gdb_cmds.extend(["-ex", c])
-    gdb_cmds.append(str(binary))
+    base = os.path.basename(str(crash_file))
+    candidates = [crash_line, crash_line - 1, crash_line + 1]
 
-    try:
-        result = subprocess.run(gdb_cmds, capture_output=True, text=True,
-                                timeout=timeout, env=env)
-        output = result.stdout + result.stderr
-    except Exception:
-        return None
+    for cand in candidates:
+        if cand <= 0:
+            continue
+        spec = "%s:%d" % (base, cand)
+        script_lines = ["set pagination off", "set confirm off"]
+        for d in (source_dirs or []):
+            script_lines.append("directory %s" % d)
+        script_lines += [
+            "set $rscp_n = 0",
+            "break " + spec,
+            "commands",
+            "  silent",
+            "  set $rscp_n = $rscp_n + 1",
+            "  continue",
+            "end",
+            "run " + " ".join(shlex.quote(str(a)) for a in args),
+            'printf "__RSCP_HITS__=%d\\n", $rscp_n',
+        ]
+        fd, script_path = tempfile.mkstemp(prefix="rscp_count_", suffix=".gdb")
+        try:
+            with os.fdopen(fd, "w") as f:
+                f.write("\n".join(script_lines) + "\n")
+            try:
+                result = subprocess.run(
+                    ["gdb", "-batch", "-nx", "-q", "-x", script_path,
+                     "--args", str(binary)],
+                    capture_output=True, text=True,
+                    timeout=timeout + 60, env=env)
+                output = result.stdout + result.stderr
+            except Exception:
+                return None, None
+        finally:
+            try:
+                os.unlink(script_path)
+            except Exception:
+                pass
 
-    crashed = bool(re.search(
-        r"ERROR: AddressSanitizer|ABORTING|received signal SIG|"
-        r"terminated with signal", output))
-    m = re.search(r"__RSCP_HITS__=(\d+)", output)
-    if not m or not crashed:
-        return None
-    n = int(m.group(1))
-    return n if n > 0 else None
+        resolved = None
+        m_res = re.search(r"Breakpoint 1 at 0x[0-9a-fA-F]+: "
+                          r"(?:file [^\n]*)?,?\s*line (\d+)", output)
+        if m_res:
+            resolved = int(m_res.group(1))
+        crashed = bool(re.search(
+            r"ERROR: AddressSanitizer|ABORTING|received signal SIG|"
+            r"terminated with signal", output))
+        m = re.search(r"__RSCP_HITS__=(\d+)", output)
+        if not m or not crashed:
+            continue
+        n = int(m.group(1))
+        if n <= 0:
+            continue
+        if resolved is not None and resolved != cand:
+            # gdb resolved the spec to a different line: the hit count is
+            # still valid for THAT resolved statement, so anchor there.
+            return n, resolved - crash_line
+        return n, cand - crash_line
+    return None, None
 
 
 def _crash_is_before_reference(target_crash, ref_crash, trace_a, gaps):
