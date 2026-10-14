@@ -7246,6 +7246,15 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
             )
 
     # ============================================================
+    # Last resort: every fallback failed — accept the held
+    # entry-level primary split rather than returning nothing.
+    # ============================================================
+    if (not result or result.get("error")) and entry_split_stash:
+        print("\n  No fallback located a fork — using the held "
+              "entry-level primary split as last resort")
+        result = entry_split_stash
+
+    # ============================================================
     # PolyTracker: extract variables and locate input offsets
     # ============================================================
     if result and not result.get("error"):
