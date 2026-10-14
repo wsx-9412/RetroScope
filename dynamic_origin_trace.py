@@ -1973,14 +1973,19 @@ def main():
     if engine == "auto":
         engine = "rr" if rr_bin else "record"
     if engine == "rr":
-        _p = read_paranoid()
         if not rr_bin:
             print("[!] rr executable not found; using gdb record full")
             engine = "record"
-        elif _p not in ("0", "1"):
-            print("[!] rr needs kernel.perf_event_paranoid<=1 (currently %s);"
-                  " using gdb record full" % _p)
-            engine = "record"
+        elif "rr-soft-built" not in rr_bin:
+            # rr.soft replaces hardware PMU counters with software counters
+            # (-W), so it runs regardless of perf_event_paranoid (e.g. in
+            # VMware guests without a virtualized PMU).  Only vanilla rr
+            # needs perf_event_paranoid<=1.
+            _p = read_paranoid()
+            if _p not in ("0", "1"):
+                print("[!] vanilla rr needs kernel.perf_event_paranoid<=1 "
+                      "(currently %s); using gdb record full" % _p)
+                engine = "record"
 
     # environment discipline: use the project's own libraries
     env = os.environ.copy()
