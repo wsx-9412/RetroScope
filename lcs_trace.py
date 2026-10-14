@@ -206,8 +206,10 @@ def capture_function_trace(cmd, timeout=900, include_exits=False):
         env["LD_LIBRARY_PATH"] = ":".join(libs + ([old_ld] if old_ld else []))
 
     try:
+        # Bytes mode: the traced binary's stdout/stderr may contain raw
+        # binary garbage (e.g. objdump -g on a corrupted DWARF file).
         subprocess.run([str(c) for c in cmd], capture_output=True,
-                       text=True, timeout=timeout, env=env)
+                       timeout=timeout, env=env)
     except subprocess.TimeoutExpired:
         pass
 
