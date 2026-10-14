@@ -4370,6 +4370,70 @@ def _detect_crash_point(binary, args, lib_path, source_dirs, timeout=120):
     }
 
 
+def _count_crash_point_hits(binary, args, crash_file, crash_line,
+                            source_dirs, lib_path, timeout=240):
+    """Count how many times the reference executes the crash statement
+    before the crash itself (the crash invocation, 1-based).
+
+    Runs the binary under GDB with a counting breakpoint on the crash
+    location; the loop stops when the program crashes (ASan report / fatal
+    signal).  Returns the invocation number, or None when it cannot be
+    determined (unresolvable breakpoint, no crash, timeout, ...).
+    """
+    if not crash_file or not crash_line:
+        return None
+    _count_gdb_run(binary)
+    env = os.environ.copy()
+    env["ASAN_OPTIONS"] = "detect_leaks=0"
+    lib_dirs = []
+    if lib_path:
+        lib_dirs.append(lib_path)
+    for parent in [Path(binary)] + list(Path(binary).parents):
+        libs = parent / ".libs"
+        if libs.exists() and str(libs) not in lib_dirs:
+            lib_dirs.append(str(libs))
+    if lib_dirs:
+        old_ld = env.get("LD_LIBRARY_PATH", "")
+        env["LD_LIBRARY_PATH"] = ":".join(lib_dirs +
+                                          ([old_ld] if old_ld else []))
+
+    spec = "%s:%d" % (os.path.basename(str(crash_file)), crash_line)
+    cmds = ["set pagination off", "set confirm off"]
+    for d in (source_dirs or []):
+        cmds.append("directory %s" % d)
+    cmds += [
+        "set $rscp_n = 0",
+        "break " + spec,
+        "commands",
+        "silent",
+        "set $rscp_n = $rscp_n + 1",
+        "continue",
+        "end",
+        "run " + " ".join(str(a) for a in args),
+        "printf \"__RSCP_HITS__=%d\\n\", $rscp_n",
+    ]
+    gdb_cmds = ["gdb", "-batch"]
+    for c in cmds:
+        gdb_cmds.extend(["-ex", c])
+    gdb_cmds.append(str(binary))
+
+    try:
+        result = subprocess.run(gdb_cmds, capture_output=True, text=True,
+                                timeout=timeout, env=env)
+        output = result.stdout + result.stderr
+    except Exception:
+        return None
+
+    crashed = bool(re.search(
+        r"ERROR: AddressSanitizer|ABORTING|received signal SIG|"
+        r"terminated with signal", output))
+    m = re.search(r"__RSCP_HITS__=(\d+)", output)
+    if not m or not crashed:
+        return None
+    n = int(m.group(1))
+    return n if n > 0 else None
+
+
 def _crash_is_before_reference(target_crash, ref_crash, trace_a, gaps):
     """Check if target's crash point occurs before reference's crash point.
 
