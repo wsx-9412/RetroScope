@@ -1357,9 +1357,8 @@ def _step_trace_lines(binary, func_name, args, lib_path, source_dirs, timeout):
 set confirm off
 set breakpoint pending on
 catch load libtiff
-run {" ".join(str(a) for a in args)}
 break {func_name}
-continue
+run {" ".join(str(a) for a in args)}
 python
 import gdb
 import re
@@ -1579,9 +1578,8 @@ def _find_caller_site(binary, func_name, args, lib_path, source_dirs, timeout):
 set confirm off
 set breakpoint pending on
 catch load libtiff
-run {" ".join(str(a) for a in args)}
 break {func_name}
-continue
+run {" ".join(str(a) for a in args)}
 python
 import gdb
 import re
@@ -2525,12 +2523,12 @@ def _record_branch_decisions(binary, func_name, args, lib_path, source_dirs,
         'gdb.execute("set confirm off")\n'
         'gdb.execute("handle SIGABRT stop nopass")\n'
         'gdb.execute("handle SIGSEGV stop nopass")\n'
+        'gdb.execute("set breakpoint pending on")\n'
         'gdb.execute("catch load libtiff")\n'
+        'gdb.execute("break ' + func_esc + '")\n'
         'gdb.execute("run ' + args_str + '")\n'
         '\n'
         'gdb.execute("sharedlibrary")\n'
-        'gdb.execute("break ' + func_esc + '")\n'
-        'gdb.execute("continue")\n'
         '\n'
         'raw = gdb.execute("disassemble ' + func_esc + '", to_string=True)\n'
         'cj_addrs = {}\n'
@@ -3383,12 +3381,12 @@ def _step_trace_binary(binary, func_name, args, lib_path, source_dirs,
         'gdb.execute("set confirm off")\n'
         'gdb.execute("handle SIGABRT stop nopass")\n'
         'gdb.execute("handle SIGSEGV stop nopass")\n'
+        'gdb.execute("set breakpoint pending on")\n'
         'gdb.execute("catch load libtiff")\n'
+        'gdb.execute("break ' + func_esc + '")\n'
         'gdb.execute("run ' + args_str + '")\n'
         '\n'
         'gdb.execute("sharedlibrary")\n'
-        'gdb.execute("break ' + func_esc + '")\n'
-        'gdb.execute("continue")\n'
         '\n'
         'try:\n'
         '    frame = gdb.selected_frame()\n'
@@ -3500,12 +3498,12 @@ def _step_into_trace_binary(binary, func_name, args, lib_path, source_dirs,
         'gdb.execute("handle SIGSEGV stop nopass")\n'
         'gdb.execute("set follow-fork-mode child")\n'
         'gdb.execute("set detach-on-fork off")\n'
+        'gdb.execute("set breakpoint pending on")\n'
         'gdb.execute("catch load libtiff")\n'
+        'gdb.execute("break ' + func_esc + '")\n'
         'gdb.execute("run ' + args_str + '")\n'
         '\n'
         'gdb.execute("sharedlibrary")\n'
-        'gdb.execute("break ' + func_esc + '")\n'
-        'gdb.execute("continue")\n'
         '\n'
         'try:\n'
         '    frame = gdb.selected_frame()\n'
