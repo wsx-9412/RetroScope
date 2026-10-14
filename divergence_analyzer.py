@@ -6210,6 +6210,18 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
             tgt_func = (refactoring_map.get(crash_func, crash_func)
                         if refactoring_map else crash_func)
             ref_file = os.path.basename(crash_file) or crash_file
+            # Anchor the fork at the INVOCATION of the crash statement that
+            # actually crashes on the reference (the first execution may be
+            # a constant-driven call that has no input dependency, e.g.
+            # bfd_hash_lookup(table, "", TRUE, FALSE)).
+            invocation = _count_crash_point_hits(
+                binary_a, args_a, crash_file, crash_line,
+                source_dirs_a, lib_path_a, gdb_timeout)
+            if invocation:
+                print(f"  [*] Reference executes the crash point "
+                      f"{os.path.basename(crash_file)}:{crash_line} "
+                      f"{invocation} time(s) before crashing — invocation "
+                      f"#{invocation} is the fork anchor")
             result = {
                 "divergence_function": func_name,
                 "trace_a_index": a_idx,
@@ -6231,6 +6243,16 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                     f"  Target:    {tgt_func} at {ref_file}:{tgt_line}"
                 ),
             }
+            if invocation:
+                result["dynamic_fork"] = {
+                    "status": "crash_point_hits",
+                    "invocation": invocation,
+                    "crash_file": crash_file,
+                    "crash_line": crash_line,
+                    "note": ("hit count of the crash statement on the "
+                             "reference before the crash; origin tracing "
+                             "anchors at this invocation on the target"),
+                }
             if input_file:
                 result["input_file"] = str(input_file)
             if not skip_polytracker:
