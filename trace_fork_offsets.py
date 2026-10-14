@@ -5270,12 +5270,11 @@ def _static_ifd_region(input_file):
 # binutils (ELF), giflib (GIF), libxml2 (XML), freetype (sfnt/TTF/OTF/TTC
 # and WOFF).  Same role as _static_ifd_region: when the dynamic fork-point
 # context produced no structural region, parse the plain on-disk structure
-# and hand the field positions to the directed-value mutation in Step 6c
-# (the static fallback stage).
+# and hand the field positions to the Step 6c/6d static fallback sweep.
 # ---------------------------------------------------------------------------
 
-# Cap on structural field positions per format: every position is screened
-# with the directed probe set in Step 6c, so unbounded structures (a
+# Cap on structural field positions per format: every position is swept
+# with all 255 values in Step 6c, so unbounded structures (a
 # 256-entry colour table, a 1000-section ELF) must not explode the run
 # count.  Fields are sorted by offset, so the header/marker positions —
 # the semantically critical ones — are kept first.
