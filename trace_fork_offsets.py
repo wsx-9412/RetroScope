@@ -7957,9 +7957,11 @@ def main():
     #              traced at the fork statement);
     #   Step 6b  — pairwise (two-offset) mutation over the dynamic offset
     #              pool only;
-    #   Step 6c  — directed-value mutation of structure fields from a
-    #              STATIC format parse (ELF/GIF/XML/font headers etc.),
-    #              run only when every dynamic phase above found nothing.
+    #   Step 6c  — full 255-value single-byte sweep over the STATIC
+    #              format-parse offsets (ELF/GIF/XML/font headers, or the
+    #              TIFF IFD when no dynamic fork context exists);
+    #   Step 6d  — pairwise over the static offsets, still gated on the
+    #              dynamic phases having found nothing.
     def _directed_structural_stage(_probe_offsets, _step_label):
         """Directed-meaning-value mutation of structural fields.
 
