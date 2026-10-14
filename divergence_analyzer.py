@@ -6263,14 +6263,16 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
             # actually crashes on the reference (the first execution may be
             # a constant-driven call that has no input dependency, e.g.
             # bfd_hash_lookup(table, "", TRUE, FALSE)).
-            invocation = _count_crash_point_hits(
+            invocation, anchor_delta = _count_crash_point_hits(
                 binary_a, args_a, crash_file, crash_line,
                 source_dirs_a, lib_path_a, gdb_timeout)
             if invocation:
                 print(f"  [*] Reference executes the crash point "
                       f"{os.path.basename(crash_file)}:{crash_line} "
                       f"{invocation} time(s) before crashing — invocation "
-                      f"#{invocation} is the fork anchor")
+                      f"#{invocation} is the fork anchor"
+                      + (f" (resolved line {crash_line + anchor_delta})"
+                         if anchor_delta else ""))
             result = {
                 "divergence_function": func_name,
                 "trace_a_index": a_idx,
@@ -6298,6 +6300,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                     "invocation": invocation,
                     "crash_file": crash_file,
                     "crash_line": crash_line,
+                    "anchor_delta": anchor_delta,
                     "note": ("hit count of the crash statement on the "
                              "reference before the crash; origin tracing "
                              "anchors at this invocation on the target"),
