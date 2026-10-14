@@ -1211,9 +1211,7 @@ def trace_operand(parent, parsed, depth):
             return
         v = reg_value(parsed[1])
         if _addresslike(v) and not _in_input_region(v):
-            add_event(parent, "pointer_skipped", reg=parsed[1], value=hex(v),
-                      note="operand is a pointer into non-input memory "
-                           "(structural state); not an input offset carrier")
+            _deref_scan(v, parent, depth)
             return
         scan_reg(parsed[1], parent, depth)
     else:
@@ -1455,8 +1453,7 @@ def handle_write(slot, parent, depth, value_before=None, value_after=None,
                 continue
             _rv = reg_value(s[1])
             if _addresslike(_rv) and not _in_input_region(_rv):
-                add_event(eid, "pointer_skipped", reg=s[1], value=hex(_rv),
-                          note="pointer into non-input memory")
+                _deref_scan(_rv, eid, depth + 1)
                 continue
             scan_reg(s[1], eid, depth + 1, delta=delta)
         else:
