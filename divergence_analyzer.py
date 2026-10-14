@@ -625,9 +625,8 @@ def compare_variable_states(binary_a, binary_b, func_name,
     # Also try with "catch load libtiff" to handle shared library loading
     cmd_a_catch = [
         "catch load libtiff",
-        "run " + " ".join(str(a) for a in args_a),
         f"break {func_name}",
-        "continue",
+        "run " + " ".join(str(a) for a in args_a),
         "set logging file /tmp/gdb_state_a.txt",
         "set logging enabled on",
         "where 3",
@@ -646,9 +645,8 @@ def compare_variable_states(binary_a, binary_b, func_name,
 
     cmd_b_catch = [
         "catch load libtiff",
-        "run " + " ".join(str(a) for a in args_b),
         f"break {func_name}",
-        "continue",
+        "run " + " ".join(str(a) for a in args_b),
         "set logging file /tmp/gdb_state_b.txt",
         "set logging enabled on",
         "where 3",
@@ -1067,9 +1065,8 @@ def _get_return_value(binary, func_name, args, lib_path, source_dirs, timeout):
     """Run GDB to get the return value of a function."""
     cmds = [
         "catch load libtiff",
-        "run " + " ".join(str(a) for a in args),
         f"break {func_name}",
-        "continue",
+        "run " + " ".join(str(a) for a in args),
         "finish",
         "print $rax",
         "quit",
@@ -1091,9 +1088,8 @@ def _find_return_location(binary, func_name, args, lib_path, source_dirs, timeou
     """Find the source location where a function returns."""
     cmds = [
         "catch load libtiff",
-        "run " + " ".join(str(a) for a in args),
         f"break {func_name}",
-        "continue",
+        "run " + " ".join(str(a) for a in args),
         "finish",
         "info frame",
         "where 1",
@@ -1161,9 +1157,8 @@ def _find_return_statement_location(binary, func_name, return_value,
 set confirm off
 set breakpoint pending on
 catch load libtiff
-run {args_str}
 break {func_name}
-continue
+run {args_str}
 python
 import gdb
 import re
@@ -2052,9 +2047,8 @@ def _record_source_lines_v2(binary, func_name, args, lib_path, source_dirs, time
     script = f"""set pagination off
 set confirm off
 catch load libtiff
-run {args_str}
 break {func_name}
-continue
+run {args_str}
 python
 import gdb
 import re
@@ -2866,9 +2860,8 @@ def _record_source_lines(binary, func_name, args, lib_path, source_dirs, timeout
     script = f"""set pagination off
 set confirm off
 catch load libtiff
-run {args_str}
 break {func_name}
-continue
+run {args_str}
 python
 import gdb
 lines_seen = []
@@ -3777,6 +3770,19 @@ def _trace_from_common_ancestor(matches, gaps, trace_a, trace_b,
         result["description"] += (
             f"\nSame statement in both versions — different condition value."
         )
+
+    # Extract fork variables from both diverging statements so the origin
+    # trace has values to follow.  The target-side (B) line is preferred;
+    # the A-side line is merged in because one version may carry the
+    # assignment (e.g. `sep = load_separate_debug_file(...)`) while the
+    # other only makes the call.
+    vars_b = _extract_variables_from_expression(b_text)
+    vars_a = _extract_variables_from_expression(a_text)
+    merged_vars = list(vars_b)
+    for v in vars_a:
+        if v not in merged_vars:
+            merged_vars.append(v)
+    result["variables"] = merged_vars
 
     return result
 
