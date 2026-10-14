@@ -1897,6 +1897,10 @@ def main():
     ap.add_argument("--max-steps", type=int, default=400000,
                     help="max reverse instructions per slot")
     ap.add_argument("--max-depth", type=int, default=30)
+    ap.add_argument("--max-pointer-derefs", type=int, default=16,
+                    help="budget for following pointer VALUES to their "
+                    "pointed-to contents (heap copies of input bytes); "
+                    "exhaustion degrades to pointer_skipped")
     ap.add_argument("--batch-steps", type=int, default=128,
                     help="reverse-stepping batch size for the approach scan "
                     "(clamped to 64)")
