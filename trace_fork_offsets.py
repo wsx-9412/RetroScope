@@ -7753,9 +7753,9 @@ def main():
     # the fork-point runtime context (tif->tif_diroff + dircount) — nothing
     # static, nothing without a fork-point execution.  These structural
     # fields are NOT merged into the full-sweep set (72 fields x 255 values
-    # would explode); they get a directed-value mutation: Step 6a when the
-    # region comes from the dynamic fork-point context, Step 6c (fallback)
-    # when it comes from a static format parse.
+    # would explode); they get a directed-value mutation in Step 6a when
+    # the region comes from the dynamic fork-point context, or the full
+    # Steps 6c/6d fallback sweep when it comes from a static format parse.
     _ifd_region = (chain_trace_results or {}).get('ifd_region') or {}
     _ifd_from_dynamic = bool(_ifd_region.get('field_offsets'))
     if (not _ifd_region.get('field_offsets')) and input_file \
@@ -8028,7 +8028,7 @@ def main():
     # classification from --origin-mutation, so a gate discovered by one
     # sweep is always combinable with an inert byte discovered by another.
     # Static-format offsets are deliberately excluded — they belong to the
-    # Step 6c fallback.
+    # Steps 6c/6d fallback.
     pairwise_results = {}
     _active_offs, _inert_offs, _weak_offs, _value_hints = \
         _classify_sweep_results(crash_results, origin_results)
