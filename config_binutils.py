@@ -18,13 +18,13 @@
 # =====================================================
 # CVE configuration: change this section for each CVE
 # =====================================================
-CVE_ID = "CVE-2019-17450"          # CVE number
-INPUT_FILE = "in/CVE-2019-17450"   # input file path (relative to RetroScope/)
+CVE_ID = "CVE-2018-18606"          # CVE number
+INPUT_FILE = "in/CVE-2018-18606"   # input file path (relative to RetroScope/)
 OUTPUT_FILE = "/tmp/foo"          # program output file
 # Program arguments template: {program_path}, {input_file}, {output_file}
 # {program_path} already IS the tool binary selected by EXECUTION_CONFIG
 # "program_name"; do NOT write the tool name into the format string.
-COMMAND_FORMAT = "{program_path} -g {input_file}"
+COMMAND_FORMAT = "{program_path} -w {input_file}"
 
 # =====================================================
 # Compilation configuration (usually no need to change)
@@ -62,7 +62,7 @@ COMPILE_COMMANDS = {
 
 # Program execution parameter configuration
 EXECUTION_CONFIG = {
-    "program_name": "objdump",
+    "program_name": "readelf",
     "timeout": 120,
     "exec_subdir": "/build-asan/binutils",
     "command_format": COMMAND_FORMAT,
