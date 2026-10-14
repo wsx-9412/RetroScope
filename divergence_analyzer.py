@@ -6082,20 +6082,29 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
         ancestor_result["trace_b_index"] = b_idx
         if input_file:
             ancestor_result["input_file"] = str(input_file)
-        if not skip_polytracker:
-            try:
-                ancestor_result = _polytracker_locate_input_offsets(
-                    ancestor_result, config=config, binary_b=binary_b,
-                    binary_a=binary_a)
-            except Exception as e:
-                print(f"  [PolyTracker] Analysis failed: {e}")
-                ancestor_result["polytracker_offsets"] = {
-                    "status": "error", "error": str(e)}
-        print(f"\n  Primary locator: fork in "
-              f"{ancestor_result.get('root_cause_function')}() at "
-              f"{ancestor_result.get('root_cause_file')}:"
-              f"{ancestor_result.get('root_cause_line')}")
-        return ancestor_result
+        _pf = ancestor_result.get("root_cause_function")
+        _entry = _trace_entry_function(trace_a)
+        if _pf and _entry and _pf == _entry:
+            print(f"\n  Primary locator: split inside entry function "
+                  f"{_pf}() — likely a startup/line-drift artifact; "
+                  f"holding as last resort and trying crash-path "
+                  f"fallbacks first")
+            entry_split_stash = ancestor_result
+        else:
+            if not skip_polytracker:
+                try:
+                    ancestor_result = _polytracker_locate_input_offsets(
+                        ancestor_result, config=config, binary_b=binary_b,
+                        binary_a=binary_a)
+                except Exception as e:
+                    print(f"  [PolyTracker] Analysis failed: {e}")
+                    ancestor_result["polytracker_offsets"] = {
+                        "status": "error", "error": str(e)}
+            print(f"\n  Primary locator: fork in "
+                  f"{ancestor_result.get('root_cause_function')}() at "
+                  f"{ancestor_result.get('root_cause_file')}:"
+                  f"{ancestor_result.get('root_cause_line')}")
+            return ancestor_result
 
     # ========================================================
     # FALLBACK: the backward tracer (first fallback).  Recursively
