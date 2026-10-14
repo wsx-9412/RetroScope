@@ -581,7 +581,15 @@ def trace_path(eid):
         eid = e.get("parent")
     return list(reversed(path))
 
+_seen_offsets = []
+
 def record_offset(offset, length, eid, via, file=None):
+    if offset is None:
+        return
+    key = (offset, length, via, file)
+    if key in _seen_offsets:
+        return
+    _seen_offsets.append(key)
     result["offsets"].append({
         "offset": offset, "length": length,
         "via": via, "file": file, "event": eid,
@@ -2050,6 +2058,7 @@ def main():
         "timeout": args.timeout,
         "max_steps": args.max_steps,
         "max_depth": args.max_depth,
+        "max_pointer_derefs": int(args.max_pointer_derefs),
         "follow_returns": not args.no_follow_returns,
         "trace_read_request": bool(args.trace_read_request),
         "trace_control": bool(args.trace_control),
