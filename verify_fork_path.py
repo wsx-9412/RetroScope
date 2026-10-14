@@ -191,7 +191,7 @@ def verify_one(binary, hint, mutant_path, program_args, original_input,
         proc = subprocess.run(
             ["gdb", "-batch", "-nx", "-q", "-x", script_path,
              "--args", str(real)] + [str(a) for a in run_args],
-            env=env, capture_output=True, text=True, timeout=timeout)
+            env=env, capture_output=True, text=True, errors="replace", timeout=timeout)
         out = proc.stdout + proc.stderr
     except subprocess.TimeoutExpired:
         return {"status": "timeout"}
@@ -469,7 +469,7 @@ def main():
             env = build_run_env(resolve_binary(binary_ref))
             env["ASAN_OPTIONS"] = "detect_leaks=0:abort_on_error=0"
             proc = subprocess.run([resolve_binary(binary_ref)] + ref_args,
-                                  env=env, capture_output=True, text=True,
+                                  env=env, capture_output=True, text=True, errors="replace",
                                   timeout=a.timeout)
             ref_sig = extract_crash_signature(proc.stdout + proc.stderr)
             _attach_crash_statement(ref_sig, resolve_binary(binary_ref))

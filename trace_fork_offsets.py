@@ -1620,7 +1620,7 @@ def run_gdb_trace(binary, fork_spec, variables, input_file, program_args, timeou
         try:
             proc = subprocess.run(
                 ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
-                capture_output=True, text=True, timeout=timeout, env=env)
+                capture_output=True, text=True, errors="replace", timeout=timeout, env=env)
         except subprocess.TimeoutExpired:
             return None, 'timeout'
         finally:
@@ -1675,7 +1675,7 @@ def run_deep_tiffopen_trace(binary, input_file, program_args, timeout=30):
     try:
         proc = subprocess.run(
             gdb_args,
-            capture_output=True, text=True, timeout=timeout,
+            capture_output=True, text=True, errors="replace", timeout=timeout,
             env=build_run_env(real_binary))
     except subprocess.TimeoutExpired:
         return None, 'timeout'
@@ -1767,7 +1767,7 @@ run {' '.join(run_parts)}
     try:
         proc = subprocess.run(
             ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
-            capture_output=True, text=True, timeout=timeout, env=env)
+            capture_output=True, text=True, errors="replace", timeout=timeout, env=env)
     except subprocess.TimeoutExpired:
         return None, 'timeout'
     finally:
@@ -1863,7 +1863,7 @@ run {' '.join(run_parts)}
     try:
         proc = subprocess.run(
             ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', binary],
-            capture_output=True, text=True, timeout=timeout, env=env)
+            capture_output=True, text=True, errors="replace", timeout=timeout, env=env)
     except subprocess.TimeoutExpired:
         return None
     finally:
@@ -2018,7 +2018,7 @@ run {' '.join(run_parts)}
     try:
         proc = subprocess.run(
             ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
-            capture_output=True, text=True, timeout=timeout, env=env)
+            capture_output=True, text=True, errors="replace", timeout=timeout, env=env)
     except subprocess.TimeoutExpired:
         return None, 'timeout'
     finally:
@@ -2205,7 +2205,7 @@ run {run_args}
     try:
         proc = subprocess.run(
             ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
-            capture_output=True, text=True, timeout=timeout, env=env)
+            capture_output=True, text=True, errors="replace", timeout=timeout, env=env)
     except subprocess.TimeoutExpired:
         return None, 'timeout_phase_a'
     finally:
@@ -2341,7 +2341,7 @@ run {run_args}
         try:
             proc = subprocess.run(
                 ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
-                capture_output=True, text=True, timeout=timeout, env=env)
+                capture_output=True, text=True, errors="replace", timeout=timeout, env=env)
         except subprocess.TimeoutExpired:
             continue
         finally:
@@ -2714,7 +2714,7 @@ run {run_args}
         try:
             proc = subprocess.run(
                 ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
-                capture_output=True, text=True, timeout=timeout, env=env)
+                capture_output=True, text=True, errors="replace", timeout=timeout, env=env)
         except subprocess.TimeoutExpired:
             return {'chain': chain, 'error': 'timeout'}, None
         finally:
@@ -2838,7 +2838,7 @@ run {' '.join(run_parts)}
     try:
         proc = subprocess.run(
             ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
-            capture_output=True, text=True, timeout=30, env=env)
+            capture_output=True, text=True, errors="replace", timeout=30, env=env)
     except subprocess.TimeoutExpired:
         return None, 'timeout_phase1'
     finally:
@@ -2915,7 +2915,7 @@ run {' '.join(run_parts)}
         try:
             proc = subprocess.run(
                 ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
-                capture_output=True, text=True, timeout=60, env=env)
+                capture_output=True, text=True, errors="replace", timeout=60, env=env)
         except subprocess.TimeoutExpired:
             try: os.unlink(script_file)
             except: pass
@@ -3180,7 +3180,7 @@ run {' '.join(run_parts)}
     try:
         proc = subprocess.run(
             ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--', real_binary],
-            capture_output=True, text=True, timeout=timeout, env=env)
+            capture_output=True, text=True, errors="replace", timeout=timeout, env=env)
     except subprocess.TimeoutExpired:
         return None, 'timeout'
     finally:
@@ -4649,7 +4649,7 @@ def arithmetic_backtrace(binary, fork_file, fork_line, variables, fork_vals,
             proc = subprocess.run(
                 ['gdb', '-batch', '-nx', '-q', '-x', script_file, '--',
                  resolve_binary(binary)],
-                capture_output=True, text=True, timeout=timeout,
+                capture_output=True, text=True, errors="replace", timeout=timeout,
                 env=build_run_env(binary))
         except subprocess.TimeoutExpired:
             proc = None
@@ -4810,7 +4810,7 @@ def fork_flip_probe(binary, input_file, program_args, offsets, fork_marker,
                     cmd.append(tmp)
                 else:
                     cmd.append(a)
-            proc = subprocess.run(cmd, capture_output=True, text=True,
+            proc = subprocess.run(cmd, capture_output=True, text=True, errors="replace",
                                   timeout=timeout, env=build_run_env(binary))
             return proc.stdout + proc.stderr
         except Exception:
@@ -5923,7 +5923,7 @@ def test_value_level_mutations(binary_target, binary_ref, input_file,
                 proc = subprocess.run(
                     ['gdb', '-batch', '-nx', '-q', '-x', script_file,
                      '--', binary],
-                    capture_output=True, text=True, timeout=timeout, env=env)
+                    capture_output=True, text=True, errors="replace", timeout=timeout, env=env)
                 out = proc.stdout + proc.stderr
                 rc = proc.returncode
             finally:
@@ -6039,7 +6039,7 @@ def _run_mutation_worker(task):
         cmd = [binary] + [_replace_input_arg(a, tmp_path, input_file)
                           for a in program_args]
         env = _mutation_env(binary)
-        proc = subprocess.run(cmd, capture_output=True, text=True,
+        proc = subprocess.run(cmd, capture_output=True, text=True, errors="replace",
                               timeout=timeout, env=env)
         return proc.stdout + proc.stderr, proc.returncode, time.time() - _t0
     except subprocess.TimeoutExpired:
@@ -6150,7 +6150,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
             cmd = [binary] + [_replace_input_arg(a, tmp_path, input_file)
                               for a in program_args]
             env = _mutation_env(binary)
-            proc = subprocess.run(cmd, capture_output=True, text=True,
+            proc = subprocess.run(cmd, capture_output=True, text=True, errors="replace",
                                   timeout=timeout, env=env)
             return proc.stdout + proc.stderr, proc.returncode
         except subprocess.TimeoutExpired:

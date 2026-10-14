@@ -104,7 +104,7 @@ def run_gdb_batch(binary, commands, env=None, timeout=120):
     gdb_cmds.append(binary)
 
     result = subprocess.run(
-        gdb_cmds, capture_output=True, text=True, timeout=timeout, env=env
+        gdb_cmds, capture_output=True, text=True, errors="replace", timeout=timeout, env=env
     )
     return result.stdout + result.stderr
 
@@ -131,7 +131,7 @@ def run_gdb_with_source(binary, source_dirs, commands, lib_path=None, timeout=12
     gdb_cmds.append(str(binary))
 
     result = subprocess.run(
-        gdb_cmds, capture_output=True, text=True, timeout=timeout, env=env
+        gdb_cmds, capture_output=True, text=True, errors="replace", timeout=timeout, env=env
     )
     return result.stdout + result.stderr
 
@@ -1219,7 +1219,7 @@ quit
     gdb_cmds.extend(["-x", script_path, str(binary)])
 
     try:
-        result = subprocess.run(gdb_cmds, capture_output=True, text=True,
+        result = subprocess.run(gdb_cmds, capture_output=True, text=True, errors="replace",
                                 timeout=timeout, env=env)
         output = result.stdout + result.stderr
     finally:
@@ -1440,7 +1440,7 @@ quit
     gdb_cmds.extend(["-x", script_path, str(binary)])
 
     try:
-        result = subprocess.run(gdb_cmds, capture_output=True, text=True,
+        result = subprocess.run(gdb_cmds, capture_output=True, text=True, errors="replace",
                                 timeout=timeout, env=env)
         output = result.stdout + result.stderr
     finally:
@@ -1634,7 +1634,7 @@ quit
     gdb_cmds.extend(["-x", script_path, str(binary)])
 
     try:
-        result = subprocess.run(gdb_cmds, capture_output=True, text=True,
+        result = subprocess.run(gdb_cmds, capture_output=True, text=True, errors="replace",
                                 timeout=timeout, env=env)
         output = result.stdout + result.stderr
     finally:
@@ -2145,7 +2145,7 @@ quit
         gdb_cmds.extend(["-iex", f"directory {d}"])
     gdb_cmds.extend(["-x", script_path, str(binary)])
 
-    result = subprocess.run(gdb_cmds, capture_output=True, text=True,
+    result = subprocess.run(gdb_cmds, capture_output=True, text=True, errors="replace",
                             timeout=timeout, env=env)
     output = result.stdout + result.stderr
 
@@ -2602,7 +2602,7 @@ def _record_branch_decisions(binary, func_name, args, lib_path, source_dirs,
             gdb_cmds.extend(["-iex", f"directory {d}"])
         gdb_cmds.extend(["-x", script_path, str(binary)])
 
-        result = subprocess.run(gdb_cmds, capture_output=True, text=True,
+        result = subprocess.run(gdb_cmds, capture_output=True, text=True, errors="replace",
                                 timeout=gdb_timeout, env=env)
         output = result.stdout + result.stderr
     finally:
@@ -2921,7 +2921,7 @@ quit
         gdb_cmds.extend(["-iex", f"directory {d}"])
     gdb_cmds.extend(["-x", script_path, str(binary)])
 
-    result = subprocess.run(gdb_cmds, capture_output=True, text=True,
+    result = subprocess.run(gdb_cmds, capture_output=True, text=True, errors="replace",
                             timeout=timeout, env=env)
     output = result.stdout + result.stderr
 
@@ -3136,7 +3136,7 @@ def _find_guard_condition(binary, func_name, args, lib_path, source_dirs,
         if lib_path:
             gdb_cmds.extend(["-iex", f"set solib-search-path {lib_path}"])
         gdb_cmds.extend(["-x", script_path, str(binary)])
-        result = subprocess.run(gdb_cmds, capture_output=True, text=True,
+        result = subprocess.run(gdb_cmds, capture_output=True, text=True, errors="replace",
                                 timeout=gdb_timeout, env=env)
         output = result.stdout + result.stderr
     finally:
@@ -3211,7 +3211,7 @@ def _verify_fork_branch(binary, ctrl_file, ctrl_line, diverging_call, args,
         if lib_path:
             gdb_cmds.extend(["-iex", f"set solib-search-path {lib_path}"])
         gdb_cmds.extend(["-x", script_path, str(binary)])
-        result = subprocess.run(gdb_cmds, capture_output=True, text=True,
+        result = subprocess.run(gdb_cmds, capture_output=True, text=True, errors="replace",
                                 timeout=gdb_timeout, env=env)
         output = result.stdout + result.stderr
     finally:
@@ -3455,7 +3455,7 @@ def _step_trace_binary(binary, func_name, args, lib_path, source_dirs,
             gdb_cmds.extend(["-iex", f"directory {d}"])
         gdb_cmds.extend(["-x", script_path, str(binary)])
 
-        result = subprocess.run(gdb_cmds, capture_output=True, text=True,
+        result = subprocess.run(gdb_cmds, capture_output=True, text=True, errors="replace",
                                 timeout=gdb_timeout, env=env)
         output = result.stdout + result.stderr
     finally:
@@ -3582,7 +3582,7 @@ def _step_into_trace_binary(binary, func_name, args, lib_path, source_dirs,
             gdb_cmds.extend(["-iex", f"directory {d}"])
         gdb_cmds.extend(["-x", script_path, str(binary)])
 
-        result = subprocess.run(gdb_cmds, capture_output=True, text=True,
+        result = subprocess.run(gdb_cmds, capture_output=True, text=True, errors="replace",
                                 timeout=gdb_timeout, env=env)
         output = result.stdout + result.stderr
     finally:
@@ -4273,7 +4273,7 @@ def _detect_crash_point(binary, args, lib_path, source_dirs, timeout=120):
     gdb_cmds.append(str(binary))
 
     try:
-        result = subprocess.run(gdb_cmds, capture_output=True, text=True,
+        result = subprocess.run(gdb_cmds, capture_output=True, text=True, errors="replace",
                                 timeout=timeout, env=env)
         output = result.stdout + result.stderr
     except Exception:
@@ -4433,7 +4433,7 @@ def _count_crash_point_hits(binary, args, crash_file, crash_line,
                 result = subprocess.run(
                     ["gdb", "-batch", "-nx", "-q", "-x", script_path,
                      "--args", str(binary)],
-                    capture_output=True, text=True,
+                    capture_output=True, text=True, errors="replace",
                     timeout=timeout + 60, env=env)
                 output = result.stdout + result.stderr
             except Exception:
@@ -5153,7 +5153,7 @@ quit
     gdb_cmds.extend(["-x", script_path, str(binary)])
     try:
         _count_gdb_run(binary)
-        result = subprocess.run(gdb_cmds, capture_output=True, text=True,
+        result = subprocess.run(gdb_cmds, capture_output=True, text=True, errors="replace",
                                 timeout=timeout, env=env)
     finally:
         try:
@@ -7707,7 +7707,7 @@ def _polytracker_build_and_run(source_dir, program_name, input_file,
                 print(f"    $ {full_cmd}")
                 result = subprocess.run(
                     full_cmd, shell=True, cwd=str(source_dir),
-                    capture_output=True, text=True, timeout=600
+                    capture_output=True, text=True, errors="replace", timeout=600
                 )
                 if result.returncode != 0:
                     print(f"  [PolyTracker] Build command failed: {cmd}")
@@ -7719,7 +7719,7 @@ def _polytracker_build_and_run(source_dir, program_name, input_file,
             print(f"    $ {full_cmd}")
             result = subprocess.run(
                 full_cmd, shell=True, cwd=str(source_dir),
-                capture_output=True, text=True, timeout=600
+                capture_output=True, text=True, errors="replace", timeout=600
             )
             if result.returncode != 0:
                 print(f"  [PolyTracker] Build failed")
@@ -7777,7 +7777,7 @@ def _polytracker_build_and_run(source_dir, program_name, input_file,
         ]
         print(f"    $ {' '.join(inst_cmd)}")
         result = subprocess.run(
-            inst_cmd, capture_output=True, text=True, timeout=300
+            inst_cmd, capture_output=True, text=True, errors="replace", timeout=300
         )
         if result.returncode != 0:
             print(f"  [PolyTracker] Instrumentation failed")
@@ -7823,7 +7823,7 @@ def _polytracker_build_and_run(source_dir, program_name, input_file,
         env = os.environ.copy()
         env['ASAN_OPTIONS'] = 'detect_leaks=0'
         result = subprocess.run(
-            run_cmd, capture_output=True, text=True,
+            run_cmd, capture_output=True, text=True, errors="replace",
             timeout=120, env=env
         )
         if result.returncode != 0:

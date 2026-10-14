@@ -164,7 +164,7 @@ def resolve_local(binpath, offset):
         syms = []
         try:
             r = subprocess.run(["nm", "--defined-only", "-n", str(binpath)],
-                               capture_output=True, text=True)
+                               capture_output=True, text=True, errors="replace")
             for line in r.stdout.split('\n'):
                 parts = line.split(maxsplit=2)
                 if len(parts) == 3 and all(c in '0123456789abcdef' for c in parts[0]):
@@ -191,7 +191,7 @@ def capture_function_trace(cmd, timeout=900, include_exits=False):
     preloads = []
     try:
         r = subprocess.run(["gcc", "-print-file-name=libasan.so"],
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, errors="replace")
         if "libasan" in r.stdout.strip():
             preloads.append(r.stdout.strip())
     except Exception:

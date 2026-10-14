@@ -58,7 +58,7 @@ def run_build(src_dir: Path, version_name: str, compile_cfg: dict) -> bool:
     for cmd in compile_cfg.get("pre_build", []):
         print(f"  [{version_name}] pre_build: {cmd}")
         r = subprocess.run(cmd, shell=True, cwd=src_dir, capture_output=True,
-                           text=True, env=env)
+                           text=True, errors="replace", env=env)
         if r.returncode != 0:
             print(f"  [{version_name}] pre_build FAILED: {r.stderr[-400:]}")
             pre_build_failed = True
@@ -73,13 +73,13 @@ def run_build(src_dir: Path, version_name: str, compile_cfg: dict) -> bool:
     if (src_dir / "configure").exists():
         print(f"  [{version_name}] ./configure")
         r = subprocess.run(["sh", "./configure"], cwd=src_dir,
-                           capture_output=True, text=True, env=env)
+                           capture_output=True, text=True, errors="replace", env=env)
         if r.returncode != 0:
             print(f"  [{version_name}] configure failed: {r.stderr[-600:]}")
             return False
         print(f"  [{version_name}] make -j{nproc}")
         r = subprocess.run(["make", "-j", nproc], cwd=src_dir,
-                           capture_output=True, text=True, env=env)
+                           capture_output=True, text=True, errors="replace", env=env)
         if r.returncode != 0:
             print(f"  [{version_name}] make failed: {r.stderr[-600:]}")
             return False
@@ -91,13 +91,13 @@ def run_build(src_dir: Path, version_name: str, compile_cfg: dict) -> bool:
         bld.mkdir(exist_ok=True)
         print(f"  [{version_name}] cmake ..")
         r = subprocess.run(["cmake", "..", "-DCMAKE_BUILD_TYPE=Debug"],
-                           cwd=bld, capture_output=True, text=True, env=env)
+                           cwd=bld, capture_output=True, text=True, errors="replace", env=env)
         if r.returncode != 0:
             print(f"  [{version_name}] cmake failed: {r.stderr[-600:]}")
             return False
         print(f"  [{version_name}] make -j{nproc}")
         r = subprocess.run(["make", "-j", nproc], cwd=bld,
-                           capture_output=True, text=True, env=env)
+                           capture_output=True, text=True, errors="replace", env=env)
         if r.returncode != 0:
             print(f"  [{version_name}] make failed: {r.stderr[-600:]}")
             return False
@@ -133,7 +133,7 @@ def has_function_instrumentation(binpath: Path) -> bool:
     """
     try:
         out = subprocess.run(
-            ["nm", str(binpath)], capture_output=True, text=True, timeout=60
+            ["nm", str(binpath)], capture_output=True, text=True, errors="replace", timeout=60
         )
         return "__cyg_profile_func_enter" in out.stdout
     except Exception:
