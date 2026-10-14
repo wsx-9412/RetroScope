@@ -13,9 +13,9 @@ For TIFF:
 
 For the non-TIFF targets (binutils/ELF, giflib/GIF, libxml2/XML,
 freetype/sfnt+WOFF) the on-disk structure is parsed statically
-(static_structure_region) and its field positions feed the directed
-mutation in Step 6c (the static fallback stage) — the same role
-_static_ifd_region plays for TIFF when no dynamic fork context exists.
+(static_structure_region) and its field positions feed the Step 6c/6d
+static fallback sweep — the same role _static_ifd_region plays for TIFF
+when no dynamic fork context exists.
 """
 
 import subprocess
