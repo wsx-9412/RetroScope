@@ -4406,6 +4406,7 @@ def _count_crash_point_hits(binary, args, crash_file, crash_line,
     base = os.path.basename(str(crash_file))
     candidates = [crash_line, crash_line - 1, crash_line + 1]
 
+    drifted = None
     for cand in candidates:
         if cand <= 0:
             continue
@@ -4436,7 +4437,7 @@ def _count_crash_point_hits(binary, args, crash_file, crash_line,
                     timeout=timeout + 60, env=env)
                 output = result.stdout + result.stderr
             except Exception:
-                return None, None
+                continue
         finally:
             try:
                 os.unlink(script_path)
@@ -4457,11 +4458,19 @@ def _count_crash_point_hits(binary, args, crash_file, crash_line,
         n = int(m.group(1))
         if n <= 0:
             continue
-        if resolved is not None and resolved != cand:
-            # gdb resolved the spec to a different line: the hit count is
-            # still valid for THAT resolved statement, so anchor there.
-            return n, resolved - crash_line
-        return n, cand - crash_line
+        if resolved is not None and resolved == cand:
+            # exact resolution: the count is for the statement itself, whose
+            # semantics are stable across builds
+            return n, cand - crash_line
+        if drifted is None:
+            # gdb moved the breakpoint to a nearby line (continuation-line
+            # DWARF quirk): keep as fallback, prefer an exact candidate
+            drifted = (n, resolved, cand)
+    if drifted is not None:
+        n, resolved, cand = drifted
+        delta = (resolved - crash_line) if resolved is not None \
+            else (cand - crash_line)
+        return n, delta
     return None, None
 
 

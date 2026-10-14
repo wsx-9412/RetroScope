@@ -129,6 +129,12 @@ def build_hint(div, binary_target, fork_file=None, fork_line=None,
     f_line = fork_line or div.get("root_cause_line_b") or div.get("root_cause_line")
     if not f_file or not f_line:
         return None
+    # crash_point_hits anchors carry the line the breakpoint really resolved
+    # to on the reference side; apply the same shift on the target so the
+    # invocation-count alignment holds
+    _delta = dyn.get("anchor_delta")
+    if fork_line is None and isinstance(_delta, int) and _delta:
+        f_line = int(f_line) + _delta
     spec = "%s:%d" % (f_file, int(f_line))
     stmt = b.get("text") or div.get("root_cause_statement_b") or ""
     m = re.match(r"^\s*if\s*\((.*)\)\s*$", stmt, re.S)
