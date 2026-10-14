@@ -7076,7 +7076,11 @@ def main():
     # Only apply to TIFF projects — for other targets these fields do not
     # exist and their GDB evaluation just fails.
     _is_tiff = 'tiff' in (fork_file or '').lower() or 'tiff' in binary.lower()
-    if not config.get('dynamic_fork') and _is_tiff:
+    # a "crash_point_hits" dynamic_fork only carries the invocation anchor
+    # (no fork variables); the TIFF image-field extension still applies.
+    _dynfork = config.get('dynamic_fork') or {}
+    if (not _dynfork or _dynfork.get('status') == 'crash_point_hits') \
+            and _is_tiff:
         _image_fields = ['image.width', 'image.length', 'image.bps', 'image.spp',
                          'image.compression', 'image.photometric', 'image.orientation',
                          'image.planar', 'image.res_unit']

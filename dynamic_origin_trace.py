@@ -1029,6 +1029,31 @@ def scan_reg(reg, parent, depth, bound_pc=None, label=None, delta=0,
     scan_slot(("reg", reg), parent, depth, bound_pc=bound_pc, stop_pcs=stop_pcs,
               delta=delta, label=label)
 
+POINTER_DEREFS = [0]
+POINTER_DEREF_MAX = int(CFG.get("max_pointer_derefs", 16))
+
+def _deref_scan(addr, parent, depth, note="pointer content"):
+    """Trace the BYTES a pointer points at instead of skipping the pointer.
+
+    Input-derived data flows through heap copies (string tables, decoded
+    buffers): the pointer VALUE is not input-derived, but the bytes at the
+    pointed-to address are.  Scanning the first 8 bytes is enough to link
+    the slot to its producer (a copy/read from the input file), which the
+    regular slot machinery then follows to the input offsets.
+    """
+    if depth >= MAX_DEPTH:
+        add_event(parent, "depth_limit", note=note)
+        return
+    if POINTER_DEREFS[0] >= POINTER_DEREF_MAX:
+        add_event(parent, "pointer_deref_limit", value=hex(addr),
+                  note="max_pointer_derefs=%d reached" % POINTER_DEREF_MAX)
+        return
+    POINTER_DEREFS[0] += 1
+    stats["pointer_derefs"] = stats.get("pointer_derefs", 0) + 1
+    eid = add_event(parent, "pointer_deref", value=hex(addr), size=8,
+                    note=note)
+    scan_mem(addr, 8, eid, depth + 1)
+
 def trace_read_request(parent, max_lookback=300):
     """At an error-constant terminal, look back a bounded window for the file
     read that set the failure status: report the nearest call(s) to a
