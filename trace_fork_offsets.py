@@ -14,7 +14,8 @@ For TIFF:
 For the non-TIFF targets (binutils/ELF, giflib/GIF, libxml2/XML,
 freetype/sfnt+WOFF) the on-disk structure is parsed statically
 (static_structure_region) and its field positions feed the directed
-mutation in Step 6a — the same role _static_ifd_region plays for TIFF.
+mutation in Step 6c (the static fallback stage) — the same role
+_static_ifd_region plays for TIFF when no dynamic fork context exists.
 """
 
 import subprocess
@@ -5269,11 +5270,12 @@ def _static_ifd_region(input_file):
 # binutils (ELF), giflib (GIF), libxml2 (XML), freetype (sfnt/TTF/OTF/TTC
 # and WOFF).  Same role as _static_ifd_region: when the dynamic fork-point
 # context produced no structural region, parse the plain on-disk structure
-# and hand the field positions to the directed-value mutation in Step 6a.
+# and hand the field positions to the directed-value mutation in Step 6c
+# (the static fallback stage).
 # ---------------------------------------------------------------------------
 
 # Cap on structural field positions per format: every position is screened
-# with the directed probe set in Step 6a, so unbounded structures (a
+# with the directed probe set in Step 6c, so unbounded structures (a
 # 256-entry colour table, a 1000-section ELF) must not explode the run
 # count.  Fields are sorted by offset, so the header/marker positions —
 # the semantically critical ones — are kept first.
@@ -7947,60 +7949,85 @@ def main():
                   '(fork-variable offsets)',
             version=config.get('version_b'))
 
-    # Step 6a: directed structural mutation of the region fields — TIFF IFD
-    # tag/type/count/offset of every entry of the fork-point IFD, or the
-    # ELF/GIF/XML/font structure fields from the static format parse.  Each
-    # field is tested only with its meaning-bearing values, so a tag rewrite
-    # (e.g. RowsPerStrip 278 -> StripByteCounts 279 at 0xDC) is exercised
-    # without a 255-value sweep.
-    ifd_crash_results = {}
-    ifd_any_match = False
-    if _ifd_probe_offsets and binary and binary_ref and input_file \
-            and os.path.isfile(input_file):
+    # Mutation ordering (dynamic first, static last):
+    #   Step 6   — single-byte sweep over the GDB-discovered fork-variable
+    #              offsets (dynamic);
+    #   Step 6a  — directed-value mutation of structure fields derived from
+    #              the DYNAMIC fork-point context (e.g. the TIFF IFD region
+    #              traced at the fork statement);
+    #   Step 6b  — pairwise (two-offset) mutation over the dynamic offset
+    #              pool only;
+    #   Step 6c  — directed-value mutation of structure fields from a
+    #              STATIC format parse (ELF/GIF/XML/font headers etc.),
+    #              run only when every dynamic phase above found nothing.
+    def _directed_structural_stage(_probe_offsets, _step_label):
+        """Directed-meaning-value mutation of structural fields.
+
+        Each field is tested only with its meaning-bearing value set (e.g.
+        a tag rewrite like RowsPerStrip 278 -> StripByteCounts 279 at 0xDC)
+        rather than a full 255-value sweep.  Returns (results, matched)."""
+        _results = {}
+        _matched = False
+        if not (_probe_offsets and binary and binary_ref and input_file
+                and os.path.isfile(input_file)):
+            return _results, _matched
         _probe_map = {o: _structure_probe_values(_ifd_region, o)
-                      for o in _ifd_probe_offsets}
+                      for o in _probe_offsets}
         _probe_map = {o: v for o, v in _probe_map.items() if v}
+        if not _probe_map:
+            return _results, _matched
         _all_probes = sorted({v for vals in _probe_map.values()
                               for v in vals})
+        _offs = sorted(_probe_map)
         _is_tiff_region = (_ifd_region.get('format') or 'tiff') == 'tiff'
         _struct_title = ('IFD-region' if _is_tiff_region
                          else (_ifd_region.get('label') or 'structure'))
         _struct_field = 'IFD-field' if _is_tiff_region else 'structure-field'
         print(f'\n{"="*60}')
-        print(f'  Step 6a: Directed {_struct_title} mutation '
-              f'({len(_ifd_probe_offsets)} structural fields, '
+        print(f'  {_step_label}: Directed {_struct_title} mutation '
+              f'({len(_offs)} structural fields, '
               f'{len(_all_probes)} directed values)')
         print(f'{"="*60}')
         try:
-            ifd_crash_results = test_byte_mutations_compare(
+            _results = test_byte_mutations_compare(
                 binary, binary_ref, input_file, program_args,
-                _ifd_probe_offsets, timeout=a.timeout,
+                _offs, timeout=a.timeout,
                 probe_values=_all_probes,
                 version=config.get('version_b'))
             for offset, info in sorted(
-                    (k, v) for k, v in ifd_crash_results.items()
+                    (k, v) for k, v in _results.items()
                     if isinstance(k, int)):
                 if info.get('matches'):
-                    ifd_any_match = True
+                    _matched = True
                     print(f'\n  Offset 0x{offset:x} '
                           f'(original=0x{info["original"]:02x}):')
                     for byte_val, m in sorted(info['matches'].items()):
                         print(f'    0x{byte_val:02x} -> {m}')
-            if not ifd_any_match:
+            if not _matched:
                 print(f'\n  No directed {_struct_field} value reproduces the '
                       f'reference crash')
         except Exception as _e:
-            print(f'  [!] IFD-region mutation failed: {_e}')
-        if ifd_any_match:
-            any_match = True
+            print(f'  [!] {_step_label} mutation failed: {_e}')
+        return _results, _matched
+
+    ifd_crash_results = {}
+    # Step 6a: dynamic-context structure fields (still "GDB-discovered").
+    _dyn_probe_offsets = list(_ifd_probe_offsets) if _ifd_from_dynamic \
+        else []
+    ifd_crash_results, ifd_any_match = _directed_structural_stage(
+        _dyn_probe_offsets, 'Step 6a')
+    if ifd_any_match:
+        any_match = True
 
     # Step 6b: two-offset combined mutation — single-byte sweeps miss
     # interactions that need TWO bytes changed (e.g. the sign byte AND the
     # low byte of a corrupt sample-rate field).  The pool covers every
-    # single-byte candidate: the fork-variable/IFD-adjacent stage-1 offsets
+    # single-byte DYNAMIC candidate: the fork-variable stage-1 offsets
     # PLUS the dynamically traced offsets and their gate/inert
     # classification from --origin-mutation, so a gate discovered by one
     # sweep is always combinable with an inert byte discovered by another.
+    # Static-format offsets are deliberately excluded — they belong to the
+    # Step 6c fallback.
     pairwise_results = {}
     _active_offs, _inert_offs, _weak_offs, _value_hints = \
         _classify_sweep_results(crash_results, origin_results)
@@ -8024,6 +8051,26 @@ def main():
             version=config.get('version_b'),
             interaction_pairs=_interaction_pairs,
             value_hints=_value_hints)
+        for _pk, _pv in pairwise_results.items():
+            if isinstance(_pv, dict) and _pv.get('matches'):
+                any_match = True
+                break
+
+    # Step 6c: STATIC-analysis structure fields — only when every dynamic
+    # phase (6 singles, 6a dynamic directed, 6b pairwise) failed to
+    # reproduce the reference crash.
+    _stat_probe_offsets = [] if _ifd_from_dynamic \
+        else list(_ifd_probe_offsets)
+    if not any_match and _stat_probe_offsets:
+        _stat_results, _stat_match = _directed_structural_stage(
+            _stat_probe_offsets, 'Step 6c')
+        ifd_crash_results = {**ifd_crash_results, **_stat_results}
+        if _stat_match:
+            ifd_any_match = True
+            any_match = True
+    elif _stat_probe_offsets:
+        print(f'\n  Step 6c skipped: a dynamic offset already reproduces the '
+              f'reference crash (static structure fields not mutated)')
 
     print(f'{"="*60}')
 
@@ -8042,6 +8089,7 @@ def main():
         'variable_offsets': var_offsets,
         'candidate_tiers': candidate_tiers,
         'ifd_region': _ifd_region,
+        'ifd_region_from_dynamic': _ifd_from_dynamic,
         'ifd_region_mutation': ifd_crash_results,
         'mutation_offsets': sorted(stage1_offsets),
         'crash_results': crash_results,
