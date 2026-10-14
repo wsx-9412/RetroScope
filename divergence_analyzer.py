@@ -6135,6 +6135,14 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                     break
 
         fork_vars = _extract_variables_from_expression(crash_stmt)
+        invocation = _count_crash_point_hits(
+            binary_b, args_b, crash_b["file"], crash_b["line"],
+            source_dirs_b, lib_path_b, gdb_timeout)
+        if invocation:
+            print(f"  [*] Target executes its crash point "
+                  f"{os.path.basename(crash_b['file'])}:{crash_b['line']} "
+                  f"{invocation} time(s) before crashing — invocation "
+                  f"#{invocation} is the fork anchor")
         result = {
             "divergence_function": func_name,
             "trace_a_index": a_idx,
