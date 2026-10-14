@@ -7752,8 +7752,11 @@ def main():
     # the fork-point runtime context (tif->tif_diroff + dircount) — nothing
     # static, nothing without a fork-point execution.  These structural
     # fields are NOT merged into the full-sweep set (72 fields x 255 values
-    # would explode); they get the directed-value mutation in Step 6a.
+    # would explode); they get a directed-value mutation: Step 6a when the
+    # region comes from the dynamic fork-point context, Step 6c (fallback)
+    # when it comes from a static format parse.
     _ifd_region = (chain_trace_results or {}).get('ifd_region') or {}
+    _ifd_from_dynamic = bool(_ifd_region.get('field_offsets'))
     if (not _ifd_region.get('field_offsets')) and input_file \
             and os.path.isfile(input_file):
         _ifd_region = _static_ifd_region(input_file) or {}
