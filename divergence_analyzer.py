@@ -6049,24 +6049,6 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
     # Everything below (backward tracer, crash-based, gap walk,
     # sub-function) remains as the fallback chain.
     # ========================================================
-    # A split found directly inside the entry function (main) is
-    # usually a startup/line-number-drift artifact (e.g. one version
-    # calls bfd_set_error_program_name at a different spot in main);
-    # hold it as a last resort and let the crash-path fallbacks run.
-    entry_split_stash = None
-
-    def _trace_entry_function(trace):
-        for ev in trace or []:
-            if isinstance(ev, dict):
-                name = ev.get("name")
-                if name:
-                    return name
-            else:
-                m = re.match(r"[<>]([^@>]+)@d\d+", str(ev))
-                if m:
-                    return m.group(1)
-        return None
-
     print("\n=== Primary locator: last common call -> permanent-split fork ===")
     try:
         _t_ps = time.time()
