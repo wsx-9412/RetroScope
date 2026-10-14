@@ -6057,9 +6057,14 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
 
     def _trace_entry_function(trace):
         for ev in trace or []:
-            m = re.match(r"[<>]([^@>]+)@d\d+", str(ev))
-            if m:
-                return m.group(1)
+            if isinstance(ev, dict):
+                name = ev.get("name")
+                if name:
+                    return name
+            else:
+                m = re.match(r"[<>]([^@>]+)@d\d+", str(ev))
+                if m:
+                    return m.group(1)
         return None
 
     print("\n=== Primary locator: last common call -> permanent-split fork ===")
