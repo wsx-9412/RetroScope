@@ -8058,21 +8058,46 @@ def main():
                 any_match = True
                 break
 
-    # Step 6c: STATIC-analysis structure fields — only when every dynamic
-    # phase (6 singles, 6a dynamic directed, 6b pairwise) failed to
-    # reproduce the reference crash.
-    _stat_probe_offsets = [] if _ifd_from_dynamic \
-        else list(_ifd_probe_offsets)
-    if not any_match and _stat_probe_offsets:
-        _stat_results, _stat_match = _directed_structural_stage(
-            _stat_probe_offsets, 'Step 6c')
-        ifd_crash_results = {**ifd_crash_results, **_stat_results}
+    # Step 6c/6d: STATIC-analysis offsets — the on-disk structure fields
+    # from the static format parse (ELF/GIF/XML/font headers, or the TIFF
+    # IFD when no dynamic fork-point context exists).  Same treatment as
+    # the dynamic phase — full 255-value single sweep, then pairwise — but
+    # run only when every dynamic phase above failed to reproduce the
+    # reference crash.
+    static_crash_results = {}
+    static_pairwise_results = {}
+    _stat_offsets = [] if _ifd_from_dynamic \
+        else sorted(set(_ifd_fields) - stage1_offsets)
+    if not any_match and _stat_offsets:
+        static_crash_results, _stat_match = run_byte_mutation_stage(
+            binary, binary_ref, input_file, program_args,
+            _stat_offsets, a.timeout,
+            title='Step 6c: Byte mutation crash testing '
+                  '(static structure offsets)',
+            version=config.get('version_b'))
         if _stat_match:
-            ifd_any_match = True
             any_match = True
-    elif _stat_probe_offsets:
-        print(f'\n  Step 6c skipped: a dynamic offset already reproduces the '
-              f'reference crash (static structure fields not mutated)')
+    elif _stat_offsets:
+        print(f'\n  Steps 6c/6d skipped: a dynamic offset already reproduces '
+              f'the reference crash (static structure offsets not mutated)')
+    if not any_match and len(_stat_offsets) >= 2:
+        _s_active, _s_inert, _s_weak, _s_hints = \
+            _classify_sweep_results(static_crash_results)
+        _s_pool = sorted(set(_stat_offsets) | _s_active | _s_inert | _s_weak)
+        _s_pairs = _build_interaction_pairs(
+            _s_active, _s_inert | _s_weak | set(_s_active))
+        static_pairwise_results = run_pairwise_mutation_stage(
+            binary, binary_ref, input_file, program_args,
+            _s_pool, {}, a.timeout,
+            title='Step 6d: Two-offset combined byte mutation '
+                  '(static structure offsets)',
+            version=config.get('version_b'),
+            interaction_pairs=_s_pairs,
+            value_hints=_s_hints)
+        for _pk, _pv in static_pairwise_results.items():
+            if isinstance(_pv, dict) and _pv.get('matches'):
+                any_match = True
+                break
 
     print(f'{"="*60}')
 
