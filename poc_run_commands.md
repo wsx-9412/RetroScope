@@ -44,74 +44,78 @@ ASAN_OPTIONS=detect_leaks=0 \
 (nm is `nm-new`, strip is `strip-new`; readelf/objdump/size/objcopy/addr2line
 keep their names.)
 
+**Verified 2026-10-15** (all versions tested with `allocator_may_return_null=1`;
+ASan OOM not counted as crash). Columns: CVE | actual crash versions (verified) | tool | input.
+Note: binutils 2.24 crashes on many malformed inputs generically, so a
+"2.24-only" entry may not be the named CVE defect.
+
 ```
-CVE-2017-6965    2.24-2.28                 readelf -w  in/CVE-2017-6965
-CVE-2017-8392    2.24,2.26-2.28            objdump -S  in/CVE-2017-8392
-CVE-2017-8396    2.26-2.28                 objdump -g  in/CVE-2017-8396
-CVE-2017-12448   2.24,2.26-2.29            objdump -x  in/CVE-2017-12448
-CVE-2017-12449   2.24,2.29                 objdump -x  in/CVE-2017-12449
-CVE-2017-12450   2.24,2.26-2.29            objdump -x  in/CVE-2017-12450
-CVE-2017-12451   2.24,2.26-2.29            objdump -x  in/CVE-2017-12451
-CVE-2017-12452   2.24,2.26-2.29            objdump -x  in/CVE-2017-12452
-CVE-2017-12453   2.24,2.26-2.29            objdump -x  in/CVE-2017-12453
-CVE-2017-12454   2.24,2.26-2.29            objdump -x  in/CVE-2017-12454
-CVE-2017-12455   2.24,2.26-2.29            objdump -x  in/CVE-2017-12455
-CVE-2017-12456   2.24,2.26-2.29            objdump -x -g  in/CVE-2017-12456
-CVE-2017-12457   2.24,2.29                 objdump -x  in/CVE-2017-12457
-CVE-2017-12458   2.24,2.26-2.29            objdump -x  in/CVE-2017-12458
-CVE-2017-12459   2.24,2.26-2.29            objdump -x  in/CVE-2017-12459
-CVE-2017-14130   2.24,2.26-2.29            objdump -x  in/CVE-2017-14130
-CVE-2017-14529   2.24,2.26-2.29            objdump -x  in/CVE-2017-14529
-CVE-2017-14729   2.24,2.26-2.29            objdump -x  in/CVE-2017-14729
-CVE-2017-15225   2.24,2.26-2.29            readelf -w  in/CVE-2017-15225
-CVE-2017-15996   2.24,2.26-2.29            readelf -w  in/CVE-2017-15996
-CVE-2017-16826   2.24,2.26-2.29            objdump -r  in/CVE-2017-16826
-CVE-2017-16832   2.24,2.26-2.29            objdump -x  in/CVE-2017-16832
-CVE-2017-17080   2.24,2.26-2.29            objdump -x  in/CVE-2017-17080
-CVE-2017-17121   2.24,2.26-2.29            objdump -g  in/CVE-2017-17121
-CVE-2017-17122   2.24,2.26-2.29,2.34-2.36   objdump -r  in/CVE-2017-17122
-CVE-2017-17123   2.24,2.26-2.29,2.35-2.36   objdump -g  in/CVE-2017-17123
-CVE-2018-6323    2.24-2.31.1               objdump -x  in/CVE-2018-6323
-CVE-2018-1000876 2.24-2.34                 objdump -d  in/CVE-2018-1000876
-CVE-2018-10372   2.24-2.30                 readelf -w  in/CVE-2018-10372
-CVE-2019-9077    2.24-2.32                 readelf -a  in/CVE-2019-9077
-CVE-2021-20284   2.24,2.26,2.35-2.35.1     objdump -D  in/CVE-2021-20284
-CVE-2021-20294   2.24,2.35-2.35.1          readelf --dyn-syms  in/CVE-2021-20294
-CVE-2021-45078   2.24-2.36                 objdump -g  in/CVE-2021-45078
-CVE-2022-44840   2.38                      readelf -w  in/CVE-2022-44840
-CVE-2022-47695   2.28-2.38                 objdump -d  in/CVE-2022-47695
-CVE-2022-47696   2.24,2.34-2.38            objdump -d  in/CVE-2022-47696
-CVE-2023-1579    2.24-2.35.1               objdump -S  in/CVE-2023-1579
+CVE-2017-6965    2.24-2.28                        readelf -w  in/CVE-2017-6965
+CVE-2017-8392    2.24-2.28                        objdump -S  in/CVE-2017-8392
+CVE-2017-8396    2.26-2.28                        objdump -g  in/CVE-2017-8396
+CVE-2017-12448   2.24-2.29                        objdump -x  in/CVE-2017-12448
+CVE-2017-12449   2.24,2.25,2.29                   objdump -x  in/CVE-2017-12449
+CVE-2017-12450   2.24-2.29                        objdump -x  in/CVE-2017-12450
+CVE-2017-12451   2.24-2.29                        objdump -x  in/CVE-2017-12451
+CVE-2017-12452   2.24-2.29                        objdump -x  in/CVE-2017-12452
+CVE-2017-12453   2.24-2.29                        objdump -x  in/CVE-2017-12453
+CVE-2017-12454   2.24-2.29                        objdump -x  in/CVE-2017-12454
+CVE-2017-12455   2.24-2.29                        objdump -x  in/CVE-2017-12455
+CVE-2017-12456   2.24-2.29                        objdump -x -g  in/CVE-2017-12456
+CVE-2017-12457   2.24,2.29                        objdump -x  in/CVE-2017-12457
+CVE-2017-12458   2.24-2.29                        objdump -x  in/CVE-2017-12458
+CVE-2017-12459   2.24,2.26-2.29                   objdump -x  in/CVE-2017-12459
+CVE-2017-14130   2.24-2.29                        objdump -x  in/CVE-2017-14130
+CVE-2017-14529   2.24-2.29                        objdump -x  in/CVE-2017-14529
+CVE-2017-14729   2.24-2.29                        objdump -x  in/CVE-2017-14729
+CVE-2017-15225   2.24-2.29                        readelf -w  in/CVE-2017-15225
+CVE-2017-15996   NEVER (舍弃: no crash on any version)  readelf -w  in/CVE-2017-15996
+CVE-2017-16826   2.24 only (may be generic)       objdump -r  in/CVE-2017-16826
+CVE-2017-16832   2.24-2.29                        objdump -x  in/CVE-2017-16832
+CVE-2017-17080   2.24-2.29                        objdump -x  in/CVE-2017-17080
+CVE-2017-17121   2.24-2.29                        objdump -g  in/CVE-2017-17121
+CVE-2017-17122   2.24 only (may be generic)       objdump -r  in/CVE-2017-17122
+CVE-2017-17123   2.24,2.26-2.29,2.35-2.36         objdump -g  in/CVE-2017-17123
+CVE-2018-6323    NEVER (舍弃: no crash on any version)  objdump -x  in/CVE-2018-6323
+CVE-2018-1000876 2.24 only (may be generic)       objdump -d  in/CVE-2018-1000876
+CVE-2018-10372   2.24-2.30                        readelf -w  in/CVE-2018-10372
+CVE-2019-9077    2.24-2.32                        readelf -a  in/CVE-2019-9077
+CVE-2021-20284   2.24,2.26,2.35-2.35.1            objdump -D  in/CVE-2021-20284
+CVE-2021-20294   2.24,2.35-2.35.1                 readelf --dyn-syms  in/CVE-2021-20294
+CVE-2021-45078   2.24-2.36                        objdump -g  in/CVE-2021-45078
+CVE-2022-44840   2.38                             readelf -w  in/CVE-2022-44840
+CVE-2022-47695   2.24,2.28-2.38                   objdump -d  in/CVE-2022-47695
+CVE-2022-47696   2.24-2.25,2.34-2.38              objdump -d  in/CVE-2022-47696
+CVE-2023-1579    NEVER (舍弃: no crash on any version)  objdump -S  in/CVE-2023-1579
 ```
 
 Additional binutils PoCs (2018–2023 batch, all sourceware Bugzilla attachments).
-Several of these are **version-specific** — the PoC triggers only on some
-versions, not on others (marked *.):
+Re-verified 2026-10-15 (actual crash versions):
 ```
-CVE-2018-18605   2.27-2.29                 readelf -w  in/CVE-2018-18605
-CVE-2018-18606   2.27-2.29                 readelf -w  in/CVE-2018-18606
-CVE-2018-18607   2.27-2.29                 readelf -w  in/CVE-2018-18607
-CVE-2018-19931   2.27-2.31.1               objdump -x  in/CVE-2018-19931
-CVE-2018-20002   2.27-2.32                 objdump -s  in/CVE-2018-20002
-CVE-2019-9073    2.27-2.32                 objdump -x  in/CVE-2019-9073
-CVE-2019-9074    2.27-2.32                 objdump -x  in/CVE-2019-9074
-CVE-2019-9075    2.27-2.32                 objdump -x  in/CVE-2019-9075
-CVE-2019-9076    2.27-2.34                 objdump -x  in/CVE-2019-9076
-CVE-2019-17450 * 2.30,2.31,2.31.1,2.34-2.38  objdump -g  in/CVE-2019-17450   (NOT 2.27-2.29)
-CVE-2019-17451   2.27-2.31.1,2.34-2.38      objdump -g  in/CVE-2019-17451
-CVE-2020-16592 * 2.34                     objdump -x  in/CVE-2020-16592   (only 2.34)
-CVE-2020-16599   2.27-2.32                 objdump -s  in/CVE-2020-16599
-CVE-2020-35448 * 2.35,2.35.1               objdump -d  in/CVE-2020-35448   (only 2.35.x)
-CVE-2021-46174   2.27-2.36                 objdump -g  in/CVE-2021-46174
-CVE-2022-48063 * 2.34-2.38                 objdump -g  in/CVE-2022-48063   (NOT <=2.32)
-CVE-2022-48064   2.27-2.32                 objdump -s  in/CVE-2022-48064
-CVE-2023-1972  * 2.27-2.32,2.40            objdump -x  in/CVE-2023-1972   (gap 2.34-2.38)
+CVE-2018-18605   2.24-2.29                        readelf -w  in/CVE-2018-18605
+CVE-2018-18606   2.24-2.29                        readelf -w  in/CVE-2018-18606
+CVE-2018-18607   2.24-2.29                        readelf -w  in/CVE-2018-18607
+CVE-2018-19931   NEVER (舍弃: only ASan OOM, not memory-safety crash)  objdump -x  in/CVE-2018-19931
+CVE-2018-20002   2.24 only (may be generic)       objdump -s  in/CVE-2018-20002
+CVE-2019-9073    2.24 only (may be generic)       objdump -x  in/CVE-2019-9073
+CVE-2019-9074    2.24,2.26-2.32                   objdump -x  in/CVE-2019-9074
+CVE-2019-9075    2.24-2.32                        objdump -x  in/CVE-2019-9075
+CVE-2019-9076    2.24 only (may be generic)       objdump -x  in/CVE-2019-9076
+CVE-2019-17450   NEVER (舍弃: no crash on any version)  objdump -g  in/CVE-2019-17450
+CVE-2019-17451   2.24 only (may be generic)       objdump -g  in/CVE-2019-17451
+CVE-2020-16592   2.24,2.34                        objdump -x  in/CVE-2020-16592
+CVE-2020-16599   NEVER (舍弃: no crash on any version)  objdump -s  in/CVE-2020-16599
+CVE-2020-35448   2.24,2.35-2.35.1                 objdump -d  in/CVE-2020-35448
+CVE-2021-46174   2.24-2.36                        objdump -g  in/CVE-2021-46174
+CVE-2022-48063   2.24-2.25 (NOT 2.34-2.38 as claimed)  objdump -g  in/CVE-2022-48063
+CVE-2022-48064   2.24 only (may be generic)       objdump -s  in/CVE-2022-48064
+CVE-2023-1972    2.24,2.40                        objdump -x  in/CVE-2023-1972
 ```
 
 Note: binutils 2.24 crashes on many malformed inputs (generic robustness
-issue), so a "2.24 CRASH" may reflect a different defect than the named CVE.
-The binutils 2.27–2.29 entries are the ones that match the CVE's reported
-function (see crash-function column below).
+issue), so a "2.24-only CRASH" may reflect a different defect than the named
+CVE. CVEs marked NEVER do not crash any available version with the fixed PoC
+and should be discarded for fork-point analysis.
 
 ### libxml2 (5 PoCs)
 
