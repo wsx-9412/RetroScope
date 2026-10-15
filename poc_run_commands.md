@@ -387,3 +387,415 @@ CVE-2026-95512   harness build/test_face_all.c
 CVE-2025-32415 (libxml2, 需 2.13.7/2.14.0 精确版本), CVE-2025-67812 (libxml2),
 CVE-2025-6170/0990/0992/0989 (libxml2, 无文件型 PoC), CVE-2023-39742 (giflib getarg,
 本环境 ASAN 不报), CVE-2023-48161/2025-31344 (giflib, sourceforge 不可达)。
+
+------------------------------------------------------------------------
+
+## 同漏洞跨版本验证 (2026-10-14, verify_poc_versions.py)
+
+对以上全部已下载 PoC (103 个 CVE, binutils 2.24–2.47 / ld-new 2.44–2.47 /
+libxml2 2.9.0–2.14.5 / giflib 4.1.6–6.1.3 / freetype harness) 逐一跨版本
+复测。判定复用管线同款标准 (`trace_fork_offsets.py::compare_crash_signatures`):
+
+- **同漏洞** = ASan 崩溃类型一致 + 最内层用户帧函数一致 (same_site/same_func);
+- **同类型异点** (类型同、函数/语句不同) 判为**不同漏洞**;
+- 无 ASan 报告的 SIGABRT (assert) 单独按信号记录;
+- "报告函数不一致!" 多为 ASan 最内层帧停在 memcpy/fread/bfd_getl32 等
+  公共辅助函数、而 Bugzilla 报告的是调用方 —— 不影响同漏洞判定
+  (判定基于 ref 崩溃签名跨版本对比, 非与报告函数比对)。
+
+原始数据: `results/poc_samevuln/results.json`; 复跑: `python3 verify_poc_versions.py`。
+
+### 本轮修正的两处记录
+
+- **CVE-2026-91782**: 正确触发为 `ld -o /dev/null in/CVE-2026-91782`
+  (**不带 -r**; 上表中的 `ld -r` 是笔误, 带 -r 各版本均不崩溃)。
+  实测仅 2.44 触发 (SEGV elf_x86_allocate_dynrelocs), 2.45/2.47 已修复。
+- **CVE-2017-17122**: 2.29 上 objdump 输出 "File truncated" 正常退出、
+  **不崩溃**; 实际同漏洞版本为 2.25–2.28 与 2.34–2.36 (ASan OOM in
+  _objalloc_alloc), 2.24 为异类型通用崩溃。上表 "2.26-2.29" 应去掉 2.29。
+- CVE-2017-14529 / CVE-2017-14729: 2.24–2.28 首轮 15s 超时, 60s 复跑后
+  2.25–2.28 判定为同漏洞 (2.24 异类型)。
+
+
+## 同漏洞跨版本验证 (2026-10-14)
+
+判定标准与代码一致 (`trace_fork_offsets.py::compare_crash_signatures`): **同漏洞** = ASan 崩溃类型一致 + 最内层用户帧函数一致 (same_site/same_func); same_type (类型同、函数/语句不同) 判为**不同漏洞**; 无 ASan 报告的信号崩溃单独按信号记录。
+每个 CVE 以文档记录的受影响版本为参考基准 (ref), 其余版本逐一运行同命令并对比崩溃签名。
+
+### binutils (objdump/readelf)
+
+```
+CVE-2017-12448  ref=2.29  ref_crash=heap-use-after-free bfd_cache_close  reported=bfd_cache_close [报告函数一致]
+    同漏洞: 2.24, 2.25, 2.26, 2.27, 2.28
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-12449  ref=2.29  ref_crash=heap-buffer-overflow memcpy  reported=_bfd_vms_save_sized_string [报告函数不一致!]
+    同漏洞: 2.25
+    异类型崩溃: 2.24
+    不触发: 2.26, 2.27, 2.28, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-12450  ref=2.29  ref_crash=heap-buffer-overflow fread  reported=alpha_vms_object_p [报告函数不一致!]
+    同漏洞: 2.24, 2.25, 2.26, 2.27, 2.28
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-12451  ref=2.29  ref_crash=stack-buffer-overflow _bfd_xcoff_read_ar_hdr  reported=_bfd_xcoff_read_ar_hdr [报告函数一致]
+    同漏洞: 2.24, 2.25, 2.26, 2.27, 2.28
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-12452  ref=2.29  ref_crash=heap-buffer-overflow bfd_mach_o_i386_canonicalize_one_reloc  reported=bfd_mach_o_i386_canonicalize_one_reloc [报告函数一致]
+    同漏洞: 2.27, 2.28
+    同类型异点(不同漏洞): 2.25, 2.26
+    异类型崩溃: 2.24
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-12453  ref=2.29  ref_crash=heap-buffer-overflow bfd_getl32  reported=_bfd_vms_slurp_eeom [报告函数不一致!]
+    同漏洞: 2.24, 2.25, 2.26, 2.27, 2.28
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-12454  ref=2.29  ref_crash=SEGV _bfd_vms_slurp_egsd  reported=_bfd_vms_slurp_egsd [报告函数一致]
+    同漏洞: 2.25, 2.26, 2.27, 2.28
+    同类型异点(不同漏洞): 2.24
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-12455  ref=2.29  ref_crash=heap-buffer-overflow evax_bfd_print_emh  reported=evax_bfd_print_emh [报告函数一致]
+    同漏洞: 2.25, 2.26, 2.27, 2.28
+    异类型崩溃: 2.24
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-12456  ref=2.29  ref_crash=heap-buffer-overflow read_symbol_stabs_debugging_info  reported=read_symbol_stabs_debugging_info [报告函数一致]
+    同漏洞: 2.25, 2.26, 2.27, 2.28
+    异类型崩溃: 2.24
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-12457  ref=2.29  ref_crash=SEGV bfd_make_section_with_flags  reported=bfd_make_section_with_flags [报告函数一致]
+    同漏洞: -
+    同类型异点(不同漏洞): 2.24
+    不触发: 2.25, 2.26, 2.27, 2.28, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-12458  ref=2.29  ref_crash=heap-buffer-overflow nlm_swap_auxiliary_headers_in  reported=nlm_swap_auxiliary_headers_in [报告函数一致]
+    同漏洞: 2.24, 2.25, 2.26, 2.27, 2.28
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-12459  ref=2.29  ref_crash=heap-buffer-overflow fread  reported=bfd_mach_o_read_symtab_strtab [报告函数不一致!]
+    同漏洞: 2.26, 2.27, 2.28
+    异类型崩溃: 2.24
+    不触发: 2.25, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-14130  ref=2.29  ref_crash=heap-buffer-overflow _bfd_elf_attr_strdup  reported=display_object_bfd [报告函数不一致!]
+    同漏洞: 2.24, 2.25, 2.26, 2.27, 2.28
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-14529  ref=2.29  ref_crash=heap-buffer-overflow bfd_getl16  reported=dump_bfd_private_header [报告函数不一致!]
+    同漏洞: 2.25, 2.26, 2.27, 2.28
+    异类型崩溃: 2.24
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-14729  ref=2.29  ref_crash=heap-buffer-overflow bfd_getl16  reported=dump_bfd_private_header [报告函数不一致!]
+    同漏洞: 2.25, 2.26, 2.27, 2.28
+    异类型崩溃: 2.24
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-15225  ref=2.29  ref_crash=heap-buffer-overflow get_line_filename_and_dirname  reported=get_line_filename_and_dirname [报告函数一致]
+    同漏洞: 2.26, 2.27, 2.28
+    同类型异点(不同漏洞): 2.25
+    异类型崩溃: 2.24
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-15996  ref=2.29  ref_crash=allocator setup_archive  reported=?
+    同漏洞: 2.24, 2.25, 2.26, 2.28
+    异类型崩溃: 2.27
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-16826  ref=2.29  ref_crash=allocator _objalloc_alloc  reported=dump_relocs_in_section [报告函数不一致!]
+    同漏洞: 2.25, 2.26, 2.27, 2.28
+    异类型崩溃: 2.24
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-16832  ref=2.29  ref_crash=heap-buffer-overflow bfd_getl32  reported=display_object_bfd [报告函数不一致!]
+    同漏洞: 2.26, 2.27, 2.28
+    同类型异点(不同漏洞): 2.25
+    异类型崩溃: 2.24
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-17080  ref=2.29  ref_crash=heap-buffer-overflow bfd_getl32  reported=display_object_bfd [报告函数不一致!]
+    同漏洞: 2.25, 2.26, 2.27, 2.28
+    异类型崩溃: 2.24
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-17121  ref=2.29  ref_crash=SEGV bfd_getl32  reported=perform_reloc [报告函数不一致!]
+    同漏洞: 2.25, 2.26, 2.27, 2.28
+    同类型异点(不同漏洞): 2.24
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-17122  ref=2.28  ref_crash=allocator _objalloc_alloc  reported=dump_relocs_in_section [报告函数不一致!]
+    同漏洞: 2.25, 2.26, 2.27, 2.34, 2.35, 2.35.1, 2.36
+    异类型崩溃: 2.24
+    不触发: 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-17123  ref=2.29  ref_crash=SEGV coff_slurp_reloc_table  reported=load_specific_debug_section [报告函数不一致!]
+    同漏洞: 2.26, 2.27, 2.28
+    同类型异点(不同漏洞): 2.24, 2.35, 2.35.1, 2.36
+    不触发: 2.25, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-6965  ref=2.28  ref_crash=heap-buffer-overflow byte_put_little_endian  reported=byte_put_little_endian [报告函数一致]
+    同漏洞: 2.24, 2.25, 2.26, 2.27
+    不触发: 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-8392  ref=2.28  ref_crash=heap-buffer-overflow bfd_getl32  reported=bfd_getl32 [报告函数一致]
+    同漏洞: 2.25, 2.26, 2.27
+    异类型崩溃: 2.24
+    不触发: 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2017-8396  ref=2.28  ref_crash=heap-buffer-overflow bfd_getl64  reported=bfd_getl64 [报告函数一致]
+    同漏洞: 2.26, 2.27
+    不触发: 2.24, 2.25, 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2018-1000876  ref=2.34  ref_crash=allocator bfd_malloc  reported=bfd_get_dynamic_reloc_upper_bound [报告函数不一致!]
+    同漏洞: 2.29, 2.30, 2.31, 2.31.1, 2.32
+    异类型崩溃: 2.24, 2.25, 2.26, 2.27, 2.28
+    不触发: 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2018-10372  ref=2.30  ref_crash=heap-buffer-overflow printf  reported=process_cu_tu_index [报告函数不一致!]
+    同漏洞: 2.26, 2.27, 2.28, 2.29
+    同类型异点(不同漏洞): 2.24, 2.25
+    不触发: 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2018-18605  ref=2.29  ref_crash=heap-buffer-overflow get_line_filename_and_dirname  reported=byte_get_little_endian [报告函数不一致!]
+    同漏洞: 2.26, 2.27, 2.28
+    同类型异点(不同漏洞): 2.24, 2.25
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2018-18606  ref=2.29  ref_crash=heap-buffer-overflow get_line_filename_and_dirname  reported=?
+    同漏洞: 2.26, 2.27, 2.28
+    同类型异点(不同漏洞): 2.25
+    异类型崩溃: 2.24
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2018-18607  ref=2.29  ref_crash=heap-buffer-overflow get_line_filename_and_dirname  reported=?
+    同漏洞: 2.26, 2.27, 2.28
+    同类型异点(不同漏洞): 2.24, 2.25
+    不触发: 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2018-19931  ref=2.31.1  ref_crash=allocator _objalloc_alloc  reported=?
+    同漏洞: 2.24, 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31
+    不触发: 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2018-20002  ref=2.32  ref_crash=requested bfd_malloc  reported=?
+    同漏洞: 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1
+    异类型崩溃: 2.24
+    不触发: 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2018-6323  ref=2.31.1  ref_crash=allocator _objalloc_alloc  reported=elf_object_p [报告函数不一致!]
+    同漏洞: 2.24, 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31
+    不触发: 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2019-17450  ref=2.34  ref_crash=requested load_specific_debug_section  reported=?
+    同漏洞: 2.30, 2.31, 2.31.1, 2.35, 2.35.1, 2.36
+    同类型异点(不同漏洞): 2.24, 2.25, 2.38
+    不触发: 2.26, 2.27, 2.28, 2.29, 2.32, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2019-17451  ref=2.34  ref_crash=requested load_specific_debug_section  reported=?
+    同漏洞: 2.30, 2.31, 2.31.1, 2.35, 2.35.1, 2.36
+    同类型异点(不同漏洞): 2.25, 2.26, 2.27, 2.28, 2.29, 2.38
+    异类型崩溃: 2.24
+    不触发: 2.32, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2019-9073  ref=2.32  ref_crash=allocator bfd_malloc  reported=?
+    同漏洞: 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1
+    异类型崩溃: 2.24
+    不触发: 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2019-9074  ref=2.32  ref_crash=SEGV bfd_getl32  reported=?
+    同漏洞: 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1
+    同类型异点(不同漏洞): 2.24
+    不触发: 2.25, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2019-9075  ref=2.32  ref_crash=heap-buffer-overflow _bfd_archive_64_bit_slurp_armap  reported=?
+    同漏洞: 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1
+    同类型异点(不同漏洞): 2.24, 2.25, 2.26
+    不触发: 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2019-9076  ref=2.34  ref_crash=allocator bfd_malloc  reported=?
+    同漏洞: 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1, 2.32
+    异类型崩溃: 2.24
+    不触发: 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2019-9077  ref=2.32  ref_crash=heap-buffer-overflow process_mips_specific  reported=process_mips_specific [报告函数一致]
+    同漏洞: 2.24, 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1
+    不触发: 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2020-16592  ref=2.34  ref_crash=heap-use-after-free bfd_hash_lookup  reported=?
+    同漏洞: -
+    异类型崩溃: 2.24
+    不触发: 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2020-16599  ref=2.32  ref_crash=allocator bfd_malloc  reported=?
+    同漏洞: 2.24, 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1
+    不触发: 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2020-35448  ref=2.35.1  ref_crash=heap-buffer-overflow bfd_getl_signed_32  reported=?
+    同漏洞: 2.35
+    异类型崩溃: 2.24
+    不触发: 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2021-20284  ref=2.35.1  ref_crash=heap-buffer-overflow _bfd_elf_slurp_secondary_reloc_section  reported=_bfd_elf_slurp_secondary_reloc_section [报告函数一致]
+    同漏洞: 2.35
+    同类型异点(不同漏洞): 2.26
+    异类型崩溃: 2.24
+    不触发: 2.25, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2021-20294  ref=2.35.1  ref_crash=stack-buffer-overflow sprintf  reported=get_num_dynamic_syms [报告函数不一致!]
+    同漏洞: 2.35
+    异类型崩溃: 2.24
+    不触发: 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2021-45078  ref=2.36  ref_crash=heap-buffer-overflow finish_stab  reported=finish_stab [报告函数一致]
+    同漏洞: 2.24, 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1
+    不触发: 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2021-46174  ref=2.36  ref_crash=heap-buffer-overflow bfd_getl32  reported=?
+    同漏洞: 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1
+    异类型崩溃: 2.24
+    不触发: 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2022-44840  ref=2.38  ref_crash=heap-buffer-overflow find_section_in_set  reported=find_section_in_set [报告函数一致]
+    同漏洞: -
+    不触发: 2.24, 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2022-47695  ref=2.38  ref_crash=SEGV bfd_get_flavour  reported=compare_symbols [报告函数不一致!]
+    同漏洞: 2.34, 2.35, 2.35.1, 2.36
+    同类型异点(不同漏洞): 2.24, 2.28, 2.29, 2.30, 2.31, 2.31.1, 2.32
+    不触发: 2.25, 2.26, 2.27, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2022-47696  ref=2.38  ref_crash=SEGV bfd_get_flavour  reported=bfd_get_flavour [报告函数一致]
+    同漏洞: 2.34, 2.35, 2.35.1, 2.36
+    同类型异点(不同漏洞): 2.24, 2.25
+    不触发: 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2022-48063  ref=2.38  ref_crash=allocator xmalloc  reported=?
+    同漏洞: -
+    同类型异点(不同漏洞): 2.34, 2.35, 2.35.1, 2.36
+    异类型崩溃: 2.24, 2.25
+    不触发: 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2022-48064  ref=2.32  ref_crash=requested bfd_malloc  reported=?
+    同漏洞: 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1
+    异类型崩溃: 2.24
+    不触发: 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2023-1579  ref=2.35.1  ref_crash=requested xmalloc  reported=coff_slurp_reloc_table [报告函数不一致!]
+    同漏洞: 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35
+    同类型异点(不同漏洞): 2.24, 2.25
+    不触发: 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2023-1972  ref=2.32  ref_crash=requested xmalloc  reported=?
+    同漏洞: 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1
+    异类型崩溃: 2.24, 2.40
+    不触发: 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2023-25588  ref=2.38  ref_crash=SEGV bfd_get_flavour  reported=?
+    同漏洞: 2.34, 2.35, 2.35.1, 2.36
+    同类型异点(不同漏洞): 2.24, 2.25
+    不触发: 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.47
+CVE-2025-0840  ref=2.43  ref_crash=stack-buffer-overflow disassemble_bytes  reported=?
+    同漏洞: 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42
+    异类型崩溃: 2.24
+    不触发: 2.44, 2.45, 2.47
+CVE-2025-11081  ref=2.45  ref_crash=SEGV dump_dwarf_section  reported=?
+    同漏洞: -
+    不触发: 2.24, 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.42, 2.43, 2.44, 2.47
+CVE-2025-11839  ref=2.45  ref_crash=no-ASAN SIGABRT  reported=?
+    同漏洞: -
+    signal:SIGABRT (无ASAN报告): 2.42, 2.43, 2.44
+    不触发: 2.24, 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.47
+CVE-2025-69645  ref=2.45  ref_crash=no-ASAN SIGABRT  reported=?
+    同漏洞: -
+    signal:SIGABRT (无ASAN报告): 2.42, 2.43, 2.44
+    不触发: 2.24, 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.47
+CVE-2025-69652  ref=2.42  ref_crash=SEGV read_bases  reported=?
+    同漏洞: -
+    signal:SIGABRT (无ASAN报告): 2.45
+    不触发: 2.24, 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.31.1, 2.32, 2.34, 2.35, 2.35.1, 2.36, 2.38, 2.40, 2.41, 2.43, 2.44, 2.47
+```
+
+### binutils ld-new
+
+```
+CVE-2025-11082  ref=2.45  ref_crash=heap-buffer-overflow _bfd_elf_parse_eh_frame  reported=?
+    同漏洞: 2.44
+    不触发: 2.47
+CVE-2025-11083  ref=2.45  ref_crash=heap-buffer-overflow cache_bwrite  reported=?
+    同漏洞: 2.44
+    不触发: 2.47
+CVE-2025-11412  ref=2.45  ref_crash=SEGV bfd_elf_gc_record_vtentry  reported=?
+    同漏洞: 2.44
+    不触发: 2.47
+CVE-2025-11413  ref=2.45  ref_crash=SEGV bfd_elf_gc_record_vtentry  reported=?
+    同漏洞: 2.44
+    不触发: 2.47
+CVE-2025-11414  ref=2.45  ref_crash=SEGV get_link_hash_entry  reported=?
+    同漏洞: -
+    同类型异点(不同漏洞): 2.44
+    不触发: 2.47
+CVE-2025-11494  ref=2.45  ref_crash=SEGV _bfd_elf_write_section_eh_frame  reported=?
+    同漏洞: 2.44
+    不触发: 2.47
+CVE-2025-11495  ref=2.45  ref_crash=heap-buffer-overflow elf_x86_64_relocate_section  reported=?
+    同漏洞: -
+    不触发: 2.44, 2.47
+CVE-2025-11840  ref=2.45  ref_crash=SEGV fprintf  reported=?
+    同漏洞: 2.44
+    不触发: 2.47
+CVE-2025-5244  ref=2.44  ref_crash=SEGV __GI__IO_default_xsputn  reported=?
+    同漏洞: -
+    不触发: 2.45, 2.47
+CVE-2026-15003  ref=2.45  ref_crash=heap-buffer-overflow bfd_getb32  reported=?
+    同漏洞: 2.44
+    不触发: 2.47
+CVE-2026-6846  ref=2.45  ref_crash=heap-buffer-overflow xcoff_link_add_symbols  reported=?
+    同漏洞: 2.44
+    不触发: 2.47
+CVE-2026-90801  ref=2.47  ref_crash=heap-buffer-overflow cache_bwrite  reported=?
+    同漏洞: 2.45
+    同类型异点(不同漏洞): 2.44
+CVE-2026-90802  ref=2.47  ref_crash=SEGV bfd_putl64  reported=?
+    同漏洞: 2.44, 2.45
+CVE-2026-90803  ref=2.47  ref_crash=heap-buffer-overflow elf_x86_64_relocate_section  reported=?
+    同漏洞: 2.45
+    不触发: 2.44
+CVE-2026-90828  ref=2.47  ref_crash=SEGV elf_orphan_compatible  reported=?
+    同漏洞: 2.44, 2.45
+CVE-2026-90829  ref=2.47  ref_crash=SEGV bfd_elf_set_group_contents  reported=?
+    同漏洞: 2.44, 2.45
+CVE-2026-90830  ref=2.47  ref_crash=SEGV _bfd_write_merged_section  reported=?
+    同漏洞: -
+    同类型异点(不同漏洞): 2.44, 2.45
+CVE-2026-90831  ref=2.47  ref_crash=SEGV _bfd_elf_strtab_delref  reported=?
+    同漏洞: 2.45
+    不触发: 2.44
+CVE-2026-91779  ref=2.47  ref_crash=SEGV _bfd_elf_eh_frame_section_offset  reported=?
+    同漏洞: 2.44, 2.45
+CVE-2026-91780  ref=2.47  ref_crash=SEGV elf_link_add_object_symbols  reported=?
+    同漏洞: 2.44, 2.45
+CVE-2026-91781  ref=2.47  ref_crash=SEGV elf_x86_64_common_section_index  reported=?
+    同漏洞: 2.44, 2.45
+CVE-2026-91782  ref=2.44  ref_crash=SEGV elf_x86_allocate_dynrelocs  reported=?
+    同漏洞: -
+    不触发: 2.45, 2.47
+```
+
+### libxml2
+
+```
+CVE-2015-8710  ref=2.9.1  ref_crash=heap-buffer-overflow htmlCurrentChar  reported=htmlCurrentChar [报告函数一致]
+    同漏洞: 2.9.0, 2.9.2
+    不触发: 2.9.4
+CVE-2016-3627  ref=2.9.2  ref_crash=stack-overflow xmlStrndup  reported=?
+    同漏洞: 2.9.0
+    同类型异点(不同漏洞): 2.9.1
+    不触发: 2.9.4, 2.9.5, 2.9.7, 2.9.8, 2.9.9, 2.9.10, 2.9.11, 2.9.12, 2.9.14, 2.10.4, 2.11.5, 2.12.10, 2.13.6, 2.14.5
+CVE-2017-7376  ref=2.9.4  ref_crash=heap-buffer-overflow snprintf  reported=?
+    同漏洞: 2.9.0, 2.9.1, 2.9.2
+    不触发: 2.9.5, 2.9.7, 2.9.8, 2.9.9, 2.9.10, 2.9.11, 2.9.12, 2.9.14, 2.10.4, 2.11.5, 2.12.10, 2.13.6, 2.14.5
+CVE-2017-9047  ref=2.9.4  ref_crash=stack-buffer-overflow strcat  reported=xmlSnprintfElementContent [报告函数不一致!]
+    同漏洞: 2.9.0, 2.9.1, 2.9.2
+    不触发: 2.9.5, 2.9.7, 2.9.8, 2.9.9, 2.9.10, 2.9.11, 2.9.12, 2.9.14, 2.10.4, 2.11.5, 2.12.10, 2.13.6, 2.14.5
+CVE-2017-9049  ref=2.9.4  ref_crash=heap-buffer-overflow xmlDictComputeFastKey  reported=xmlDictComputeFastKey [报告函数一致]
+    同漏洞: -
+    不触发: 2.9.0, 2.9.1, 2.9.2, 2.9.5, 2.9.7, 2.9.8, 2.9.9, 2.9.10, 2.9.11, 2.9.12, 2.9.14, 2.10.4, 2.11.5, 2.12.10, 2.13.6, 2.14.5
+CVE-2024-25062  ref=2.11.5  ref_crash=heap-use-after-free xmlValidatePopElement  reported=xmlValidatePopElement [报告函数一致]
+    同漏洞: -
+    不触发: 2.12.10
+CVE-2024-34459  ref=2.11.5  ref_crash=heap-buffer-overflow xmlHTMLPrintFileContext  reported=?
+    同漏洞: 2.9.5, 2.9.7, 2.9.8, 2.9.9, 2.9.10
+    不触发: 2.9.0, 2.9.1, 2.9.2, 2.9.4, 2.9.11, 2.9.12, 2.9.14, 2.10.4, 2.12.10, 2.13.6, 2.14.5
+CVE-2025-27113  ref=2.11.5  ref_crash=SEGV xmlPatMatch  reported=?
+    同漏洞: 2.9.0, 2.9.1, 2.9.2, 2.9.4, 2.9.5, 2.9.7, 2.9.8, 2.9.9, 2.9.10, 2.9.11, 2.9.12, 2.9.14, 2.10.4
+    不触发: 2.12.10, 2.13.6, 2.14.5
+CVE-2025-49794  ref=2.11.5  ref_crash=SEGV xmlSchematronFormatReport  reported=xmlSchematronFormatReport [报告函数一致]
+    同漏洞: 2.9.14, 2.13.6
+CVE-2025-49795  ref=2.11.5  ref_crash=SEGV xmlSchematronFormatReport  reported=xmlSchematronFormatReport [报告函数一致]
+    同漏洞: 2.13.6
+    不触发: 2.9.14
+CVE-2025-49796  ref=2.11.5  ref_crash=SEGV xmlSchematronFormatReport  reported=?
+    同漏洞: 2.9.14, 2.13.6
+```
+
+### giflib
+
+```
+CVE-2015-7555  ref=5.1.1  ref_crash=heap-buffer-overflow main  reported=?
+    同漏洞: 4.1.6
+    不触发: 5.1.2, 5.1.4, 5.1.7, 5.1.8, 5.1.9, 5.2.1, 5.2.2, 6.1.3
+CVE-2022-28506  ref=5.2.1  ref_crash=heap-buffer-overflow DumpScreen2RGB  reported=DumpScreen2RGB [报告函数一致]
+    同漏洞: 5.1.1, 5.1.2, 5.1.4, 5.1.7, 5.1.8, 5.1.9
+    不触发: 4.1.6, 5.2.2, 6.1.3
+CVE-2024-45993  ref=5.2.1  ref_crash=heap-buffer-overflow DumpScreen2RGB  reported=?
+    同漏洞: 4.1.6, 5.1.1, 5.1.2, 5.1.4, 5.1.7, 5.1.8, 5.1.9, 5.2.2
+    不触发: 6.1.3
+CVE-2026-26740  ref=5.2.1  ref_crash=heap-buffer-overflow EGifGCBToExtension  reported=?
+    同漏洞: 5.1.1, 5.1.2, 5.1.4, 5.2.2
+```
+
+### freetype
+
+```
+CVE-2020-15999  ref=2.9.1  ref_crash=heap-buffer-overflow png_combine_row  reported=Load_SBit_Png [报告函数不一致!]
+    同漏洞: 2.5.5, 2.6.5, 2.7.1
+    同类型异点(不同漏洞): 2.8.1
+CVE-2022-27404  ref=2.11.1  ref_crash=heap-buffer-overflow sfnt_init_face  reported=sfnt_init_face [报告函数一致]
+    同漏洞: -
+CVE-2026-23865  ref=2.14.1  ref_crash=SEGV tt_var_get_item_delta  reported=tt_var_get_item_delta [报告函数一致]
+    同漏洞: 2.13.1, 2.13.2, 2.13.3, 2.14.0
+CVE-2026-50811  ref=2.14.1  ref_crash=heap-buffer-overflow TT_Get_Var_Design  reported=TT_Get_Var_Design [报告函数一致]
+    同漏洞: 2.14.0
+    不触发: 2.13.3
+CVE-2026-95512  ref=2.14.1  ref_crash=no crash  reported=?
+    同漏洞: -
+```
+
