@@ -344,7 +344,8 @@ CVE-2026-26740   giftool -d 1 < in/CVE-2026-26740      5.2.1, 5.2.2 (EGifGCBToEx
 
 ```
 CVE-2024-56171   xmllint --noout --schema <版本自带 test/schemas/bug322411_1.xsd> in/CVE-2024-56171
-                 触发: 2.10.4, 2.11.5   (2.12.10 起修复)
+                 触发: 2.9.0–2.11.5 全部 (heap-use-after-free xmlSchemaIDCFillNodeTables)
+                 不触发: 2.12.10, 2.13.6, 2.14.5
 CVE-2024-34459   xmllint --htmlout in/CVE-2024-34459
                  触发: 2.11.5           (2.12.7 起修复; 仅 2.11.5)
 CVE-2025-27113   xmllint --walker --pattern '/child::info/.' in/CVE-2025-27113
