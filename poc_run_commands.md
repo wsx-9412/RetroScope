@@ -388,6 +388,21 @@ CVE-2025-32415 (libxml2, 需 2.13.7/2.14.0 精确版本), CVE-2025-67812 (libxml
 CVE-2025-6170/0990/0992/0989 (libxml2, 无文件型 PoC), CVE-2023-39742 (giflib getarg,
 本环境 ASAN 不报), CVE-2023-48161/2025-31344 (giflib, sourceforge 不可达)。
 
+### 全版本扫描结果 (2026-10-15)
+
+CVE-2025-32415 (libxml2): 附件含 bug322411_1.xsd + bug322411_0.xml,
+`xmllint --noout --schema` 触发**另一个** UAF (xmlSchemaIDCFillNodeTables):
+- 2.9.0, 2.9.14, 2.10.4, 2.11.5: heap-use-after-free
+- 2.12.10+ 不触发 (此 UAF 已在 2.12 修复)
+
+但 **CVE-2025-32415 本体** 是 heap-buffer-overflow (nbNodes=0 时 nodeTable[-1] 越界读),
+需 fuzzer 输入 (xmlSchemaIDCFillNodeTables-hbo), GitLab upload 需登录无法下载。
+**舍弃**: 已下载附件不触发 CVE-2025-32415 本体。
+
+CVE-2025-67812 (libxml2): 4096 字节模糊 XML 文本, 未找到 CVE 详情,
+各版本 xmllint 常见参数 (--noout/--html/--push/--stream/--reader/--relaxng/--schema)
+均无 ASan 崩溃。**舍弃**。
+
 ------------------------------------------------------------------------
 
 ## 同漏洞跨版本验证 (2026-10-14, verify_poc_versions.py)
@@ -416,6 +431,11 @@ libxml2 2.9.0–2.14.5 / giflib 4.1.6–6.1.3 / freetype harness) 逐一跨版�
   _objalloc_alloc), 2.24 为异类型通用崩溃。上表 "2.26-2.29" 应去掉 2.29。
 - CVE-2017-14529 / CVE-2017-14729: 2.24–2.28 首轮 15s 超时, 60s 复跑后
   2.25–2.28 判定为同漏洞 (2.24 异类型)。
+- **CVE-2018-18605**: 早期"2.25/2.27 打不开 PoC"的记录系误用 `ld -w` 所致;
+  官方命令为 **`readelf -w`**。实测全版本扫描: 2.24–2.29 均触发 ASan
+  heap-buffer-overflow (2.26–2.29 same_func `get_line_filename_and_dirname`,
+  2.24/2.25 异函数 `display_debug_lines_raw`), **2.30 起不触发**。
+  回归配置定为 REF=2.29 / TGT=2.30。
 
 
 ## 同漏洞跨版本验证 (2026-10-14)
