@@ -2,7 +2,7 @@
 # Sweep target versions for CVE-2022-3627: start at 4.0.5, go older.
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-VERSIONS=(4.0.5 4.0.4 4.0.4beta 4.0.3 4.0.2 4.0.1 4.0.0 3.9.6 3.9.5 3.9.4 3.9.3)
+VERSIONS=(4.0.4 4.0.4beta 4.0.3 4.0.2 4.0.1 4.0.0 3.9.6 3.9.5 3.9.4 3.9.3)
 
 for ver in "${VERSIONS[@]}"; do
     echo "========================================================"
