@@ -97,7 +97,7 @@ case "$PROJECT_NAME" in
         EXTRA_ARGS=(--include-exits)
         ;;
     "binutils")
-        REFERENCE_VERSION_PATH="$BASE_DIR/binutils-versions/binutils-2.27"
+        REFERENCE_VERSION_PATH="$BASE_DIR/binutils-versions/binutils-2.26"
         TARGET_VERSION_PATH="$BASE_DIR/binutils-versions/binutils-2.25"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2018-18605"
         EXTRA_ARGS=(--include-exits)
