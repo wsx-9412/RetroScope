@@ -139,7 +139,7 @@ export RETRO_TIMINGS="results/${CVE_ID}_timings.json"
 # Version-swap log: group by CVE, name by version pair
 REF_BASENAME=$(basename "$REFERENCE_VERSION_PATH")
 TGT_BASENAME=$(basename "$TARGET_VERSION_PATH")
-LOG_DIR="results/version_swap/${CVE_ID}"
+LOG_DIR="results/version_sweep/${CVE_ID}"
 mkdir -p "$LOG_DIR"
 LOG_FILE="${LOG_DIR}/${TGT_BASENAME}.log"
 
