@@ -18,8 +18,8 @@
 # =====================================================
 # CVE configuration: change this section for each CVE
 # =====================================================
-CVE_ID = "CVE-2018-18605"          # CVE number
-INPUT_FILE = "in/CVE-2018-18605"   # input file path (relative to RetroScope/)
+CVE_ID = "CVE-2018-18607"          # CVE number
+INPUT_FILE = "in/CVE-2018-18607"   # input file path (relative to RetroScope/)
 OUTPUT_FILE = "/tmp/foo"          # program output file
 # Program arguments template: {program_path}, {input_file}, {output_file}
 # {program_path} already IS the tool binary selected by EXECUTION_CONFIG
