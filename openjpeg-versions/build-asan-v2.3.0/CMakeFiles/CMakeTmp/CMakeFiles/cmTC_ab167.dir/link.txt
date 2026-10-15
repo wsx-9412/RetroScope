@@ -1,1 +1,0 @@
-/usr/bin/cc -g -O0 -fsanitize=address -fno-omit-frame-pointer -fno-common  -rdynamic CMakeFiles/cmTC_ab167.dir/CheckSymbolExists.c.o -o cmTC_ab167 
