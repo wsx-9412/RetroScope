@@ -42,7 +42,7 @@ REPO = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.join(REPO, 'results', 'poc_samevuln')
 TIMEOUT = int(os.environ.get('POC_SWEEP_TIMEOUT', '15'))
 WORKERS = int(os.environ.get('POC_SWEEP_WORKERS', '3'))
-ENV = dict(os.environ, ASAN_OPTIONS='detect_leaks=0')
+ENV = dict(os.environ, ASAN_OPTIONS='detect_leaks=0:allocator_may_return_null=1')
 
 HUGE_OBJDUMP_ARGS = [
     '-S', '-D', '-x', '-s', '-Z', '-g', '-e', '-G', '-T', '-t', '-L', '-R',
