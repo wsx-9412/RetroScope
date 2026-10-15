@@ -252,15 +252,18 @@ Newer toolchains built for this batch: binutils 2.41–2.45, 2.47
 (`build-asan/` for objdump/readelf; `build-asan-ld/ld/ld-new` for the ld CVEs),
 libxml2 2.10.4–2.14.5, freetype 2.13.1–2.14.1, giflib 6.1.3.
 
+**版本敏感性 (2026-10-15 same-vuln 验证)**: 标 * 的在可用版本上无法触发同一
+漏洞（需特定 HEAD 版本），不适用于跨版本 fork 分析。
+
 ### objdump / readelf 类
 
 ```
-CVE-2023-25588   objdump -d                      2.34 2.35 2.35.1 2.36 2.38
-CVE-2025-0840    objdump --insn-width 64 -d      2.27–2.43            (fixed 2.44+)
-CVE-2025-11081 * objdump -S -D -x -s -Z -g -e -G -T -t -L -R --disassemble-zeroes --insn-width=32 --disassembler-color=extended   仅 2.45
-CVE-2025-11839 * objdump 同上参数                2.42–2.45 (SIGABRT)
-CVE-2025-69645 * objdump --source-comment        2.42–2.45 (SIGABRT, assert)
-CVE-2025-69652 * readelf -w abbrev              2.42 (ASAN) / 2.45 (SIGABRT)
+CVE-2023-25588   objdump -d     2.34-2.36 (2.26-2.32 no crash, 版本敏感, 已入主表)
+CVE-2025-0840    objdump --insn-width 64 -d   2.25-2.42 同漏洞 (2.24 different; 2.44+ fixed)  — 仅 2.24 边界, 参考价值低
+CVE-2025-11081 * objdump 多参数   仅 2.45 (其他版本 no_crash, 需特定 HEAD)
+CVE-2025-11839 * objdump 同上     2.42-2.45 SIGABRT (需特定 HEAD)
+CVE-2025-69645 * objdump --source-comment  2.42-2.45 SIGABRT (需特定 HEAD)
+CVE-2025-69652 * readelf -w abbrev  2.42 ASAN / 2.45 SIGABRT (需特定 HEAD)
 ```
 
 ### ld 类 (ld-new 位于 binutils-<ver>/build-asan-ld/ld/ld-new)
