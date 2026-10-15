@@ -73,6 +73,12 @@ def build_run_env(binary):
     if "detect_leaks=0" not in _asan:
         env["ASAN_OPTIONS"] = ("detect_leaks=0" +
                                (":" + _asan if _asan else ""))
+    # Return NULL on OOM instead of ASan aborting: a huge allocation
+    # (e.g. CVE-2018-19931) then hits the program's own error path
+    # ("memory exhausted") rather than a fake ASan crash.
+    _asan = env.get("ASAN_OPTIONS", "")
+    if "allocator_may_return_null" not in _asan:
+        env["ASAN_OPTIONS"] = _asan + ":allocator_may_return_null=1"
     d = os.path.dirname(os.path.abspath(binary))
     for _ in range(6):
         lib_dirs = []

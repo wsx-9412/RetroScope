@@ -185,7 +185,7 @@ def verify_one(binary, hint, mutant_path, program_args, original_input,
     with open(script_path, "w") as f:
         f.write(GDB_VERIFY_SCRIPT)
     env = build_run_env(real)
-    env["ASAN_OPTIONS"] = "detect_leaks=0:abort_on_error=0"
+    env["ASAN_OPTIONS"] = "detect_leaks=0:abort_on_error=0:allocator_may_return_null=1"
     env["FORK_VERIFY_CFG"] = cfg_path
     try:
         proc = subprocess.run(
@@ -467,7 +467,7 @@ def main():
                                   if isinstance(ref_args, (list, tuple))
                                   else str(ref_args).split())]
             env = build_run_env(resolve_binary(binary_ref))
-            env["ASAN_OPTIONS"] = "detect_leaks=0:abort_on_error=0"
+            env["ASAN_OPTIONS"] = "detect_leaks=0:abort_on_error=0:allocator_may_return_null=1"
             proc = subprocess.run([resolve_binary(binary_ref)] + ref_args,
                                   env=env, capture_output=True, text=True, errors="replace",
                                   timeout=a.timeout)

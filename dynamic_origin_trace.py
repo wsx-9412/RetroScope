@@ -2043,7 +2043,7 @@ def main():
         env = tfo.build_run_env(real_bin)
     except Exception:
         real_bin = binary
-    env["ASAN_OPTIONS"] = "detect_leaks=0:abort_on_error=0"
+    env["ASAN_OPTIONS"] = "detect_leaks=0:abort_on_error=0:allocator_may_return_null=1"
     # ld.so's lazy PLT resolver uses XSAVE instructions that record-full
     # cannot replay; resolve everything before main instead.
     env.setdefault("LD_BIND_NOW", "1")
