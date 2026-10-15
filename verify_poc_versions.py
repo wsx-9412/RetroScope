@@ -446,27 +446,28 @@ def compile_4979x():
         'CVE-2025-49796': 'in/CVE-2025-49796.c',
     }
     libs = {
-        '2.9.14': ('libxml2-versions/libxml2-2.9.14/include',
+        '2.9.14': (['libxml2-versions/libxml2-2.9.14/include'],
                    'libxml2-versions/libxml2-2.9.14/.libs/libxml2.a'),
-        '2.11.5': ('libxml2-versions/libxml2-2.11.5/include',
+        '2.11.5': (['libxml2-versions/libxml2-2.11.5/include',
+                    'libxml2-versions/libxml2-2.11.5/build'],
                    'libxml2-versions/libxml2-2.11.5/build/libxml2.a'),
-        '2.13.6': ('libxml2-versions/libxml2-2.13.6/include',
+        '2.13.6': (['libxml2-versions/libxml2-2.13.6/include'],
                    'libxml2-versions/libxml2-2.13.6/.libs/libxml2.a'),
     }
     for cve, src in specs.items():
-        for ver, (inc, lib) in libs.items():
+        for ver, (incs, lib) in libs.items():
             out = os.path.join(REPO, 'build',
                                f'{cve.replace("-", "_")}_{ver}')
             if os.path.isfile(out):
                 continue
             if not (os.path.isfile(os.path.join(REPO, lib)) and
-                    os.path.isdir(os.path.join(REPO, inc))):
+                    all(os.path.isdir(os.path.join(REPO, i)) for i in incs)):
                 print(f'  [!] {cve} {ver}: missing lib/include, skip')
                 continue
-            cmd = ['gcc', '-O1', '-g', '-fsanitize=address',
-                   f'-I{inc}', os.path.join(REPO, src),
-                   os.path.join(REPO, lib), '-lz', '-lm',
-                   '-fsanitize=address', '-o', out]
+            cmd = ['gcc', '-O1', '-g', '-fsanitize=address']
+            cmd += [f'-I{i}' for i in incs]
+            cmd += [os.path.join(REPO, src), os.path.join(REPO, lib),
+                    '-lz', '-lm', '-fsanitize=address', '-o', out]
             r = subprocess.run(cmd, capture_output=True, text=True)
             if r.returncode != 0:
                 print(f'  [!] compile {cve} {ver} failed: '
