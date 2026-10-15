@@ -266,7 +266,7 @@ built, or exploit-style PoC):
 
 - CVE-2018-20623 (readelf UAF, `process_archive`) — sourceware bug 24049, att 11503.
 - CVE-2022-45703 (readelf, `display_debug_section`) — sourceware bug 29799, att 14460 (2.39/2.40-dev window only).
-- CVE-2018-18309 / CVE-2018-17360 / CVE-2018-20671 / CVE-2017-7209 — attachments obtained, vulnerable path not reachable with a 64-bit ASAN build of the target versions.
+- CVE-2018-18309 / CVE-2018-17360 / CVE-2018-20671 — `objdump -x` 触发于 **2.24** (stack-buffer-overflow bfd_getb32); 2.25–2.47 不触发。CVE-2017-7209 附件已获但路径不可达。
 - CVE-2017-8393 / CVE-2017-8394 / CVE-2017-8395 (objcopy) — attachments obtained, not triggered.
 - CVE-2017-9954 / CVE-2017-9955 — PoC is a RAR archive (no unrar available).
 - CVE-2017-12450/12452/... tar-group members outside the mapped set.
