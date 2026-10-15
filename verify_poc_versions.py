@@ -494,6 +494,7 @@ def main():
 
         # Phase 1: reference runs (serial per CVE for a stable baseline)
         print('[*] phase 1: reference crashes...')
+        ref_sigs = {}
         for entry in cat:
             ref_label = entry['ref']
             ref_run = None
@@ -502,42 +503,19 @@ def main():
                     print(f"  {entry['id']} ref={label} "
                           f"{os.path.basename(b)} {' '.join(args)}")
                     ref_run = run_one(b, args, stdin)
-                    ref_run.pop('_sig', None)
                     break
+            ref_sigs[entry['id']] = ref_run
+            entry['_ref_run'] = ref_run
             results[entry['id']] = {
                 'project': entry['project'],
                 'kind': entry['kind'],
                 'ref_version': ref_label,
                 'reported_func': entry.get('reported'),
                 'note': entry.get('note'),
-                'ref_run': {k: v for k, v in ref_run.items()}
-                if ref_run else None,
+                'ref_run': {k: v for k, v in ref_run.items()
+                            if k != '_sig'} if ref_run else None,
                 'versions': {},
             }
-            # keep the ref signature in memory for comparison
-            entry['_ref_run'] = ref_run
-
-        # re-run refs keeping _sig for comparison (run_one stores sig in _sig;
-        # we popped it above for JSON — recompute lazily in phase 2 by
-        # re-adding: simplest is to keep a parallel dict)
-        ref_sigs = {}
-        for entry in cat:
-            rr = entry.get('_ref_run')
-            if rr and rr.get('_sig') is None and rr.get('asan'):
-                # re-extract by re-running is wasteful; instead we should not
-                # have popped.  Fix: re-run only the ref with sig kept.
-                for label, b, args, stdin in entry['runs']:
-                    if label == entry['ref']:
-                        full = run_one(b, args, stdin)
-                        ref_sigs[entry['id']] = full
-                        entry['_ref_run'] = full
-                        # refresh JSON copy
-                        results[entry['id']]['ref_run'] = {
-                            k: v for k, v in full.items()
-                            if k != '_sig'}
-                        break
-            elif rr:
-                ref_sigs[entry['id']] = rr
 
         # Phase 2: all other versions
         print('[*] phase 2: sweeping all versions '
