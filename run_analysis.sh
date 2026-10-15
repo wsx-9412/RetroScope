@@ -136,6 +136,16 @@ RESULT_FILE="results/${PROJECT_NAME}_fork_result.json"
 mkdir -p results
 export RETRO_TIMINGS="results/${CVE_ID}_timings.json"
 
+# Version-swap log: group by CVE, name by version pair
+REF_BASENAME=$(basename "$REFERENCE_VERSION_PATH")
+TGT_BASENAME=$(basename "$TARGET_VERSION_PATH")
+LOG_DIR="results/version_swap/${CVE_ID}"
+mkdir -p "$LOG_DIR"
+LOG_FILE="${LOG_DIR}/${REF_BASENAME}_vs_${TGT_BASENAME}.log"
+
+# Tee all output to the log file while keeping terminal output
+exec > >(tee "$LOG_FILE") 2>&1
+
 echo "=== ${PROJECT_NAME} fork-point analysis ==="
 echo "CVE:           $CVE_ID"
 echo "Config:        $CONFIG_MODULE"
