@@ -124,7 +124,7 @@ BINUTILS_CLI = [
     ('CVE-2017-16832', 'objdump', ['-x'], '2.29', 'display_object_bfd'),
     ('CVE-2017-17080', 'objdump', ['-x'], '2.29', 'display_object_bfd'),
     ('CVE-2017-17121', 'objdump', ['-g'], '2.29', 'perform_reloc'),
-    ('CVE-2017-17122', 'objdump', ['-r'], '2.29', 'dump_relocs_in_section'),
+    ('CVE-2017-17122', 'objdump', ['-r'], '2.28', 'dump_relocs_in_section'),
     ('CVE-2017-17123', 'objdump', ['-g'], '2.29',
      'load_specific_debug_section'),
     ('CVE-2018-6323', 'objdump', ['-x'], '2.31.1', 'elf_object_p'),
@@ -653,6 +653,11 @@ def print_markdown(results):
             if s['different']:
                 lines.append(f"    异类型崩溃: "
                              f"{', '.join(_vsort(s['different']))}")
+            cu = [v for v, d in res['versions'].items()
+                  if d['verdict'] == 'crash_uncompared']
+            if cu:
+                lines.append(f"    其他崩溃(ref无崩溃基准): "
+                             f"{', '.join(_vsort(cu))}")
             for sig, vs in sorted((s.get('signals') or {}).items()):
                 lines.append(f"    {sig} (无ASAN报告): "
                              f"{', '.join(_vsort(vs))}")
