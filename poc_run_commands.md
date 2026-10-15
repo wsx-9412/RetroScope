@@ -75,6 +75,7 @@ CVE-2021-20294   2.35                   (2.24 different,2.25-2.34 no crash) read
 CVE-2021-46174   2.25-2.35.1            (2.24 different)              objdump -g     in/CVE-2021-46174
 CVE-2022-47695   2.34-2.36              (2.25-2.27 no crash,2.24/2.28-2.32 same_type) objdump -d in/CVE-2022-47695
 CVE-2022-47696   2.34-2.36              (2.26-2.32 no crash,2.24-2.25 same_type) objdump -d in/CVE-2022-47696
+CVE-2023-25588   2.34-2.36              (2.26-2.32 no crash)          objdump -d     in/CVE-2023-25588
 ```
 
 已剔除（非版本敏感或无真实崩溃）:
