@@ -821,3 +821,35 @@ CVE-2026-95512  ref=2.14.1  ref_crash=no crash  reported=?
     同漏洞: -
 ```
 
+------------------------------------------------------------------------
+
+## 补充版本扫描 (2026-10-15)
+
+对 poc_run_commands.md 中提到但未进 103-CVE sweep 的 CVE 补做全版本扫描:
+
+### libxml2
+
+```
+CVE-2024-56171  ref=2.11.5  ref_crash=heap-use-after-free xmlSchemaIDCFillNodeTables
+    同漏洞: 2.9.0, 2.9.1, 2.9.2, 2.9.4, 2.9.5, 2.9.7, 2.9.8, 2.9.9, 2.9.11, 2.9.12, 2.10.4
+    不触发: 2.12.10, 2.13.6, 2.14.5
+CVE-2025-32415  附件(bug322411)触发另一UAF(2.9.0–2.11.5), 但CVE本体需fuzzer输入, 舍弃
+CVE-2025-67812  各版本xmllint常见参数均无ASan崩溃, 舍弃
+```
+
+### binutils
+
+```
+CVE-2018-17360  ref=2.24  ref_crash=stack-buffer-overflow bfd_getb32
+    同漏洞: (仅2.24)
+    不触发: 2.25–2.47 全部
+CVE-2018-18309  ref=2.24  ref_crash=stack-buffer-overflow bfd_getb32
+    同漏洞: (仅2.24)
+    不触发: 2.25–2.47 全部
+CVE-2018-20671  ref=2.24  ref_crash=stack-buffer-overflow bfd_getb32
+    同漏洞: (仅2.24)
+    不触发: 2.25–2.47 全部
+```
+
+注: 之前记录的"vulnerable path not reachable"已修正 — `objdump -x` 在 2.24 可触发。
+
