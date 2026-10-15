@@ -334,7 +334,7 @@ def build_catalog():
         for ver in ('2.44', '2.45', '2.47'):
             b = binutils_ld(ver)
             if b:
-                runs.append((ver, b, args, None))
+                runs.append((ver, b, args + [f'in/{cve}'], None))
         cat.append({'id': cve, 'project': 'binutils-ld', 'kind': 'cli',
                     'ref': LD_REF[cve], 'reported': None, 'runs': runs})
 
@@ -505,6 +505,13 @@ def main():
                           f"{os.path.basename(b)} {' '.join(args)}")
                     ref_run = run_one(b, args, stdin)
                     break
+            if ref_run is None and entry['runs']:
+                label, b, args, stdin = entry['runs'][0]
+                print(f"  [!] {entry['id']} ref {ref_label} not built; "
+                      f"falling back to {label}")
+                ref_label = label
+                entry['ref'] = label
+                ref_run = run_one(b, args, stdin)
             ref_sigs[entry['id']] = ref_run
             entry['_ref_run'] = ref_run
             results[entry['id']] = {
