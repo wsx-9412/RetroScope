@@ -4927,6 +4927,12 @@ def extract_crash_signature(output):
     if not m:
         return None
     asan_type = m.group(1)
+    # ASan OOM ("allocator is out of memory trying to allocate ...") is
+    # resource exhaustion, not a memory-safety violation; do not treat it
+    # as a crash (CVE-2018-19931-style huge allocations).
+    _err_line = output[m.start():output.find('\n', m.start())]
+    if asan_type == 'allocator' or 'out of memory' in _err_line:
+        return None
 
     frames = []
     for ln in output.split('\n'):
