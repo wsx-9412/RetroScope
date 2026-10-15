@@ -930,7 +930,7 @@ def probe_returns(binary, func_name, input_file, run_args, lib_path=None,
     script = f'''set pagination off
 set confirm off
 set breakpoint pending on
-set env ASAN_OPTIONS=detect_leaks=0
+set env ASAN_OPTIONS=detect_leaks=0:allocator_may_return_null=1
 break {func_name}
 run {run_args}
 python
@@ -1008,7 +1008,7 @@ def probe_returns_many(binary, func_names, input_file, run_args, lib_path=None,
     script = (f'''set pagination off
 set confirm off
 set breakpoint pending on
-set env ASAN_OPTIONS=detect_leaks=0
+set env ASAN_OPTIONS=detect_leaks=0:allocator_may_return_null=1
 ''' + "\n".join(f"break {n}" for n in names) + f'''
 run {run_args}
 python
@@ -1281,7 +1281,7 @@ def _condition_at(returns, line):
 def _make_env(lib_path=None):
     """Create environment with ASAN_OPTIONS and optional LD_LIBRARY_PATH."""
     env = os.environ.copy()
-    env["ASAN_OPTIONS"] = "detect_leaks=0"
+    env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1"
     if lib_path:
         old_ld = env.get("LD_LIBRARY_PATH", "")
         env["LD_LIBRARY_PATH"] = f"{lib_path}:{old_ld}" if old_ld else lib_path

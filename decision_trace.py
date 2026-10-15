@@ -245,7 +245,7 @@ def _gdb_function_range(binary, func, source_root, args):
     try:
         libs = _collect_lib_paths(binary)
         env = os.environ.copy()
-        env['ASAN_OPTIONS'] = 'detect_leaks=0'
+        env['ASAN_OPTIONS'] = 'detect_leaks=0:allocator_may_return_null=1'
         if libs:
             env['LD_LIBRARY_PATH'] = ':'.join(libs + [env.get('LD_LIBRARY_PATH', '')])
         cmd = ['gdb', '-batch', '-q', '-ex', 'start', '-ex',
@@ -926,7 +926,7 @@ def _gdb_resolve_function_source(binary, func, source_root, args):
     try:
         libs = _collect_lib_paths(binary)
         env = os.environ.copy()
-        env['ASAN_OPTIONS'] = 'detect_leaks=0'
+        env['ASAN_OPTIONS'] = 'detect_leaks=0:allocator_may_return_null=1'
         if libs:
             env['LD_LIBRARY_PATH'] = ':'.join(libs + [env.get('LD_LIBRARY_PATH', '')])
         cmd = ['gdb', '-batch', '-q', '-ex', 'start', '-ex',
@@ -1018,7 +1018,7 @@ def _gdb_metadata_effective(binary, func, source_root, args):
         try:
             libs = _collect_lib_paths(binary)
             env = os.environ.copy()
-            env['ASAN_OPTIONS'] = 'detect_leaks=0'
+            env['ASAN_OPTIONS'] = 'detect_leaks=0:allocator_may_return_null=1'
             if libs:
                 env['LD_LIBRARY_PATH'] = ':'.join(
                     libs + [env.get('LD_LIBRARY_PATH', '')])
@@ -1129,7 +1129,7 @@ def record_decisions(binary, func, args, source_root=None, timeout=180,
         script = tf.name
 
     env = os.environ.copy()
-    env.setdefault('ASAN_OPTIONS', 'detect_leaks=0')
+    env.setdefault('ASAN_OPTIONS', 'detect_leaks=0:allocator_may_return_null=1')
     libs = _collect_lib_paths(real_bin)
     if libs:
         env['LD_LIBRARY_PATH'] = ':'.join(libs + [env.get('LD_LIBRARY_PATH', '')])

@@ -837,7 +837,7 @@ def run_trace(binary, full_args, output_dir):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     env = os.environ.copy()
-    env["ASAN_OPTIONS"] = "detect_leaks=0"
+    env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1"
     env["POLYDB"] = str(output_dir / "polytracker.tdag")
 
     cmd = [str(binary)] + list(full_args)

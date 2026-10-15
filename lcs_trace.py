@@ -200,7 +200,7 @@ def capture_function_trace(cmd, timeout=900, include_exits=False):
     libs = collect_lib_dirs(Path(cmd[0]))
     env.update({"LD_PRELOAD": ":".join(preloads),
                 "FUNC_TRACE_OUT": out_file,
-                "ASAN_OPTIONS": "detect_leaks=0:abort_on_error=1"})
+                "ASAN_OPTIONS": "detect_leaks=0:abort_on_error=1:allocator_may_return_null=1"})
     if libs:
         old_ld = env.get("LD_LIBRARY_PATH", "")
         env["LD_LIBRARY_PATH"] = ":".join(libs + ([old_ld] if old_ld else []))

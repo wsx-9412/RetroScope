@@ -113,7 +113,7 @@ def run_gdb_with_source(binary, source_dirs, commands, lib_path=None, timeout=12
     """Run GDB with source directory and library path configured."""
     _count_gdb_run(binary)
     env = os.environ.copy()
-    env["ASAN_OPTIONS"] = "detect_leaks=0"
+    env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1"
     if lib_path:
         old_ld = env.get("LD_LIBRARY_PATH", "")
         lib_parts = [lib_path] if isinstance(lib_path, str) else lib_path
@@ -1200,7 +1200,7 @@ quit
 
     _count_gdb_run(binary)
     env = os.environ.copy()
-    env["ASAN_OPTIONS"] = "detect_leaks=0"
+    env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1"
     if lib_path:
         old_ld = env.get("LD_LIBRARY_PATH", "")
         lib_parts = [lib_path] if isinstance(lib_path, str) else lib_path
@@ -1420,7 +1420,7 @@ quit
 
     _count_gdb_run(binary)
     env = os.environ.copy()
-    env["ASAN_OPTIONS"] = "detect_leaks=0"
+    env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1"
     if lib_path:
         old_ld = env.get("LD_LIBRARY_PATH", "")
         lib_parts = [lib_path] if isinstance(lib_path, str) else lib_path
@@ -1613,7 +1613,7 @@ quit
         f.write(script)
 
     env = os.environ.copy()
-    env["ASAN_OPTIONS"] = "detect_leaks=0"
+    env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1"
     if lib_path:
         old_ld = env.get("LD_LIBRARY_PATH", "")
         lib_parts = [lib_path] if isinstance(lib_path, str) else lib_path
@@ -3116,7 +3116,7 @@ def _find_guard_condition(binary, func_name, args, lib_path, source_dirs,
         with os.fdopen(fd, 'w') as f:
             f.write(script)
         env = os.environ.copy()
-        env["ASAN_OPTIONS"] = "detect_leaks=0"
+        env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1"
         if lib_path:
             old_ld = env.get("LD_LIBRARY_PATH", "")
             lib_parts = [lib_path] if isinstance(lib_path, str) else lib_path
@@ -3191,7 +3191,7 @@ def _verify_fork_branch(binary, ctrl_file, ctrl_line, diverging_call, args,
         with os.fdopen(fd, 'w') as f:
             f.write(script)
         env = os.environ.copy()
-        env["ASAN_OPTIONS"] = "detect_leaks=0"
+        env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1"
         if lib_path:
             old_ld = env.get("LD_LIBRARY_PATH", "")
             lib_parts = [lib_path] if isinstance(lib_path, str) else lib_path
@@ -4240,7 +4240,7 @@ def _detect_crash_point(binary, args, lib_path, source_dirs, timeout=120):
     """
     _count_gdb_run(binary)
     env = os.environ.copy()
-    env["ASAN_OPTIONS"] = "detect_leaks=0"
+    env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1"
 
     # Collect library paths: explicit lib_path + any .libs directories
     lib_dirs = []
@@ -4398,7 +4398,7 @@ def _count_crash_point_hits(binary, args, crash_file, crash_line,
         return None, None
     _count_gdb_run(binary)
     env = os.environ.copy()
-    env["ASAN_OPTIONS"] = "detect_leaks=0"
+    env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1"
     lib_dirs = []
     if lib_path:
         lib_dirs.append(lib_path)
@@ -5154,7 +5154,7 @@ quit
     with open(script_path, 'w') as f:
         f.write(script)
     env = os.environ.copy()
-    env["ASAN_OPTIONS"] = "detect_leaks=0"
+    env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1"
     gdb_cmds = ["gdb", "-batch", "-nx", "-q"]
     for d in (source_dirs or []):
         gdb_cmds.extend(["-iex", f"directory {d}"])
@@ -7829,7 +7829,7 @@ def _polytracker_build_and_run(source_dir, program_name, input_file,
 
         print(f"    $ {' '.join(run_cmd)}")
         env = os.environ.copy()
-        env['ASAN_OPTIONS'] = 'detect_leaks=0'
+        env['ASAN_OPTIONS'] = 'detect_leaks=0:allocator_may_return_null=1'
         result = subprocess.run(
             run_cmd, capture_output=True, text=True, errors="replace",
             timeout=120, env=env

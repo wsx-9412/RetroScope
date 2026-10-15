@@ -73,7 +73,7 @@ def capture_function_trace(cmd, timeout=300):
     preloads.append(str(FUNCTRACER_SO))
     env.update({"LD_PRELOAD": ":".join(preloads),
                 "FUNC_TRACE_OUT": out_file,
-                "ASAN_OPTIONS": "detect_leaks=0:abort_on_error=1"})
+                "ASAN_OPTIONS": "detect_leaks=0:abort_on_error=1:allocator_may_return_null=1"})
     try:
         subprocess.run([str(c) for c in cmd], capture_output=True,
                        text=True, timeout=timeout, env=env)

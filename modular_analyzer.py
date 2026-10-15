@@ -377,7 +377,7 @@ class InputModifierAnalyzer:
         # set environment variables
         env = os.environ.copy()
         env.update({
-            "ASAN_OPTIONS": "abort_on_error=1:symbolize=1:print_stats=0:halt_on_error=1",
+            "ASAN_OPTIONS": "abort_on_error=1:symbolize=1:print_stats=0:halt_on_error=1:allocator_may_return_null=1",
             "UBSAN_OPTIONS": "abort_on_error=1:symbolize=1"
         })
         
@@ -2137,7 +2137,7 @@ class UniversalVulnerabilityAnalyzer:
         env = os.environ.copy()
         # add ASan options to ensure clear output when a crash occurs
         env.update({
-            "ASAN_OPTIONS": "abort_on_error=1:symbolize=1:print_stats=0:halt_on_error=1",
+            "ASAN_OPTIONS": "abort_on_error=1:symbolize=1:print_stats=0:halt_on_error=1:allocator_may_return_null=1",
             "UBSAN_OPTIONS": "abort_on_error=1:symbolize=1"
         })
 
@@ -2561,7 +2561,7 @@ class UniversalVulnerabilityAnalyzer:
         env.update({
             "LD_PRELOAD": ":".join(preloads),
             "FUNC_TRACE_OUT": out_file,
-            "ASAN_OPTIONS": "detect_leaks=0:abort_on_error=1",
+            "ASAN_OPTIONS": "detect_leaks=0:abort_on_error=1:allocator_may_return_null=1",
         })
         try:
             subprocess.run(cmd, capture_output=True, text=True,

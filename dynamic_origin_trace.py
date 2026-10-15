@@ -2089,8 +2089,11 @@ def main():
         try:
             import trace_fork_offsets as _tfo
             run_env = _tfo.build_run_env(str(binary_path))
-            run_env["ASAN_OPTIONS"] = env.get("ASAN_OPTIONS",
-                                              "detect_leaks=0:abort_on_error=0")
+            _asan = env.get("ASAN_OPTIONS",
+                            "detect_leaks=0:abort_on_error=0")
+            if "allocator_may_return_null" not in _asan:
+                _asan += ":allocator_may_return_null=1"
+            run_env["ASAN_OPTIONS"] = _asan
             if env.get("GLIBC_TUNABLES"):
                 run_env["GLIBC_TUNABLES"] = env["GLIBC_TUNABLES"]
             run_env.setdefault("LD_BIND_NOW", "1")

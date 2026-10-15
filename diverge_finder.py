@@ -120,7 +120,7 @@ def capture_function_trace(cmd: List[str], timeout: int = 300) -> List[TraceNode
     env.update({
         "LD_PRELOAD": ":".join(preloads),
         "FUNC_TRACE_OUT": out_file,
-        "ASAN_OPTIONS": "detect_leaks=0:abort_on_error=1"
+        "ASAN_OPTIONS": "detect_leaks=0:abort_on_error=1:allocator_may_return_null=1"
     })
     if libs:
         old_ld = env.get("LD_LIBRARY_PATH", "")
@@ -375,7 +375,7 @@ def run_gdb_step_through(binary: str, func_name: str, args: List[str],
     script = f"""set pagination off
 set confirm off
 set disable-randomization off
-set environment ASAN_OPTIONS=detect_leaks=0:abort_on_error=1
+set environment ASAN_OPTIONS=detect_leaks=0:abort_on_error=1:allocator_may_return_null=1
 set environment LSAN_OPTIONS=verbosity=0
 run {args_str}
 break {func_name}
