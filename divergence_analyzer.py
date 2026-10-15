@@ -4297,10 +4297,14 @@ def _detect_crash_point(binary, args, lib_path, source_dirs, timeout=120):
     # reports "exited with code 01" alongside an AddressSanitizer report.
     asan_kind = None
     if not crash_signal:
-        m = re.search(r'ERROR: AddressSanitizer:\s*([^\s]+)', output)
+        m = re.search(r'ERROR: AddressSanitizer:\s*(.+)', output)
         if m:
-            asan_kind = m.group(1)
-            crash_signal = f"ASAN:{asan_kind}"
+            _asan_line = m.group(1)
+            # Skip ASan OOM (resource exhaustion, not a memory-safety bug).
+            if ('out of memory' not in _asan_line and
+                    not _asan_line.startswith('allocator')):
+                asan_kind = _asan_line.split()[0]
+                crash_signal = f"ASAN:{asan_kind}"
 
     if not crash_signal:
         return None
