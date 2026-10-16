@@ -1,0 +1,3 @@
+/home/ws/Desktop/RetroScope/libarchive-versions/v3.4.0/test-build/CMakeFiles/CMakeTmp/CMakeFiles/cmTC_ea59c.dir
+/home/ws/Desktop/RetroScope/libarchive-versions/v3.4.0/test-build/CMakeFiles/CMakeTmp/CMakeFiles/edit_cache.dir
+/home/ws/Desktop/RetroScope/libarchive-versions/v3.4.0/test-build/CMakeFiles/CMakeTmp/CMakeFiles/rebuild_cache.dir
