@@ -853,7 +853,7 @@ OJ254=openjpeg-versions/build-asan-v2.5.4/bin/opj_decompress
 CVE-2021-3575    2.3.1-2.5.0            (2.3.0及更早 no crash)         opj_decompress -i in/openjpeg/CVE-2021-3575.j2k -o /tmp/out.pgm
 CVE-2018-18088   2.3.0 (仅)             (2.0-2.1 no crash)             opj_decompress -i in/openjpeg/CVE-2018-18088/291554_FlipDeter -o /tmp/out.ppm
 CVE-2016-9572    2.0.1-2.1              (2.0 no crash)                 opj_decompress -i in/openjpeg/CVE-2016-9572/PoC2 -o /tmp/out.ppm
-issue908          2.0.1-2.1              (2.0 no crash)                 opj_decompress -i /tmp/poc908.jp2 -o /tmp/out.pgm
+issue908          2.0.1-2.1              (2.0 no crash)                 opj_decompress -i in/openjpeg/issue908_poc.jp2 -o /tmp/out.pgm
 issue1620         2.5.3+ (新引入)        (≤2.5.2 no crash)              opj_decompress -i in/openjpeg/issue1620_poc.jp2 -o /tmp/out.pgm
 ```
 
