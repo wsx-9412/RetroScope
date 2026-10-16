@@ -1,3 +1,0 @@
-/home/ws/Desktop/RetroScope/libarchive-versions/build-asan-v3.7.9/CMakeFiles/CMakeTmp/CMakeFiles/cmTC_fb0bd.dir
-/home/ws/Desktop/RetroScope/libarchive-versions/build-asan-v3.7.9/CMakeFiles/CMakeTmp/CMakeFiles/edit_cache.dir
-/home/ws/Desktop/RetroScope/libarchive-versions/build-asan-v3.7.9/CMakeFiles/CMakeTmp/CMakeFiles/rebuild_cache.dir

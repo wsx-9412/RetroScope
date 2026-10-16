@@ -1,1 +1,0 @@
-/usr/bin/cc -g -O0 -fsanitize=address -fno-omit-frame-pointer -Wno-deprecated-declarations -Wno-array-parameter -Wall -Wformat -Wformat-security -Werror -ffunction-sections -fdata-sections -DCHECK_FUNCTION_EXISTS=linkat -Wall -Wformat -Wformat-security -fno-builtin -fsanitize=address -Wl,--gc-sections  CMakeFiles/cmTC_fb0bd.dir/CheckFunctionExists.c.o -o cmTC_fb0bd 
