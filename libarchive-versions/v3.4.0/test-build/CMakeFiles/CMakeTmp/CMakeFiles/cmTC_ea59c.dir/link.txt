@@ -1,1 +1,0 @@
-/usr/bin/cc -g -O0 -fsanitize=address -Wno-deprecated-declarations -Wall -Wformat -Wformat-security -Werror -Wall -Wformat -Wformat-security -rdynamic CMakeFiles/cmTC_ea59c.dir/HAVE_PWD_H.c.o -o cmTC_ea59c 

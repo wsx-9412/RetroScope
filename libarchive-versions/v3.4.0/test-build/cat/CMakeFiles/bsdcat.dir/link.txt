@@ -1,0 +1,1 @@
+/usr/bin/cc -g -O0 -fsanitize=address -Wno-deprecated-declarations -Wall -Wformat -Wformat-security -Werror -g -Wextra -Wunused -Wshadow -Wmissing-prototypes -Wcast-qual -fsanitize=address -rdynamic CMakeFiles/bsdcat.dir/bsdcat.c.o CMakeFiles/bsdcat.dir/cmdline.c.o CMakeFiles/bsdcat.dir/__/libarchive_fe/err.c.o -o ../bin/bsdcat  ../libarchive/libarchive.a -lz -llz4 -lzstd -lxml2 
