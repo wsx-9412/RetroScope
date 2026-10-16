@@ -1,6 +1,6 @@
 {
-  "binary_target": "/tmp/fork_analysis_3g0kvpp9/target/build-asan/binutils/objdump",
-  "binary_ref": "/tmp/fork_analysis_3g0kvpp9/ref/build-asan/binutils/objdump",
+  "binary_target": "/tmp/fork_analysis_w8cdmsgf/target/build-asan/binutils/objdump",
+  "binary_ref": "/tmp/fork_analysis_w8cdmsgf/ref/build-asan/binutils/objdump",
   "fork_spec": "../../binutils/objdump.c:2305",
   "variables": [
     "section->name"
@@ -13,145 +13,145 @@
       "fd": 3,
       "offset": 0,
       "size": 832,
-      "buf_addr": 140734433836376
+      "buf_addr": 140720988963592
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 4096,
-      "buf_addr": 126010281648128
+      "buf_addr": 132508347514880
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 8192,
-      "buf_addr": 126010281385984
+      "buf_addr": 132508347252736
     },
     {
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140734433835328
+      "buf_addr": 140720988962544
     },
     {
       "fd": 3,
       "offset": 112,
       "size": 4096,
-      "buf_addr": 126010281648128
+      "buf_addr": 132508347514880
     },
     {
       "fd": 3,
       "offset": 112,
       "size": 3984,
-      "buf_addr": 126010281648240
+      "buf_addr": 132508347514992
     },
     {
       "fd": 3,
       "offset": 832,
       "size": 832,
-      "buf_addr": 140734433836376
+      "buf_addr": 140720988963592
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140734433835264
+      "buf_addr": 140720988962480
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140734433835184
+      "buf_addr": 140720988962400
     },
     {
       "fd": 3,
       "offset": 3494,
       "size": 4096,
-      "buf_addr": 126010281648128
+      "buf_addr": 132508347514880
     },
     {
       "fd": 3,
       "offset": 3494,
       "size": 602,
-      "buf_addr": 126010281651622
+      "buf_addr": 132508347518374
     },
     {
       "fd": 3,
       "offset": 4003,
       "size": 4096,
-      "buf_addr": 126010281345024
+      "buf_addr": 132508347211776
     },
     {
       "fd": 3,
       "offset": 4003,
       "size": 93,
-      "buf_addr": 126010281349027
+      "buf_addr": 132508347215779
     },
     {
       "fd": 3,
       "offset": 4003,
       "size": 8192,
-      "buf_addr": 126010280325120
+      "buf_addr": 132508346060800
     },
     {
       "fd": 3,
       "offset": 4003,
       "size": 4189,
-      "buf_addr": 126010280329123
+      "buf_addr": 132508346064803
     },
     {
       "fd": 3,
       "offset": 4052,
       "size": 4096,
-      "buf_addr": 126010281390080
+      "buf_addr": 132508347256832
     },
     {
       "fd": 3,
       "offset": 4052,
       "size": 44,
-      "buf_addr": 126010281394132
+      "buf_addr": 132508347260884
     },
     {
       "fd": 3,
       "offset": 4083,
       "size": 4096,
-      "buf_addr": 126010281390080
+      "buf_addr": 132508347256832
     },
     {
       "fd": 3,
       "offset": 4083,
       "size": 13,
-      "buf_addr": 126010281394163
+      "buf_addr": 132508347260915
     },
     {
       "fd": 3,
       "offset": 4083,
       "size": 8192,
-      "buf_addr": 126010281385984
+      "buf_addr": 132508347252736
     },
     {
       "fd": 3,
       "offset": 4083,
       "size": 4109,
-      "buf_addr": 126010281390067
+      "buf_addr": 132508347256819
     },
     {
       "fd": 3,
       "offset": 4096,
       "size": 13,
-      "buf_addr": 126010281394163
+      "buf_addr": 132508347260915
     },
     {
       "fd": 3,
       "offset": 4096,
       "size": 93,
-      "buf_addr": 126010281349027
+      "buf_addr": 132508347215779
     },
     {
       "fd": 3,
       "offset": 4096,
       "size": 44,
-      "buf_addr": 126010281394132
+      "buf_addr": 132508347260884
     },
     {
       "fd": 3,
@@ -163,25 +163,25 @@
       "fd": 3,
       "offset": 4408,
       "size": 4109,
-      "buf_addr": 126010281390067
+      "buf_addr": 132508347256819
     },
     {
       "fd": 3,
       "offset": 4408,
       "size": 3784,
-      "buf_addr": 126010281390392
+      "buf_addr": 132508347257144
     },
     {
       "fd": 3,
       "offset": 4737,
       "size": 4189,
-      "buf_addr": 126010280329123
+      "buf_addr": 132508346064803
     },
     {
       "fd": 3,
       "offset": 4737,
       "size": 3455,
-      "buf_addr": 126010280329857
+      "buf_addr": 132508346065537
     },
     {
       "fd": 3,
@@ -237,145 +237,145 @@
       "fd": 3,
       "offset": 0,
       "size": 832,
-      "buf_addr": 140723991426376
+      "buf_addr": 140733314659864
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 4096,
-      "buf_addr": 130611374198784
+      "buf_addr": 138943420055552
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 8192,
-      "buf_addr": 130611373936640
+      "buf_addr": 138943419793408
     },
     {
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140723991425328
+      "buf_addr": 140733314658816
     },
     {
       "fd": 3,
       "offset": 109,
       "size": 4096,
-      "buf_addr": 130611374198784
+      "buf_addr": 138943420055552
     },
     {
       "fd": 3,
       "offset": 109,
       "size": 3987,
-      "buf_addr": 130611374198893
+      "buf_addr": 138943420055661
     },
     {
       "fd": 3,
       "offset": 832,
       "size": 832,
-      "buf_addr": 140723991426376
+      "buf_addr": 140733314659864
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140723991425264
+      "buf_addr": 140733314658752
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140723991425184
+      "buf_addr": 140733314658672
     },
     {
       "fd": 3,
       "offset": 3566,
       "size": 4096,
-      "buf_addr": 130611374198784
+      "buf_addr": 138943420055552
     },
     {
       "fd": 3,
       "offset": 3566,
       "size": 530,
-      "buf_addr": 130611374202350
-    },
-    {
-      "fd": 3,
-      "offset": 3988,
-      "size": 4096,
-      "buf_addr": 130611373895680
-    },
-    {
-      "fd": 3,
-      "offset": 3988,
-      "size": 108,
-      "buf_addr": 130611373899668
-    },
-    {
-      "fd": 3,
-      "offset": 3988,
-      "size": 8192,
-      "buf_addr": 130611373690880
-    },
-    {
-      "fd": 3,
-      "offset": 3988,
-      "size": 4204,
-      "buf_addr": 130611373694868
+      "buf_addr": 138943420059118
     },
     {
       "fd": 3,
       "offset": 4037,
       "size": 4096,
-      "buf_addr": 130611373940736
+      "buf_addr": 138943419752448
     },
     {
       "fd": 3,
       "offset": 4037,
       "size": 59,
-      "buf_addr": 130611373944773
+      "buf_addr": 138943419756485
+    },
+    {
+      "fd": 3,
+      "offset": 4037,
+      "size": 8192,
+      "buf_addr": 138943418789888
+    },
+    {
+      "fd": 3,
+      "offset": 4037,
+      "size": 4155,
+      "buf_addr": 138943418793925
     },
     {
       "fd": 3,
       "offset": 4068,
       "size": 4096,
-      "buf_addr": 130611373940736
+      "buf_addr": 138943419797504
     },
     {
       "fd": 3,
       "offset": 4068,
       "size": 28,
-      "buf_addr": 130611373944804
+      "buf_addr": 138943419801572
     },
     {
       "fd": 3,
       "offset": 4068,
       "size": 8192,
-      "buf_addr": 130611373936640
+      "buf_addr": 138943419793408
     },
     {
       "fd": 3,
       "offset": 4068,
       "size": 4124,
-      "buf_addr": 130611373940708
+      "buf_addr": 138943419797476
+    },
+    {
+      "fd": 3,
+      "offset": 4086,
+      "size": 4096,
+      "buf_addr": 138943419797504
+    },
+    {
+      "fd": 3,
+      "offset": 4086,
+      "size": 10,
+      "buf_addr": 138943419801590
     },
     {
       "fd": 3,
       "offset": 4096,
       "size": 28,
-      "buf_addr": 130611373944804
-    },
-    {
-      "fd": 3,
-      "offset": 4096,
-      "size": 108,
-      "buf_addr": 130611373899668
+      "buf_addr": 138943419801572
     },
     {
       "fd": 3,
       "offset": 4096,
       "size": 59,
-      "buf_addr": 130611373944773
+      "buf_addr": 138943419756485
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 10,
+      "buf_addr": 138943419801590
     },
     {
       "fd": 3,
@@ -387,25 +387,25 @@
       "fd": 3,
       "offset": 4393,
       "size": 4124,
-      "buf_addr": 130611373940708
+      "buf_addr": 138943419797476
     },
     {
       "fd": 3,
       "offset": 4393,
       "size": 3799,
-      "buf_addr": 130611373941033
+      "buf_addr": 138943419797801
     },
     {
       "fd": 3,
-      "offset": 4722,
-      "size": 4204,
-      "buf_addr": 130611373694868
+      "offset": 4771,
+      "size": 4155,
+      "buf_addr": 138943418793925
     },
     {
       "fd": 3,
-      "offset": 4722,
-      "size": 3470,
-      "buf_addr": 130611373695602
+      "offset": 4771,
+      "size": 3421,
+      "buf_addr": 138943418794659
     },
     {
       "fd": 3,
