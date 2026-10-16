@@ -1,1 +1,0 @@
-/usr/bin/cc -g -O0 -fsanitize=address -fno-omit-frame-pointer -Wno-deprecated-declarations -Wno-array-parameter -Wall -Wformat -Wformat-security  -Wall -Wformat -Wformat-security -rdynamic CMakeFiles/cmTC_9c05d.dir/CheckSymbolExists.c.o -o cmTC_9c05d 
