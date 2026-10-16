@@ -7,7 +7,7 @@
 int
 main()
 {
-#if defined __stub__mkgmtime64 || defined __stub____mkgmtime64
+#if defined __stub_lsetxattr || defined __stub___lsetxattr
   return 0;
 #else
 this system have stub
