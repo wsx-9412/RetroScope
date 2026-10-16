@@ -827,3 +827,77 @@ CVE-2018-20671  ref=2.24  ref_crash=stack-buffer-overflow bfd_getb32
 
 注: 之前记录的"vulnerable path not reachable"已修正 — `objdump -x` 在 2.24 可触发。
 
+## openjpeg / libarchive (2026-10-16 新目标)
+
+筛选标准: 原始 PoC 在发现漏洞的版本触发同一漏洞，但更早版本不触发（no_crash 或 different）。
+全版本通用触发的已剔除。ASAN_OPTIONS=detect_leaks=0:allocator_may_return_null=1
+
+### openjpeg (5 version-sensitive PoCs)
+
+Tool dirs (run from repo root):
+```bash
+OJ20=openjpeg-versions/build-asan-version.2.0/bin/opj_decompress
+OJ201=openjpeg-versions/build-asan-version.2.0.1/bin/opj_decompress
+OJ21=openjpeg-versions/build-asan-version.2.1/bin/opj_decompress
+OJ230=openjpeg-versions/build-asan-v2.3.0/bin/opj_decompress
+OJ231=openjpeg-versions/build-asan-v2.3.1/bin/opj_decompress
+OJ240=openjpeg-versions/build-asan-v2.4.0/bin/opj_decompress
+OJ250=openjpeg-versions/build-asan-v2.5.0/bin/opj_decompress
+OJ253=openjpeg-versions/build-asan-v2.5.3/bin/opj_decompress
+OJ254=openjpeg-versions/build-asan-v2.5.4/bin/opj_decompress
+```
+
+**CVE | 同漏洞触发版本 | 更早不触发版本 | tool | input**
+
+```
+CVE-2021-3575    2.3.1-2.5.0            (2.3.0及更早 no crash)         opj_decompress -i in/openjpeg/CVE-2021-3575.j2k -o /tmp/out.pgm
+CVE-2018-18088   2.3.0 (仅)             (2.0-2.1 no crash)             opj_decompress -i in/openjpeg/CVE-2018-18088/291554_FlipDeter -o /tmp/out.ppm
+CVE-2016-9572    2.0.1-2.1              (2.0 no crash)                 opj_decompress -i in/openjpeg/CVE-2016-9572/PoC2 -o /tmp/out.ppm
+issue908          2.0.1-2.1              (2.0 no crash)                 opj_decompress -i /tmp/poc908.jp2 -o /tmp/out.pgm
+issue1620         2.5.3+ (新引入)        (≤2.5.2 no crash)              opj_decompress -i in/openjpeg/issue1620_poc.jp2 -o /tmp/out.pgm
+```
+
+**详细崩溃位置:**
+
+| CVE/Issue | 崩溃位置 | PoC 来源 |
+|-----------|----------|----------|
+| CVE-2021-3575 | heap-buffer-overflow in sycc420_to_rgb (color.c:379) | issue #1347 |
+| CVE-2018-18088 | SEGV in imagetopnm (convert.c:2243, NULL red) | issue #1152 |
+| CVE-2016-9572 | SEGV NULL deref in color conversion | issue #863 |
+| issue908 | SEGV in imagetopnm (convert.c:2167) | issue #908 |
+| issue1620 | heap-buffer-overflow in opj_j2k_read_sod (j2k.c:5086) | issue #1620 |
+
+已剔除（非版本敏感）:
+- issue879: version.2.0也触发同一漏洞 (SEGV opj_read_bytes_LE), 无更早不触发版本
+- issue880, 909, 1120, 1611, 1631, CVE-2016-9573: 全版本不触发
+
+### libarchive (1 version-sensitive PoC)
+
+Tool dirs (run from repo root):
+```bash
+LA340=libarchive-versions/build-asan-v3.4.0/bin/bsdtar
+LA343=libarchive-versions/build-asan-v3.4.3/bin/bsdtar
+LA353=libarchive-versions/build-asan-v3.5.3/bin/bsdtar
+LA360=libarchive-versions/build-asan-v3.6.0/bin/bsdtar
+LA362=libarchive-versions/build-asan-v3.6.2/bin/bsdtar
+LA370=libarchive-versions/build-asan-v3.7.0/bin/bsdtar
+LA377=libarchive-versions/build-asan-v3.7.7/bin/bsdtar
+LA379=libarchive-versions/build-asan-v3.7.9/bin/bsdtar
+LA380=libarchive-versions/build-asan-v3.8.0/bin/bsdtar
+```
+
+**CVE | 同漏洞触发版本 | 更早不触发版本 | tool | input**
+
+```
+CVE-2025-5915    3.6.0-3.7.9            (3.4.0-3.5.3 no crash)         bsdtar -xf in/libarchive/CVE-2025-5915/official_2565.rar -C /tmp/extract
+```
+
+**详细:**
+
+| CVE | 崩溃位置 | PoC 来源 |
+|-----|----------|----------|
+| CVE-2025-5915 | heap-buffer-overflow in copy_from_lzss_window (archive_read_support_format_rar.c:3069) | R3n3r0/cve-2025-5915 |
+
+已剔除（全版本不触发）:
+- issue1276, issue759, issue864, issue717, issue2711, issue2765
+
