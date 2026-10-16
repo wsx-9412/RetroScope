@@ -1,1 +1,0 @@
-/usr/bin/cc -g -O0 -fsanitize=address -fno-omit-frame-pointer -Wall -Wformat -Wformat-security -Werror -DCHECK_FUNCTION_EXISTS=_ctime64_s -Wall -Wformat -Wformat-security -fno-builtin -rdynamic CMakeFiles/cmTC_652df.dir/CheckFunctionExists.c.o -o cmTC_652df 
