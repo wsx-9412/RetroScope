@@ -7,7 +7,7 @@
 int
 main()
 {
-#if defined __stub_sigaction || defined __stub___sigaction
+#if defined __stub_lsetxattr || defined __stub___lsetxattr
   return 0;
 #else
 this system have stub
