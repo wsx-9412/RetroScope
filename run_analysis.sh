@@ -14,6 +14,7 @@
 #   ./run_analysis.sh config_giflib.py
 #   ./run_analysis.sh config_binutils.py
 #   ./run_analysis.sh config_freetype.py
+#   ./run_analysis.sh config_openjpeg.py
 
 PROJECT_CONFIG="${1:-config_libtiff.py}"
 GDB_MODE=true      # Default: GDB mode (full pipeline)
@@ -54,7 +55,7 @@ CONFIG_MODULE="$PROJECT_CONFIG"
 case "$PROJECT_NAME" in
     "libtiff")
         REFERENCE_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.0.9"
-        TARGET_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-3.9.3"
+        TARGET_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.0.7"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2022-0891"
         EXTRA_ARGS=(--include-exits --refactor-detect)
         ;;
@@ -85,32 +86,39 @@ case "$PROJECT_NAME" in
     # For another CVE, update both paths so one version crashes and the other
     # does not, and pick the matching tool in the config's EXECUTION_CONFIG.
     "libxml2")
-        REFERENCE_VERSION_PATH="$BASE_DIR/libxml2-versions/libxml2-2.9.4"
-        TARGET_VERSION_PATH="$BASE_DIR/libxml2-versions/libxml2-2.9.5"
+        REFERENCE_VERSION_PATH="$BASE_DIR/libxml2-versions/libxml2-2.9.5"
+        TARGET_VERSION_PATH="$BASE_DIR/libxml2-versions/libxml2-2.9.4"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2017-9049"
         EXTRA_ARGS=(--include-exits)
         ;;
     "giflib")
         REFERENCE_VERSION_PATH="$BASE_DIR/giflib-versions/giflib-5.2.1"
-        TARGET_VERSION_PATH="$BASE_DIR/giflib-versions/giflib-5.2.2"
+        TARGET_VERSION_PATH="$BASE_DIR/giflib-versions/giflib-4.1.6"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2022-28506"
         EXTRA_ARGS=(--include-exits)
         ;;
     "binutils")
-        REFERENCE_VERSION_PATH="$BASE_DIR/binutils-versions/binutils-2.34"
-        TARGET_VERSION_PATH="$BASE_DIR/binutils-versions/binutils-2.32"
-        DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2018-18605"
+        REFERENCE_VERSION_PATH="$BASE_DIR/binutils-versions/binutils-2.26"
+        TARGET_VERSION_PATH="$BASE_DIR/binutils-versions/binutils-2.23.2"
+        DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2017-8396"
         EXTRA_ARGS=(--include-exits)
         ;;
     "freetype")
         REFERENCE_VERSION_PATH="$BASE_DIR/freetype-versions/freetype-2.11.1"
-        TARGET_VERSION_PATH="$BASE_DIR/freetype-versions/freetype-2.12.1"
+        TARGET_VERSION_PATH="$BASE_DIR/freetype-versions/freetype-2.9.1"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2022-27404"
+        EXTRA_ARGS=(--include-exits)
+        ;;
+    
+    "openjpeg")
+        REFERENCE_VERSION_PATH="$BASE_DIR/openjpeg-versions/v2.3.1"
+        TARGET_VERSION_PATH="$BASE_DIR/openjpeg-versions/v2.1.1"
+        DEFAULT_INPUT="$INPUT_FILE_DIR/openjpeg/CVE-2018-18088/291554_FlipDeter"
         EXTRA_ARGS=(--include-exits)
         ;;
     *)
         echo "Error: unknown project '$PROJECT_NAME'"
-        echo "Available: libtiff, lame, audiofile, jasper, libxml2, giflib, binutils, freetype"
+        echo "Available: libtiff, lame, audiofile, jasper, libxml2, giflib, binutils, freetype, openjpeg"
         exit 1
         ;;
 esac
@@ -210,6 +218,79 @@ python3 -u run_fork_analysis.py \
         exit 1
     fi
 
+    # Optional fork override: for high-churn version pairs the automatic
+    # locator can pick an unrelated argument-parsing split.  If the config
+    # defines FORK_OVERRIDE, rewrite the diverge JSON so the origin trace and
+    # legacy stages anchor at the vuln-relevant fork statement instead.
+    python3 - "$DIVERGE_JSON" "$CONFIG_MODULE" "$TARGET_VERSION_PATH" <<'FORK_PATCH_PY'
+import importlib.util, json, os, re, sys
+
+diverge_json, config_module, target_root = sys.argv[1], sys.argv[2], sys.argv[3]
+spec = importlib.util.spec_from_file_location('c', config_module)
+m = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(m)
+fo = getattr(m, 'FORK_OVERRIDE', None)
+if not fo:
+    print('[*] No FORK_OVERRIDE in config; keeping automatic fork.')
+    sys.exit(0)
+with open(diverge_json) as f:
+    div = json.load(f)
+
+# Source line numbers move between versions.  Anchor the override by its
+# statement text and resolve the line inside THIS target source tree, so a
+# version swap does not require editing fork_line manually.
+fork_line = fo.get('fork_line')
+if fo.get('fork_statement') and fo.get('fork_file'):
+    src_path = fo['fork_file']
+    if not os.path.isabs(src_path):
+        src_path = os.path.join(target_root, src_path)
+    try:
+        with open(src_path, encoding='utf-8', errors='replace') as f:
+            src = f.read()
+        tokens = [re.escape(t) for t in fo['fork_statement'].split()]
+        pattern = re.compile(r'\s+'.join(tokens))
+        hits = list(pattern.finditer(src))
+        if len(hits) == 1:
+            resolved = src.count('\n', 0, hits[0].start()) + 1
+            if fork_line != resolved:
+                print(f"[*] Fork line resolved from statement: {fork_line} -> {resolved}")
+            fork_line = resolved
+        elif len(hits) > 1:
+            lines = [src.count('\n', 0, h.start()) + 1 for h in hits]
+            if fork_line in lines:
+                pass
+            else:
+                fork_line = lines[0]
+                print(f"[!] Fork statement matches lines {lines}; using {fork_line}")
+        else:
+            print(f"[!] Fork statement not found in {src_path}; keeping line {fork_line}")
+    except OSError as exc:
+        print(f"[!] Cannot read fork source {src_path}: {exc}; keeping line {fork_line}")
+
+if fo.get('fork_file'):
+    div['root_cause_file_b'] = fo['fork_file']
+if fork_line:
+    div['root_cause_line_b'] = fork_line
+if fo.get('fork_statement'):
+    div['root_cause_statement_b'] = fo['fork_statement']
+if fo.get('variables'):
+    div['variables'] = fo['variables']
+if fo.get('fork_invocation'):
+    div['dynamic_fork'] = {
+        'status': 'fork_invocation',
+        'invocation': int(fo['fork_invocation']),
+        'note': 'FORK_OVERRIDE anchored at this invocation of the fork statement',
+    }
+div['fork_override'] = {
+    'file': fo.get('fork_file'), 'line': fork_line,
+    'statement': fo.get('fork_statement'), 'variables': fo.get('variables'),
+    'invocation': fo.get('fork_invocation'),
+}
+with open(diverge_json, 'w') as f:
+    json.dump(div, f, indent=2)
+print(f"[*] Fork override applied: {fo.get('fork_file')}:{fork_line}")
+FORK_PATCH_PY
+
 # ============================================================================
 # Step 2: GDB dynamic trace - map fork variables to input file offsets
 # ============================================================================
@@ -295,9 +376,25 @@ DYN_MUT_PY
         if [ -f "results/${CVE_ID}_origin_mutation.json" ]; then
             ORIGIN_MUT_ARGS=(--origin-mutation "results/${CVE_ID}_origin_mutation.json")
         fi
+        TEST_OFFSET_ARGS=()
+        read -r -a TEST_OFFSET_ARGS < <(python3 - "$CONFIG_MODULE" <<'TEST_OFF_PY'
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location('c', sys.argv[1])
+m = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(m)
+fo = getattr(m, 'FORK_OVERRIDE', None)
+if fo and fo.get('test_offsets'):
+    print(' '.join('0x%x' % (int(o, 16) if isinstance(o, str) else o)
+                   for o in fo['test_offsets']))
+TEST_OFF_PY
+)
+        if [ ${#TEST_OFFSET_ARGS[@]} -gt 0 ]; then
+            TEST_OFFSET_ARGS=(--test-offsets "${TEST_OFFSET_ARGS[@]}")
+        fi
         python3 -u trace_fork_offsets.py \
             --trace-json "$DIVERGE_JSON" \
             ${ORIGIN_MUT_ARGS[@]+"${ORIGIN_MUT_ARGS[@]}"} \
+            ${TEST_OFFSET_ARGS[@]+"${TEST_OFFSET_ARGS[@]}"} \
             --timeout 60
         if [ $? -eq 0 ]; then
             echo -e "\n=== GDB trace completed ==="

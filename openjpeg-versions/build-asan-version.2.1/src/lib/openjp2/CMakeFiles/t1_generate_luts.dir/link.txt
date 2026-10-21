@@ -1,1 +1,0 @@
-/usr/bin/cc -g -O0 -fsanitize=address -fno-omit-frame-pointer -fno-common -g -fsanitize=address -rdynamic CMakeFiles/t1_generate_luts.dir/t1_generate_luts.c.o -o ../../../bin/t1_generate_luts  -lm 

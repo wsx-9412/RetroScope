@@ -25,6 +25,7 @@ import re
 import sys
 import json
 import struct
+import itertools
 import argparse
 import difflib
 import time
@@ -5662,13 +5663,48 @@ def _static_font_region(data):
                                base + 12, num, 16, base + 12, fields)
 
 
+def _static_j2k_region(data):
+    """JPEG2000 codestream marker fields.
+
+    Lenient scan for marker-like patterns (``FF xx``, xx in 01..FE, not
+    preceded by another FF — ``FF FF`` is stuffing): fuzzed J2K files are
+    full of junk between markers, so a strict size-driven walk breaks.
+    Records each marker's two ID bytes as structural fields.  The marker
+    family is the natural unit for the multi-offset combination stage:
+    guards like "only one COD per tile" are flipped by rewriting several
+    equal marker bytes at once, so the region is flagged ``combo_only`` —
+    the full 255-value single-byte sweep (Step 6c) and pairwise (6d) are
+    skipped for it.
+    """
+    if len(data) < 4 or data[:2] != b'\xff\x4f':
+        return None
+    fields = []
+    i = 2
+    n = len(data)
+    while i + 1 < n:
+        if data[i] != 0xFF or data[i + 1] in (0x00, 0xFF):
+            i += 1
+            continue
+        fields.append({'offset': i, 'size': 1, 'kind': 'marker',
+                       'name': 'marker_id_hi'})
+        fields.append({'offset': i + 1, 'size': 1, 'kind': 'marker',
+                       'name': 'marker_id_lo'})
+        i += 2
+    region = _pack_static_region('j2k', 'J2K codestream marker IDs',
+                                 0, len(fields), 1, 0, fields)
+    if region:
+        region['combo_only'] = True
+    return region
+
+
 def static_structure_region(input_file):
     """Static structure analysis for the non-TIFF input formats.
 
-    Detects the format by magic (ELF, GIF, XML, sfnt/TTC/WOFF) and returns
-    the structural field positions of the on-disk file — same contract as
-    _static_ifd_region plus format/label/fields — or None when the format
-    has no parser here (then only the format-agnostic value search applies).
+    Detects the format by magic (ELF, GIF, XML, sfnt/TTC/WOFF, J2K) and
+    returns the structural field positions of the on-disk file — same
+    contract as _static_ifd_region plus format/label/fields — or None when
+    the format has no parser here (then only the format-agnostic value
+    search applies).
     """
     try:
         with open(input_file, 'rb') as f:
@@ -5676,7 +5712,8 @@ def static_structure_region(input_file):
     except Exception:
         return None
     for parser in (_static_elf_region, _static_gif_region,
-                   _static_xml_region, _static_font_region):
+                   _static_xml_region, _static_font_region,
+                   _static_j2k_region):
         try:
             region = parser(data)
         except Exception:
@@ -6066,6 +6103,42 @@ def _run_mutation_worker(task):
             pass
 
 
+def _target_defines_function(func, ref_crash, source_dirs):
+    """Return True when ``func`` is defined in the target source tree.
+
+    A same-named definition means no cross-version rename mapping is needed.
+    Checking this first prevents a same-named function from being replaced by
+    an unrelated function that merely has a similar source body.
+    """
+    try:
+        import divergence_analyzer as da
+    except Exception:
+        return False
+
+    file_hint = (ref_crash or {}).get('file')
+    if file_hint:
+        try:
+            if da._find_function_body_range(file_hint, func, source_dirs):
+                return True
+        except Exception:
+            pass
+
+    # Fallback when no usable file hint exists: scan the target sources.
+    for d in (source_dirs or []):
+        try:
+            paths = list(Path(d).rglob('*.c')) + list(Path(d).rglob('*.cpp'))
+        except Exception:
+            continue
+        for p in paths:
+            try:
+                if da._find_function_body_range(str(p), func,
+                                                [str(p.parent)]):
+                    return True
+            except Exception:
+                continue
+    return False
+
+
 def _map_ref_crash_function(binary_target, binary_ref, ref_crash):
     """Map the reference's crash function to its target-side equivalent.
 
@@ -6084,6 +6157,8 @@ def _map_ref_crash_function(binary_target, binary_ref, ref_crash):
         import divergence_analyzer as da
         ref_dirs = da.find_source_dirs(str(binary_ref))
         tgt_dirs = da.find_source_dirs(str(binary_target))
+        if _target_defines_function(func, ref_crash, tgt_dirs):
+            return None
         mapped = da._map_function_to_target(func, ref_dirs, tgt_dirs)
         if mapped and mapped[0] and mapped[0] != func:
             return mapped[0]
@@ -6994,6 +7069,259 @@ def run_pairwise_mutation_stage(binary, binary_ref, input_file, program_args,
         binary, binary_ref, input_file, program_args, pairs, timeout=timeout,
         version=version, value_hints=value_hints)
 
+
+def _combo_probe_values():
+    """Uniform values for the k-offset combination stage (k >= 3).
+
+    Per combo the stage first tests the UNIFORM mutation (every offset in
+    the combo set to the same byte value): this catches marker/flag families
+    where several equal bytes must all change together.  The set covers
+    low/high boundary values (the common rewrite targets) plus the classic
+    boundaries; per-offset refined grids would explode combinatorially.
+    """
+    return [0x00, 0x01, 0x02, 0x03, 0x04, 0x7f, 0x80, 0xfe, 0xff]
+
+
+def _combo_budget(kind, default):
+    try:
+        return max(0, int(os.environ.get(kind, str(default))))
+    except ValueError:
+        return default
+
+
+def run_multi_offset_combination_stage(binary, binary_ref, input_file,
+                                       program_args, pool, timeout,
+                                       version=None, single_results=None,
+                                       value_hints=None, max_k=None):
+    """Step 6e: automatic k-offset combination mutation (k = 3, 4, ...).
+
+    Runs AFTER the single-byte and two-offset stages found nothing.  It
+    combines the dynamically discovered offset pool (fork-variable offsets,
+    active/inert/weak single-byte offsets, --test-offsets, --pair-offsets)
+    into 3-, then 4-, ... offset combos.  Each combo is first tested with the
+    UNIFORM value set (all offsets take the same byte value); a matching
+    combo is greedily minimized (drop one offset at a time) and archived.
+
+    Ordering: offsets are scored by their single-byte effect (matches /
+    fork-flips / same-type crashes); combos of more "interesting" offsets
+    are tried first.
+
+    Budgets (env): RETROSCOPE_COMBO_K_MAX combos per k (default 500),
+    RETROSCOPE_COMBO_TOTAL total target runs (default 8000),
+    RETROSCOPE_COMBO_K largest k tried (default min(len(pool), 6)).
+
+    Returns ``(results, any_match)``.
+    """
+    results = {}
+    if not pool or len(pool) < 3 or not input_file \
+            or not os.path.isfile(input_file):
+        return results, False
+    real_target = resolve_binary(binary)
+    real_ref = resolve_binary(binary_ref)
+    if not (real_target and real_ref and os.path.isfile(real_target)
+            and os.path.isfile(real_ref)):
+        print('  [!] Binary not found; combination stage skipped')
+        return results, False
+
+    with open(input_file, 'rb') as f:
+        original_data = bytearray(f.read())
+
+    def _run(binary, data):
+        _ext = os.path.splitext(input_file)[1] if input_file else '.bin'
+        fd, tmp_path = tempfile.mkstemp(suffix=_ext, prefix='combo_')
+        os.close(fd)
+        try:
+            with open(tmp_path, 'wb') as f:
+                f.write(data)
+            cmd = [binary] + [_replace_input_arg(a, tmp_path, input_file)
+                              for a in program_args]
+            env = _mutation_env(binary)
+            proc = subprocess.run(cmd, capture_output=True, text=True,
+                                  errors="replace", timeout=timeout, env=env)
+            return proc.stdout + proc.stderr, proc.returncode
+        except subprocess.TimeoutExpired:
+            return '', -1
+        except Exception:
+            return '', -2
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+
+    ref_out, _ = _run(real_ref, original_data)
+    ref_sig = extract_crash_signature(ref_out)
+    if ref_sig is None:
+        print('  [!] Reference binary produced no ASan crash on the '
+              'original input; combination stage skipped.')
+        return results, False
+    ref_crash = ref_sig['crash_frames'][0] if ref_sig['crash_frames'] else {}
+    print(f'  Reference crash: {ref_sig["type"]} in '
+          f'{ref_crash.get("function")} '
+          f'({_path_basename(ref_crash.get("file"))}:'
+          f'{ref_crash.get("line")})')
+
+    pool = sorted(set(int(o) for o in pool))
+    if max_k is None:
+        try:
+            max_k = max(0, int(os.environ.get('RETROSCOPE_COMBO_K',
+                                             str(min(len(pool), 6)))))
+        except ValueError:
+            max_k = min(len(pool), 6)
+    max_k = max(3, min(max_k, len(pool)))
+    combo_k_cap = _combo_budget('RETROSCOPE_COMBO_K_MAX', 500)
+    total_budget = _combo_budget('RETROSCOPE_COMBO_TOTAL', 8000)
+    probes = _combo_probe_values()
+
+    def _score(o):
+        info = (single_results or {}).get(o) or {}
+        if not isinstance(info, dict):
+            return 0
+        return (2 * len(info.get('matches') or {})
+                + len(info.get('fork_flip') or ())
+                + sum(len(v) for v in (info.get('same_type') or {}).values())
+                + len(info.get('different_type') or ()))
+
+    ordered = sorted(pool, key=lambda o: (-_score(o), o))
+    hints = {o: v for o, v in (value_hints or {}).items()}
+
+    out_dir = _mutation_out_dir(input_file, version)
+    total_runs = 0
+    any_match = False
+    _t0 = time.time()
+
+    # Same-value grouping: a marker/flag FAMILY is a set of offsets holding
+    # the same original byte.  Combos within one family are tried first —
+    # that is exactly the shape of "several equal marker bytes must all be
+    # rewritten together" (e.g. the COD markers of CVE-2021-3575).
+    _groups = {}
+    for o in pool:
+        if 0 <= o < len(original_data):
+            _groups.setdefault(original_data[o], []).append(o)
+    _family_order = sorted(
+        (v for v in _groups if len(_groups[v]) >= 3),
+        key=lambda v: (len(_groups[v]), v))
+
+    def _iter_combos(k):
+        seen = set()
+        for v in _family_order:
+            for combo in itertools.combinations(sorted(_groups[v]), k):
+                key = frozenset(combo)
+                if key not in seen:
+                    seen.add(key)
+                    yield list(combo)
+        for combo in itertools.combinations(ordered, k):
+            key = frozenset(combo)
+            if key not in seen:
+                seen.add(key)
+                yield list(combo)
+
+    def _write_manifest(name, changes, verdict, elapsed):
+        try:
+            lines = [
+                f'mutated file : {name}',
+                f'input        : {input_file}',
+                f'target ver   : {version}',
+                f'reference    : {binary_ref}',
+                f'verdict      : {verdict}',
+                f'time (s)     : {elapsed} (since first mutation attempt)',
+                f'total runs   : {total_runs}',
+                'changes:',
+            ]
+            for off, val in changes:
+                if 0 <= off < len(original_data):
+                    lines.append(f'  0x{off:04x}  0x{original_data[off]:02x} '
+                                 f'-> 0x{val:02x}')
+            with open(os.path.join(out_dir, name + '.changes.txt'),
+                      'w') as f:
+                f.write('\n'.join(lines) + '\n')
+        except Exception:
+            pass
+
+    for k in range(3, max_k + 1):
+        if total_runs >= total_budget:
+            break
+        n_combos = min(combo_k_cap,
+                       _combinations_count(len(pool), k))
+        print(f'\n  [combo k={k}] pool={len(pool)} combos={n_combos} '
+              f'uniform values={len(probes)} '
+              f'(same-value families: {len(_family_order)})')
+        tested = 0
+        for combo in _iter_combos(k):
+            if tested >= combo_k_cap or total_runs >= total_budget:
+                break
+            # Uniform-value test: every offset in the combo takes the same
+            # value.  Offsets whose original byte equals the value are no-ops.
+            for val in probes:
+                if total_runs >= total_budget:
+                    break
+                mut = bytearray(original_data)
+                for off in combo:
+                    if 0 <= off < len(mut) and mut[off] != val:
+                        mut[off] = val
+                tgt_out, tgt_rc = _run(real_target, mut)
+                total_runs += 1
+                tested += 1
+                tgt_sig = extract_crash_signature(tgt_out)
+                verdict, diff = compare_crash_signatures(ref_sig, tgt_sig)
+                if verdict in ('same_site', 'same_func'):
+                    # Greedy offset minimization (keep the uniform value).
+                    minimal = list(combo)
+                    reduced = True
+                    while reduced and len(minimal) > 1:
+                        reduced = False
+                        for drop_i in range(len(minimal)):
+                            trial = minimal[:drop_i] + minimal[drop_i + 1:]
+                            tmut = bytearray(original_data)
+                            for off in trial:
+                                if 0 <= off < len(tmut) \
+                                        and tmut[off] != val:
+                                    tmut[off] = val
+                            t_out, _ = _run(real_target, tmut)
+                            total_runs += 1
+                            t_sig = extract_crash_signature(t_out)
+                            tv, _ = compare_crash_signatures(ref_sig, t_sig)
+                            if tv in ('same_site', 'same_func'):
+                                minimal = trial
+                                print(f'    [min] drop one offset -> '
+                                      f'{len(minimal)} offset(s) still match')
+                                reduced = True
+                                break
+                    _elapsed = int(round(time.time() - _t0))
+                    results['match'] = {
+                        'combo': [[o, val] for o in minimal],
+                        'uniform_value': val,
+                        'verdict': verdict,
+                        'matched': True,
+                        'total_runs': total_runs,
+                        'elapsed_seconds': _elapsed,
+                    }
+                    print(f'  => MATCH (k={k} -> minimal {len(minimal)} '
+                          f'offset(s), uniform value 0x{val:02x}, '
+                          f'{verdict}): {diff}')
+                    _name = (f'combo-k{k}-{len(minimal)}offsets-'
+                             f'val0x{val:02x}:time:{_elapsed}')
+                    _saved = _save_mutation_artifact(
+                        out_dir, _name, original_data,
+                        [[o, val] for o in minimal])
+                    if _saved:
+                        print(f'      saved: {_saved}')
+                    _write_manifest(_name, [[o, val] for o in minimal],
+                                    verdict, _elapsed)
+                    any_match = True
+                    return results, any_match
+        print(f'    [combo k={k}] {tested} combos tested, no match')
+
+    print(f'  [combo] no k-offset combination reproduced the reference '
+          f'crash ({total_runs} runs)')
+    return results, any_match
+
+
+def _combinations_count(n, k):
+    import math
+    if k > n:
+        return 0
+    return math.comb(n, k)
 
 
 # ---------------------------------------------------------------------------
@@ -8079,7 +8407,8 @@ def main():
     static_pairwise_results = {}
     _stat_offsets = [] if _ifd_from_dynamic \
         else sorted(set(_ifd_fields) - stage1_offsets)
-    if not any_match and _stat_offsets:
+    _combo_only = bool(_ifd_region.get('combo_only'))
+    if not any_match and _stat_offsets and not _combo_only:
         static_crash_results, _stat_match = run_byte_mutation_stage(
             binary, binary_ref, input_file, program_args,
             _stat_offsets, a.timeout,
@@ -8088,13 +8417,17 @@ def main():
             version=config.get('version_b'))
         if _stat_match:
             any_match = True
+    elif _stat_offsets and _combo_only:
+        print(f'\n  Steps 6c/6d skipped: '
+              f'{_ifd_region.get("label")} is combo-only '
+              f'({len(_stat_offsets)} field offsets go straight to Step 6e)')
     elif _stat_offsets:
         print(f'\n  Steps 6c/6d skipped: a dynamic offset already reproduces '
               f'the reference crash (static structure offsets not mutated)')
-    if not any_match and len(_stat_offsets) >= 2:
+    if not any_match and len(_stat_offsets) >= 2 and not _combo_only:
         _s_active, _s_inert, _s_weak, _s_hints = \
             _classify_sweep_results(static_crash_results)
-        _s_pool = sorted(set(_stat_offsets) | _s_active | _s_inert | _s_weak)
+        _s_pool = sorted(set(_stat_offsets) | set(_s_active) | _s_inert | _s_weak)
         _s_pairs = _build_interaction_pairs(
             _s_active, _s_inert | _s_weak | set(_s_active))
         static_pairwise_results = run_pairwise_mutation_stage(
@@ -8109,6 +8442,27 @@ def main():
             if isinstance(_pv, dict) and _pv.get('matches'):
                 any_match = True
                 break
+
+    # Step 6e: automatic k-offset combination mutation (k = 3, 4, ...) over
+    # the DYNAMICALLY discovered offset pool — runs only when the single-byte
+    # and two-offset stages found nothing.  Combos are tested with a uniform
+    # byte value across all offsets (marker/flag families), greedy-minimized
+    # on a hit and archived.  The pool also covers the STATIC structure
+    # offsets (e.g. the J2K marker IDs from _static_j2k_region).
+    multi_combo_results = {}
+    _combo_pool = set(_pair_pool) | set(_stat_offsets)
+    if not any_match and len(_combo_pool) >= 3:
+        print(f'\n{"="*60}')
+        print(f'  Step 6e: Multi-offset combination mutation '
+              f'(pool={len(_combo_pool)} offsets)')
+        print(f'{"="*60}')
+        multi_combo_results, _combo_match = \
+            run_multi_offset_combination_stage(
+                binary, binary_ref, input_file, program_args,
+                _combo_pool, a.timeout, version=config.get('version_b'),
+                single_results=crash_results, value_hints=_value_hints)
+        if _combo_match:
+            any_match = True
 
     print(f'{"="*60}')
 
@@ -8135,6 +8489,7 @@ def main():
         'mutation_offsets': sorted(stage1_offsets),
         'crash_results': crash_results,
         'pairwise_results': pairwise_results,
+        'multi_combo_results': multi_combo_results,
         'mutation_any_match': any_match,
     }
     out_path = os.path.join(os.path.dirname(input_file) if input_file else '.', 'fork_trace_result.json')

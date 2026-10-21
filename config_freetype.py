@@ -31,6 +31,7 @@ COMPILE_COMMANDS = {
     "reference": {
         "pre_build": [
             "rm -rf build",
+            "sed -i 's|^#define FT_CONFIG_OPTION_USE_PNG|/* #define FT_CONFIG_OPTION_USE_PNG */|' include/freetype/config/ftoption.h",
             "bash -c 'cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=\"-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer\" -DCMAKE_EXE_LINKER_FLAGS=\"-fsanitize=address\" -DCMAKE_SHARED_LINKER_FLAGS=\"-fsanitize=address\" -DFT_DISABLE_ZLIB=TRUE -DFT_DISABLE_BZIP2=TRUE -DFT_DISABLE_PNG=TRUE -DFT_DISABLE_HARFBUZZ=TRUE -DFT_DISABLE_BROTLI=TRUE'",
             "make -C build -j2",
             f"gcc -finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -I./include {HARNESS_SRC} build/libfreetyped.a -lz -lm -fsanitize=address -o build/fttest",
@@ -43,6 +44,7 @@ COMPILE_COMMANDS = {
     "target": {
         "pre_build": [
             "rm -rf build",
+            "sed -i 's|^#define FT_CONFIG_OPTION_USE_PNG|/* #define FT_CONFIG_OPTION_USE_PNG */|' include/freetype/config/ftoption.h",
             "bash -c 'cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=\"-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer\" -DCMAKE_EXE_LINKER_FLAGS=\"-fsanitize=address\" -DCMAKE_SHARED_LINKER_FLAGS=\"-fsanitize=address\" -DFT_DISABLE_ZLIB=TRUE -DFT_DISABLE_BZIP2=TRUE -DFT_DISABLE_PNG=TRUE -DFT_DISABLE_HARFBUZZ=TRUE -DFT_DISABLE_BROTLI=TRUE'",
             "make -C build -j2",
             f"gcc -finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -I./include {HARNESS_SRC} build/libfreetyped.a -lz -lm -fsanitize=address -o build/fttest",

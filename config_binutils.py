@@ -18,13 +18,23 @@
 # =====================================================
 # CVE configuration: change this section for each CVE
 # =====================================================
-CVE_ID = "CVE-2022-47695"          # CVE number
-INPUT_FILE = "in/CVE-2022-47695"   # input file path (relative to RetroScope/)
+CVE_ID = "CVE-2019-9074"          # CVE number
+INPUT_FILE = "in/CVE-2019-9074"   # input file path (relative to RetroScope/)
 OUTPUT_FILE = "/tmp/foo"          # program output file
 # Program arguments template: {program_path}, {input_file}, {output_file}
 # {program_path} already IS the tool binary selected by EXECUTION_CONFIG
 # "program_name"; do NOT write the tool name into the format string.
-COMMAND_FORMAT = "{program_path} -d {input_file}"
+COMMAND_FORMAT = "{program_path} -x {input_file}"
+
+# =====================================================
+# Optional fork override (CVE-specific, 2.25 vs 2.26)
+# =====================================================
+# CVE-2017-8396: ref 2.26 heap-buffer-overflow bfd_getl64
+# (libbfd.c:615) in bfd_perform_relocation (reloc.c, 两版本都有该代码);
+# tgt 2.25 提前报 "Can't get contents for section '.eh_frame'" 退出 —
+# 同一重定位代码被 section 内容读取门挡住。fork 待确认, 暂不覆写
+# (自动定位), 若自动定位错位再按实测分歧点覆写。
+FORK_OVERRIDE = {}
 
 # =====================================================
 # Compilation configuration (usually no need to change)

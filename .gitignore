@@ -25,12 +25,8 @@ output/
 out.mp3
 
 # ---- large/regenerable: per-software target trees (source + ASAN build output) ----
-binutils-versions/
-giflib-versions/
-libxml2-versions/
-freetype-versions/
+*-versions/
 third_party/
-jarvis-versions/
 # build artifacts (belt and suspenders)
 build-asan/
 objs/
@@ -40,3 +36,7 @@ objs/
 *.la
 *.Po
 *.Plo
+out/
+.instr-build/
+# multi-GB PoC corpora (GitHub rejects files >100MB anyway)
+in/libtiff/

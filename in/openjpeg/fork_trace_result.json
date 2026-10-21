@@ -1,0 +1,1903 @@
+{
+  "binary_target": "/tmp/fork_analysis_pjwx94vo/target/build/bin/opj_decompress",
+  "binary_ref": "/tmp/fork_analysis_pjwx94vo/ref/build/bin/opj_decompress",
+  "fork_spec": "src/lib/openjp2/j2k.c:2516",
+  "variables": [
+    "l_tcp->cod",
+    "l_tcp",
+    "p_j2k->m_current_tile_number"
+  ],
+  "differing_variables": [
+    "l_tcp->cod",
+    "l_tcp",
+    "p_j2k->m_current_tile_number"
+  ],
+  "target_file_reads": [
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 832,
+      "buf_addr": 140726191217944
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 4096,
+      "buf_addr": 128558091710464
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 8192,
+      "buf_addr": 128558091448320
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 1307,
+      "buf_addr": 90228672959744
+    },
+    {
+      "fd": 3,
+      "offset": 64,
+      "size": 784,
+      "buf_addr": 140726191216800
+    },
+    {
+      "fd": 3,
+      "offset": 137,
+      "size": 4096,
+      "buf_addr": 128558091710464
+    },
+    {
+      "fd": 3,
+      "offset": 137,
+      "size": 3959,
+      "buf_addr": 128558091710601
+    },
+    {
+      "fd": 3,
+      "offset": 832,
+      "size": 832,
+      "buf_addr": 140726191217944
+    },
+    {
+      "fd": 3,
+      "offset": 848,
+      "size": 48,
+      "buf_addr": 140726191216736
+    },
+    {
+      "fd": 3,
+      "offset": 896,
+      "size": 68,
+      "buf_addr": 140726191216656
+    },
+    {
+      "fd": 3,
+      "offset": 1307,
+      "size": 4096,
+      "buf_addr": 90228672954624
+    },
+    {
+      "fd": 3,
+      "offset": 1307,
+      "size": 1307,
+      "buf_addr": 90228672959744
+    },
+    {
+      "fd": 3,
+      "offset": 3493,
+      "size": 4096,
+      "buf_addr": 128558091710464
+    },
+    {
+      "fd": 3,
+      "offset": 3493,
+      "size": 603,
+      "buf_addr": 128558091713957
+    },
+    {
+      "fd": 3,
+      "offset": 4052,
+      "size": 4096,
+      "buf_addr": 128558091407360
+    },
+    {
+      "fd": 3,
+      "offset": 4052,
+      "size": 44,
+      "buf_addr": 128558091411412
+    },
+    {
+      "fd": 3,
+      "offset": 4052,
+      "size": 8192,
+      "buf_addr": 128558091378688
+    },
+    {
+      "fd": 3,
+      "offset": 4052,
+      "size": 4140,
+      "buf_addr": 128558091382740
+    },
+    {
+      "fd": 3,
+      "offset": 4088,
+      "size": 4096,
+      "buf_addr": 128558091452416
+    },
+    {
+      "fd": 3,
+      "offset": 4088,
+      "size": 8,
+      "buf_addr": 128558091456504
+    },
+    {
+      "fd": 3,
+      "offset": 4088,
+      "size": 8192,
+      "buf_addr": 128558091448320
+    },
+    {
+      "fd": 3,
+      "offset": 4088,
+      "size": 4104,
+      "buf_addr": 128558091452408
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 8,
+      "buf_addr": 128558091456504
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 44,
+      "buf_addr": 128558091411412
+    },
+    {
+      "fd": 3,
+      "offset": 5905,
+      "size": 4104,
+      "buf_addr": 128558091452408
+    },
+    {
+      "fd": 3,
+      "offset": 5905,
+      "size": 2287,
+      "buf_addr": 128558091454225
+    },
+    {
+      "fd": 3,
+      "offset": 6283,
+      "size": 4140,
+      "buf_addr": 128558091382740
+    },
+    {
+      "fd": 3,
+      "offset": 6283,
+      "size": 1909,
+      "buf_addr": 128558091384971
+    }
+  ],
+  "ref_file_reads": [
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 832,
+      "buf_addr": 140726381499768
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 4096,
+      "buf_addr": 128276561907712
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 8192,
+      "buf_addr": 128276561645568
+    },
+    {
+      "fd": 3,
+      "offset": 64,
+      "size": 784,
+      "buf_addr": 140726381498624
+    },
+    {
+      "fd": 3,
+      "offset": 134,
+      "size": 4096,
+      "buf_addr": 128276561907712
+    },
+    {
+      "fd": 3,
+      "offset": 134,
+      "size": 3962,
+      "buf_addr": 128276561907846
+    },
+    {
+      "fd": 3,
+      "offset": 832,
+      "size": 832,
+      "buf_addr": 140726381499768
+    },
+    {
+      "fd": 3,
+      "offset": 848,
+      "size": 48,
+      "buf_addr": 140726381498560
+    },
+    {
+      "fd": 3,
+      "offset": 896,
+      "size": 68,
+      "buf_addr": 140726381498480
+    },
+    {
+      "fd": 3,
+      "offset": 3493,
+      "size": 4096,
+      "buf_addr": 128276561907712
+    },
+    {
+      "fd": 3,
+      "offset": 3493,
+      "size": 603,
+      "buf_addr": 128276561911205
+    },
+    {
+      "fd": 3,
+      "offset": 4020,
+      "size": 4096,
+      "buf_addr": 128276561604608
+    },
+    {
+      "fd": 3,
+      "offset": 4020,
+      "size": 76,
+      "buf_addr": 128276561608628
+    },
+    {
+      "fd": 3,
+      "offset": 4020,
+      "size": 8192,
+      "buf_addr": 128276561330176
+    },
+    {
+      "fd": 3,
+      "offset": 4020,
+      "size": 4172,
+      "buf_addr": 128276561334196
+    },
+    {
+      "fd": 3,
+      "offset": 4030,
+      "size": 4096,
+      "buf_addr": 128276561649664
+    },
+    {
+      "fd": 3,
+      "offset": 4030,
+      "size": 66,
+      "buf_addr": 128276561653694
+    },
+    {
+      "fd": 3,
+      "offset": 4030,
+      "size": 8192,
+      "buf_addr": 128276561645568
+    },
+    {
+      "fd": 3,
+      "offset": 4030,
+      "size": 4162,
+      "buf_addr": 128276561649598
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 66,
+      "buf_addr": 128276561653694
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 76,
+      "buf_addr": 128276561608628
+    },
+    {
+      "fd": 3,
+      "offset": 5737,
+      "size": 4162,
+      "buf_addr": 128276561649598
+    },
+    {
+      "fd": 3,
+      "offset": 5737,
+      "size": 2455,
+      "buf_addr": 128276561651305
+    },
+    {
+      "fd": 3,
+      "offset": 6115,
+      "size": 4172,
+      "buf_addr": 128276561334196
+    },
+    {
+      "fd": 3,
+      "offset": 6115,
+      "size": 2077,
+      "buf_addr": 128276561336291
+    }
+  ],
+  "chain_trace": {
+    "var_mappings": {
+      "l_tcp->cod": {
+        "file_offset": null,
+        "kind": null,
+        "values": [
+          1
+        ]
+      },
+      "l_tcp": {
+        "file_offset": null,
+        "kind": null,
+        "values": [
+          90297392431360
+        ]
+      },
+      "p_j2k->m_current_tile_number": {
+        "file_offset": null,
+        "kind": null,
+        "values": [
+          0
+        ]
+      }
+    },
+    "fork_points": [
+      {
+        "inv": 2,
+        "varvals": {
+          "l_tcp->cod": 0,
+          "l_tcp": 90297392431360,
+          "p_j2k->m_current_tile_number": 0
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 3,
+        "varvals": {
+          "l_tcp->cod": 1,
+          "l_tcp": 90297392431360,
+          "p_j2k->m_current_tile_number": 0
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      }
+    ],
+    "pread64": [],
+    "ifd_region": {
+      "ifd_offset": null,
+      "entry_size": null,
+      "entries_base": null,
+      "count": null,
+      "entry_offsets": [],
+      "field_offsets": []
+    }
+  },
+  "deep_trace": {},
+  "arithmetic_backtrace": null,
+  "variable_offsets": {},
+  "candidate_tiers": {
+    "S_structural_format": [
+      2,
+      3,
+      51,
+      52,
+      67,
+      68,
+      73,
+      74,
+      76,
+      77,
+      115,
+      116,
+      118,
+      119,
+      120,
+      121,
+      168,
+      169,
+      233,
+      234,
+      249,
+      250,
+      255,
+      256,
+      258,
+      259,
+      307,
+      308,
+      310,
+      311,
+      312,
+      313,
+      340,
+      341,
+      342,
+      343,
+      346,
+      347,
+      362,
+      363,
+      401,
+      402,
+      421,
+      422,
+      438,
+      439,
+      461,
+      462,
+      463,
+      464,
+      477,
+      478,
+      495,
+      496,
+      497,
+      498,
+      503,
+      504,
+      509,
+      510,
+      511,
+      512,
+      517,
+      518,
+      536,
+      537,
+      550,
+      551,
+      558,
+      559,
+      561,
+      562,
+      595,
+      596,
+      597,
+      598,
+      609,
+      610,
+      648,
+      649,
+      653,
+      654,
+      668,
+      669,
+      673,
+      674,
+      685,
+      686,
+      708,
+      709,
+      710,
+      711,
+      725,
+      726,
+      742,
+      743,
+      744,
+      745,
+      756,
+      757
+    ]
+  },
+  "ifd_region": {
+    "format": "j2k",
+    "label": "J2K codestream marker IDs",
+    "region_offset": 0,
+    "count": 190,
+    "entry_size": 1,
+    "entries_base": 0,
+    "field_offsets": [
+      2,
+      3,
+      51,
+      52,
+      67,
+      68,
+      73,
+      74,
+      76,
+      77,
+      115,
+      116,
+      118,
+      119,
+      120,
+      121,
+      168,
+      169,
+      233,
+      234,
+      249,
+      250,
+      255,
+      256,
+      258,
+      259,
+      307,
+      308,
+      310,
+      311,
+      312,
+      313,
+      340,
+      341,
+      342,
+      343,
+      346,
+      347,
+      362,
+      363,
+      401,
+      402,
+      421,
+      422,
+      438,
+      439,
+      461,
+      462,
+      463,
+      464,
+      477,
+      478,
+      495,
+      496,
+      497,
+      498,
+      503,
+      504,
+      509,
+      510,
+      511,
+      512,
+      517,
+      518,
+      536,
+      537,
+      550,
+      551,
+      558,
+      559,
+      561,
+      562,
+      595,
+      596,
+      597,
+      598,
+      609,
+      610,
+      648,
+      649,
+      653,
+      654,
+      668,
+      669,
+      673,
+      674,
+      685,
+      686,
+      708,
+      709,
+      710,
+      711,
+      725,
+      726,
+      742,
+      743,
+      744,
+      745,
+      756,
+      757
+    ],
+    "fields": [
+      {
+        "offset": 2,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 3,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 51,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 52,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 67,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 68,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 73,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 74,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 76,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 77,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 115,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 116,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 118,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 119,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 120,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 121,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 168,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 169,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 233,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 234,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 249,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 250,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 255,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 256,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 258,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 259,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 307,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 308,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 310,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 311,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 312,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 313,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 340,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 341,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 342,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 343,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 346,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 347,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 362,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 363,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 401,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 402,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 421,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 422,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 438,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 439,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 461,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 462,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 463,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 464,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 477,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 478,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 495,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 496,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 497,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 498,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 503,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 504,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 509,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 510,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 511,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 512,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 517,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 518,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 536,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 537,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 550,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 551,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 558,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 559,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 561,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 562,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 595,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 596,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 597,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 598,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 609,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 610,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 648,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 649,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 653,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 654,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 668,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 669,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 673,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 674,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 685,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 686,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 708,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 709,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 710,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 711,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 725,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 726,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 742,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 743,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 744,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 745,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 756,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 757,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 758,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 759,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 762,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 763,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 768,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 769,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 775,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 776,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 787,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 788,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 789,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 790,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 813,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 814,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 815,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 816,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 836,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 837,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 838,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 839,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 876,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 877,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 887,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 888,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 891,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 892,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 896,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 897,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 898,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 899,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 901,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 902,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 914,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 915,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 929,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 930,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 980,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 981,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 982,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 983,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 986,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 987,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1002,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1003,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1008,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1009,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1011,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1012,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1043,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1044,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1060,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1061,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1063,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1064,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1065,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1066,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1081,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1082,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1088,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1089,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1100,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1101,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1122,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1123,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1125,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1126,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1139,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1140,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1158,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1159,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1162,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1163,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1183,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1184,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1199,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1200,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1201,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1202,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1224,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1225,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1228,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1229,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1244,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1245,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1253,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1254,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1277,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1278,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      },
+      {
+        "offset": 1298,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_hi"
+      },
+      {
+        "offset": 1299,
+        "size": 1,
+        "kind": "marker",
+        "name": "marker_id_lo"
+      }
+    ],
+    "source": "static",
+    "combo_only": true
+  },
+  "ifd_region_from_dynamic": false,
+  "ifd_region_mutation": {},
+  "static_mutation_offsets": [
+    2,
+    3,
+    51,
+    52,
+    67,
+    68,
+    73,
+    74,
+    76,
+    77,
+    115,
+    116,
+    118,
+    119,
+    120,
+    121,
+    168,
+    169,
+    233,
+    234,
+    249,
+    250,
+    255,
+    256,
+    258,
+    259,
+    307,
+    308,
+    310,
+    311,
+    312,
+    313,
+    340,
+    341,
+    342,
+    343,
+    346,
+    347,
+    362,
+    363,
+    401,
+    402,
+    421,
+    422,
+    438,
+    439,
+    461,
+    462,
+    463,
+    464,
+    477,
+    478,
+    495,
+    496,
+    497,
+    498,
+    503,
+    504,
+    509,
+    510,
+    511,
+    512,
+    517,
+    518,
+    536,
+    537,
+    550,
+    551,
+    558,
+    559,
+    561,
+    562,
+    595,
+    596,
+    597,
+    598,
+    609,
+    610,
+    648,
+    649,
+    653,
+    654,
+    668,
+    669,
+    673,
+    674,
+    685,
+    686,
+    708,
+    709,
+    710,
+    711,
+    725,
+    726,
+    742,
+    743,
+    744,
+    745,
+    756,
+    757
+  ],
+  "static_crash_results": {},
+  "static_pairwise_results": {},
+  "mutation_offsets": [],
+  "crash_results": {},
+  "pairwise_results": {},
+  "multi_combo_results": {
+    "match": {
+      "combo": [
+        [
+          52,
+          0
+        ],
+        [
+          234,
+          0
+        ],
+        [
+          464,
+          0
+        ],
+        [
+          537,
+          0
+        ]
+      ],
+      "uniform_value": 0,
+      "verdict": "same_func",
+      "matched": true,
+      "total_runs": 518,
+      "elapsed_seconds": 4
+    }
+  },
+  "mutation_any_match": true
+}

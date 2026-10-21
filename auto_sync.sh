@@ -51,6 +51,30 @@ sync_now() {
 
 LAST_SYNC=0
 
+# start the proxy immediately (not only on the next file event) so a reboot
+# doesn't leave git pointing at a dead 127.0.0.1:8888
+ensure_proxy
+
+# if pushes failed earlier (network flakiness), keep retrying in the background
+# so the backlog clears even when no new file changes arrive
+(
+    while sleep 300; do
+        cd "$REPO_DIR" || continue
+        AHEAD=$(git rev-list --count origin/main..main 2>/dev/null)
+        if [ -n "$AHEAD" ] && [ "$AHEAD" -gt 0 ]; then
+            ensure_proxy
+            for attempt in 1 2 3; do
+                if git push origin main >> "$LOG_FILE" 2>&1; then
+                    echo "[$(date)] backlog push OK (attempt $attempt, $AHEAD commits)" >> "$LOG_FILE"
+                    break
+                fi
+                ensure_proxy
+                sleep 10
+            done
+        fi
+    done
+) &
+
 inotifywait -m -r -e modify,create,delete,move \
     --exclude '(\.git/|__pycache__/|\.pyc$|\.so$|polytracker/|results/|\.tdag$|binutils-versions/|giflib-versions/|libxml2-versions/|freetype-versions/|third_party/)' \
     "$REPO_DIR" 2>/dev/null |
