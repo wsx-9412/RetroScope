@@ -33,7 +33,8 @@ RENAME_THRESHOLD = 0.7
 # ================================================================ #
 
 FUNC_DEF_RE = re.compile(
-    r'^[ \t]*(?:[A-Za-z_][A-Za-z0-9_ \t\*]*?[ \t\*]+)?([A-Za-z_][A-Za-z0-9_]*)'
+    r'^[ \t]*(?:[A-Za-z_][A-Za-z0-9_ \t\*]*?[ \t\*]+)?'
+    r'([A-Za-z_~][A-Za-z0-9_]*(?:::[A-Za-z_~][A-Za-z0-9_]*)*)'
     r'\s*\(([^;{)]*)\)\s*[A-Za-z_0-9 \t]*\{', re.MULTILINE)
 
 CALL_RE = re.compile(r'([A-Za-z_][A-Za-z0-9_]*)\s*\(')
