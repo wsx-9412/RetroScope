@@ -114,7 +114,7 @@ gcc -g -O0 -fsanitize=address -fno-omit-frame-pointer \
 
 ---
 
-## openjpeg (6 个)
+## openjpeg (7 个)
 
 工具路径: `openjpeg-versions/<ver>/bin/opj_decompress`（源码目录内 cmake 编译）
 
@@ -126,6 +126,7 @@ gcc -g -O0 -fsanitize=address -fno-omit-frame-pointer \
 | CVE-2021-3575 | 2.3.1-2.5.0 | 2.3.0 | `opj_decompress -i in/openjpeg/CVE-2021-3575.j2k -o /tmp/out.pgm` |
 | issue1620 | 2.5.3-2.5.4 | 2.0-2.5.2 | `opj_decompress -i in/openjpeg/issue1620_poc.jp2 -o /tmp/out.pgm` |
 | CVE-2016-10504 | v2.1.1-v2.1.2 | version.2.0-version.2.1 | `opj_compress -i in/openjpeg/CVE-2016-10504/poc.bmp -o /tmp/out.j2k` |
+| issue1221 | v2.3.0-v2.3.1 | version.2.0-v2.2.0 | `opj_decompress -i in/openjpeg/issue1221/poc.j2k -o /tmp/out.ppm` |
 
 崩溃位置:
 - CVE-2016-9572: SEGV in color conversion
@@ -134,6 +135,7 @@ gcc -g -O0 -fsanitize=address -fno-omit-frame-pointer \
 - CVE-2021-3575: heap-buffer-overflow in sycc420_to_rgb (color.c:379)
 - issue1620: heap-buffer-overflow in opj_j2k_read_sod (j2k.c:5086)
 - CVE-2016-10504: heap-buffer-overflow in opj_mqc_byteout (mqc.c:221)
+- issue1221: SEGV in sycc422_to_rgb (color.c:201)
 
 编译命令（源码目录内）:
 ```bash
@@ -227,8 +229,8 @@ make -j
 | libxml2 | 3 |
 | giflib | 1 |
 | freetype | 3 |
-| openjpeg | 6 |
+| openjpeg | 7 |
 | libarchive | 1 |
 | libtiff | 1 |
 | libredwg | 1 |
-| **总计** | **37** |
+| **总计** | **38** |
