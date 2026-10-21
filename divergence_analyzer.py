@@ -3720,8 +3720,10 @@ def _trace_from_common_ancestor(matches, gaps, trace_a, trace_b,
     Takes the LAST gap's forking caller (the deepest common call still on the
     stack when the two traces diverged — the last identical call shared by
     both traces), breaks at that function's entry in both versions, steps
-    through them and returns the divergence after which the two step traces
-    never rejoin (the permanent-split / point-of-no-return statement).
+    through them and returns the permanent-split point.  The two step traces
+    are aligned before comparison, so statements added to or removed from one
+    version are absorbed instead of shifting the whole remainder; see
+    ``_compare_step_traces``.
 
     Returns a result dict or None.
     """
