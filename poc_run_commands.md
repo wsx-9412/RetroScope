@@ -207,24 +207,6 @@ sh autogen.sh
 make -j
 ```
 
-### 变异测试结论（未完成）
-
-曾用以下命令尝试映射：
-
-```bash
-python3 trace_fork_offsets.py \
-  --binary .../v0.12.5/programs/dwg2dxf \
-  --binary-ref .../v0.12.4/programs/dwg2dxf \
-  --input .../copy_bytes_sof \
-  --fork-file src/decode_r2007.c --fork-line 556 \
-  --variables length offset dst src dst_end \
-  --args -b -m -y -o /dev/null {input}
-```
-
-结果: `variable_offsets = {}`、`mutation_offsets = []`、`mutation_any_match = false`，实际执行的字节变异次数为 **0**。工具仅因未找到变量→输入偏移映射而写入 `out/copy_bytes_sof-target/NO_CRASH_MATCH.txt`。
-
-此外该次运行存在行号错位：`0.12.5:556` 是 offset 检查，`0.12.4:556` 是循环内的 `break;`，参考侧 `length=0` 并非同一语句。故**此前的 no-match 结论撤回**；目前只确认版本敏感，变异复现尚未验证。正确做法是用 `run_fork_analysis.py`/LCS 分别定位两个版本对应的 fork 行，再做变量映射。
-
 ---
 
 ## 汇总
