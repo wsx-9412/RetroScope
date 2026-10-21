@@ -3610,6 +3610,7 @@ def _normalize_step_text(text):
     """Collapse formatting-only differences between two step-trace lines."""
     norm = re.sub(r'\s+', ' ', (text or '').strip())
     norm = re.sub(r'\s*([=!<>]=|[=!<>]|&&|\|\||[+\-*/])\s*', r'\1', norm)
+    norm = re.sub(r'\s*([(),;])\s*', r'\1', norm)
     return re.sub(r'\s*\{\s*$', '', norm).strip()
 
 
