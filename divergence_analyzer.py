@@ -6045,13 +6045,145 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
         args_b = []
 
     # ========================================================
+    # STEP 0 (strategy selection): crash detection FIRST.  Run
+    # both versions under ASan and classify the crash situation
+    # BEFORE any fork locator:
+    #   - both versions crash AND the target crashes before the
+    #     (mapped) reference crash point -> the target's crash
+    #     point IS the fork statement (Case C below, returns
+    #     immediately);
+    #   - reference crashes, target does not crash -> the
+    #     permanent-split locator (PRIMARY) and the backward
+    #     tracer run next, followed by the Case A/B crash-point
+    #     analyses and the remaining fallback chain;
+    #   - any other combination (neither crashes, both crash but
+    #     the target is not earlier, target-only crash) -> no
+    #     crash strategy applies; the generic locator chain
+    #     below is used.
+    # ========================================================
+    print("\n=== Crash-strategy selection (runs before the fork locators) ===")
+    _t_crash = time.time()
+    crash_a = _detect_crash_point(binary_a, args_a, lib_path_a,
+                                  source_dirs_a, gdb_timeout)
+    crash_b = _detect_crash_point(binary_b, args_b, lib_path_b,
+                                  source_dirs_b, gdb_timeout)
+    stage_timing.record("find fork statement - crash detection", time.time() - _t_crash)
+
+    if crash_a:
+        print(f"  Reference CRASH: {crash_a.get('signal')} in "
+              f"{crash_a.get('function')} at {crash_a.get('file')}:{crash_a.get('line')}")
+    else:
+        print("  Reference: no crash")
+    if crash_b:
+        print(f"  Target CRASH:    {crash_b.get('signal')} in "
+              f"{crash_b.get('function')} at {crash_b.get('file')}:{crash_b.get('line')}")
+    else:
+        print("  Target:    no crash")
+
+    reference_crashed = bool(crash_a and not crash_b)
+    fork_meta = None
+
+    # Case C: target crashes BEFORE the reference's vulnerability crash point.
+    # Both versions crash and the target crashed before reaching the (mapped)
+    # reference crash point — the target's crash point (triggered by the PoC)
+    # IS the fork statement, and the analysis returns here.
+    if crash_a and crash_b and _crash_is_before_reference(crash_b, crash_a, trace_a, gaps):
+        print("\n  >> Target crashes before the reference's vulnerability crash — "
+              "target crash point is the fork.")
+        source_line = _read_source_line(
+            crash_b["file"], crash_b["line"],
+            find_source_dirs(str(binary_b)))
+        ref_source = _read_source_line(
+            crash_a["file"], crash_a["line"],
+            find_source_dirs(str(binary_a)))
+
+        # The fork statement is the target's crash statement.  Multi-line
+        # statements (e.g. "track->totalfframes = track->data_size /\n (int)
+        # _af_format_frame_size(...)") report the continuation line; try the
+        # crash line and the line before it, preferring the full assignment.
+        crash_stmt = ""
+        crash_stmt_line = crash_b["line"] or 0
+        for cand_line in (crash_b["line"], (crash_b["line"] or 1) - 1):
+            stmt, start, _end = _get_complete_fork_statement(
+                crash_b["file"], cand_line, find_source_dirs(str(binary_b)))
+            if stmt:
+                crash_stmt = stmt
+                crash_stmt_line = start
+                if '=' in stmt and not stmt.lstrip().startswith('('):
+                    break
+
+        fork_vars = _extract_variables_from_expression(crash_stmt)
+        invocation, anchor_delta = _count_crash_point_hits(
+            binary_b, args_b, crash_b["file"], crash_b["line"],
+            source_dirs_b, lib_path_b, gdb_timeout)
+        if invocation:
+            print(f"  [*] Target executes its crash point "
+                  f"{os.path.basename(crash_b['file'])}:{crash_b['line']} "
+                  f"{invocation} time(s) before crashing — invocation "
+                  f"#{invocation} is the fork anchor"
+                  + (f" (resolved line {crash_b['line'] + anchor_delta})"
+                     if anchor_delta else ""))
+        result = {
+            "divergence_function": func_name,
+            "trace_a_index": a_idx,
+            "trace_b_index": b_idx,
+            "root_cause_function": crash_b["function"],
+            "root_cause_file": crash_b["file"],
+            "root_cause_line": crash_b["line"],
+            "root_cause_file_a": crash_a["file"],
+            "root_cause_line_a": crash_a["line"],
+            "root_cause_statement_a": ref_source,
+            "root_cause_statement_b": source_line,
+            "crash_based": True,
+            "crash_signal_a": crash_a["signal"],
+            "crash_signal_b": crash_b["signal"],
+            "fork_statement": crash_stmt,
+            "fork_statement_line": crash_stmt_line,
+            "fork_statement_file": crash_b["file"],
+            "poly_track_function": crash_b["function"],
+            "poly_track_file": crash_b["file"],
+            "poly_track_line": crash_stmt_line,
+            "poly_track_statement": crash_stmt,
+            "variables": fork_vars,
+            "description": (
+                f"Target crashes before the reference's vulnerability crash.\n"
+                f"Target crash point IS the fork statement.\n"
+                f"  Target:    {crash_b['function']} at {crash_b['file']}:{crash_b['line']} ({crash_b['signal']})\n"
+                f"  Reference: {crash_a['function']} at {crash_a['file']}:{crash_a['line']} ({crash_a['signal']})\n"
+                f"  Statement: {crash_stmt or source_line}"
+            ),
+        }
+        if invocation:
+            result["dynamic_fork"] = {
+                "status": "crash_point_hits",
+                "invocation": invocation,
+                "crash_file": crash_b["file"],
+                "crash_line": crash_b["line"],
+                "anchor_delta": anchor_delta,
+                "note": ("hit count of the target's own crash statement "
+                         "before the crash; origin tracing anchors at this "
+                         "invocation"),
+            }
+        if input_file:
+            result["input_file"] = str(input_file)
+        if not skip_polytracker:
+            try:
+                result = _polytracker_locate_input_offsets(result, config=config, binary_b=binary_b, binary_a=binary_a)
+            except Exception as e:
+                print(f"  [PolyTracker] Analysis failed: {e}")
+                result["polytracker_offsets"] = {"status": "error", "error": str(e)}
+        return result
+
+    # ========================================================
     # PRIMARY: last common function call -> permanent-split fork
     # statement.  Take the LAST gap's forking caller (the deepest
     # common call still on the stack when the traces diverged),
     # step through that function in both versions and locate the
     # statement after which the two step traces never rejoin.
-    # Everything below (backward tracer, crash-based, gap walk,
-    # sub-function) remains as the fallback chain.
+    # In the "reference crashes, target does not crash" case this
+    # is the first locator after the crash-strategy decision; for
+    # the remaining crash combinations it starts the generic
+    # locator chain.
     # ========================================================
     print("\n=== Primary locator: last common call -> permanent-split fork ===")
     try:
@@ -6089,11 +6221,12 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
         return ancestor_result
 
     # ========================================================
-    # FALLBACK: the backward tracer (first fallback).  Recursively
-    # follows the return-value dependency chain from the last
-    # common entry function (e.g. TIFFOpen) down to the fork
-    # statement (the input-read statement in the target version).
-    # The crash-based / semantic / gap-based analyses below remain
+    # SECOND locator (reference crashes, target does not): the
+    # backward tracer.  Recursively follows the return-value
+    # dependency chain from the last common entry function (e.g.
+    # TIFFOpen) down to the fork statement (the input-read
+    # statement in the target version).  The Case A/B crash-point
+    # analyses and the semantic / gap-based analyses below remain
     # further fallbacks.
     # ========================================================
     last_common = _find_last_common_entry_function(matches)
@@ -6109,25 +6242,25 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
         print(f"  [Backward tracer] failed: {e}")
         bt_result = {"status": "error", "error": str(e)}
 
-        if bt_result.get("status") == "found" and bt_result.get("fork_statement"):
-            print(f"\n  Backward tracer located the fork statement.")
-            result = _build_result_from_backward_tracer(
-                bt_result, last_common, a_idx, b_idx)
-            if input_file:
-                result["input_file"] = str(input_file)
-            if not skip_polytracker:
-                try:
-                    result = _polytracker_locate_input_offsets(
-                        result, config=config, binary_b=binary_b,
-                        binary_a=binary_a)
-                except Exception as e:
-                    print(f"  [PolyTracker] Analysis failed: {e}")
-                    result["polytracker_offsets"] = {
-                        "status": "error", "error": str(e)}
-            return result
-        else:
-            print(f"  [Backward tracer] no fork statement found — "
-                  f"falling back to the legacy analysis.")
+    if bt_result.get("status") == "found" and bt_result.get("fork_statement"):
+        print(f"\n  Backward tracer located the fork statement.")
+        result = _build_result_from_backward_tracer(
+            bt_result, last_common, a_idx, b_idx)
+        if input_file:
+            result["input_file"] = str(input_file)
+        if not skip_polytracker:
+            try:
+                result = _polytracker_locate_input_offsets(
+                    result, config=config, binary_b=binary_b,
+                    binary_a=binary_a)
+            except Exception as e:
+                print(f"  [PolyTracker] Analysis failed: {e}")
+                result["polytracker_offsets"] = {
+                    "status": "error", "error": str(e)}
+        return result
+    else:
+        print(f"  [Backward tracer] no fork statement found — "
+              f"falling back to the crash-point analysis.")
 
     # ========================================================
     # CRASH-BASED ANALYSIS: If both versions crash, the target's
