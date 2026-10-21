@@ -8,7 +8,7 @@
 
 ---
 
-## binutils (14 个)
+## binutils (21 个)
 
 工具路径: `binutils-versions/binutils-<ver>/build-asan/binutils/<tool>`
 
@@ -28,6 +28,13 @@
 | CVE-2022-47695 | 2.28 | 2.25-2.27 | `objdump -d in/CVE-2022-47695` |
 | CVE-2022-47696 | 2.34 | 2.26-2.32 | `objdump -d in/CVE-2022-47696` |
 | CVE-2023-1972 | 2.40 | 2.25-2.38 | `objdump -x in/CVE-2023-1972` |
+| CVE-2017-6966 | 2.28 | 2.23.2 | `readelf -w in/CVE-2017-6966` |
+| CVE-2017-9750 | 2.28 | 2.25 | `objdump -D in/CVE-2017-9750` |
+| CVE-2017-14745 | 2.29 | 2.25-2.28 | `objdump -d in/CVE-2017-14745` |
+| CVE-2017-14974 | 2.29 | 2.25-2.28 | `objdump -d in/CVE-2017-14974` |
+| CVE-2022-35206 | 2.38 | 2.23.2-2.36 | `readelf -w in/CVE-2022-35206` |
+| CVE-2025-11081 | 2.45 | 2.43-2.44 | `objdump -S -D -x -s -Z -g -e -G -T -t -L -R --disassemble-zeroes --insn-width=32 --disassembler-color=extended in/CVE-2025-11081` |
+| CVE-2025-69652 | 2.42 | 2.40-2.41 | `readelf -w abbrev in/CVE-2025-69652` |
 
 示例:
 ```bash
@@ -66,13 +73,14 @@ ASAN_OPTIONS=detect_leaks=0:allocator_may_return_null=1 \
 
 ---
 
-## libxml2 (2 个)
+## libxml2 (3 个)
 
 工具路径: `libxml2-versions/libxml2-<ver>/xmllint`
 
 | CVE | 发现版本触发 | 更老版本不触发 | 命令 |
 |-----|-------------|---------------|------|
 | CVE-2024-34459 | 2.9.5-2.9.10 | 2.9.0-2.9.4 | `xmllint --htmlout in/CVE-2024-34459` |
+| CVE-2017-9049 | 2.9.4 | 2.9.0-2.9.2 | `xmllint --memory --oldxml10 in/CVE-2017-9049` |
 | CVE-2025-49795 | 2.11.5, 2.13.6 | 2.9.14 | `build/CVE_2025_49795_<ver>` |
 
 ---
@@ -106,7 +114,7 @@ gcc -g -O0 -fsanitize=address -fno-omit-frame-pointer \
 
 ---
 
-## openjpeg (5 个)
+## openjpeg (6 个)
 
 工具路径: `openjpeg-versions/<ver>/bin/opj_decompress`（源码目录内 cmake 编译）
 
@@ -117,6 +125,7 @@ gcc -g -O0 -fsanitize=address -fno-omit-frame-pointer \
 | CVE-2018-18088 | 2.3.0 (仅) | 2.0-v2.2.0 | `opj_decompress -i in/openjpeg/CVE-2018-18088/291554_FlipDeter -o /tmp/out.ppm` |
 | CVE-2021-3575 | 2.3.1-2.5.0 | 2.3.0 | `opj_decompress -i in/openjpeg/CVE-2021-3575.j2k -o /tmp/out.pgm` |
 | issue1620 | 2.5.3-2.5.4 | 2.0-2.5.2 | `opj_decompress -i in/openjpeg/issue1620_poc.jp2 -o /tmp/out.pgm` |
+| CVE-2016-10504 | v2.1.1-v2.1.2 | version.2.0-version.2.1 | `opj_compress -i in/openjpeg/CVE-2016-10504/poc.bmp -o /tmp/out.j2k` |
 
 崩溃位置:
 - CVE-2016-9572: SEGV in color conversion
@@ -124,6 +133,7 @@ gcc -g -O0 -fsanitize=address -fno-omit-frame-pointer \
 - CVE-2018-18088: SEGV in imagetopnm (convert.c:2243)
 - CVE-2021-3575: heap-buffer-overflow in sycc420_to_rgb (color.c:379)
 - issue1620: heap-buffer-overflow in opj_j2k_read_sod (j2k.c:5086)
+- CVE-2016-10504: heap-buffer-overflow in opj_mqc_byteout (mqc.c:221)
 
 编译命令（源码目录内）:
 ```bash
@@ -213,12 +223,12 @@ make -j
 
 | 项目 | 版本敏感 CVE 数 |
 |------|-----------------|
-| binutils | 14 |
-| libxml2 | 2 |
+| binutils | 21 |
+| libxml2 | 3 |
 | giflib | 1 |
 | freetype | 3 |
-| openjpeg | 5 |
+| openjpeg | 6 |
 | libarchive | 1 |
 | libtiff | 1 |
 | libredwg | 1 |
-| **总计** | **28** |
+| **总计** | **37** |
