@@ -6343,6 +6343,7 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
     ``<offset>:-<new-value>:time:<seconds>`` (per-offset mutation time,
     rounded to whole seconds).
     """
+    _set_active_cve(input_file)
     real_target = resolve_binary(binary_target)
     real_ref = resolve_binary(binary_ref)
     if not (real_target and real_ref
@@ -6969,6 +6970,7 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
     ``out/<input-name>-<target-version>/`` named
     ``<offA>+<offB>:-<va>-<vb>:time:<seconds>``.
     """
+    _set_active_cve(input_file)
     real_target = resolve_binary(binary_target)
     real_ref = resolve_binary(binary_ref)
     if not (real_target and real_ref
@@ -7252,6 +7254,7 @@ def run_multi_offset_combination_stage(binary, binary_ref, input_file,
 
     Returns ``(results, any_match)``.
     """
+    _set_active_cve(input_file)
     results = {}
     if not pool or len(pool) < 3 or not input_file \
             or not os.path.isfile(input_file):
