@@ -5244,7 +5244,7 @@ def _statements_similar(a, b):
     return difflib.SequenceMatcher(None, a, b).ratio() >= 0.5
 
 
-def compare_crash_signatures(ref_sig, tgt_sig):
+def compare_crash_signatures(ref_sig, tgt_sig, cve_id=None):
     """Classify how close a target crash is to the reference crash.
 
     Returns one of:
@@ -5260,12 +5260,21 @@ def compare_crash_signatures(ref_sig, tgt_sig):
       * 'same_type' — only the ASan error type matches,
       * None        — different types (a genuinely different crash).
     Also returns a human-readable diff line for reporting.
+
+    ``cve_id`` (or the module-level active id set from the input file name)
+    enables the CVE-specific equivalence profiles defined above; those are
+    opt-in per CVE and never affect other CVEs.
     """
     if ref_sig is None or tgt_sig is None:
         return None, "no crash signature to compare"
     if not _crash_types_compatible(ref_sig["type"], tgt_sig["type"]):
         return None, (f"type differs: ref={ref_sig['type']} "
                       f"target={tgt_sig['type']}")
+    _cve = (cve_id or _ACTIVE_CVE_ID or '').upper()
+    if _cve:
+        _ok, _why = _cve_crash_match(_cve, ref_sig, tgt_sig)
+        if _ok:
+            return "same_func", _why
     if ref_sig["type"] != tgt_sig["type"]:
         # SEGV umbrella match (e.g. ref=heap-buffer-overflow, target=SEGV):
         # ASan reports some memory-access failures as a bare SEGV; the crash
@@ -6036,6 +6045,7 @@ def test_value_level_mutations(binary_target, binary_ref, input_file,
     ``out/<input-name>-<target-version>/`` named
     ``<offset>:-<value>:time:<seconds>``.
     """
+    _set_active_cve(input_file)
     real_target = resolve_binary(binary_target)
     real_ref = resolve_binary(binary_ref)
     cond = _fork_condition_expr(fork_cond)
