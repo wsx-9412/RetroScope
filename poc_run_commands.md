@@ -172,7 +172,7 @@ gcc -g -O0 -fsanitize=address -fno-omit-frame-pointer \
 
 ## libwebp (1 个)
 
-工具路径: `/home/ws/Desktop/webp-pilot/<ver>/build-asan/dwebp`（0.4.4 为 `examples/dwebp`）
+工具路径: `/home/ws/Desktop/webp-pilot/<ver>/build-asan/dwebp`（0.5.0 及更早为 `examples/dwebp`）
 
 | CVE | 发现版本触发 | 更老版本不触发 | 命令 |
 |-----|-------------|---------------|------|
@@ -191,7 +191,7 @@ gcc -g -O0 -fsanitize=address -fno-omit-frame-pointer \
 
 结论: 漏洞路径随 0.5.0 的 Huffman 表重写引入，1.3.2 修复（提交 `2af26267`，重写 `VP8LBuildHuffmanTable` 分段分配）。0.3.0-0.4.4 源码中不存在 `BuildHuffmanTable`/`ReplicateValue`；1.3.2 虽保留函数名，但新增分段边界检查后不再越界。
 
-编译命令（1.3.1/1.3.2）:
+编译命令（0.5.1+，CMake；0.5.1-1.0.0 需额外加 `-DWEBP_BUILD_DWEBP=ON`）:
 ```bash
 cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug \
   -DCMAKE_C_FLAGS="-g -O0 -fsanitize=address -fno-omit-frame-pointer" \
@@ -202,7 +202,7 @@ cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug \
 cmake --build build-asan --target dwebp -j
 ```
 
-编译命令（0.4.4）:
+编译命令（0.3.0-0.5.0，autotools）:
 ```bash
 sh autogen.sh && ./configure --disable-shared --enable-static \
   CFLAGS="-g -O0 -fsanitize=address -fno-omit-frame-pointer" \
@@ -211,7 +211,7 @@ sh autogen.sh && ./configure --disable-shared --enable-static \
 
 ### 变异测试结论
 
-`1.3.1→0.4.4`: **no-match**。0.4.4 不含 `BuildHuffmanTable`/`ReplicateValue`，无同一漏洞路径。`1.3.2→1.3.1` 的 fork 定位落在 `vp8l_dec.c:303`（`VP8LSetBitPos`），变量 `ok`/`dec->status_`/`tables` 未映射到 PoC 输入字节，无法通过字节变异复现。
+`1.3.1→0.4.4`: **no-match**。0.4.4 不含 `BuildHuffmanTable`/`ReplicateValue`，无同一漏洞路径；而 0.5.0 是首个受影响版本，不存在“有相同代码但更老且不触发”的版本可用作变异目标。`1.3.2→1.3.1` 的 fork 定位落在 `vp8l_dec.c:303`（`VP8LSetBitPos`），变量 `ok`/`dec->status_`/`tables` 未映射到 PoC 输入字节，无法通过字节变异复现。
 
 ---
 
