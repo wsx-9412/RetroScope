@@ -19,6 +19,8 @@ import tempfile
 import time
 from pathlib import Path
 
+import difflib
+
 import stage_timing
 
 # Display labels for the two versions under analysis.  The pipeline supports
