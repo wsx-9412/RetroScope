@@ -3755,7 +3755,7 @@ def _trace_from_common_ancestor(matches, gaps, trace_a, trace_b,
     # Compare traces — permanent-split (point of no return) divergence
     div = _compare_step_traces(step_trace_a, step_trace_b)
     if not div:
-        print("  Step traces are identical — no divergence found inside function")
+        print("  No permanent split found inside function after alignment")
         return None
 
     a_info = div.get("a", {})
@@ -3767,9 +3767,14 @@ def _trace_from_common_ancestor(matches, gaps, trace_a, trace_b,
     b_line = b_info.get("line") if b_info else None
     b_text = b_info.get("line_text", "") if b_info else ""
 
+    a_desc = (f"{a_text.strip()}  ({a_file}:{a_line})" if a_info
+              else "(no statement — trace ended)")
+    b_desc = (f"{b_text.strip()}  ({b_file}:{b_line})" if b_info
+              else "(no statement — trace ended)")
+
     print(f"  Permanent-split divergence at step {div['step']}:")
-    print(f"    A: {a_file}:{a_line} {a_text}")
-    print(f"    B: {b_file}:{b_line} {b_text}")
+    print(f"    A: {a_desc}")
+    print(f"    B: {b_desc}")
 
     result = {
         "root_cause_function": func_name,
@@ -3784,8 +3789,8 @@ def _trace_from_common_ancestor(matches, gaps, trace_a, trace_b,
         "description": (
             f"Common ancestor: {func_name}\n"
             f"Permanent-split divergence at step {div['step']}:\n"
-            f"  {_LABEL_A}: {a_text.strip()}  ({a_file}:{a_line})\n"
-            f"  {_LABEL_B}: {b_text.strip()}  ({b_file}:{b_line})"
+            f"  {_LABEL_A}: {a_desc}\n"
+            f"  {_LABEL_B}: {b_desc}"
         ),
         "note": f"Step trace permanent-split divergence at step {div['step']}",
         "step_trace_split": True,
@@ -3796,7 +3801,7 @@ def _trace_from_common_ancestor(matches, gaps, trace_a, trace_b,
     b_norm = re.sub(r'\s+', ' ', b_text).strip()
     a_norm2 = re.sub(r'\s*([=!<>]=|[=!<>]|&&|\|\||[+\-*/])\s*', r'\1', a_norm)
     b_norm2 = re.sub(r'\s*([=!<>]=|[=!<>]|&&|\|\||[+\-*/])\s*', r'\1', b_norm)
-    if a_norm2 == b_norm2:
+    if a_info and b_info and a_norm2 == b_norm2:
         result["same_statement"] = True
         result["description"] += (
             f"\nSame statement in both versions — different condition value."
@@ -3910,6 +3915,11 @@ def _trace_subfunction_divergence(func_name, binary_a, binary_b,
     b_line = b_info.get("line") if b_info else None
     b_text = b_info.get("line_text", "") if b_info else ""
 
+    a_desc = (f"{a_text.strip()}  ({a_file}:{a_line})" if a_info
+              else "(no statement — trace ended)")
+    b_desc = (f"{b_text.strip()}  ({b_file}:{b_line})" if b_info
+              else "(no statement — trace ended)")
+
     return {
         "root_cause_function": func_name,
         "root_cause_file": a_file or b_file,
@@ -3923,8 +3933,8 @@ def _trace_subfunction_divergence(func_name, binary_a, binary_b,
         "description": (
             f"Sub-function: {func_name}\n"
             f"Divergence at step {div['step']}:\n"
-            f"  {_LABEL_A}: {a_text.strip()}  ({a_file}:{a_line})\n"
-            f"  {_LABEL_B}: {b_text.strip()}  ({b_file}:{b_line})"
+            f"  {_LABEL_A}: {a_desc}\n"
+            f"  {_LABEL_B}: {b_desc}"
         ),
         "note": f"Sub-function trace of {func_name}",
     }
