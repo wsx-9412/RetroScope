@@ -170,48 +170,42 @@ gcc -g -O0 -fsanitize=address -fno-omit-frame-pointer \
 
 ---
 
-## libwebp (1 个)
+## libredwg (1 个)
 
-工具路径: `/home/ws/Desktop/webp-pilot/<ver>/build-asan/dwebp`（0.5.0 及更早为 `examples/dwebp`）
+工具路径: `/home/ws/Desktop/libredwg-pilot/v0.12.5/programs/dwg2dxf`；快照为 `/home/ws/Desktop/libredwg-pilot/snap/programs/dwg2dxf`
 
 | CVE | 发现版本触发 | 更老版本不触发 | 命令 |
 |-----|-------------|---------------|------|
-| CVE-2023-4863 | 0.5.0-1.3.1 | 0.3.0-0.4.4 | `dwebp in/libwebp/CVE-2023-4863/bad.webp -o /tmp/out.ppm` |
+| CVE-2022-33034 | 0.12.5, 2022-05 快照 | 0.12.3-0.12.4 | `dwg2dxf -b -m -y -o /dev/null in/libredwg/CVE-2022-33034-copy_bytes_sof` |
 
-崩溃位置: heap-buffer-overflow in `ReplicateValue`（0.6.0+ 为 `src/utils/huffman_utils.c:59`，0.5.x 为 `src/utils/huffman.c:59`），调用链 `BuildHuffmanTable` → `VP8LBuildHuffmanTable` → `ReadHuffmanCode` (`src/dec/vp8l_dec.c:348`)。
+崩溃位置: stack-buffer-overflow in `copy_bytes` (`src/decode_r2007.c:228`)，调用链 `decompress_r2007` (`decode_r2007.c:563`) → `read_file_header` → `read_r2007_meta_data`。
 
-版本扫描（同一 `bad.webp`，25 个 tag）:
+版本扫描（同一 PoC）:
 
-| 版本区间 | bad.webp | nso.webp |
-|---|---|---|
-| 0.3.0, 0.3.1, 0.4.0-0.4.4 | 不崩溃（BITSTREAM_ERROR） | 不崩溃 |
-| 0.5.0, 0.5.1, 0.5.2 | heap-buffer-overflow in ReplicateValue | heap-buffer-overflow |
-| 0.6.0, 0.6.1, 1.0.0-1.0.3, 1.1.0, 1.2.0-1.2.4, 1.3.0, 1.3.1 | heap-buffer-overflow in ReplicateValue | heap-buffer-overflow |
-| 1.3.2 | 不崩溃（BITSTREAM_ERROR） | 不崩溃 |
+| 版本 | 结果 |
+|---|---|
+| 0.12.3 | 不崩溃，`copy_bytes` 执行到 `length overflow` 检查后返回 0x400 |
+| 0.12.4 | 不崩溃，同样在 `length overflow` 检查返回 |
+| 2022-05 快照 `f2dea29` | stack-buffer-overflow in `copy_bytes` |
+| 0.12.5 | stack-buffer-overflow in `copy_bytes` |
 
-结论: 漏洞路径随 0.5.0 的 Huffman 表重写引入，1.3.2 修复（提交 `2af26267`，重写 `VP8LBuildHuffmanTable` 分段分配）。0.3.0-0.4.4 源码中不存在 `BuildHuffmanTable`/`ReplicateValue`；1.3.2 虽保留函数名，但新增分段边界检查后不再越界。
+与 libwebp 的区别: 0.12.3/0.12.4 **已经包含** `copy_bytes` 和 `decompress_r2007`，同一 PoC 也已执行到 `copy_bytes`（日志可见 `copy_bytes (dst, 19, 1)` 等调用），只是在越界检查处返回。0.12.4→0.12.5 的 `decompress_r2007` 差异只有检查条件 `>`→`>=` 和日志改动，`copy_bytes` 函数体完全一致，因此不是“漏洞代码未引入”。
 
-编译命令（0.5.1+，CMake；0.5.1-1.0.0 需额外加 `-DWEBP_BUILD_DWEBP=ON`）:
+PoC 来源: `https://gitee.com/cxlzff/fuzz-poc/raw/master/libredwg/copy_bytes_sof`（LibreDWG issue #494）。
+
+编译命令（快照/0.12.5）:
 ```bash
-cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_C_FLAGS="-g -O0 -fsanitize=address -fno-omit-frame-pointer" \
-  -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" -DBUILD_SHARED_LIBS=OFF \
-  -DWEBP_BUILD_ANIM_UTILS=OFF -DWEBP_BUILD_CWEBP=OFF -DWEBP_BUILD_GIF2WEBP=OFF \
-  -DWEBP_BUILD_IMG2WEBP=OFF -DWEBP_BUILD_VWEBP=OFF -DWEBP_BUILD_WEBPINFO=OFF \
-  -DWEBP_BUILD_WEBPMUX=OFF -DWEBP_BUILD_EXTRAS=OFF
-cmake --build build-asan --target dwebp -j
-```
-
-编译命令（0.3.0-0.5.0，autotools）:
-```bash
-sh autogen.sh && ./configure --disable-shared --enable-static \
+git submodule update --init --recursive   # jsmn
+sh autogen.sh
+./configure --disable-shared --enable-static \
   CFLAGS="-g -O0 -fsanitize=address -fno-omit-frame-pointer" \
-  LDFLAGS="-fsanitize=address" && make -j
+  LDFLAGS="-fsanitize=address"
+make -j
 ```
 
 ### 变异测试结论
 
-`1.3.1→0.4.4`: **no-match**。0.4.4 不含 `BuildHuffmanTable`/`ReplicateValue`，无同一漏洞路径；而 0.5.0 是首个受影响版本，不存在“有相同代码但更老且不触发”的版本可用作变异目标。`1.3.2→1.3.1` 的 fork 定位落在 `vp8l_dec.c:303`（`VP8LSetBitPos`），变量 `ok`/`dec->status_`/`tables` 未映射到 PoC 输入字节，无法通过字节变异复现。
+`0.12.5→0.12.4`: **no-match**。在 `decode_r2007.c:556` 做 fork 变量映射，target `length=0x13`、ref `length=0`，`offset` 相同（`0x1`）；`length`/`offset` 是 LZ77 解压出的值，未映射到 PoC 文件偏移，`trace_fork_offsets.py` 写入 `out/copy_bytes_sof-target/NO_CRASH_MATCH.txt`。结论: 版本敏感成立，但当前 PoC 不能通过字节变异复现同一崩溃。
 
 ---
 
@@ -226,5 +220,5 @@ sh autogen.sh && ./configure --disable-shared --enable-static \
 | openjpeg | 5 |
 | libarchive | 1 |
 | libtiff | 1 |
-| libwebp | 1 |
+| libredwg | 1 |
 | **总计** | **28** |
