@@ -192,6 +192,37 @@ issue1276 (crash_file_1)、issue759 (62.crashes) 全版本不触发。
 
 ---
 
+## libming
+
+工具: `libming-versions/v<ver>/util/swftophp`
+
+| CVE | 触发版本 | 不触发版本 | 命令 | 崩溃 |
+|-----|----------|-----------|------|------|
+| CVE-2018-8807 | 0.4.5-0.4.8 | 无（全部） | `libming-versions/v0.4.8/util/swftophp in/libming/CVE-2018-8807.swf >/dev/null` | heap-use-after-free decompileCALLFUNCTION (decompile.c:2864) |
+| CVE-2017-11733 | 0.4.5-0.4.8 | 无（全部） | `libming-versions/v0.4.8/util/swftophp in/libming/CVE-2017-11733.swf >/dev/null` | SEGV stackswap (decompile.c:629) |
+
+注: 0.4.5-0.4.8 均触发同一函数/同一崩溃类型；0.4.8 为最后发布版。
+
+---
+
+## swftools
+
+工具: `swftools-versions/v<ver>/src/<tool>`
+
+| CVE | 触发版本 | 不触发版本 | 命令 | 崩溃 |
+|-----|----------|-----------|------|------|
+| CVE-2021-42195 | 0.8.1, 0.9.0, 0.9.2 | 无（全部） | `swftools-versions/v0.9.2/src/swfdump in/swftools/CVE-2021-42195.swf >/dev/null` | heap-buffer-overflow handleEditText/printf_common |
+| CVE-2021-42200 | 0.8.1, 0.9.0, 0.9.2 | 无（全部） | `swftools-versions/v0.9.2/src/swfdump in/swftools/CVE-2021-42200.swf >/dev/null` | SEGV main (swfdump.c) |
+| CVE-2021-42199 | 0.8.1, 0.9.0, 0.9.2 | 无（全部） | `swftools-versions/v0.9.2/src/swfstrings in/swftools/CVE-2021-42199.swf >/dev/null` | heap-buffer-overflow swf_FontExtract_DefineTextCallback (swftext.c:508) |
+| CVE-2021-42203 | 0.8.1, 0.9.0, 0.9.2 | 无（全部） | `swftools-versions/v0.9.2/src/swfstrings in/swftools/CVE-2021-42203.swf >/dev/null` | heap-buffer-overflow swf_FontExtract_DefineTextCallback (swftext.c:508) |
+| CVE-2021-42204 | 0.8.1, 0.9.0, 0.9.2 | 无（全部） | `swftools-versions/v0.9.2/src/swfstrings in/swftools/CVE-2021-42204.swf >/dev/null` | heap-buffer-overflow swf_GetBits (rfxswf.c:213) |
+| CVE-2021-42198 | 0.8.1, 0.9.0, 0.9.2 | 无（全部） | `swftools-versions/v0.9.2/src/swfdump in/swftools/CVE-2021-42198.swf >/dev/null` | SEGV swf_GetBits (rfxswf.c:213) |
+
+注: CVE-2021-42203 公开描述为 heap-use-after-free；本地 ASan 在 0.8.1/0.9.0/0.9.2 均先报告同函数 heap-buffer-overflow (swftext.c:508)。
+CVE-2021-42201 (`swf_GetD64`) 仅在 0.8.1/0.9.0 触发，0.9.2 不触发，未计入本表。
+
+---
+
 ## 汇总
 
 | 项目 | 老版本同触发 CVE 数 |
@@ -207,3 +238,5 @@ issue1276 (crash_file_1)、issue759 (62.crashes) 全版本不触发。
 | openjpeg | 2 |
 | libtiff | 1 |
 | libarchive | 0 |
+| libming | 2 |
+| swftools | 6 |
