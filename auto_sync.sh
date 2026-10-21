@@ -28,7 +28,14 @@ sync_now() {
     cd "$REPO_DIR" || return 1
     # .gitignore excludes the big *-versions/ trees and build artifacts, so this
     # only stages the small, valuable content (PoCs, scripts, docs, configs).
-    git add -A 2>/dev/null
+    # The pathspec excludes also protect still-tracked junk from being staged.
+    git add -A -- . \
+        ':(exclude)*-versions/' \
+        ':(exclude)third_party/' \
+        ':(exclude)out/' \
+        ':(exclude).instr-build/' \
+        ':(exclude)in/libtiff/' \
+        ':(exclude)build-asan/' 2>/dev/null
     CHANGES=$(git status --porcelain 2>/dev/null)
     if [ -n "$CHANGES" ]; then
         TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
