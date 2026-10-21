@@ -53,7 +53,7 @@ sys.path.insert(0, str(BASE))
 from trace_fork_offsets import (  # noqa: E402
     resolve_binary, build_run_env, extract_crash_signature,
     compare_crash_signatures, _replace_input_arg, _path_basename,
-    _attach_crash_statement,
+    _attach_crash_statement, _set_active_cve,
 )
 
 GDB_VERIFY_SCRIPT = r"""
