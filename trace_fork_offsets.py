@@ -5038,6 +5038,136 @@ def _is_noise_stack_frame(func):
     return func.startswith('__libc_') or func.startswith('__cxa_')
 
 
+# ---------------------------------------------------------------------------
+# CVE-specific crash-equivalence profiles
+#
+# The generic comparator below requires the same crash POINT (function +
+# statement).  A few CVEs involve a source-level REWRITE (not a rename), where
+# the same defect is re-implemented in a differently named function, so no
+# similarity/rename mapper can link the two names.  For those CVEs only, the
+# profile identifies the defect by what is version-invariant:
+#   * the memory OBJECT  -> allocation stack of the overflowed buffer;
+#   * the offending ACCESS -> fault function reached through a shared caller.
+# The manifestation (access width, region size, overflow side) is deliberately
+# NOT gated: the same defect can be a 2-byte write in one version and a 4-byte
+# write in the other, or overflow the same buffer by a different amount.
+# Input dependence is implicit: mutations are applied to offsets derived from
+# the located fork variables.
+# ---------------------------------------------------------------------------
+
+_CVE_CRASH_PROFILES = {
+    'CVE-2017-6831': {
+        # IMA ADPCM decode body: the C function _af_adpcm_decoder (adpcm.c,
+        # 0.3.0) was rewritten as the C++ member IMA::decodeBlockWAVE
+        # (IMA.cpp:188, 0.3.6); both are called by IMA::decodeBlock.
+        'ref_fault_functions': ('IMA::decodeBlockWAVE',),
+        'tgt_fault_functions': ('_af_adpcm_decoder',),
+        'common_caller': 'IMA::decodeBlock',
+        'alloc_frames': ('Chunk::allocate', 'ModuleState::setup',
+                         'afGetFrameCount'),
+        'alloc_jaccard': 0.5,
+    },
+}
+
+_ACTIVE_CVE_ID = None
+
+
+def _cve_id_from_input(input_file):
+    """Extract 'CVE-YYYY-NNNN' from the input file name (e.g. in/CVE-...)."""
+    if not input_file:
+        return None
+    m = re.search(r'(CVE-\d{4}-\d+)', os.path.basename(str(input_file)), re.I)
+    return m.group(1).upper() if m else None
+
+
+def _set_active_cve(input_file):
+    global _ACTIVE_CVE_ID
+    _ACTIVE_CVE_ID = _cve_id_from_input(input_file)
+
+
+def _func_basename(name):
+    """Strip the parameter list: 'IMA::f(int)' -> 'IMA::f'."""
+    return (name or '').split('(', 1)[0].strip()
+
+
+def _stack_groups(sig):
+    """Split parsed frames into stacks at ASan's frame-number resets.
+
+    ASan prints the faulting stack (#0..#N), then 'allocated by' (#0..#M),
+    then optionally 'freed by' (#0..#K); every stack restarts at #0.
+    """
+    groups, cur, prev = [], [], None
+    for f in (sig or {}).get('frames') or []:
+        no = f.get('no')
+        if not isinstance(no, int):
+            continue
+        if cur and prev is not None and no <= prev:
+            groups.append(cur)
+            cur = []
+        cur.append(f)
+        prev = no
+    if cur:
+        groups.append(cur)
+    return groups
+
+
+def _allocation_stack(sig):
+    groups = _stack_groups(sig)
+    return groups[1] if len(groups) > 1 else []
+
+
+def _alloc_frame_names(sig):
+    names = []
+    for f in _allocation_stack(sig):
+        n = _func_basename(f.get('function'))
+        if not n or _is_noise_stack_frame(n):
+            continue
+        if n in ('operator new', 'operator new[]',
+                 'operator delete', 'operator delete[]'):
+            continue
+        names.append(n)
+    return names
+
+
+def _cve_crash_match(cve_id, ref_sig, tgt_sig):
+    """CVE-specific same-defect check (does not gate on manifestation)."""
+    profile = _CVE_CRASH_PROFILES.get((cve_id or '').upper())
+    if not profile or not ref_sig or not tgt_sig:
+        return False, ''
+    if not _crash_types_compatible(ref_sig.get('type'), tgt_sig.get('type')):
+        return False, ''
+
+    rframes = ref_sig.get('crash_frames') or []
+    tframes = tgt_sig.get('crash_frames') or []
+    if len(rframes) < 2 or len(tframes) < 2:
+        return False, ''
+    rfunc = _func_basename(rframes[0].get('function'))
+    tfunc = _func_basename(tframes[0].get('function'))
+    if rfunc not in profile['ref_fault_functions']:
+        return False, ''
+    if tfunc not in profile['tgt_fault_functions']:
+        return False, ''
+    if _func_basename(rframes[1].get('function')) != profile['common_caller']:
+        return False, ''
+    if _func_basename(tframes[1].get('function')) != profile['common_caller']:
+        return False, ''
+
+    ralloc = set(_alloc_frame_names(ref_sig))
+    talloc = set(_alloc_frame_names(tgt_sig))
+    keys = set(profile['alloc_frames'])
+    if not keys <= ralloc or not keys <= talloc:
+        return False, ''
+    union = ralloc | talloc
+    jac = (len(ralloc & talloc) / len(union)) if union else 0.0
+    if jac < profile['alloc_jaccard']:
+        return False, ''
+    return True, (
+        f"CVE-specific equivalence ({cve_id}): same allocation object "
+        f"({'/'.join(profile['alloc_frames'])}, jaccard={jac:.2f}); "
+        f"fault {rfunc} vs {tfunc} both reached via "
+        f"{profile['common_caller']} (access width/size not gated)")
+
+
 def _resolve_source_file(file_field, binary):
     """Resolve an ASan frame's ``file`` field to a readable source path.
 
