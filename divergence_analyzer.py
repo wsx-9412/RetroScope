@@ -10,6 +10,7 @@ Given two binaries and the LCS divergence point, this tool:
   4. Traces back to the source statement that produces the difference
 """
 
+import difflib
 import json
 import os
 import re
@@ -18,8 +19,6 @@ import subprocess
 import tempfile
 import time
 from pathlib import Path
-
-import difflib
 
 import stage_timing
 
@@ -3598,89 +3597,117 @@ def _step_into_trace_binary(binary, func_name, args, lib_path, source_dirs,
     return trace
 
 
-def _compare_step_traces(trace_a, trace_b):
-    """Compare two step traces to find the divergence point that causes permanent split.
+_TRIVIAL_STEP_LINES = frozenset(('{', '}', '', ';'))
 
-    Each trace entry: {"file": ..., "line": ..., "line_text": ...}
-    Compares by normalized line text. Skips trivial/whitespace-only/formatting differences.
-    Returns the FIRST divergence followed by 3+ consecutive differences (the root cause),
-    or None if identical.
+_DECL_ONLY_RE = re.compile(
+    r'^\s*(uint\d*(?:_t)?|int\d*(?:_t)?|char|short|long|float|double|'
+    r'size_t|ssize_t|static|const|unsigned|signed|void|bool|struct|union|'
+    r'enum)\b'
+)
+
+
+def _normalize_step_text(text):
+    """Collapse formatting-only differences between two step-trace lines."""
+    norm = re.sub(r'\s+', ' ', (text or '').strip())
+    norm = re.sub(r'\s*([=!<>]=|[=!<>]|&&|\|\||[+\-*/])\s*', r'\1', norm)
+    return re.sub(r'\s*\{\s*$', '', norm).strip()
+
+
+def _prepare_step_trace(trace):
+    """Return ``(keys, entries)`` suitable for order-preserving alignment.
+
+    Braces, blank lines and lone semicolons carry no decision and are removed
+    on each side independently, so one version having an extra ``{`` cannot
+    shift every following line.  Pure declarations (no initializer and no
+    call) are treated the same way: where they appear is an implementation
+    detail.  Declarations with an initializer/call are kept, since they may
+    compute the value that drives the fork.
     """
-    all_divs = []
-    for i in range(max(len(trace_a), len(trace_b))):
-        a_op = trace_a[i] if i < len(trace_a) else None
-        b_op = trace_b[i] if i < len(trace_b) else None
-
-        if a_op is None or b_op is None:
-            if a_op is not None or b_op is not None:
-                all_divs.append({
-                    "type": "length_mismatch",
-                    "step": i,
-                    "a": a_op,
-                    "b": b_op,
-                })
+    keys, entries = [], []
+    for e in trace or []:
+        text = (e.get('line_text') or '').strip()
+        if text in _TRIVIAL_STEP_LINES:
             continue
-
-        a_text = (a_op.get("line_text") or "").strip()
-        b_text = (b_op.get("line_text") or "").strip()
-
-        if a_text in ('{', '}', '', ';') and b_text in ('{', '}', '', ';'):
+        if _DECL_ONLY_RE.match(text) and '=' not in text and '(' not in text:
             continue
+        keys.append(_normalize_step_text(text))
+        entries.append(e)
+    return keys, entries
 
-        if a_text == b_text:
-            continue
 
-        a_norm = re.sub(r'\s+', ' ', a_text).strip()
-        b_norm = re.sub(r'\s+', ' ', b_text).strip()
-        a_norm = re.sub(r'\s*([=!<>]=|[=!<>]|&&|\|\||[+\-*/])\s*', r'\1', a_norm)
-        b_norm = re.sub(r'\s*([=!<>]=|[=!<>]|&&|\|\||[+\-*/])\s*', r'\1', b_norm)
-        a_norm = re.sub(r'\s*\{\s*$', '', a_norm)
-        b_norm = re.sub(r'\s*\{\s*$', '', b_norm)
-        if a_norm == b_norm:
-            continue
+def _make_step_divergence(tag, i1, j1, entries_a, entries_b):
+    """Build a divergence record; a one-sided gap has ``None`` on that side."""
+    if tag == 'insert':
+        a_entry = None
+        b_entry = entries_b[j1] if 0 <= j1 < len(entries_b) else None
+    elif tag == 'delete':
+        a_entry = entries_a[i1] if 0 <= i1 < len(entries_a) else None
+        b_entry = None
+    else:  # 'replace'
+        a_entry = entries_a[i1] if 0 <= i1 < len(entries_a) else None
+        b_entry = entries_b[j1] if 0 <= j1 < len(entries_b) else None
+    if a_entry is None and b_entry is None:
+        return None
+    if a_entry is None:
+        kind = 'insertion'
+    elif b_entry is None:
+        kind = 'deletion'
+    else:
+        kind = 'line_divergence'
+    step = i1 if a_entry is not None else j1
+    return {'type': kind, 'step': step, 'a': a_entry, 'b': b_entry}
 
-        skip_re = re.compile(
-            r'^\s*(uint\d*(?:_t)?|int\d*(?:_t)?|char|short|long|float|double|size_t|static|const|unsigned|signed)\b'
-        )
-        if skip_re.match(a_text) and skip_re.match(b_text):
-            continue
 
-        all_divs.append({
-            "type": "line_divergence",
-            "step": i,
-            "a": a_op,
-            "b": b_op,
-        })
+def _compare_step_traces(trace_a, trace_b):
+    """Align two source-line step traces and locate the fork statement.
 
-    if not all_divs:
+    The two traces are order-preserving statement sequences, but one version
+    routinely has extra/missing statements inside the same function.  We
+    therefore align them with an LCS-style matcher (``difflib``) instead of
+    comparing position by position: a statement present only on one side is
+    absorbed as an insertion/deletion and does not shift every following
+    line.  Formatting-only differences and pure declarations are normalized
+    away before matching.
+
+    The permanent-split point is the first statement of the final unaligned
+    region (everything after the last common statement).  If the traces rejoin
+    at the end but contain a replacement (both versions execute a different
+    statement at the same position), the first replacement is returned as a
+    statement-level divergence.  A pure insertion/deletion that later rejoins
+    is version-evolution noise and yields ``None``.
+
+    Each trace entry: {"file": ..., "line": ..., "line_text": ...}.
+    Returns ``{'type', 'step', 'a', 'b'}`` (``a``/``b`` may be ``None`` when
+    that side has no statement at the split), or ``None`` when no divergence
+    remains after alignment.
+    """
+    keys_a, entries_a = _prepare_step_trace(trace_a)
+    keys_b, entries_b = _prepare_step_trace(trace_b)
+    if not keys_a and not keys_b:
         return None
 
-    # Find the first divergence followed by >= consecutive_threshold further
-    # differences at nearly consecutive steps.  A transient divergence that
-    # later rejoins shows up as a run of non-differing steps before the next
-    # recorded difference; a permanent split keeps differing, so its followers
-    # are step-adjacent (small gaps only, for brace/formatting-only steps
-    # filtered out above).  This is the permanent-split (point-of-no-return)
-    # divergence.
-    consecutive_threshold = 3
-    max_step_gap = 3  # 3+ non-differing steps in a row => the paths rejoined
-    for idx, div in enumerate(all_divs):
-        followers = all_divs[idx + 1: idx + 1 + consecutive_threshold]
-        if len(followers) < consecutive_threshold:
-            break
-        prev_step = div["step"]
-        permanent = True
-        for f in followers:
-            gap = f["step"] - prev_step
-            if gap <= 0 or gap > max_step_gap:
-                permanent = False
-                break
-            prev_step = f["step"]
-        if permanent:
-            return div
+    opcodes = difflib.SequenceMatcher(
+        None, keys_a, keys_b, autojunk=False).get_opcodes()
 
-    # No permanent split detected — fall back to the first divergence.
-    return all_divs[0]
+    last_equal = -1
+    for idx, (tag, _i1, _i2, _j1, _j2) in enumerate(opcodes):
+        if tag == 'equal':
+            last_equal = idx
+
+    # Split candidates: the final unaligned region after the last common
+    # statement.  Insertions/deletions that were followed by a common
+    # statement were already absorbed by the alignment.
+    tail = [op for op in opcodes[last_equal + 1:] if op[0] != 'equal']
+    if tail:
+        tag, i1, _i2, j1, _j2 = tail[0]
+        return _make_step_divergence(tag, i1, j1, entries_a, entries_b)
+
+    # Traces rejoin at the end: pure additions/removals are not a fork; only
+    # a replacement (different statements at the same aligned position) is.
+    for tag, i1, _i2, j1, _j2 in opcodes:
+        if tag == 'replace':
+            return _make_step_divergence(tag, i1, j1, entries_a, entries_b)
+    return None
 
 
 def _trace_from_common_ancestor(matches, gaps, trace_a, trace_b,
