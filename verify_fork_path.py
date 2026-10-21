@@ -438,6 +438,8 @@ def main():
                  "(from --trace-json or explicit flags)")
     if not os.path.isfile(input_file):
         ap.error("input file not found: %s" % input_file)
+    # Enable CVE-specific crash-equivalence profiles (e.g. CVE-2017-6831).
+    _set_active_cve(input_file)
     if a.args:
         arg_template = a.args
     else:
