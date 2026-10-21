@@ -3670,12 +3670,19 @@ def _compare_step_traces(trace_a, trace_b):
     line.  Formatting-only differences and pure declarations are normalized
     away before matching.
 
+    A non-equal region is only treated as transient (rejoined) when it is
+    followed by a *substantial* common run — at least ``_MIN_REJOIN_STMTS``
+    consecutive statements, or a run that lasts to the end of the traces.
+    Requiring more than one line matters because divergent paths often share a
+    single cleanup statement (e.g. ``free (contents);``) near the exit; such a
+    coincidence must not hide the real split.
+
     The permanent-split point is the first statement of the final unaligned
-    region (everything after the last common statement).  If the traces rejoin
-    at the end but contain a replacement (both versions execute a different
+    region (everything after the last substantial common run).  If the traces
+    fully rejoin but contain a replacement (both versions execute a different
     statement at the same position), the first replacement is returned as a
-    statement-level divergence.  A pure insertion/deletion that later rejoins
-    is version-evolution noise and yields ``None``.
+    weaker statement-level divergence.  A pure insertion/deletion that later
+    rejoins is version-evolution noise and yields ``None``.
 
     Each trace entry: {"file": ..., "line": ..., "line_text": ...}.
     Returns ``{'type', 'step', 'a', 'b'}`` (``a``/``b`` may be ``None`` when
@@ -3690,15 +3697,26 @@ def _compare_step_traces(trace_a, trace_b):
     opcodes = difflib.SequenceMatcher(
         None, keys_a, keys_b, autojunk=False).get_opcodes()
 
-    last_equal = -1
-    for idx, (tag, _i1, _i2, _j1, _j2) in enumerate(opcodes):
-        if tag == 'equal':
-            last_equal = idx
+    equal_ops = [(idx, i2 - i1)
+                 for idx, (tag, i1, i2, _j1, _j2) in enumerate(opcodes)
+                 if tag == 'equal']
+    # A one/two-line match inside a divergent region is usually a shared
+    # statement, not a rejoin.  Trust a short run only when it reaches the
+    # end of the alignment.
+    trusted = [idx for idx, size in equal_ops
+               if size >= _MIN_REJOIN_STMTS or idx == len(opcodes) - 1]
+    if trusted:
+        boundary = trusted[-1]
+    elif equal_ops:
+        # Very short traces: fall back to the last common statement.
+        boundary = equal_ops[-1][0]
+    else:
+        boundary = -1
 
-    # Split candidates: the final unaligned region after the last common
-    # statement.  Insertions/deletions that were followed by a common
-    # statement were already absorbed by the alignment.
-    tail = [op for op in opcodes[last_equal + 1:] if op[0] != 'equal']
+    # Split candidates: the final unaligned region after the last trusted
+    # common run.  One-sided insertions/deletions that were followed by such
+    # a run were already absorbed by the alignment.
+    tail = [op for op in opcodes[boundary + 1:] if op[0] != 'equal']
     if tail:
         tag, i1, _i2, j1, _j2 = tail[0]
         return _make_step_divergence(tag, i1, j1, entries_a, entries_b)
