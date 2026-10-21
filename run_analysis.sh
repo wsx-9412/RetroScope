@@ -57,7 +57,7 @@ case "$PROJECT_NAME" in
         REFERENCE_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.0.9"
         TARGET_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.0.7"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2022-0891"
-        EXTRA_ARGS=(--include-exits --refactor-detect)
+        EXTRA_ARGS=(--include-exits)
         ;;
 "lame")
         REFERENCE_VERSION_PATH="$BASE_DIR/lame-versions/lame-3.99.5"
@@ -122,6 +122,11 @@ case "$PROJECT_NAME" in
         exit 1
         ;;
 esac
+
+# Cross-version refactoring/rename detection is enabled for EVERY project so
+# that traces from differently-named functions are aligned before the LCS
+# (previously only libtiff opted in).
+EXTRA_ARGS+=(--refactor-detect)
 
 # Read CVE config from the config file (override defaults if present)
 CVE_ID=$(python3 -c "import importlib.util; s=importlib.util.spec_from_file_location('c','$CONFIG_MODULE'); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); print(getattr(m,'CVE_ID','unknown'))")
