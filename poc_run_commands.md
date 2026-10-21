@@ -189,7 +189,11 @@ gcc -g -O0 -fsanitize=address -fno-omit-frame-pointer \
 | 2022-05 快照 `f2dea29` | stack-buffer-overflow in `copy_bytes` |
 | 0.12.5 | stack-buffer-overflow in `copy_bytes` |
 
-与 libwebp 的区别: 0.12.3/0.12.4 **已经包含** `copy_bytes` 和 `decompress_r2007`，同一 PoC 也已执行到 `copy_bytes`（日志可见 `copy_bytes (dst, 19, 1)` 等调用），只是在越界检查处返回。0.12.4→0.12.5 的 `decompress_r2007` 差异只有检查条件 `>`→`>=` 和日志改动，`copy_bytes` 函数体完全一致，因此不是“漏洞代码未引入”。
+与 libwebp 的区别: 0.12.3/0.12.4 **已经包含** `copy_bytes` 和 `decompress_r2007`，同一 PoC 也已执行到 `copy_bytes`（日志可见 `copy_bytes (dst, 19, 1)` 等调用），只是在越界检查处返回。0.12.4→0.12.5 的关键差异不是新增函数，而是 `decompress_r2007` 的输出缓冲区长度参数：
+- `read_system_page`/section 解压调用从 `size_uncomp` 改为 `size_uncomp + 1`；
+- 文件头解压从 `0x110` 改为 `sizeof (r2007_file_header) + 1`。
+
+`copy_bytes` 函数体在两个版本中完全一致；老版本因少这 1 字节会在 `dst + length > dst_end` 处拒绝，新版本多出的 1 字节让同一 LZ77 复制越过栈缓冲区。这是同一段代码的边界回归，不是“漏洞代码未引入”。
 
 PoC 来源: `https://gitee.com/cxlzff/fuzz-poc/raw/master/libredwg/copy_bytes_sof`（LibreDWG issue #494）。
 
