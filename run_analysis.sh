@@ -86,8 +86,8 @@ case "$PROJECT_NAME" in
     # For another CVE, update both paths so one version crashes and the other
     # does not, and pick the matching tool in the config's EXECUTION_CONFIG.
     "libxml2")
-        REFERENCE_VERSION_PATH="$BASE_DIR/libxml2-versions/libxml2-2.9.5"
-        TARGET_VERSION_PATH="$BASE_DIR/libxml2-versions/libxml2-2.9.4"
+        REFERENCE_VERSION_PATH="$BASE_DIR/libxml2-versions/libxml2-2.9.4"
+        TARGET_VERSION_PATH="$BASE_DIR/libxml2-versions/libxml2-2.9.2"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2017-9049"
         EXTRA_ARGS=(--include-exits)
         ;;
