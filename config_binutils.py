@@ -72,7 +72,7 @@ COMPILE_COMMANDS = {
 
 # Program execution parameter configuration
 EXECUTION_CONFIG = {
-    "program_name": "objdump",
+    "program_name": "readelf",
     "timeout": 120,
     "exec_subdir": "/build-asan/binutils",
     "command_format": COMMAND_FORMAT,
