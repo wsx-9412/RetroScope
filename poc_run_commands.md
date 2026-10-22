@@ -212,13 +212,26 @@ make -j
 
 ---
 
-## libsndfile (1 个)
+## libsndfile (2 个)
 
-工具路径: `/tmp/libsndfile-<ver>/programs/sndfile-convert`（ASan 构建）
+工具路径: `/tmp/libsndfile-<ver>/programs/{sndfile-convert,sndfile-info}`（ASan 构建）
 
 | CVE | 发现版本触发 | 更老版本不触发 | 命令 |
 |-----|-------------|---------------|------|
+| CVE-2017-7741 | 1.0.26-1.0.27 | 1.0.25 | `sndfile-info in/libsndfile/CVE-2017-7741` |
 | CVE-2018-19661 | 1.0.26-1.0.28 | 1.0.25 | `sndfile-convert -ulaw in/libsndfile/CVE-2018-19661 /tmp/out.raw` |
+
+### CVE-2017-7741
+
+崩溃位置: stack-buffer-overflow（WRITE of size 8）in `flac_buffer_copy` (`src/flac.c:282`)，调用链 `psf_calc_signal_max` (`command.c:302`) → `sf_read_double` → `flac_read_flac2d` → `flac_read_loop` → `flac_buffer_copy`。
+
+PoC 来源: `https://github.com/asarubbo/poc/blob/master/00261-libsndfile-invalidwrite-flac_buffer_copy`（CVE-2017-7741，Gentoo/Agostino Sarubbo）。原始 PoC 直接触发，无需变异。
+
+版本差异: 1.0.26 将 `psf_calc_signal_max` 的读缓冲从 `SF_PRIVATE` 内部的 `psf->u.dbuf` 改为局部 `BUF_UNION ubuf`，并把长度按声道数对齐（3 声道时为 1023 个 double）。该畸形 FLAC 的帧声道/剩余计数使 `flac_buffer_copy` 在 `offset+j` 处写到 1026 个 double，越过 8192 字节栈缓冲 32 字节。1.0.25 仍使用内部缓冲，该路径不会调用 `flac_buffer_copy`，ASan 无报告；1.0.28 由 commit `60b2343` 修复，不再崩溃。
+
+注意: 1.0.26 构建时需让 `flac.pc` 指向 `/tmp/flacdev/root`（否则 configure 报 `link failed` 并编译成无 FLAC 支持）。PoC 含 3 声道、8323094 帧，仅 `sndfile-info` 的 signal-max 扫描路径触发。
+
+### CVE-2018-19661
 
 崩溃位置: global-buffer-overflow in `i2ulaw_array` (`src/ulaw.c:833`)，调用链 `sf_writef_int` → `ulaw_write_i2ulaw`。
 
