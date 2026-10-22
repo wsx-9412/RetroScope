@@ -4002,8 +4002,10 @@ def _step_divergence_result(func_name, div, heading):
 
     result = {
         "root_cause_function": func_name,
-        "root_cause_file": ff_a or ff_b,
-        "root_cause_line": fl_a or fl_b,
+        # Root-cause location points at the target (B) statement: downstream
+        # origin/instrumentation stages resolve source lines in that version.
+        "root_cause_file": ff_b or ff_a,
+        "root_cause_line": fl_b or fl_a,
         "root_cause_file_a": ff_a,
         "root_cause_line_a": fl_a,
         "root_cause_statement_a": ft_a.strip(),
