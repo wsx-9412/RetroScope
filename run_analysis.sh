@@ -308,25 +308,9 @@ DYN_MUT_PY
         if [ -f "results/${CVE_ID}_origin_mutation.json" ]; then
             ORIGIN_MUT_ARGS=(--origin-mutation "results/${CVE_ID}_origin_mutation.json")
         fi
-        TEST_OFFSET_ARGS=()
-        read -r -a TEST_OFFSET_ARGS < <(python3 - "$CONFIG_MODULE" <<'TEST_OFF_PY'
-import importlib.util, sys
-spec = importlib.util.spec_from_file_location('c', sys.argv[1])
-m = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(m)
-fo = getattr(m, 'FORK_OVERRIDE', None)
-if fo and fo.get('test_offsets'):
-    print(' '.join('0x%x' % (int(o, 16) if isinstance(o, str) else o)
-                   for o in fo['test_offsets']))
-TEST_OFF_PY
-)
-        if [ ${#TEST_OFFSET_ARGS[@]} -gt 0 ]; then
-            TEST_OFFSET_ARGS=(--test-offsets "${TEST_OFFSET_ARGS[@]}")
-        fi
         python3 -u trace_fork_offsets.py \
             --trace-json "$DIVERGE_JSON" \
             ${ORIGIN_MUT_ARGS[@]+"${ORIGIN_MUT_ARGS[@]}"} \
-            ${TEST_OFFSET_ARGS[@]+"${TEST_OFFSET_ARGS[@]}"} \
             --timeout 60
         if [ $? -eq 0 ]; then
             echo -e "\n=== GDB trace completed ==="

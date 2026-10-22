@@ -7239,7 +7239,7 @@ def run_multi_offset_combination_stage(binary, binary_ref, input_file,
 
     Runs AFTER the single-byte and two-offset stages found nothing.  It
     combines the dynamically discovered offset pool (fork-variable offsets,
-    active/inert/weak single-byte offsets, --test-offsets, --pair-offsets)
+    active/inert/weak single-byte offsets)
     into 3-, then 4-, ... offset combos.  Each combo is first tested with the
     UNIFORM value set (all offsets take the same byte value); a matching
     combo is greedily minimized (drop one offset at a time) and archived.
@@ -7483,15 +7483,11 @@ def main():
     ap.add_argument('--fork-line', type=int, help='fork-statement line number')
     ap.add_argument('--variables', nargs='+', help='variable names')
     ap.add_argument('--timeout', type=int, default=30, help='GDB timeout seconds')
-    ap.add_argument('--test-offsets', nargs='*', help='additional hex offsets for byte mutation testing (e.g. 0xe8 0xec 0xf0)')
     ap.add_argument('--origin-mutation',
                     help='results/<CVE>_origin_mutation.json from the '
                          'dynamic stage: its active/inert single-byte '
                          'results extend the two-offset pool, supply the '
                          'interaction pairs and the per-offset value hints')
-    ap.add_argument('--pair-offsets', nargs='*', default=[],
-                    help='additional hex offsets for the two-offset '
-                         '(pairwise) pool only')
     ap.add_argument('--args', nargs=argparse.REMAINDER, default=[],
                     help='program args (must be last)')
 
