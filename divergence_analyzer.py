@@ -3827,22 +3827,27 @@ def _compare_step_traces(trace_a, trace_b):
     coincidence must not hide the real split.
 
     The first unaligned statement after the last substantial common run is the
-    *first divergent statement*: the consequence of the branch decision, not
-    necessarily the decision itself.  The **fork statement** is the statement
-    both versions execute whose outcome starts the split:
+    *last divergent statement* (the start of the final divergence region): the
+    consequence of the final branch decision, not necessarily the decision
+    itself.  Earlier divergences that rejoin are ignored.  The **fork
+    statement** is the statement both versions execute whose outcome starts
+    the split:
 
-    * if that first unaligned statement is a replacement and at least one side
+    * if that last unaligned statement is a replacement and at least one side
       is a control statement, the fork is that statement (the changed
       condition/loop header);
     * otherwise, if the last statement of the last substantial common run is a
       control statement, the fork is that shared statement (e.g. the bound
       check both versions execute before one falls through and the other jumps
       to ``fail``);
-    * otherwise the fork falls back to the first divergent statement.
+    * otherwise the fork falls back to the last divergent statement.
 
-    If the traces fully rejoin but contain a replacement, the first replacement
+    If the traces fully rejoin but contain a replacement, the last replacement
     is used as a weaker statement-level divergence.  A pure insertion/deletion
-    that later rejoins is version-evolution noise and yields ``None``.
+    that later rejoins is version-evolution noise and yields ``None``.  A
+    trace that exhausted the GDB step budget carries a ``_truncated`` sentinel;
+    its trailing region is a cap artifact and is ignored in favour of the last
+    replacement before the final common run.
 
     Each trace entry: {"file": ..., "line": ..., "line_text": ...}.
     Returns ``{'type', 'step', 'a', 'b', 'fork_a', 'fork_b', 'fork_step'}``;
