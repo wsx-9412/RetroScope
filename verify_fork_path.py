@@ -283,7 +283,10 @@ def collect_analysis_summary(div, input_file, trace_json):
     origin_json = _sibling(trace_json, "_origin.json")
     pt_json = _sibling(trace_json, "_polytracker_offsets.json")
     mut_dyn = _sibling(trace_json, "_origin_mutation.json")
-    legacy_mut = str(BASE / "in" / "fork_trace_result.json")
+    legacy_mut = os.path.join(
+        os.path.dirname(os.path.abspath(input_file)), "fork_trace_result.json")
+    if not os.path.isfile(legacy_mut):
+        legacy_mut = str(BASE / "in" / "fork_trace_result.json")
 
     traced = []
     if origin_json:
