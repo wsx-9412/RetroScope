@@ -212,6 +212,52 @@ make -j
 
 ---
 
+## libsndfile (1 个)
+
+工具路径: `/tmp/libsndfile-<ver>/programs/sndfile-convert`（ASan 构建）
+
+| CVE | 发现版本触发 | 更老版本不触发 | 命令 |
+|-----|-------------|---------------|------|
+| CVE-2018-19661 | 1.0.26-1.0.28 | 1.0.25 | `sndfile-convert -ulaw in/libsndfile/CVE-2018-19661 /tmp/out.raw` |
+
+崩溃位置: global-buffer-overflow in `i2ulaw_array` (`src/ulaw.c:833`)，调用链 `sf_writef_int` → `ulaw_write_i2ulaw`。
+
+PoC 来源与变异: 公开 PoC 为 `https://github.com/erikd/libsndfile/files/2619018/poc.tar.gz`（issue #429）。原始文件在 1.0.26/1.0.27/1.0.28 的 GSM 解码输出中出现 `INT_MIN`，1.0.25 不会；将 data 区 offset 66 的字节 `0x60` 改为 `0x9F`（XOR 0xFF）后，1.0.25 也产生 `INT_MIN`，并触发同一处越界读。
+
+版本差异: 1.0.26 起 `src/GSM610/decode.c` 使用 `int16_t` 中间类型，`src/gsm610.c` 改用 `arith_shift_left`，同一 GSM 帧可解出 `-32768`，再左移 16 位得到 `INT_MIN`；1.0.25 的旧解码路径对该帧不产生 `-32768`。两个版本的 `i2ulaw_array` 代码相同，均缺少 `INT_MIN` 处理。
+
+ASan 布局说明: 越界下标固定为 `-8192`（`-INT_MIN >> 18`）。1.0.25 中 `ulaw_encode - 8192` 正好落在 ASan 全局红区，可直接报错；1.0.26 原始布局落在可寻址的相邻全局，ASan 静默。参考版本构建时在 `src/ulaw.c` 的 `ulaw_decode` 前加入 7584 字节全局 `asan_pad`，并用 `-fno-toplevel-reorder` 编译，使 `ulaw_encode - 8192` 落入该全局之前的红区（不改变被测代码），从而稳定复现参考崩溃。
+
+CVE-2018-19662 是同一修复 PR 的 alaw 分支；其下标 `-2048` 在 1.0.25 和 1.0.26 的原始布局中都落在可寻址区，未单独收录。
+
+编译命令（参考版本）:
+```bash
+cd /tmp/libsndfile-1.0.26
+sed -i '16s/^/#/' configure.ac    # 去掉重复的 AC_CONFIG_MACRO_DIR
+autoreconf -fi
+./configure --disable-shared --disable-sqlite CC=gcc \
+  CFLAGS="-g -O1 -fsanitize=address -fno-omit-frame-pointer" \
+  LDFLAGS="-fsanitize=address"
+make -C src -j
+cd programs && gcc -g -O1 -fsanitize=address -fno-omit-frame-pointer \
+  -o sndfile-convert sndfile-convert.o common.o \
+  -Wl,--start-group ../src/.libs/libsndfile.a \
+  /tmp/flacdev/root/usr/lib/x86_64-linux-gnu/libFLAC.a \
+  /tmp/flacdev/root/usr/lib/x86_64-linux-gnu/libvorbisenc.a \
+  /tmp/flacdev/root/usr/lib/x86_64-linux-gnu/libvorbis.a \
+  /tmp/flacdev/root/usr/lib/x86_64-linux-gnu/libogg.a \
+  -Wl,--end-group -lm
+```
+
+布局辅助补丁（参考构建，仅用于 ASan 红区，不改变逻辑）:
+```c
+/* src/ulaw.c: 放在 static short ulaw_decode [256] 之前 */
+__attribute__((used)) unsigned char asan_pad [7584] = { 1 } ;
+```
+编译 `ulaw.c` 时额外加 `-fno-toplevel-reorder`。
+
+---
+
 ## 汇总
 
 | 项目 | 版本敏感 CVE 数 |
@@ -224,4 +270,5 @@ make -j
 | libarchive | 1 |
 | libtiff | 2 |
 | libredwg | 1 |
-| **总计** | **29** |
+| libsndfile | 1 |
+| **总计** | **30** |
