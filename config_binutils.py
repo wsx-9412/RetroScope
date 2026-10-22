@@ -24,7 +24,7 @@ OUTPUT_FILE = "/tmp/foo"          # program output file
 # Program arguments template: {program_path}, {input_file}, {output_file}
 # {program_path} already IS the tool binary selected by EXECUTION_CONFIG
 # "program_name"; do NOT write the tool name into the format string.
-COMMAND_FORMAT = "{program_path} -w {input_file}"
+COMMAND_FORMAT = "{program_path} S -D -x -s -Z -g -e -G -T -t -L -R --disassemble-zeroes --insn-width=32 --disassembler-color=extended {input_file}"
 
 # =====================================================
 # Optional fork override (CVE-specific, 2.25 vs 2.26)
@@ -72,7 +72,7 @@ COMPILE_COMMANDS = {
 
 # Program execution parameter configuration
 EXECUTION_CONFIG = {
-    "program_name": "readelf",
+    "program_name": "objdump",
     "timeout": 120,
     "exec_subdir": "/build-asan/binutils",
     "command_format": COMMAND_FORMAT,
