@@ -3427,7 +3427,11 @@ def _step_trace_binary(binary, func_name, args, lib_path, source_dirs,
         '        gdb.execute("next")\n'
         '    except gdb.error:\n'
         '        break\n'
+        'else:\n'
+        '    capped = True\n'
         '\n'
+        'if capped:\n'
+        '    print("STEP_TRACE_CAPPED")\n'
         'print("STEP_TRACE:" + "|||".join(results))\n'
         'gdb.execute("quit")\n'
     )
@@ -3458,6 +3462,7 @@ def _step_trace_binary(binary, func_name, args, lib_path, source_dirs,
     # Parse STEP_TRACE line
     # Format: file|||line|||text|||file|||line|||text|||...
     trace = []
+    capped = 'STEP_TRACE_CAPPED' in output
     for line in output.split('\n'):
         if line.startswith('STEP_TRACE:'):
             blob = line[len('STEP_TRACE:'):].strip()
@@ -3468,6 +3473,11 @@ def _step_trace_binary(binary, func_name, args, lib_path, source_dirs,
                 l_text = entries[i + 2] if entries[i + 2] != "None" else None
                 trace.append({"file": f_name, "line": l_num, "line_text": l_text})
             break
+    if capped:
+        # Sentinel consumed by _prepare_step_trace; lets the comparator know
+        # the trailing unaligned region is a step-cap artifact.
+        trace.append({"file": None, "line": None, "line_text": None,
+                      "_truncated": True})
 
     return trace
 
@@ -3840,6 +3850,8 @@ def _compare_step_traces(trace_a, trace_b):
     the decision statements (either may be ``None`` when that side has no
     statement), or ``None`` when no divergence remains after alignment.
     """
+    truncated_a = bool(trace_a and trace_a[-1].get('_truncated'))
+    truncated_b = bool(trace_b and trace_b[-1].get('_truncated'))
     keys_a, entries_a = _prepare_step_trace(trace_a)
     keys_b, entries_b = _prepare_step_trace(trace_b)
     if not keys_a and not keys_b:
