@@ -3868,10 +3868,6 @@ def _compare_step_traces(trace_a, trace_b):
                  for idx, (tag, i1, i2, _j1, _j2) in enumerate(opcodes)
                  if tag == 'equal']
 
-    def _is_ctrl(entry):
-        return (bool(entry)
-                and _is_control_statement(entry.get('line_text') or ''))
-
     def _prev_equal_idx(idx):
         for k in range(idx - 1, -1, -1):
             if opcodes[k][0] == 'equal':
@@ -3879,31 +3875,27 @@ def _compare_step_traces(trace_a, trace_b):
         return None
 
     def _finish(first_idx):
-        """Build the divergence record and attach the fork statement."""
+        """Build the divergence record and attach the fork point.
+
+        The fork point is the last ALIGNED statement before the divergence:
+        both versions execute it identically, and the next statement already
+        differs.  It need not be a control statement and is not the same as
+        the first unaligned statement.
+        """
         tag, i1, _i2, j1, _j2 = opcodes[first_idx]
         div = _make_step_divergence(tag, i1, j1, entries_a, entries_b)
         if not div:
             return None
-        div_a, div_b = div.get('a'), div.get('b')
 
-        # Default: the first divergence is itself the decision (changed
-        # condition/loop header), or there is no common control statement.
-        fork_a, fork_b = div_a, div_b
-        fork_i, fork_j = i1, j1
+        fork_a = fork_b = None
+        fork_i = fork_j = None
         prev_idx = _prev_equal_idx(first_idx)
-        if tag == 'replace' and (_is_ctrl(div_a) or _is_ctrl(div_b)):
-            pass
-        elif prev_idx is not None:
+        if prev_idx is not None:
             _pt, pi1, pi2, pj1, pj2 = opcodes[prev_idx]
             if pi2 > pi1 and pj2 > pj1:
-                ca = entries_a[pi2 - 1]
-                cb = entries_b[pj2 - 1]
-                if _is_ctrl(ca) or _is_ctrl(cb):
-                    # Shared condition whose outcome selects different branch
-                    # bodies (e.g. 12449: `if (... >= end)` then fall-through
-                    # vs `goto fail`).
-                    fork_a, fork_b = ca, cb
-                    fork_i, fork_j = pi2 - 1, pj2 - 1
+                fork_a = entries_a[pi2 - 1]
+                fork_b = entries_b[pj2 - 1]
+                fork_i, fork_j = pi2 - 1, pj2 - 1
 
         div['fork_a'] = fork_a
         div['fork_b'] = fork_b
