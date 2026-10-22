@@ -150,15 +150,18 @@ cmake -S . -B . -DCMAKE_BUILD_TYPE=Debug \
 
 ---
 
-## libtiff (1 个)
+## libtiff (2 个)
 
 工具路径: `tiff-versions/tiff-<ver>/tools/<tool>`
 
 | CVE | 发现版本触发 | 更老版本不触发 | 命令 |
 |-----|-------------|---------------|------|
 | CVE-2025-8176 | 4.7.0 | 4.1.0-4.5.1 | `tiffmedian -C 256 -c lzw:2 -f in/libtiff/CVE-2025-8176.tif /tmp/out.tif` |
+| CVE-2025-8177 | 4.7.0 | 4.1.0-4.5.1 | `thumbnail in/libtiff/CVE-2025-8177.tif /tmp/out.tif` |
 
-崩溃位置: heap-use-after-free in quant_fsdither (tiffmedian.c:952)
+崩溃位置:
+- CVE-2025-8176: heap-use-after-free in quant_fsdither (tiffmedian.c:952)
+- CVE-2025-8177: global-buffer-overflow in setrow (thumbnail.c:623), 目标 4.1.0 同函数 (thumbnail.c:541)；变异 offset 254 (`0x08 -> 0x25`) 可在 4.1.0 复现
 
 注: thumbnail 需手动构建:
 ```bash
@@ -219,6 +222,6 @@ make -j
 | freetype | 3 |
 | openjpeg | 5 |
 | libarchive | 1 |
-| libtiff | 1 |
+| libtiff | 2 |
 | libredwg | 1 |
-| **总计** | **28** |
+| **总计** | **29** |
