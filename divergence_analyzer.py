@@ -4018,7 +4018,7 @@ def _step_divergence_result(func_name, div, heading):
 
     same_fork = fork_a is div_a and fork_b is div_b
     lines = [heading,
-             f"Fork statement at step {div.get('fork_step')}:",
+             f"Fork point (last aligned statement) at step {div.get('fork_step')}:",
              f"  {_LABEL_A}: {_desc(fork_a, ff_a, fl_a, ft_a)}",
              f"  {_LABEL_B}: {_desc(fork_b, ff_b, fl_b, ft_b)}"]
     if not same_fork:
@@ -4031,20 +4031,22 @@ def _step_divergence_result(func_name, div, heading):
         and _normalize_step_text(ft_a) == _normalize_step_text(ft_b))
     if same_statement:
         lines.append(
-            "Same statement in both versions — different condition value.")
+            "Fork statement is identical in both versions — "
+            "the paths differ at the next statement.")
 
     result = {
         "root_cause_function": func_name,
         # Root-cause location points at the target (B) statement: downstream
         # origin/instrumentation stages resolve source lines in that version.
-        "root_cause_file": ff_b or ff_a,
-        "root_cause_line": fl_b or fl_a,
-        "root_cause_file_a": ff_a,
-        "root_cause_line_a": fl_a,
-        "root_cause_statement_a": ft_a.strip(),
-        "root_cause_file_b": ff_b,
-        "root_cause_line_b": fl_b,
-        "root_cause_statement_b": ft_b.strip(),
+        "root_cause_file": df_b or df_a,
+        "root_cause_line": dl_b or dl_a,
+        "root_cause_file_a": df_a,
+        "root_cause_line_a": dl_a,
+        "root_cause_statement_a": dt_a.strip(),
+        "root_cause_file_b": df_b,
+        "root_cause_line_b": dl_b,
+        "root_cause_statement_b": dt_b.strip(),
+        "root_cause_step": div['step'],
         "fork_statement_a": ft_a.strip(),
         "fork_statement_b": ft_b.strip(),
         "fork_statement": ft_b.strip() or ft_a.strip(),
@@ -4064,14 +4066,15 @@ def _step_divergence_result(func_name, div, heading):
         "divergence_step": div['step'],
         "fork_is_first_divergence": same_fork,
         "description": "\n".join(lines),
-        "note": (f"Step trace: fork at step {div.get('fork_step')}, "
-                 f"first divergence at step {div['step']}"),
+        "note": (f"Step trace: fork point (last aligned) at step "
+                 f"{div.get('fork_step')}, first divergence at step "
+                 f"{div['step']}"),
     }
     if same_statement:
         result["same_statement"] = True
 
-    vars_b = _extract_variables_from_expression(ft_b)
-    vars_a = _extract_variables_from_expression(ft_a)
+    vars_b = _extract_variables_from_expression(dt_b)
+    vars_a = _extract_variables_from_expression(dt_a)
     merged_vars = list(vars_b)
     for var in vars_a:
         if var not in merged_vars:
