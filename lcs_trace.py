@@ -770,6 +770,8 @@ def main():
                 _prog = _exec_cfg.get('program_name', '')
                 if _prog:
                     div_result.setdefault('program_name', _prog)
+            _div_mod.resolve_missing_divergence_source(
+                div_result, binary_b=str(real_b))
             _annotate_divergence_confidence(div_result)
 
         print(f"\n  Divergence function: {div_result.get('divergence_function', 'N/A')}")
