@@ -10,7 +10,6 @@ Given two binaries and the LCS divergence point, this tool:
   4. Traces back to the source statement that produces the difference
 """
 
-import difflib
 import json
 import os
 import re
@@ -18,6 +17,8 @@ import shlex
 import subprocess
 import tempfile
 import time
+from bisect import bisect_left
+from collections import defaultdict
 from pathlib import Path
 
 import stage_timing
@@ -3599,6 +3600,11 @@ def _step_into_trace_binary(binary, func_name, args, lib_path, source_dirs,
 
 _TRIVIAL_STEP_LINES = frozenset(('{', '}', '', ';'))
 
+# Consecutive identical statements needed to consider two paths "rejoined".
+# A single shared statement is common in cleanup/exit code and must not hide a
+# split that happened earlier.
+_MIN_REJOIN_STMTS = 3
+
 _DECL_ONLY_RE = re.compile(
     r'^\s*(uint\d*(?:_t)?|int\d*(?:_t)?|char|short|long|float|double|'
     r'size_t|ssize_t|static|const|unsigned|signed|void|bool|struct|union|'
@@ -3700,6 +3706,26 @@ def _compare_step_traces(trace_a, trace_b):
     equal_ops = [(idx, i2 - i1)
                  for idx, (tag, i1, i2, _j1, _j2) in enumerate(opcodes)
                  if tag == 'equal']
+
+    # A structural difference in a loop body recurs once per iteration.  For
+    # such traces the FIRST occurrence is the fork; a global alignment would
+    # otherwise drift to a later iteration (visible on long/truncated loop
+    # traces).  Only replacements count — pure insertions/deletions are
+    # version-evolution noise.
+    first_replace = None
+    for idx, op in enumerate(opcodes):
+        if op[0] == 'replace':
+            first_replace = idx
+            break
+    if first_replace is not None:
+        _t, f_i1, f_i2, f_j1, f_j2 = opcodes[first_replace]
+        sig = (tuple(keys_a[f_i1:f_i2]), tuple(keys_b[f_j1:f_j2]))
+        for tag, i1, i2, j1, j2 in opcodes[first_replace + 1:]:
+            if tag == 'replace' and \
+                    (tuple(keys_a[i1:i2]), tuple(keys_b[j1:j2])) == sig:
+                return _make_step_divergence(
+                    'replace', f_i1, f_j1, entries_a, entries_b)
+
     # A one/two-line match inside a divergent region is usually a shared
     # statement, not a rejoin.  Trust a short run only when it reaches the
     # end of the alignment.
@@ -3707,19 +3733,32 @@ def _compare_step_traces(trace_a, trace_b):
                if size >= _MIN_REJOIN_STMTS or idx == len(opcodes) - 1]
     if trusted:
         boundary = trusted[-1]
-    elif equal_ops:
-        # Very short traces: fall back to the last common statement.
-        boundary = equal_ops[-1][0]
+        # Split candidates: the final unaligned region after the last trusted
+        # common run.  One-sided insertions/deletions that were followed by
+        # such a run were already absorbed by the alignment.
+        tail = [op for op in opcodes[boundary + 1:] if op[0] != 'equal']
+        if tail:
+            tag, i1, _i2, j1, _j2 = tail[0]
+            return _make_step_divergence(tag, i1, j1, entries_a, entries_b)
     else:
-        boundary = -1
-
-    # Split candidates: the final unaligned region after the last trusted
-    # common run.  One-sided insertions/deletions that were followed by such
-    # a run were already absorbed by the alignment.
-    tail = [op for op in opcodes[boundary + 1:] if op[0] != 'equal']
-    if tail:
-        tag, i1, _i2, j1, _j2 = tail[0]
-        return _make_step_divergence(tag, i1, j1, entries_a, entries_b)
+        # Too short/ambiguous to prove a rejoin.  Skip pure one-sided gaps and
+        # report the first genuine statement replacement, if any.
+        for tag, i1, _i2, j1, _j2 in opcodes:
+            if tag == 'replace':
+                return _make_step_divergence(tag, i1, j1, entries_a, entries_b)
+        if equal_ops:
+            # No replacement: only a trailing one-sided remainder is a split;
+            # a gap followed by a common statement was absorbed above.
+            last_eq = equal_ops[-1][0]
+            tail = [op for op in opcodes[last_eq + 1:] if op[0] != 'equal']
+            if tail:
+                tag, i1, _i2, j1, _j2 = tail[0]
+                return _make_step_divergence(tag, i1, j1, entries_a, entries_b)
+            return None
+        # No common statement at all: report the first non-equal region.
+        for tag, i1, _i2, j1, _j2 in opcodes:
+            return _make_step_divergence(tag, i1, j1, entries_a, entries_b)
+        return None
 
     # Traces rejoin at the end: pure additions/removals are not a fork; only
     # a replacement (different statements at the same aligned position) is.
