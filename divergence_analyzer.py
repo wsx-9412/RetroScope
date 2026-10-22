@@ -3827,20 +3827,13 @@ def _compare_step_traces(trace_a, trace_b):
     coincidence must not hide the real split.
 
     The first unaligned statement after the last substantial common run is the
-    *last divergent statement* (the start of the final divergence region): the
-    consequence of the final branch decision, not necessarily the decision
-    itself.  Earlier divergences that rejoin are ignored.  The **fork
-    statement** is the statement both versions execute whose outcome starts
-    the split:
-
-    * if that last unaligned statement is a replacement and at least one side
-      is a control statement, the fork is that statement (the changed
-      condition/loop header);
-    * otherwise, if the last statement of the last substantial common run is a
-      control statement, the fork is that shared statement (e.g. the bound
-      check both versions execute before one falls through and the other jumps
-      to ``fail``);
-    * otherwise the fork falls back to the last divergent statement.
+    *last divergent statement* (the first observed difference of the final
+    divergence region).  Earlier divergences that rejoin are ignored.  The
+    **fork point** is the last ALIGNED statement before it: the last statement
+    both versions execute identically, after which their paths differ.  It is
+    not necessarily a control statement and is not the first unaligned
+    statement.  If the divergence starts at the first statement (no aligned
+    prefix), the fork point is unknown (``None``).
 
     If the traces fully rejoin but contain a replacement, the last replacement
     is used as a weaker statement-level divergence.  A pure insertion/deletion
