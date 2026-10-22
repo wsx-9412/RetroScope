@@ -3665,16 +3665,15 @@ def _make_step_divergence(tag, i1, j1, entries_a, entries_b):
     return {'type': kind, 'step': step, 'a': a_entry, 'b': b_entry}
 
 
-# Bounded-lookahead alignment parameters.  Greedy matching with a fixed
-# window keeps the cost linear in the trace length, which matters for long
-# loop traces (tens of thousands of steps).  A "near" hit is accepted
-# immediately; a "far" hit must be anchored by at least two consecutive
-# matches so a coincidental single statement (``continue;``, ``return 0;``)
-# cannot pull the alignment off course.
-_ALIGN_NEAR = 32
-_ALIGN_FAR = 256
+# Bounded-lookahead alignment parameters.  Greedy matching with fixed windows
+# keeps the cost linear in the trace length, which matters for long loop
+# traces (tens of thousands of steps).  Near hits are accepted immediately;
+# farther hits must be anchored by more consecutive matches so a coincidental
+# single statement (``continue;``, ``return 0;``) cannot pull the alignment
+# off course.  The windows grow geometrically because a version may contain a
+# large purely inserted block (e.g. a whole new inner loop).
 _ALIGN_RUN = 4
-_ALIGN_FAR_MIN_RUN = 2
+_ALIGN_TIERS = ((32, 1), (256, 2), (1024, 3), (4096, 4))
 
 
 def _positions_in_window(index, key, start, width):
@@ -3835,8 +3834,7 @@ def _compare_step_traces(trace_a, trace_b):
     if not keys_a and not keys_b:
         return None
 
-    opcodes = difflib.SequenceMatcher(
-        None, keys_a, keys_b, autojunk=False).get_opcodes()
+    opcodes = _align_step_keys(keys_a, keys_b)
 
     equal_ops = [(idx, i2 - i1)
                  for idx, (tag, i1, i2, _j1, _j2) in enumerate(opcodes)
