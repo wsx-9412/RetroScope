@@ -358,6 +358,19 @@ def collect_analysis_summary(div, input_file, trace_json):
         except Exception:
             pass
 
+    verified = set()
+    if os.path.isfile(legacy_mut):
+        try:
+            ld = json.load(open(legacy_mut))
+            for key in ("crash_results", "static_crash_results",
+                        "ifd_region_mutation", "pairwise_results"):
+                for off, res in (ld.get(key) or {}).items():
+                    if str(off).isdigit() and isinstance(res, dict) \
+                            and res.get("matches"):
+                        verified.add(int(off))
+        except Exception:
+            pass
+
     t_success, t_src = None, None
     for src in (mut_dyn, legacy_mut):
         if not src or not os.path.isfile(src):
@@ -380,8 +393,8 @@ def collect_analysis_summary(div, input_file, trace_json):
             return got
 
         vals = []
-        for key in ("crash_results", "pairwise_results",
-                    "ifd_region_mutation"):
+        for key in ("crash_results", "static_crash_results",
+                    "pairwise_results", "ifd_region_mutation"):
             vals += _scan(md.get(key))
         # dynamic mutation JSON dumps the result map directly (offset keys)
         direct = {k: v for k, v in md.items()
@@ -401,6 +414,8 @@ def collect_analysis_summary(div, input_file, trace_json):
         "traced_variables": traced,
         "traced_statement_operands": traced_stmt,
         "located_offsets": len(located),
+        "mutation_verified_offsets": sorted(verified),
+        "mutation_verified_count": len(verified),
         "input_size": size,
         "offset_ratio": ("%d/%d" % (len(located), size)) if size else None,
         "time_to_first_success_seconds": t_success,
@@ -602,6 +617,12 @@ def main():
           + (" / %s bytes total (%s)" % (summary["input_size"],
                                          summary["offset_ratio"])
              if summary["input_size"] else ""))
+    if summary["mutation_verified_offsets"]:
+        print("  mutation-verified offsets: %s (%s/%s bytes)"
+              % (", ".join("0x%x" % o
+                           for o in summary["mutation_verified_offsets"]),
+                 summary["mutation_verified_count"],
+                 summary["input_size"] or "?"))
     if summary["time_to_first_success_seconds"] is not None:
         print("  first mutation success  : %.3f s after the first mutation "
               "started (%s)"
