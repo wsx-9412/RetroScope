@@ -3665,16 +3665,151 @@ def _make_step_divergence(tag, i1, j1, entries_a, entries_b):
     return {'type': kind, 'step': step, 'a': a_entry, 'b': b_entry}
 
 
+# Bounded-lookahead alignment parameters.  Greedy matching with a fixed
+# window keeps the cost linear in the trace length, which matters for long
+# loop traces (tens of thousands of steps).  A "near" hit is accepted
+# immediately; a "far" hit must be anchored by at least two consecutive
+# matches so a coincidental single statement (``continue;``, ``return 0;``)
+# cannot pull the alignment off course.
+_ALIGN_NEAR = 32
+_ALIGN_FAR = 256
+_ALIGN_RUN = 4
+_ALIGN_FAR_MIN_RUN = 2
+
+
+def _positions_in_window(index, key, start, width):
+    """Positions of ``key`` in ``[start, start + width)``."""
+    positions = index.get(key)
+    if not positions:
+        return ()
+    lo = bisect_left(positions, start)
+    hi = start + width
+    out = []
+    p = lo
+    while p < len(positions) and positions[p] < hi:
+        out.append(positions[p])
+        p += 1
+    return out
+
+
+def _match_run(keys_a, keys_b, i, j, limit=_ALIGN_RUN):
+    """Number of consecutive equal keys starting at ``(i, j)`` (capped)."""
+    n = 0
+    while (n < limit and i + n < len(keys_a) and j + n < len(keys_b)
+           and keys_a[i + n] == keys_b[j + n]):
+        n += 1
+    return n
+
+
+def _best_resync(index, key, start, width, score, min_run):
+    """Best ``(score, -skip)`` resync position for ``key`` within a window."""
+    best = None
+    for pos in _positions_in_window(index, key, start, width):
+        run = score(pos)
+        if run < min_run:
+            continue
+        cand = (run, -(pos - start))
+        if best is None or cand > best[0]:
+            best = (cand, pos)
+    return best
+
+
+def _align_step_keys(keys_a, keys_b):
+    """Order-preserving alignment with bounded lookahead.
+
+    Returns ``difflib``-style opcodes ``(tag, i1, i2, j1, j2)``.  At a
+    mismatch we look for the nearest position where the current statement
+    reappears on the other side; a one-sided match becomes an insert/delete
+    (the extra statements are absorbed).  If neither side offers a trustworthy
+    anchor, the two statements are reported as a replacement.  Unlike a global
+    LCS this is O((n+m)*W), so repetitive loop traces stay fast.
+    """
+    n, m = len(keys_a), len(keys_b)
+    index_a, index_b = defaultdict(list), defaultdict(list)
+    for idx, key in enumerate(keys_a):
+        index_a[key].append(idx)
+    for idx, key in enumerate(keys_b):
+        index_b[key].append(idx)
+
+    opcodes = []
+
+    def emit(tag, i1, i2, j1, j2):
+        if i1 == i2 and j1 == j2:
+            return
+        if opcodes:
+            last = opcodes[-1]
+            if (last[0] == tag and last[2] == i1 and last[4] == j1):
+                last[2], last[4] = i2, j2
+                return
+        opcodes.append([tag, i1, i2, j1, j2])
+
+    i = j = 0
+    while i < n and j < m:
+        if keys_a[i] == keys_b[j]:
+            i2, j2 = i + 1, j + 1
+            while i2 < n and j2 < m and keys_a[i2] == keys_b[j2]:
+                i2 += 1
+                j2 += 1
+            emit('equal', i, i2, j, j2)
+            i, j = i2, j2
+            continue
+
+        # Reference statement appears later in the target: target has extra
+        # statements at this point (insert).
+        best_a = _best_resync(
+            index_b, keys_a[i], j + 1, _ALIGN_NEAR,
+            lambda pos: _match_run(keys_a, keys_b, i, pos), 1)
+        if best_a is None or best_a[0][0] < _ALIGN_RUN:
+            far = _best_resync(
+                index_b, keys_a[i], j + 1, _ALIGN_FAR,
+                lambda pos: _match_run(keys_a, keys_b, i, pos),
+                _ALIGN_FAR_MIN_RUN)
+            if far is not None and (best_a is None or far[0] > best_a[0]):
+                best_a = far
+
+        # Target statement appears later in the reference: reference has extra
+        # statements (delete).
+        best_b = _best_resync(
+            index_a, keys_b[j], i + 1, _ALIGN_NEAR,
+            lambda pos: _match_run(keys_a, keys_b, pos, j), 1)
+        if best_b is None or best_b[0][0] < _ALIGN_RUN:
+            far = _best_resync(
+                index_a, keys_b[j], i + 1, _ALIGN_FAR,
+                lambda pos: _match_run(keys_a, keys_b, pos, j),
+                _ALIGN_FAR_MIN_RUN)
+            if far is not None and (best_b is None or far[0] > best_b[0]):
+                best_b = far
+
+        if best_a is not None and (best_b is None or best_a[0] >= best_b[0]):
+            emit('insert', i, i, j, best_a[1])
+            j = best_a[1]
+        elif best_b is not None:
+            emit('delete', i, best_b[1], j, j)
+            i = best_b[1]
+        else:
+            emit('replace', i, i + 1, j, j + 1)
+            i += 1
+            j += 1
+
+    if i < n:
+        emit('delete', i, n, j, j)
+    if j < m:
+        emit('insert', i, i, j, m)
+    return [tuple(op) for op in opcodes]
+
+
 def _compare_step_traces(trace_a, trace_b):
     """Align two source-line step traces and locate the fork statement.
 
     The two traces are order-preserving statement sequences, but one version
     routinely has extra/missing statements inside the same function.  We
-    therefore align them with an LCS-style matcher (``difflib``) instead of
-    comparing position by position: a statement present only on one side is
-    absorbed as an insertion/deletion and does not shift every following
-    line.  Formatting-only differences and pure declarations are normalized
-    away before matching.
+    therefore align them with a bounded-lookahead order-preserving matcher
+    instead of comparing position by position: a statement present only on
+    one side is absorbed as an insertion/deletion and does not shift every
+    following line.  Formatting-only differences and pure declarations are
+    normalized away before matching.  The bounded matcher is linear in the
+    trace length, so repetitive loop bodies do not trigger the quadratic
+    worst case of a global LCS.
 
     A non-equal region is only treated as transient (rejoined) when it is
     followed by a *substantial* common run — at least ``_MIN_REJOIN_STMTS``
