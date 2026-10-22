@@ -3394,6 +3394,7 @@ def _step_trace_binary(binary, func_name, args, lib_path, source_dirs,
         'func_end = func_start + 0x20000\n'
         '\n'
         'results = []\n'
+        'capped = False\n'
         'max_steps = 8000\n'
         'for step in range(max_steps):\n'
         '    try:\n'
