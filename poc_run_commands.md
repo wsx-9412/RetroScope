@@ -212,7 +212,7 @@ make -j
 
 ---
 
-## libsndfile (3 个)
+## libsndfile (4 个)
 
 工具路径: `/tmp/libsndfile-<ver>/programs/{sndfile-convert,sndfile-info}`（ASan 构建）
 
@@ -221,6 +221,7 @@ make -j
 | CVE-2017-7741 | 1.0.26-1.0.27 | 1.0.25 | `sndfile-info in/libsndfile/CVE-2017-7741` |
 | CVE-2017-12562 | 1.0.28 | 1.0.25-1.0.27 | 编译 `in/libsndfile/CVE-2017-12562.c` 后运行生成的程序 |
 | CVE-2018-19661 | 1.0.26-1.0.28 | 1.0.25 | `sndfile-convert -ulaw in/libsndfile/CVE-2018-19661 /tmp/out.raw` |
+| CVE-2024-50612 | 1.0.27-1.0.28, 1.2.2 | 1.0.26 | `sndfile-convert -vorbis in/libsndfile/CVE-2024-50612 /tmp/out.ogg` |
 
 ### CVE-2017-12562
 
@@ -293,6 +294,14 @@ __attribute__((used)) unsigned char asan_pad [7584] = { 1 } ;
 ```
 编译 `ulaw.c` 时额外加 `-fno-toplevel-reorder`。
 
+### CVE-2024-50612
+
+崩溃位置: SEGV in `vorbis_analysis_wrote`（1.0.28 / 1.2.2）或 `vorbis_analysis_buffer`（1.0.27），调用链 `sf_close` → `psf_close` → `vorbis_close` (`src/ogg_vorbis.c:450`) → `vorbis_analysis_wrote`。1.2.2 中 `vorbis_close` 位于 `src/ogg_vorbis.c:417`。
+
+PoC 来源: `https://github.com/4n0nym4u5/CVE/raw/main/libsndfile/segmentation_fault/poc`（issue #1035，284 字节 RF64/WAV）。原始 PoC 直接触发，无需变异；收录为 `in/libsndfile/CVE-2024-50612`。
+
+版本差异: 1.0.26 已包含 `vorbis_close` 与 `vorbis_analysis_wrote`（`ogg_vorbis.c:435/450`），但其 WAV 解析器不识别该 RF64 文件，报 `No 'data' chunk marker`；1.0.27 起可解析并在写 OGG 时崩溃。1.0.27/1.0.28 需显式 `-vorbis`，1.2.2 对 `.ogg` 输出默认选择 Vorbis。
+
 ---
 
 ## 汇总
@@ -307,5 +316,5 @@ __attribute__((used)) unsigned char asan_pad [7584] = { 1 } ;
 | libarchive | 1 |
 | libtiff | 2 |
 | libredwg | 1 |
-| libsndfile | 3 |
-| **总计** | **32** |
+| libsndfile | 4 |
+| **总计** | **33** |
