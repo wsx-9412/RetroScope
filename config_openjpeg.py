@@ -11,19 +11,6 @@ OUTPUT_FILE = "/tmp/foo.ppm"     # program output file
 COMMAND_FORMAT = "{program_path} -i {input_file} -o {output_file}"
 
 
-
-FORK_OVERRIDE = {
-    "fork_file": "src/lib/openjp2/j2k.c",
-    # fork_line is resolved from fork_statement in the selected target source.
-    "fork_statement": "if (l_tcp->cod) {",
-    "variables": [
-        "l_tcp->cod",
-        "l_tcp",
-        "p_j2k->m_current_tile_number",
-    ],
-    "fork_invocation": 2,
-}
-
 # =====================================================
 # Compilation configuration (usually no need to change)
 # =====================================================
