@@ -246,6 +246,7 @@ CVE-2018-19662 是同一修复 PR 的 alaw 分支；其下标 `-2048` 在 1.0.25
 编译命令（参考版本）:
 ```bash
 cd /tmp/libsndfile-1.0.26
+sed -i 's|^prefix=/usr|prefix=/tmp/flacdev/root/usr|' /tmp/flacdev/root/usr/lib/x86_64-linux-gnu/pkgconfig/*.pc
 sed -i '16s/^/#/' configure.ac    # 去掉重复的 AC_CONFIG_MACRO_DIR
 autoreconf -fi
 ./configure --disable-shared --disable-sqlite CC=gcc \
@@ -283,5 +284,5 @@ __attribute__((used)) unsigned char asan_pad [7584] = { 1 } ;
 | libarchive | 1 |
 | libtiff | 2 |
 | libredwg | 1 |
-| libsndfile | 1 |
-| **总计** | **30** |
+| libsndfile | 2 |
+| **总计** | **31** |
