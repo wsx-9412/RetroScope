@@ -78,5 +78,4 @@ FORK_OVERRIDE = {
     "fork_line": 541,
     "fork_statement": "*row++ = cmap[(255*acc)/area];",
     "variables": [],
-    "test_offsets": [254],
 }
