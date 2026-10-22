@@ -7528,13 +7528,6 @@ def main():
         else:
             print(f'[!] --origin-mutation file not found: '
                   f'{a.origin_mutation}')
-    pair_extra = set()
-    for _h in (a.pair_offsets or []):
-        try:
-            pair_extra.add(int(_h, 16))
-        except ValueError:
-            print(f'[!] ignoring invalid --pair-offsets value: {_h}')
-
     is_code_change = config.get('_code_change', False)
 
     if not config.get('variables') and config.get('fork_stmt'):
@@ -8395,9 +8388,6 @@ def main():
     # 6. Byte mutation crash testing — STAGE 1: the fork-variable-derived
     # offsets (and arithmetic-backtrace offsets).  Collect them now.
     stage1_offsets = set(mapped_offsets) | arith_offsets
-    if a.test_offsets:
-        for h in a.test_offsets:
-            stage1_offsets.add(int(h, 16))
 
     # IFD region offsets are mutated with DIRECTED values only: they are
     # structural (tag/type/count/offset) rather than value-driven, so the
@@ -8512,7 +8502,7 @@ def main():
     _active_offs, _inert_offs, _weak_offs, _value_hints = \
         _classify_sweep_results(crash_results, origin_results)
     _pair_pool = sorted(set(stage1_offsets) | set(_active_offs)
-                        | _inert_offs | _weak_offs | pair_extra)
+                        | _inert_offs | _weak_offs)
     _interaction_pairs = _build_interaction_pairs(
         _active_offs, _inert_offs | _weak_offs | set(_active_offs))
     if _active_offs:
