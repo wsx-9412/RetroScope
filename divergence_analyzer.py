@@ -3807,7 +3807,7 @@ def _align_step_keys(keys_a, keys_b):
 
 
 def _compare_step_traces(trace_a, trace_b):
-    """Align two source-line step traces and locate the fork statement.
+    """Align two source-line step traces and locate the fork point.
 
     The two traces are order-preserving statement sequences, but one version
     routinely has extra/missing statements inside the same function.  We
@@ -3845,8 +3845,9 @@ def _compare_step_traces(trace_a, trace_b):
     Each trace entry: {"file": ..., "line": ..., "line_text": ...}.
     Returns ``{'type', 'step', 'a', 'b', 'fork_a', 'fork_b', 'fork_step'}``;
     ``a``/``b`` are the first divergent statements and ``fork_a``/``fork_b``
-    the decision statements (either may be ``None`` when that side has no
-    statement), or ``None`` when no divergence remains after alignment.
+    the last aligned statements (the fork point; either may be ``None`` when
+    there is no aligned prefix), or ``None`` when no divergence remains after
+    alignment.
     """
     truncated_a = bool(trace_a and trace_a[-1].get('_truncated'))
     truncated_b = bool(trace_b and trace_b[-1].get('_truncated'))
@@ -3991,9 +3992,10 @@ def _step_divergence_result(func_name, div, heading):
     """Build a result dict from a step-trace divergence.
 
     ``div['a']``/``div['b']`` are the first divergent statements;
-    ``div['fork_a']``/``div['fork_b']`` are the shared decision or changed
-    condition.  Root-cause fields point at the fork so downstream origin
-    tracing follows the variables that actually decide the branch.
+    ``div['fork_a']``/``div['fork_b']`` are the last aligned statements (the
+    fork point).  Root-cause fields point at the changed condition/loop
+    header when it is itself divergent, otherwise at a shared decision, so
+    downstream origin tracing follows the variables that decide the branch.
     """
     div_a = div.get('a')
     div_b = div.get('b')
@@ -4010,6 +4012,20 @@ def _step_divergence_result(func_name, div, heading):
     ff_b, fl_b, ft_b = _parts(fork_b)
     df_a, dl_a, dt_a = _parts(div_a)
     df_b, dl_b, dt_b = _parts(div_b)
+    # For value tracing the useful statement is the changed condition/loop
+    # header when the first divergent statement is itself a decision; if that
+    # statement is only a branch body, the last aligned condition (the fork
+    # point) carries the values.  The reported fork point is always the last
+    # aligned statement regardless of this choice.
+    fork_is_control = (_is_control_statement(ft_a)
+                       or _is_control_statement(ft_b))
+    div_is_control = (_is_control_statement(dt_a)
+                      or _is_control_statement(dt_b))
+    root_is_fork = fork_is_control and not div_is_control
+    root_a, root_b = ((fork_a, fork_b) if root_is_fork
+                      else (div_a, div_b))
+    rf_a, rl_a, rt_a = _parts(root_a)
+    rf_b, rl_b, rt_b = _parts(root_b)
 
     def _desc(entry, file_name, line, text):
         if not entry:
@@ -4038,15 +4054,16 @@ def _step_divergence_result(func_name, div, heading):
         "root_cause_function": func_name,
         # Root-cause location points at the target (B) statement: downstream
         # origin/instrumentation stages resolve source lines in that version.
-        "root_cause_file": df_b or df_a,
-        "root_cause_line": dl_b or dl_a,
-        "root_cause_file_a": df_a,
-        "root_cause_line_a": dl_a,
-        "root_cause_statement_a": dt_a.strip(),
-        "root_cause_file_b": df_b,
-        "root_cause_line_b": dl_b,
-        "root_cause_statement_b": dt_b.strip(),
-        "root_cause_step": div['step'],
+        "root_cause_file": rf_b or rf_a,
+        "root_cause_line": rl_b or rl_a,
+        "root_cause_file_a": rf_a,
+        "root_cause_line_a": rl_a,
+        "root_cause_statement_a": rt_a.strip(),
+        "root_cause_file_b": rf_b,
+        "root_cause_line_b": rl_b,
+        "root_cause_statement_b": rt_b.strip(),
+        "root_cause_step": (div.get('fork_step') if root_is_fork
+                            else div['step']),
         "fork_statement_a": ft_a.strip(),
         "fork_statement_b": ft_b.strip(),
         "fork_statement": ft_b.strip() or ft_a.strip(),
@@ -4073,8 +4090,8 @@ def _step_divergence_result(func_name, div, heading):
     if same_statement:
         result["same_statement"] = True
 
-    vars_b = _extract_variables_from_expression(dt_b)
-    vars_a = _extract_variables_from_expression(dt_a)
+    vars_b = _extract_variables_from_expression(rt_b)
+    vars_a = _extract_variables_from_expression(rt_a)
     merged_vars = list(vars_b)
     for var in vars_a:
         if var not in merged_vars:
