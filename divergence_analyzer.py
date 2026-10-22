@@ -4090,67 +4090,24 @@ def _trace_from_common_ancestor(matches, gaps, trace_a, trace_b,
         print("  No permanent split found inside function after alignment")
         return None
 
-    a_info = div.get("a", {})
-    b_info = div.get("b", {})
-    a_file = a_info.get("file") if a_info else None
-    a_line = a_info.get("line") if a_info else None
-    a_text = a_info.get("line_text", "") if a_info else ""
-    b_file = b_info.get("file") if b_info else None
-    b_line = b_info.get("line") if b_info else None
-    b_text = b_info.get("line_text", "") if b_info else ""
+    result = _step_divergence_result(
+        func_name, div, f"Common ancestor: {func_name}")
+    result["step_trace_split"] = True
 
-    a_desc = (f"{a_text.strip()}  ({a_file}:{a_line})" if a_info
-              else "(no statement — trace ended)")
-    b_desc = (f"{b_text.strip()}  ({b_file}:{b_line})" if b_info
-              else "(no statement — trace ended)")
-
-    print(f"  Permanent-split divergence at step {div['step']}:")
-    print(f"    A: {a_desc}")
-    print(f"    B: {b_desc}")
-
-    result = {
-        "root_cause_function": func_name,
-        "root_cause_file": a_file or b_file,
-        "root_cause_line": a_line or b_line,
-        "root_cause_file_a": a_file,
-        "root_cause_line_a": a_line,
-        "root_cause_statement_a": a_text.strip(),
-        "root_cause_file_b": b_file,
-        "root_cause_line_b": b_line,
-        "root_cause_statement_b": b_text.strip(),
-        "description": (
-            f"Common ancestor: {func_name}\n"
-            f"Permanent-split divergence at step {div['step']}:\n"
-            f"  {_LABEL_A}: {a_desc}\n"
-            f"  {_LABEL_B}: {b_desc}"
-        ),
-        "note": f"Step trace permanent-split divergence at step {div['step']}",
-        "step_trace_split": True,
-    }
-
-    # Check if same line text (same statement, different condition value)
-    a_norm = re.sub(r'\s+', ' ', a_text).strip()
-    b_norm = re.sub(r'\s+', ' ', b_text).strip()
-    a_norm2 = re.sub(r'\s*([=!<>]=|[=!<>]|&&|\|\||[+\-*/])\s*', r'\1', a_norm)
-    b_norm2 = re.sub(r'\s*([=!<>]=|[=!<>]|&&|\|\||[+\-*/])\s*', r'\1', b_norm)
-    if a_info and b_info and a_norm2 == b_norm2:
-        result["same_statement"] = True
-        result["description"] += (
-            f"\nSame statement in both versions — different condition value."
-        )
-
-    # Extract fork variables from both diverging statements so the origin
-    # trace has values to follow.  The target-side (B) line is preferred;
-    # the A-side line is merged in because one version may carry the
-    # assignment (e.g. `sep = load_separate_debug_file(...)`) while the
-    # other only makes the call.
-    vars_b = _extract_variables_from_expression(b_text)
-    vars_a = _extract_variables_from_expression(a_text)
-    merged_vars = list(vars_b)
-    for v in vars_a:
-        if v not in merged_vars:
-            merged_vars.append(v)
-    result["variables"] = merged_vars
+    print(f"  Fork statement at step {result.get('fork_step')}:")
+    print(f"    A: {result.get('fork_statement_a', '')}  "
+          f"({result.get('fork_file_a')}:{result.get('fork_line_a')})")
+    print(f"    B: {result.get('fork_statement_b', '')}  "
+          f"({result.get('fork_file_b')}:{result.get('fork_line_b')})")
+    if not result.get("fork_is_first_divergence"):
+        print(f"  First divergent statement at step "
+              f"{result.get('divergence_step')}:")
+        print(f"    A: {result.get('divergence_statement_a', '')}  "
+              f"({result.get('divergence_file_a')}:"
+              f"{result.get('divergence_line_a')})")
+        print(f"    B: {result.get('divergence_statement_b', '')}  "
+              f"({result.get('divergence_file_b')}:"
+              f"{result.get('divergence_line_b')})")
 
     return result
 
@@ -4238,38 +4195,8 @@ def _trace_subfunction_divergence(func_name, binary_a, binary_b,
     if not div:
         return None
 
-    a_info = div.get("a", {})
-    b_info = div.get("b", {})
-    a_file = a_info.get("file") if a_info else None
-    a_line = a_info.get("line") if a_info else None
-    a_text = a_info.get("line_text", "") if a_info else ""
-    b_file = b_info.get("file") if b_info else None
-    b_line = b_info.get("line") if b_info else None
-    b_text = b_info.get("line_text", "") if b_info else ""
-
-    a_desc = (f"{a_text.strip()}  ({a_file}:{a_line})" if a_info
-              else "(no statement — trace ended)")
-    b_desc = (f"{b_text.strip()}  ({b_file}:{b_line})" if b_info
-              else "(no statement — trace ended)")
-
-    return {
-        "root_cause_function": func_name,
-        "root_cause_file": a_file or b_file,
-        "root_cause_line": a_line or b_line,
-        "root_cause_file_a": a_file,
-        "root_cause_line_a": a_line,
-        "root_cause_statement_a": a_text.strip(),
-        "root_cause_file_b": b_file,
-        "root_cause_line_b": b_line,
-        "root_cause_statement_b": b_text.strip(),
-        "description": (
-            f"Sub-function: {func_name}\n"
-            f"Divergence at step {div['step']}:\n"
-            f"  {_LABEL_A}: {a_desc}\n"
-            f"  {_LABEL_B}: {b_desc}"
-        ),
-        "note": f"Sub-function trace of {func_name}",
-    }
+    return _step_divergence_result(
+        func_name, div, f"Sub-function: {func_name}")
 
 
 def _find_call_sites_in_range(source_file, callee, start, end, source_dirs):
