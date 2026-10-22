@@ -74,8 +74,8 @@ ANALYSIS_CONFIG = {
 }
 
 FORK_OVERRIDE = {
-    "fork_file": "tools/thumbnail.c",
-    "fork_line": 541,
-    "fork_statement": "*row++ = cmap[(255*acc)/area];",
+    "fork_file": "",
+    "fork_line": ,
+    "fork_statement": "",
     "variables": [],
 }
