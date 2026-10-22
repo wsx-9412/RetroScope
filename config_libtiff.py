@@ -9,11 +9,11 @@
 # =====================================================
 # CVE configuration: change this section for each CVE
 # =====================================================
-CVE_ID = "CVE-2025-8176"          # CVE number
-INPUT_FILE = "in/libtiff/CVE-2025-8176.tif"   # input file path (relative to RetroScope/)
+CVE_ID = "CVE-2025-8177"          # CVE number
+INPUT_FILE = "in/libtiff/CVE-2025-8177.tif"   # input file path (relative to RetroScope/)
 OUTPUT_FILE = "/tmp/foo"          # program output file
 # Program arguments template: {program_path}, {input_file}, {output_file}
-COMMAND_FORMAT = "{program_path}  -C 256 -c lzw:2 -f  {input_file} {output_file}"
+COMMAND_FORMAT = "{program_path} {input_file} {output_file}"
 
 # =====================================================
 # Compilation configuration (usually no need to change)
@@ -22,6 +22,9 @@ COMPILE_COMMANDS = {
     "reference": {
         "pre_build": [
             "make clean",
+            "sh ./configure CFLAGS='-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer' LDFLAGS='-fsanitize=address -ldl'",
+            "make -j4 CFLAGS='-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer' LDFLAGS='-fsanitize=address -ldl'",
+            "make -j4 thumbnail CFLAGS='-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer' LDFLAGS='-fsanitize=address -ldl'",
         ],
         "compile_flags": {
             "CFLAGS": "-finstrument-functions -g  -ldl -fsanitize=address -fno-omit-frame-pointer",
@@ -32,6 +35,9 @@ COMPILE_COMMANDS = {
     "target": {
         "pre_build": [
             "make clean",
+            "sh ./configure CFLAGS='-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer' LDFLAGS='-fsanitize=address -ldl'",
+            "make -j4 CFLAGS='-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer' LDFLAGS='-fsanitize=address -ldl'",
+            "make -j4 thumbnail CFLAGS='-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer' LDFLAGS='-fsanitize=address -ldl'",
         ],
         "compile_flags": {
             "CFLAGS": "-finstrument-functions -g  -ldl -fsanitize=address -fno-omit-frame-pointer",
@@ -43,7 +49,7 @@ COMPILE_COMMANDS = {
 
 # Program execution parameter configuration
 EXECUTION_CONFIG = {
-    "program_name": "tiffmedian",
+    "program_name": "thumbnail",
     "timeout": 120,
     "exec_subdir": "/tools",
     "command_format": COMMAND_FORMAT,
