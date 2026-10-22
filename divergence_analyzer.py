@@ -3894,23 +3894,40 @@ def _compare_step_traces(trace_a, trace_b):
         div['fork_step'] = fork_i if fork_a is not None else fork_j
         return div
 
-    # A structural difference in a loop body recurs once per iteration.  For
-    # such traces the FIRST occurrence is the fork; a global alignment would
-    # otherwise drift to a later iteration (visible on long/truncated loop
-    # traces).  Only replacements count — pure insertions/deletions are
-    # version-evolution noise.
-    first_replace = None
-    for idx, op in enumerate(opcodes):
-        if op[0] == 'replace':
-            first_replace = idx
-            break
-    if first_replace is not None:
-        _t, f_i1, f_i2, f_j1, f_j2 = opcodes[first_replace]
-        sig = (tuple(keys_a[f_i1:f_i2]), tuple(keys_b[f_j1:f_j2]))
-        for tag, i1, i2, j1, j2 in opcodes[first_replace + 1:]:
-            if tag == 'replace' and \
-                    (tuple(keys_a[i1:i2]), tuple(keys_b[j1:j2])) == sig:
-                return _finish(first_replace)
+    # A structural difference in a loop body recurs once per iteration.  We
+    # select the LAST unaligned region first, so an earlier transient
+    # divergence that later realigns cannot preempt the final fork.  Only
+    # within that final region do we canonicalize a repeated loop-body
+    # replacement back to its first occurrence (avoids reporting the last
+    # iteration's copy).
+    def _earliest_same_replace(idx):
+        tag, i1, i2, j1, j2 = opcodes[idx]
+        if tag != 'replace':
+            return idx
+        sig = (tuple(keys_a[i1:i2]), tuple(keys_b[j1:j2]))
+        first_a = entries_a[i1] if i1 < len(entries_a) else None
+        first_b = entries_b[j1] if j1 < len(entries_b) else None
+        for k in range(idx):
+            t, a1, a2, b1, b2 = opcodes[k]
+            if t != 'replace':
+                continue
+            if (tuple(keys_a[a1:a2]), tuple(keys_b[b1:b2])) != sig:
+                continue
+            # Only collapse true loop repetitions of the same source location;
+            # an identical-looking statement at another line is a different
+            # fork.
+            if first_a is not None and a1 < len(entries_a):
+                ea = entries_a[a1]
+                if (ea.get('file'), ea.get('line')) != \
+                        (first_a.get('file'), first_a.get('line')):
+                    continue
+            if first_b is not None and b1 < len(entries_b):
+                eb = entries_b[b1]
+                if (eb.get('file'), eb.get('line')) != \
+                        (first_b.get('file'), first_b.get('line')):
+                    continue
+            return k
+        return idx
 
     # A one/two-line match inside a divergent region is usually a shared
     # statement, not a rejoin.  Trust a short run only when it reaches the
@@ -3919,38 +3936,42 @@ def _compare_step_traces(trace_a, trace_b):
                if size >= _MIN_REJOIN_STMTS or idx == len(opcodes) - 1]
     if trusted:
         boundary = trusted[-1]
-        # Split candidates: the final unaligned region after the last trusted
-        # common run.  One-sided insertions/deletions that were followed by
-        # such a run were already absorbed by the alignment.
+        # The final unaligned region after the last substantial common run is
+        # the LAST divergence in this function; earlier forks that realigned
+        # are deliberately ignored.
         tail = [idx for idx in range(boundary + 1, len(opcodes))
                 if opcodes[idx][0] != 'equal']
         if tail:
-            return _finish(tail[0])
-    else:
-        # Too short/ambiguous to prove a rejoin.  Skip pure one-sided gaps and
-        # report the first genuine statement replacement, if any.
+            return _finish(_earliest_same_replace(tail[0]))
+        # Traces rejoin at the end: there is no permanent split.  Report the
+        # LAST replacement as a weaker statement-level divergence (the final
+        # fork), not the first one.
+        last_replace = None
         for idx, op in enumerate(opcodes):
             if op[0] == 'replace':
-                return _finish(idx)
-        if equal_ops:
-            # No replacement: only a trailing one-sided remainder is a split;
-            # a gap followed by a common statement was absorbed above.
-            last_eq = equal_ops[-1][0]
-            tail = [idx for idx in range(last_eq + 1, len(opcodes))
-                    if opcodes[idx][0] != 'equal']
-            if tail:
-                return _finish(tail[0])
-            return None
-        # No common statement at all: report the first non-equal region.
-        if opcodes:
-            return _finish(0)
+                last_replace = idx
+        if last_replace is not None:
+            return _finish(last_replace)
         return None
 
-    # Traces rejoin at the end: pure additions/removals are not a fork; only
-    # a replacement (different statements at the same aligned position) is.
+    # No substantial common run: the traces are divergent throughout.  There
+    # is only one continuous divergence, so its onset (the first replacement
+    # or first non-equal region) is the fork.
     for idx, op in enumerate(opcodes):
         if op[0] == 'replace':
             return _finish(idx)
+    if equal_ops:
+        # No replacement: only a trailing one-sided remainder is a split;
+        # a gap followed by a common statement was absorbed above.
+        last_eq = equal_ops[-1][0]
+        tail = [idx for idx in range(last_eq + 1, len(opcodes))
+                if opcodes[idx][0] != 'equal']
+        if tail:
+            return _finish(tail[0])
+        return None
+    # No common statement at all: report the first non-equal region.
+    if opcodes:
+        return _finish(0)
     return None
 
 
