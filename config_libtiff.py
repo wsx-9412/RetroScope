@@ -72,3 +72,11 @@ ANALYSIS_CONFIG = {
     ],
     "separate_build_and_run": True
 }
+
+FORK_OVERRIDE = {
+    "fork_file": "tools/thumbnail.c",
+    "fork_line": 541,
+    "fork_statement": "*row++ = cmap[(255*acc)/area];",
+    "variables": [],
+    "test_offsets": [254],
+}
