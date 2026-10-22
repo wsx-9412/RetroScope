@@ -212,14 +212,37 @@ make -j
 
 ---
 
-## libsndfile (2 个)
+## libsndfile (3 个)
 
 工具路径: `/tmp/libsndfile-<ver>/programs/{sndfile-convert,sndfile-info}`（ASan 构建）
 
 | CVE | 发现版本触发 | 更老版本不触发 | 命令 |
 |-----|-------------|---------------|------|
 | CVE-2017-7741 | 1.0.26-1.0.27 | 1.0.25 | `sndfile-info in/libsndfile/CVE-2017-7741` |
+| CVE-2017-12562 | 1.0.28 | 1.0.25-1.0.27 | 编译 `in/libsndfile/CVE-2017-12562.c` 后运行生成的程序 |
 | CVE-2018-19661 | 1.0.26-1.0.28 | 1.0.25 | `sndfile-convert -ulaw in/libsndfile/CVE-2018-19661 /tmp/out.raw` |
+
+### CVE-2017-12562
+
+崩溃位置: heap-buffer-overflow（WRITE of size 458）in `psf_binheader_writef` (`src/common.c:687`)，调用链 `wavlike_write_strings` (`wavlike.c:1095`) → `wav_write_header` (`wav.c:1062`) → `sf_writef_short`。
+
+PoC 来源: `https://github.com/erikd/libsndfile/issues/292` 中的公开测试代码 `bug1.c`（CVE-2017-12562，原报告针对 openmpt123 写入超长 `SF_STR_COMMENT`）。代码原样收录为 `in/libsndfile/CVE-2017-12562.c`；无需变异。
+
+版本差异: 1.0.28 引入 `psf_bump_header_allocation`，`psf_binheader_writef` 对大小写 `'s'` 只预留 16 字节而不是 `size` 字节，超长字符串元数据在 `memcpy` 时越过 512 字节堆块。1.0.25-1.0.27 的 header 缓冲扩容逻辑不同，不产生越界；但三个版本都包含 `psf_binheader_writef`。1.0.28 在 `test(SF_FORMAT_WAV, 456, 190, 0)` 处直接崩溃。
+
+编译命令（以参考版本为例）:
+```bash
+gcc -std=c99 -g -O1 -fsanitize=address -fno-omit-frame-pointer \
+  -I/tmp/libsndfile-1.0.28/src -I/tmp/libsndfile-1.0.28 \
+  in/libsndfile/CVE-2017-12562.c -o /tmp/bug1 \
+  -Wl,--start-group /tmp/libsndfile-1.0.28/src/.libs/libsndfile.a \
+  /tmp/flacdev/root/usr/lib/x86_64-linux-gnu/libFLAC.a \
+  /tmp/flacdev/root/usr/lib/x86_64-linux-gnu/libvorbisenc.a \
+  /tmp/flacdev/root/usr/lib/x86_64-linux-gnu/libvorbis.a \
+  /tmp/flacdev/root/usr/lib/x86_64-linux-gnu/libogg.a \
+  -Wl,--end-group -lm
+cd /tmp && ./bug1
+```
 
 ### CVE-2017-7741
 
@@ -284,5 +307,5 @@ __attribute__((used)) unsigned char asan_pad [7584] = { 1 } ;
 | libarchive | 1 |
 | libtiff | 2 |
 | libredwg | 1 |
-| libsndfile | 2 |
-| **总计** | **31** |
+| libsndfile | 3 |
+| **总计** | **32** |
