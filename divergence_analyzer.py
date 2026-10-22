@@ -158,6 +158,74 @@ def find_source_dirs(binary):
     return dirs
 
 
+def _normalize_statement_text(text):
+    return re.sub(r'\s+', ' ', (text or '').strip())
+
+
+def _find_statement_source(statement, source_dirs, line_hint=None):
+    """Locate a statement in the target source tree and return (path, line)."""
+    needle = _normalize_statement_text(statement)
+    if not needle:
+        return None
+    best = None
+    seen = set()
+    for source_dir in source_dirs or []:
+        root = Path(source_dir)
+        if not root.is_dir():
+            continue
+        for path in root.rglob('*'):
+            if path.suffix.lower() not in ('.c', '.cc', '.cpp', '.cxx',
+                                           '.h', '.hpp'):
+                continue
+            if not path.is_file() or path in seen:
+                continue
+            seen.add(path)
+            try:
+                lines = path.read_text(encoding='utf-8',
+                                       errors='replace').splitlines()
+            except OSError:
+                continue
+            for lineno, line in enumerate(lines, 1):
+                if _normalize_statement_text(line).startswith(needle):
+                    distance = (abs(lineno - int(line_hint))
+                                if line_hint else lineno)
+                    if best is None or distance < best[0]:
+                        best = (distance, str(path), lineno)
+                    break
+    if best:
+        return best[1], best[2]
+    return None
+
+
+def resolve_missing_divergence_source(div, binary_b=None,
+                                      source_dirs_b=None):
+    """Fill a missing target source location from the fork statement text."""
+    if not isinstance(div, dict) or div.get('root_cause_file_b'):
+        return div
+    statement = (div.get('root_cause_statement_b')
+                 or div.get('fork_statement') or '')
+    line_hint = div.get('root_cause_line') or div.get('fork_statement_line')
+    if source_dirs_b is None and binary_b:
+        source_dirs_b = find_source_dirs(binary_b)
+    resolved = _find_statement_source(statement, source_dirs_b, line_hint)
+    if not resolved:
+        return div
+    file_name, line = resolved
+    div['root_cause_file_b'] = file_name
+    div['root_cause_line_b'] = line
+    if not div.get('root_cause_file'):
+        div['root_cause_file'] = file_name
+    if not div.get('root_cause_line'):
+        div['root_cause_line'] = line
+    if not div.get('root_cause_statement_b'):
+        div['root_cause_statement_b'] = statement.strip()
+    if not div.get('fork_file'):
+        div['fork_file'] = file_name
+    if not div.get('fork_line'):
+        div['fork_line'] = line
+    return div
+
+
 def _extract_gap_fork(gap):
     """Extract the forking caller from a gap.
 
