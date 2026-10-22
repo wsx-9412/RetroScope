@@ -3850,6 +3850,50 @@ def _compare_step_traces(trace_a, trace_b):
                  for idx, (tag, i1, i2, _j1, _j2) in enumerate(opcodes)
                  if tag == 'equal']
 
+    def _is_ctrl(entry):
+        return (bool(entry)
+                and _is_control_statement(entry.get('line_text') or ''))
+
+    def _prev_equal_idx(idx):
+        for k in range(idx - 1, -1, -1):
+            if opcodes[k][0] == 'equal':
+                return k
+        return None
+
+    def _finish(first_idx):
+        """Build the divergence record and attach the fork statement."""
+        tag, i1, _i2, j1, _j2 = opcodes[first_idx]
+        div = _make_step_divergence(tag, i1, j1, entries_a, entries_b)
+        if not div:
+            return None
+        div_a, div_b = div.get('a'), div.get('b')
+
+        # Default: the first divergence is itself the decision (changed
+        # condition/loop header), or there is no common control statement.
+        fork_a, fork_b = div_a, div_b
+        fork_i, fork_j = i1, j1
+        prev_idx = _prev_equal_idx(first_idx)
+        if tag == 'replace' and (_is_ctrl(div_a) or _is_ctrl(div_b)):
+            pass
+        elif prev_idx is not None:
+            _pt, pi1, pi2, pj1, pj2 = opcodes[prev_idx]
+            if pi2 > pi1 and pj2 > pj1:
+                ca = entries_a[pi2 - 1]
+                cb = entries_b[pj2 - 1]
+                if _is_ctrl(ca) or _is_ctrl(cb):
+                    # Shared condition whose outcome selects different branch
+                    # bodies (e.g. 12449: `if (... >= end)` then fall-through
+                    # vs `goto fail`).
+                    fork_a, fork_b = ca, cb
+                    fork_i, fork_j = pi2 - 1, pj2 - 1
+
+        div['fork_a'] = fork_a
+        div['fork_b'] = fork_b
+        div['fork_i'] = fork_i
+        div['fork_j'] = fork_j
+        div['fork_step'] = fork_i if fork_a is not None else fork_j
+        return div
+
     # A structural difference in a loop body recurs once per iteration.  For
     # such traces the FIRST occurrence is the fork; a global alignment would
     # otherwise drift to a later iteration (visible on long/truncated loop
@@ -3866,8 +3910,7 @@ def _compare_step_traces(trace_a, trace_b):
         for tag, i1, i2, j1, j2 in opcodes[first_replace + 1:]:
             if tag == 'replace' and \
                     (tuple(keys_a[i1:i2]), tuple(keys_b[j1:j2])) == sig:
-                return _make_step_divergence(
-                    'replace', f_i1, f_j1, entries_a, entries_b)
+                return _finish(first_replace)
 
     # A one/two-line match inside a divergent region is usually a shared
     # statement, not a rejoin.  Trust a short run only when it reaches the
@@ -3879,36 +3922,123 @@ def _compare_step_traces(trace_a, trace_b):
         # Split candidates: the final unaligned region after the last trusted
         # common run.  One-sided insertions/deletions that were followed by
         # such a run were already absorbed by the alignment.
-        tail = [op for op in opcodes[boundary + 1:] if op[0] != 'equal']
+        tail = [idx for idx in range(boundary + 1, len(opcodes))
+                if opcodes[idx][0] != 'equal']
         if tail:
-            tag, i1, _i2, j1, _j2 = tail[0]
-            return _make_step_divergence(tag, i1, j1, entries_a, entries_b)
+            return _finish(tail[0])
     else:
         # Too short/ambiguous to prove a rejoin.  Skip pure one-sided gaps and
         # report the first genuine statement replacement, if any.
-        for tag, i1, _i2, j1, _j2 in opcodes:
-            if tag == 'replace':
-                return _make_step_divergence(tag, i1, j1, entries_a, entries_b)
+        for idx, op in enumerate(opcodes):
+            if op[0] == 'replace':
+                return _finish(idx)
         if equal_ops:
             # No replacement: only a trailing one-sided remainder is a split;
             # a gap followed by a common statement was absorbed above.
             last_eq = equal_ops[-1][0]
-            tail = [op for op in opcodes[last_eq + 1:] if op[0] != 'equal']
+            tail = [idx for idx in range(last_eq + 1, len(opcodes))
+                    if opcodes[idx][0] != 'equal']
             if tail:
-                tag, i1, _i2, j1, _j2 = tail[0]
-                return _make_step_divergence(tag, i1, j1, entries_a, entries_b)
+                return _finish(tail[0])
             return None
         # No common statement at all: report the first non-equal region.
-        for tag, i1, _i2, j1, _j2 in opcodes:
-            return _make_step_divergence(tag, i1, j1, entries_a, entries_b)
+        if opcodes:
+            return _finish(0)
         return None
 
     # Traces rejoin at the end: pure additions/removals are not a fork; only
     # a replacement (different statements at the same aligned position) is.
-    for tag, i1, _i2, j1, _j2 in opcodes:
-        if tag == 'replace':
-            return _make_step_divergence(tag, i1, j1, entries_a, entries_b)
+    for idx, op in enumerate(opcodes):
+        if op[0] == 'replace':
+            return _finish(idx)
     return None
+
+
+def _step_divergence_result(func_name, div, heading):
+    """Build a result dict from a step-trace divergence.
+
+    ``div['a']``/``div['b']`` are the first divergent statements;
+    ``div['fork_a']``/``div['fork_b']`` are the shared decision or changed
+    condition.  Root-cause fields point at the fork so downstream origin
+    tracing follows the variables that actually decide the branch.
+    """
+    div_a = div.get('a')
+    div_b = div.get('b')
+    fork_a = div.get('fork_a') or div_a
+    fork_b = div.get('fork_b') or div_b
+
+    def _parts(entry):
+        if not entry:
+            return None, None, ''
+        return (entry.get('file'), entry.get('line'),
+                entry.get('line_text') or '')
+
+    ff_a, fl_a, ft_a = _parts(fork_a)
+    ff_b, fl_b, ft_b = _parts(fork_b)
+    df_a, dl_a, dt_a = _parts(div_a)
+    df_b, dl_b, dt_b = _parts(div_b)
+
+    def _desc(entry, file_name, line, text):
+        if not entry:
+            return '(no statement — trace ended)'
+        return f"{text.strip()}  ({file_name}:{line})"
+
+    same_fork = fork_a is div_a and fork_b is div_b
+    lines = [heading,
+             f"Fork statement at step {div.get('fork_step')}:",
+             f"  {_LABEL_A}: {_desc(fork_a, ff_a, fl_a, ft_a)}",
+             f"  {_LABEL_B}: {_desc(fork_b, ff_b, fl_b, ft_b)}"]
+    if not same_fork:
+        lines += [f"First divergent statement at step {div['step']}:",
+                  f"  {_LABEL_A}: {_desc(div_a, df_a, dl_a, dt_a)}",
+                  f"  {_LABEL_B}: {_desc(div_b, df_b, dl_b, dt_b)}"]
+
+    same_statement = bool(
+        fork_a and fork_b
+        and _normalize_step_text(ft_a) == _normalize_step_text(ft_b))
+    if same_statement:
+        lines.append(
+            "Same statement in both versions — different condition value.")
+
+    result = {
+        "root_cause_function": func_name,
+        "root_cause_file": ff_a or ff_b,
+        "root_cause_line": fl_a or fl_b,
+        "root_cause_file_a": ff_a,
+        "root_cause_line_a": fl_a,
+        "root_cause_statement_a": ft_a.strip(),
+        "root_cause_file_b": ff_b,
+        "root_cause_line_b": fl_b,
+        "root_cause_statement_b": ft_b.strip(),
+        "fork_statement_a": ft_a.strip(),
+        "fork_statement_b": ft_b.strip(),
+        "fork_file_a": ff_a,
+        "fork_line_a": fl_a,
+        "fork_file_b": ff_b,
+        "fork_line_b": fl_b,
+        "fork_step": div.get('fork_step'),
+        "divergence_statement_a": dt_a.strip(),
+        "divergence_statement_b": dt_b.strip(),
+        "divergence_file_a": df_a,
+        "divergence_line_a": dl_a,
+        "divergence_file_b": df_b,
+        "divergence_line_b": dl_b,
+        "divergence_step": div['step'],
+        "description": "\n".join(lines),
+        "note": (f"Step trace: fork at step {div.get('fork_step')}, "
+                 f"first divergence at step {div['step']}"),
+    }
+    if same_statement:
+        result["same_statement"] = True
+
+    vars_b = _extract_variables_from_expression(ft_b)
+    vars_a = _extract_variables_from_expression(ft_a)
+    merged_vars = list(vars_b)
+    for var in vars_a:
+        if var not in merged_vars:
+            merged_vars.append(var)
+    result["variables"] = merged_vars
+    return result
 
 
 def _trace_from_common_ancestor(matches, gaps, trace_a, trace_b,
