@@ -4135,7 +4135,7 @@ def _trace_from_common_ancestor(matches, gaps, trace_a, trace_b,
         func_name, div, f"Common ancestor: {func_name}")
     result["step_trace_split"] = True
 
-    print(f"  Fork statement at step {result.get('fork_step')}:")
+    print(f"  Fork point (last aligned) at step {result.get('fork_step')}:")
     print(f"    A: {result.get('fork_statement_a', '')}  "
           f"({result.get('fork_file_a')}:{result.get('fork_line_a')})")
     print(f"    B: {result.get('fork_statement_b', '')}  "
