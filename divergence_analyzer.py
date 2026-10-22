@@ -3949,6 +3949,15 @@ def _compare_step_traces(trace_a, trace_b):
                if size >= _MIN_REJOIN_STMTS or idx == len(opcodes) - 1]
     if trusted:
         boundary = trusted[-1]
+        if truncated_a or truncated_b:
+            # A trace that exhausted the 8000-step GDB budget ends in the
+            # middle of a loop; the trailing unaligned region is a cap
+            # artifact, not the final fork.  The real fork is the last
+            # statement replacement before the final common run.
+            for k in range(boundary - 1, -1, -1):
+                if opcodes[k][0] == 'replace':
+                    return _finish(_earliest_same_replace(k))
+            return None
         # The final unaligned region after the last substantial common run is
         # the LAST divergence in this function; earlier forks that realigned
         # are deliberately ignored.
