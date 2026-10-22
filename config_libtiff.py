@@ -24,7 +24,7 @@ COMPILE_COMMANDS = {
             "make clean",
             "sh ./configure CFLAGS='-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer' LDFLAGS='-fsanitize=address -ldl'",
             "make -j4 CFLAGS='-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer' LDFLAGS='-fsanitize=address -ldl'",
-            "make -j4 thumbnail CFLAGS='-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer' LDFLAGS='-fsanitize=address -ldl'",
+            "make -C tools -j4 thumbnail CFLAGS='-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer' LDFLAGS='-fsanitize=address -ldl'",
         ],
         "compile_flags": {
             "CFLAGS": "-finstrument-functions -g  -ldl -fsanitize=address -fno-omit-frame-pointer",
@@ -37,7 +37,7 @@ COMPILE_COMMANDS = {
             "make clean",
             "sh ./configure CFLAGS='-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer' LDFLAGS='-fsanitize=address -ldl'",
             "make -j4 CFLAGS='-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer' LDFLAGS='-fsanitize=address -ldl'",
-            "make -j4 thumbnail CFLAGS='-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer' LDFLAGS='-fsanitize=address -ldl'",
+            "make -C tools -j4 thumbnail CFLAGS='-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer' LDFLAGS='-fsanitize=address -ldl'",
         ],
         "compile_flags": {
             "CFLAGS": "-finstrument-functions -g  -ldl -fsanitize=address -fno-omit-frame-pointer",
