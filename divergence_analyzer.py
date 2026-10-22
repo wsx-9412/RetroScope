@@ -3755,29 +3755,27 @@ def _align_step_keys(keys_a, keys_b):
 
         # Reference statement appears later in the target: target has extra
         # statements at this point (insert).
-        best_a = _best_resync(
-            index_b, keys_a[i], j + 1, _ALIGN_NEAR,
-            lambda pos: _match_run(keys_a, keys_b, i, pos), 1)
-        if best_a is None or best_a[0][0] < _ALIGN_RUN:
-            far = _best_resync(
-                index_b, keys_a[i], j + 1, _ALIGN_FAR,
-                lambda pos: _match_run(keys_a, keys_b, i, pos),
-                _ALIGN_FAR_MIN_RUN)
-            if far is not None and (best_a is None or far[0] > best_a[0]):
-                best_a = far
+        score_a = lambda pos: _match_run(keys_a, keys_b, i, pos)
+        best_a = None
+        for width, min_run in _ALIGN_TIERS:
+            cand = _best_resync(index_b, keys_a[i], j + 1, width,
+                                score_a, min_run)
+            if cand is not None and (best_a is None or cand[0] > best_a[0]):
+                best_a = cand
+            if best_a is not None and best_a[0][0] >= _ALIGN_RUN:
+                break
 
         # Target statement appears later in the reference: reference has extra
         # statements (delete).
-        best_b = _best_resync(
-            index_a, keys_b[j], i + 1, _ALIGN_NEAR,
-            lambda pos: _match_run(keys_a, keys_b, pos, j), 1)
-        if best_b is None or best_b[0][0] < _ALIGN_RUN:
-            far = _best_resync(
-                index_a, keys_b[j], i + 1, _ALIGN_FAR,
-                lambda pos: _match_run(keys_a, keys_b, pos, j),
-                _ALIGN_FAR_MIN_RUN)
-            if far is not None and (best_b is None or far[0] > best_b[0]):
-                best_b = far
+        score_b = lambda pos: _match_run(keys_a, keys_b, pos, j)
+        best_b = None
+        for width, min_run in _ALIGN_TIERS:
+            cand = _best_resync(index_a, keys_b[j], i + 1, width,
+                                score_b, min_run)
+            if cand is not None and (best_b is None or cand[0] > best_b[0]):
+                best_b = cand
+            if best_b is not None and best_b[0][0] >= _ALIGN_RUN:
+                break
 
         if best_a is not None and (best_b is None or best_a[0] >= best_b[0]):
             emit('insert', i, i, j, best_a[1])
