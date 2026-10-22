@@ -4024,6 +4024,7 @@ def _step_divergence_result(func_name, div, heading):
         "divergence_file_b": df_b,
         "divergence_line_b": dl_b,
         "divergence_step": div['step'],
+        "fork_is_first_divergence": same_fork,
         "description": "\n".join(lines),
         "note": (f"Step trace: fork at step {div.get('fork_step')}, "
                  f"first divergence at step {div['step']}"),
