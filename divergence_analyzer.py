@@ -3815,17 +3815,29 @@ def _compare_step_traces(trace_a, trace_b):
     single cleanup statement (e.g. ``free (contents);``) near the exit; such a
     coincidence must not hide the real split.
 
-    The permanent-split point is the first statement of the final unaligned
-    region (everything after the last substantial common run).  If the traces
-    fully rejoin but contain a replacement (both versions execute a different
-    statement at the same position), the first replacement is returned as a
-    weaker statement-level divergence.  A pure insertion/deletion that later
-    rejoins is version-evolution noise and yields ``None``.
+    The first unaligned statement after the last substantial common run is the
+    *first divergent statement*: the consequence of the branch decision, not
+    necessarily the decision itself.  The **fork statement** is the statement
+    both versions execute whose outcome starts the split:
+
+    * if that first unaligned statement is a replacement and at least one side
+      is a control statement, the fork is that statement (the changed
+      condition/loop header);
+    * otherwise, if the last statement of the last substantial common run is a
+      control statement, the fork is that shared statement (e.g. the bound
+      check both versions execute before one falls through and the other jumps
+      to ``fail``);
+    * otherwise the fork falls back to the first divergent statement.
+
+    If the traces fully rejoin but contain a replacement, the first replacement
+    is used as a weaker statement-level divergence.  A pure insertion/deletion
+    that later rejoins is version-evolution noise and yields ``None``.
 
     Each trace entry: {"file": ..., "line": ..., "line_text": ...}.
-    Returns ``{'type', 'step', 'a', 'b'}`` (``a``/``b`` may be ``None`` when
-    that side has no statement at the split), or ``None`` when no divergence
-    remains after alignment.
+    Returns ``{'type', 'step', 'a', 'b', 'fork_a', 'fork_b', 'fork_step'}``;
+    ``a``/``b`` are the first divergent statements and ``fork_a``/``fork_b``
+    the decision statements (either may be ``None`` when that side has no
+    statement), or ``None`` when no divergence remains after alignment.
     """
     keys_a, entries_a = _prepare_step_trace(trace_a)
     keys_b, entries_b = _prepare_step_trace(trace_b)
