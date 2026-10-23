@@ -173,14 +173,17 @@ gcc -g -O0 -fsanitize=address -fno-omit-frame-pointer \
 
 ---
 
-## libredwg (6 个)
+## libredwg (9 个)
 
-工具路径: 参考版本 `libredwg-versions/libredwg-0.13.4/programs/{dwgread,dwgbmp,dwggrep,dwg2dxf}`（ASan 构建）；旧版本 `libredwg-versions/libredwg-0.12.5/programs/`。CVE-2022-33034 另用快照 `/home/ws/Desktop/libredwg-pilot/snap/programs/dwg2dxf`。
+工具路径: 参考版本 `libredwg-versions/libredwg-0.13.4/programs/{dwgread,dwgbmp,dwggrep,dwg2dxf,dwg2SVG}`（ASan 构建）；CVE-2026-9500/9504 的参考版本为 `libredwg-versions/libredwg-6d6a339/programs/{dwgread,dwggrep}`（2026-04-10 快照）；旧版本 `libredwg-versions/libredwg-0.12.5/programs/`。CVE-2022-33034 另用快照 `/home/ws/Desktop/libredwg-pilot/snap/programs/dwg2dxf`。
 
 | CVE | 发现版本触发 | 更老版本不触发 | 命令 |
 |-----|-------------|---------------|------|
 | CVE-2022-33034 | 0.12.5, 2022-05 快照 | 0.12.3-0.12.4 | `dwg2dxf -b -m -y -o /dev/null in/libredwg/CVE-2022-33034-copy_bytes_sof` |
+| CVE-2026-9500 | 6d6a339 (2026-04-10) | 0.12.5 | `dwgread in/libredwg/CVE-2026-9500.dwg` |
 | CVE-2026-9502 | 0.13.4 | 0.12.5 | `dwgread in/libredwg/CVE-2026-9502.dwg` |
+| CVE-2026-9503 | 0.13.4 | 0.12.5 | `dwg2SVG in/libredwg/CVE-2026-9503.dwg` |
+| CVE-2026-9504 | 6d6a339 (2026-04-10) | 0.12.5 | `dwggrep '.*' in/libredwg/CVE-2026-9504.dwg` |
 | CVE-2026-9605 | 0.13.4 | 0.12.5 | `dwgbmp in/libredwg/CVE-2026-9605.dwg` |
 | CVE-2026-15182 | 0.13.4 | 0.12.5 | `dwgbmp in/libredwg/CVE-2026-15182.dwg` |
 | CVE-2026-15184 | 0.13.4 | 0.12.5 | `dwggrep '.*' in/libredwg/CVE-2026-15184.dwg` |
@@ -215,18 +218,21 @@ sh autogen.sh
 make -j
 ```
 
-### 2026 系列 (CVE-2026-9502 / 9605 / 15182 / 15184 / 15520)
+### 2026 系列 (CVE-2026-9500 / 9502 / 9503 / 9504 / 9605 / 15182 / 15184 / 15520)
 
 崩溃位置:
+- CVE-2026-9500: SEGV（WRITE，`memcpy`）in `read_2004_compressed_section` (`src/decode.c:2181`)，调用链 `read_2004_section_summary` (`:2624`) → `decode_R2004`；工具 `dwgread`；修复 commit `8f03865`。
 - CVE-2026-9502: heap-buffer-overflow in `decompress_R2004_section` (`src/decode.c:1313`)，调用链 `read_2004_compressed_section` (`:2166`) → `read_2004_section_template` (`:3230`) → `decode_R2004`；工具 `dwgread`。
+- CVE-2026-9503: SEGV（NULL read at `0x30`）in `dwg_next_entity` (`src/dwg.c:1233`)，调用 `get_next_owned_entity` (`:1274`) → `output_BLOCK_HEADER`；工具 `dwg2SVG`；修复 commit `8f03865`。
+- CVE-2026-9504: heap-buffer-overflow（READ）in `bit_convert_TU` (`src/bits.c:2830`)，调用 `match_LTYPE` (`programs/dwggrep.c:520`) → `match_OBJECTS`；工具 `dwggrep`；修复 commit `be996bf`。
 - CVE-2026-9605: heap-buffer-overflow in `bit_read_RC` (`src/bits.c:282`)，调用链 `copy_bytes` (`src/decode.c:1149`) → `decompress_R2004_section` (`:1328`)；工具 `dwgbmp`。
 - CVE-2026-15182: heap-buffer-overflow（READ）in `__interceptor_fwrite`，调用 `get_bmp` (`programs/dwgbmp.c:218`) 写出 `dwg_bmp` 返回的缩略图数据，源缓冲由 `decode_R13_R2000` (`src/decode.c:450`) 分配。修复 commit `18fd542` 调整 `dwg_bmp` 的溢出检查。
 - CVE-2026-15184: SEGV（NULL read at `0x30`）in `dwg_next_entity` (`src/dwg.c:1233`)，调用 `get_next_owned_entity` (`:1274`)；工具 `dwggrep`。
 - CVE-2026-15520: heap-buffer-overflow in `decompress_R2004_section` (`src/decode.c:1313`)，调用链同上；工具 `dwg2dxf --binary`。
 
-版本差异: 0.13.4（ASan）全部触发；0.12.5 已包含 `decompress_R2004_section`、`bit_read_RC`、`dwg_bmp`、`dwg_next_entity`，但同一样本无 ASan 报告：0.12.5 对 R2018 样本报 `ERROR 0x441` 拒绝解析，对 R2004/R2000 样本解析后在边界检查处返回（`ERROR: Failed to read compressed AcDbObjects section` 或 `bit_read_* buffer overflow`），不越界。0.13.4 在同一读取路径上越过边界。
+版本差异: 0.13.4（ASan）触发 9502/9503/9605/15182/15184/15520；6d6a339 触发 9500/9504（9500 的样本在 0.13.4 中已被修复，不再越界）。0.12.5 已包含 `read_2004_compressed_section`、`decompress_R2004_section`、`dwg_next_entity`、`bit_convert_TU`、`bit_read_RC`、`dwg_bmp`，但同一样本无 ASan 报告：0.12.5 对 R2018 样本报 `ERROR 0x441` 拒绝解析，对 R2004/R2000 样本解析后在边界检查处返回（`ERROR: Failed to read compressed AcDbObjects section` 或 `bit_read_* buffer overflow`），不越界；9500 样本在 0.12.5 中正常解析（仅警告/`Invalid .props`）；9503 样本正常输出 SVG；9504 样本在 LTYPE 前被 `error: 0x475` 拒绝，但 0.12.5 的 `dwggrep` 对有效 DWG 仍会执行到 `bit_convert_TU`。0.13.4/6d6a339 在同一读取路径上越过边界。
 
-PoC 来源: `https://github.com/HackC0der/CVE-Repos/tree/main/libredwg`（6d6a339 / 0b57303 的 fuzz 崩溃样本），原样收录为 `in/libredwg/CVE-2026-*.dwg`，无需变异。NVD 将 CVE-2026-9502/9605/15182/15184/15520 的引用指向同一仓库；其中 9605 的通用引用样本不触发，仓库内按函数命名的 `libredwg_6d6a339_heap_overflow_bit_read_RC.dwg` 才在 `bit_read_RC` 触发，故采用后者。
+PoC 来源: `https://github.com/HackC0der/CVE-Repos/tree/main/libredwg`（6d6a339 / 0b57303 的 fuzz 崩溃样本），原样收录为 `in/libredwg/CVE-2026-*.dwg`，无需变异。NVD 将 CVE-2026-9500/9502/9503/9504/9605/15182/15184/15520 的引用指向同一仓库；其中 9605 的通用引用样本不触发，仓库内按函数命名的 `libredwg_6d6a339_heap_overflow_bit_read_RC.dwg` 才在 `bit_read_RC` 触发，故采用后者。CVE-2026-9530 与 9605 同指 issue #1248（`bit_read_RC`），属重复记录，未单列；CVE-2026-9529（`match_BLOCK_HEADER`）的公开样本不触发，issue 中的 fuzz 输入未公开，未收录。
 
 编译命令（0.13.4 参考版本）:
 ```bash
@@ -240,6 +246,13 @@ CFLAGS="-O0 -g -fno-omit-frame-pointer -fsanitize=address -Wno-error" \
 LDFLAGS="-fsanitize=address" \
 ./configure --enable-debug --enable-trace --disable-shared --disable-bindings --disable-docs
 make -j8
+```
+
+6d6a339 参考版本（CVE-2026-9500/9504）编译方式相同，仅源码换成：
+```bash
+curl -L -o r.tar.gz https://codeload.github.com/LibreDWG/libredwg/tar.gz/6d6a33987a1a97095b069c799c3d8a793320f812
+tar xzf r.tar.gz && cd libredwg-6d6a33987a1a97095b069c799c3d8a793320f812
+# jsmn 处理同 0.13.4；然后 make -C src -j4 && make -C programs -j4 dwgread dwggrep dwg2SVG
 ```
 
 ---
@@ -347,6 +360,6 @@ PoC 来源: `https://github.com/4n0nym4u5/CVE/raw/main/libsndfile/segmentation_f
 | openjpeg | 5 |
 | libarchive | 1 |
 | libtiff | 2 |
-| libredwg | 6 |
+| libredwg | 9 |
 | libsndfile | 4 |
-| **总计** | **38** |
+| **总计** | **41** |
