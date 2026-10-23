@@ -92,7 +92,7 @@ case "$PROJECT_NAME" in
         EXTRA_ARGS=(--include-exits)
         ;;
     "giflib")
-        REFERENCE_VERSION_PATH="$BASE_DIR/giflib-versions/giflib-5.2.1"
+        REFERENCE_VERSION_PATH="$BASE_DIR/giflib-versions/giflib-5.1.1"
         TARGET_VERSION_PATH="$BASE_DIR/giflib-versions/giflib-4.1.6"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2022-28506"
         EXTRA_ARGS=(--include-exits)
@@ -111,8 +111,8 @@ case "$PROJECT_NAME" in
         ;;
     
     "openjpeg")
-        REFERENCE_VERSION_PATH="$BASE_DIR/openjpeg-versions/v2.3.1"
-        TARGET_VERSION_PATH="$BASE_DIR/openjpeg-versions/v2.1.1"
+        REFERENCE_VERSION_PATH="$BASE_DIR/openjpeg-versions/v2.3.0"
+        TARGET_VERSION_PATH="$BASE_DIR/openjpeg-versions/v2.2.0"
         DEFAULT_INPUT="$INPUT_FILE_DIR/openjpeg/CVE-2018-18088/291554_FlipDeter"
         EXTRA_ARGS=(--include-exits)
         ;;

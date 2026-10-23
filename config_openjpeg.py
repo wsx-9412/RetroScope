@@ -5,7 +5,7 @@
 # CVE configuration: change this section for each CVE
 # =====================================================
 CVE_ID = "CVE-2018-18088"        # CVE number
-INPUT_FILE = "in/openjpeg/CVE-2018-18088.j2k"  # input file path (relative to RetroScope/)
+INPUT_FILE = "in/openjpeg/CVE-2018-18088/291554_FlipDeter"  # input file path (relative to RetroScope/)
 OUTPUT_FILE = "/tmp/foo.ppm"     # program output file 
 # Program arguments template: {program_path}, {input_file}, {output_file}
 COMMAND_FORMAT = "{program_path} -i {input_file} -o {output_file}"
