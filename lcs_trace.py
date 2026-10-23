@@ -295,11 +295,11 @@ def capture_function_trace(cmd, timeout=900, include_exits=False):
 def longest_common_substring(a, b):
     """
     Return (a_start, b_start, length) of the longest contiguous common substring
-    of sequences a and b (each a sequence of comparable keys), or None if no
+    of sequences a and b (each a sequence of hashable keys), or None if no
     common element exists.
 
-    Uses O(len(a) * len(b)) dynamic programming with two rolling rows.
-    Optimized: early termination when full match found.
+    Uses a suffix automaton over b and a linear scan of a: O(len(a) + len(b))
+    time instead of the previous O(len(a) * len(b)) dynamic program.
     """
     n, m = len(a), len(b)
     if n == 0 or m == 0:
@@ -309,33 +309,69 @@ def longest_common_substring(a, b):
     if n == m and a == b:
         return (0, 0, n)
 
-    prev = [0] * (m + 1)
-    best_len = 0
-    best_end_i = -1
-    best_end_j = -1
+    transitions = [{}]
+    link = [-1]
+    length = [0]
+    first_pos = [-1]
+    last = 0
 
-    # Track if any match exists
-    found_any = False
+    for i, ch in enumerate(b):
+        cur = len(transitions)
+        transitions.append({})
+        length.append(length[last] + 1)
+        link.append(0)
+        first_pos.append(i)
 
-    for i in range(1, n + 1):
-        cur = [0] * (m + 1)
-        ai = a[i - 1]
-        for j in range(1, m + 1):
-            if ai == b[j - 1]:
-                cur[j] = prev[j - 1] + 1
-                found_any = True
-                if cur[j] > best_len:
-                    best_len = cur[j]
-                    best_end_i = i
-                    best_end_j = j
-                    # Early termination: found match covering rest of a
-                    if best_len == n - (i - best_len + 1) + 1:
-                        return best_end_i - best_len, best_end_j - best_len, best_len
-        prev = cur
+        p = last
+        while p != -1 and ch not in transitions[p]:
+            transitions[p][ch] = cur
+            p = link[p]
 
-    if not found_any:
+        if p == -1:
+            link[cur] = 0
+        else:
+            q = transitions[p][ch]
+            if length[p] + 1 == length[q]:
+                link[cur] = q
+            else:
+                clone = len(transitions)
+                transitions.append(transitions[q].copy())
+                length.append(length[p] + 1)
+                link.append(link[q])
+                first_pos.append(first_pos[q])
+                while p != -1 and transitions[p].get(ch) == q:
+                    transitions[p][ch] = clone
+                    p = link[p]
+                link[q] = clone
+                link[cur] = clone
+
+        last = cur
+
+    state = 0
+    matched = 0
+    best = 0
+    best_end_a = 0
+    best_end_b = 0
+
+    for i, ch in enumerate(a):
+        while state and ch not in transitions[state]:
+            state = link[state]
+            matched = length[state]
+        if ch in transitions[state]:
+            state = transitions[state][ch]
+            matched += 1
+        else:
+            state = 0
+            matched = 0
+
+        if matched > best:
+            best = matched
+            best_end_a = i
+            best_end_b = first_pos[state]
+
+    if best == 0:
         return None
-    return best_end_i - best_len, best_end_j - best_len, best_len
+    return best_end_a - best + 1, best_end_b - best + 1, best
 
 
 # --------------------------------------------------------------------------- #

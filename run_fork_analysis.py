@@ -250,7 +250,7 @@ def main():
     print(f"Arguments template: {args_template}")
 
     cmd = [
-        sys.executable, str(BASE / "lcs_trace.py"),
+        sys.executable, "-u", str(BASE / "lcs_trace.py"),
         "--binary-a", str(ref_bin),
         "--binary-b", str(tgt_bin),
         "--input", args.input,
