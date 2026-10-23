@@ -49,11 +49,11 @@ def resolve_local(binpath, offset):
                     syms.append((int(ps[0], 16), ps[2]))
         except Exception:
             pass
-        _symcache[binpath] = syms
-    syms = _symcache[binpath]
+        _symcache[binpath] = (syms, [s[0] for s in syms])
+    syms, addrs = _symcache[binpath]
     if not syms:
         return None
-    i = bisect.bisect_right([s[0] for s in syms], offset) - 1
+    i = bisect.bisect_right(addrs, offset) - 1
     if i >= 0 and offset - syms[i][0] < 65536:
         return syms[i][1].split('(')[0]
     return None
