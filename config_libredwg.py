@@ -28,7 +28,9 @@ _PRE_BUILD = [
     "CFLAGS='-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -Wno-error' "
     "LDFLAGS='-fsanitize=address' "
     "--enable-debug --enable-trace --disable-shared --disable-bindings",
-    "make -j4",
+    # Do not build the whole tree: doc/ needs makeinfo, which is often absent.
+    "make -C src -j4",
+    "make -C programs -j4 dwgread dwgbmp dwggrep dwg2dxf",
 ]
 
 COMPILE_COMMANDS = {
