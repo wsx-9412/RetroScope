@@ -22,22 +22,21 @@ COMMAND_FORMAT = "{program_path} -vorbis {input_file} {output_file}"
 # FLAC/Ogg/Vorbis/Opus are built out-of-tree:
 #   /tmp/flacdev/root  -> FLAC 1.3.3, Ogg 1.3.5, Vorbis 1.3.7
 #   /tmp/opusroot      -> Opus 1.4 (only needed by 1.2.x)
-# libsndfile has a non-recursive src/Makefile; build the two programs directly.
-_PKG_CONFIG_PATH = (
-    "/tmp/flacdev/root/usr/lib/x86_64-linux-gnu/pkgconfig:"
-    "/tmp/opusroot/lib/pkgconfig:${PKG_CONFIG_PATH}"
-)
-_CONFIGURE = (
-    "bash -c 'export PKG_CONFIG_PATH=" + _PKG_CONFIG_PATH + "; "
-    "./configure --disable-shared --disable-sqlite "
-    "CFLAGS=\"-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -Wno-error\" "
-    "LDFLAGS=\"-fsanitize=address\"'"
+# The 1.0.x trees are already configured against those prefixes.  Re-running
+# their configure is not possible without the `autogen` tool: configure ends
+# with `(cd src && make genfiles)` / `(cd tests && make genfiles)`, which
+# regenerates test_endswap.c / write_read_test.c via autogen.  Python-package
+# `autogen` is a different program.  Build the library and two tools directly.
+_CFLAGS = (
+    "-finstrument-functions -g -O0 -fsanitize=address "
+    "-fno-omit-frame-pointer -Wno-error"
 )
 
 _PRE_BUILD = [
     "make clean || true",
-    _CONFIGURE,
-    "make -j4 programs/sndfile-convert programs/sndfile-info",
+    "make -C src -j4 CFLAGS='" + _CFLAGS + "' LDFLAGS='-fsanitize=address'",
+    "make -C programs -j4 CFLAGS='" + _CFLAGS + "' "
+    "LDFLAGS='-fsanitize=address' sndfile-convert sndfile-info",
 ]
 
 COMPILE_COMMANDS = {

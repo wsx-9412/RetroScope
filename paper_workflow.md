@@ -104,7 +104,7 @@
 
 2. **读取函数返回值特例。** 对 `in = TIFFOpen(...)` 后 `if (in == NULL)` 这类守卫，变量值为 0，既无字节模式也不指向读取缓冲区。此时把 fork 前已执行的 positioned reads 视为决定返回值的输入区间；若 deep trace 记录到越界读，越界读位置记 `A_deep_open_critical`，open 内普通读取记 `A_deep_open_read`，deep trace 无结果时退回整个运行期读取集合 `C_open_read_fallback`。
 
-3. **调用点与 IFD 条目动态映射。** 在 fork 点读取 `dp->tdir_tag`、`dir`、`tif->tif_diroff` 等运行时值：若参数指向 IFD 缓冲区，则按 `tif_diroff + 2 + i*12 + field_offset` 算出该条目的 tag/type/count/value 字段偏移，记 `A_dynamic_callsite`。这一层把分叉变量的值落到具体目录条目，而不仅是一个字节位置。
+3. **调用点与 IFD 条目动态映射（TIFF/libtiff 专用）。** 在 fork 点读取 `dp->tdir_tag`、`dir`、`tif->tif_diroff` 等运行时值：若参数指向 IFD 缓冲区，则按 `tif_diroff + 2 + i*12 + field_offset` 算出该条目的 tag/type/count/value 字段偏移，记 `A_dynamic_callsite`。这一层把分叉变量的值落到具体目录条目，而不仅是一个字节位置。非 TIFF 输入没有 IFD，跳过此层，直接使用第 4 步的对应格式结构解析。
 
 4. **结构式字段（S 层）。** 若动态调用点上下文不可用，则按输入格式静态解析磁盘结构：TIFF 解析头与 IFD；ELF、GIF、XML、sfnt/TTF/OTF/TTC/WOFF、JPEG2000 分别解析魔数、段表/目录、标记、表目录等。结构字段不跑 255 全值扫描，而以携带语义的小值集做定向变异：tag 改写为邻近/常见 tag，type 改写为常见字段类型，count 取 0/1/边界值，offset 取文件内偏移、0 或 8 等，记 `S_structural_ifd_region` 或 `S_structural_format`。该层只在动态、值级与组合阶段均未命中时启用，避免“条目数 × 4 字段 × 255 值”的组合爆炸。
 
