@@ -6670,11 +6670,11 @@ def _pairwise_probe_values(orig, hints=None, cap=None):
     """Fuzzing-style byte values for ONE side of a two-offset mutation.
 
     Operators, in priority order (truncated to ``cap``):
-      1. observed fork-flipping / crash-changing values from the single-byte
-         sweep at this same offset (the highest-signal fuzz hints);
-      2. integer extremes (0x00, 0x01, 0x7f, 0x80, 0xfe, 0xff);
-      3. +/-1 arithmetic on the original byte (mod 256, so 0x00-1 wraps);
-      4. every single-bit flip of the original byte;
+      1. integer extremes (0x00, 0x01, 0x7f, 0x80, 0xfe, 0xff);
+      2. +/-1 arithmetic on the original byte (mod 256, so 0x00-1 wraps);
+      3. every single-bit flip of the original byte;
+      4. observed fork-flipping / crash-changing values from the single-byte
+         sweep at this same offset (high-signal fuzz hints);
       5. bitwise inversion and +/-2 neighbours when budget remains.
 
     The same generator is used for both offsets in a pair, and the two sets
@@ -6691,10 +6691,6 @@ def _pairwise_probe_values(orig, hints=None, cap=None):
             if v != orig and v not in vals:
                 vals.append(v)
 
-    for h in (hints or ()):
-        if len(vals) >= cap:
-            break
-        _add(h)
     for v in PAIRWISE_LIMITS:
         if len(vals) >= cap:
             break
@@ -6707,6 +6703,10 @@ def _pairwise_probe_values(orig, hints=None, cap=None):
         if len(vals) >= cap:
             break
         _add(orig ^ bit)
+    for h in (hints or ()):
+        if len(vals) >= cap:
+            break
+        _add(h)
     for v in (orig ^ 0xff, orig + 2, orig - 2):
         if len(vals) >= cap:
             break
@@ -6970,10 +6970,10 @@ def test_pairwise_mutations_compare(binary_target, binary_ref, input_file,
     """Two-offset combined byte mutation.
 
     For every (offA, offB) pair, mutate BOTH bytes simultaneously (each
-    side sweeping its own derived probe set — single-bit flips first, then
-    the observed fork-flipping values for that offset, then neighbours and
-    boundary values; ``probe_values`` overrides both sides) and check
-    whether the combined mutation makes the target reproduce the
+    side sweeping its own fuzz-style set derived from that offset's
+    original byte — integer extremes, +/-1, single-bit flips, then any
+    observed fork-flipping values; ``probe_values`` overrides both sides)
+    and check whether the combined mutation makes the target reproduce the
     reference's crash — or produces a new outcome that neither single-byte
     mutation alone achieves.
 
@@ -7216,7 +7216,7 @@ def run_pairwise_mutation_stage(binary, binary_ref, input_file, program_args,
     print(f'  Pairs to test: {len(pairs)} '
           f'(interaction: {n_ix}, historical/coverage: {len(pairs) - n_ix}; '
           f'probe: per-offset fuzz set '
-          f'[hints -> extremes -> +-1 -> bit-flips -> invert/+-2], '
+          f'[extremes -> +-1 -> bit-flips -> hints -> invert/+-2], '
           f'caps {_pairwise_probe_cap()}x{_pairwise_probe_cap()}/pair)')
     return test_pairwise_mutations_compare(
         binary, binary_ref, input_file, program_args, pairs, timeout=timeout,
