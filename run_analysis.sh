@@ -116,9 +116,22 @@ case "$PROJECT_NAME" in
         DEFAULT_INPUT="$INPUT_FILE_DIR/openjpeg/CVE-2018-18088/291554_FlipDeter"
         EXTRA_ARGS=(--include-exits)
         ;;
+    "libredwg")
+        REFERENCE_VERSION_PATH="/tmp/redwg134/libredwg-0.13.4"
+        TARGET_VERSION_PATH="/home/ws/Desktop/libredwg-pilot/v0.12.5"
+        DEFAULT_INPUT="$INPUT_FILE_DIR/libredwg/CVE-2026-9502.dwg"
+        # 0.12 -> 0.13 reorganized decode paths; match by function name.
+        EXTRA_ARGS=(--match-level name)
+        ;;
+    "libsndfile")
+        REFERENCE_VERSION_PATH="/tmp/libsndfile-1.0.28"
+        TARGET_VERSION_PATH="/tmp/libsndfile-1.0.26"
+        DEFAULT_INPUT="$INPUT_FILE_DIR/libsndfile/CVE-2024-50612"
+        EXTRA_ARGS=(--include-exits)
+        ;;
     *)
         echo "Error: unknown project '$PROJECT_NAME'"
-        echo "Available: libtiff, lame, audiofile, jasper, libxml2, giflib, binutils, freetype, openjpeg"
+        echo "Available: libtiff, lame, audiofile, jasper, libxml2, giflib, binutils, freetype, openjpeg, libredwg, libsndfile"
         exit 1
         ;;
 esac
