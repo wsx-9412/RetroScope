@@ -638,6 +638,8 @@ def main():
     matches = []
     gaps = []
     decompose(seq_a, seq_b, ka, kb, 0, 0, 0, args.min_length, matches, gaps)
+    print(f"  decomposition: {len(matches)} matches, {len(gaps)} gaps",
+          flush=True)
 
     print("\n" + "=" * 70)
     print("Hierarchical decomposition (pre-order)")
