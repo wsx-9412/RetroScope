@@ -15,6 +15,8 @@
 #   ./run_analysis.sh config_binutils.py
 #   ./run_analysis.sh config_freetype.py
 #   ./run_analysis.sh config_openjpeg.py
+#   ./run_analysis.sh config_libredwg.py
+#   ./run_analysis.sh config_libsndfile.py
 
 PROJECT_CONFIG="${1:-config_libtiff.py}"
 GDB_MODE=true      # Default: GDB mode (full pipeline)
