@@ -17,12 +17,14 @@
 #   ./run_analysis.sh config_openjpeg.py
 #   ./run_analysis.sh config_libredwg.py
 #   ./run_analysis.sh config_libsndfile.py
+#   ./run_analysis.sh config_libredwg.py --force-compile  # ignore cached binaries
 
 PROJECT_CONFIG="${1:-config_libtiff.py}"
 GDB_MODE=true      # Default: GDB mode (full pipeline)
 POLYTRACKER_MODE=false
 FULL_MODE=false
 DEPRECATED_GDB=false
+FORCE_COMPILE=false
 shift
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -41,6 +43,9 @@ while [ $# -gt 0 ]; do
         -full) 
             FULL_MODE=true
             GDB_MODE=true
+            ;;
+        --force-compile)
+            FORCE_COMPILE=true
             ;;
     esac
     shift
@@ -223,6 +228,11 @@ EXTRA_ARGS_STEP1=("${EXTRA_ARGS[@]}")
 # localization is handled separately in Step 3 (and GDB offsets in Step 2).
 # Running it here too would build/run the instrumented binary twice.
 EXTRA_ARGS_STEP1+=(--no-polytracker)
+
+if [ "$FORCE_COMPILE" = true ]; then
+    EXTRA_ARGS_STEP1+=(--force-compile)
+    echo "Compilation: forced clean rebuild"
+fi
 
 python3 -u run_fork_analysis.py \
     --config "$CONFIG_MODULE" \

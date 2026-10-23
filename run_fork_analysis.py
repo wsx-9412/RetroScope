@@ -9,7 +9,8 @@ Usage:
         --target tiff-versions/tiff-4.0.8 \
         --input in/CVE-2022-3598 \
         --output /tmp/foo \
-        [--include-exits] [--refactor-detect] [--gdb-timeout 300]
+        [--include-exits] [--refactor-detect] [--gdb-timeout 300] \
+        [--force-compile]
 
 The config module must define:
     COMPILE_COMMANDS  -> {"reference": {...}, "target": {...}}
@@ -168,9 +169,14 @@ def main():
     ap.add_argument("--rename-threshold", type=float, default=0.7)
     ap.add_argument("--no-compile", action="store_true",
                     help="skip compilation (binaries already built)")
+    ap.add_argument("--force-compile", action="store_true",
+                    help="always copy both versions to a temp tree and rebuild, "
+                         "ignoring existing instrumented binaries")
     ap.add_argument("--no-polytracker", action="store_true",
                     help="skip polytracker inside divergence analysis (GDB-only mode)")
     args = ap.parse_args()
+    if args.no_compile and args.force_compile:
+        ap.error("--no-compile and --force-compile are mutually exclusive")
 
     config = load_config(args.config)
     compile_cmds = getattr(config, "COMPILE_COMMANDS", {})
@@ -181,10 +187,15 @@ def main():
 
     # Heuristic: if binaries already exist in the version dirs, skip
     # recompilation (avoids producing different binaries in a temp tree).
+    # --force-compile disables this cache and always rebuilds from a clean
+    # temp copy, which is the safe choice when flags/sources may have changed.
     existing_ref = find_binary(ref_dir, exec_config)
     existing_tgt = find_binary(tgt_dir, exec_config)
+    if args.force_compile:
+        print("Force rebuild requested; ignoring existing binaries.")
     skip_compile = args.no_compile or (
-        existing_ref is not None and existing_tgt is not None
+        not args.force_compile
+        and existing_ref is not None and existing_tgt is not None
         and has_function_instrumentation(existing_ref)
         and has_function_instrumentation(existing_tgt)
     )
