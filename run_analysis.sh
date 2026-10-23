@@ -119,15 +119,15 @@ case "$PROJECT_NAME" in
         EXTRA_ARGS=(--include-exits)
         ;;
     "libredwg")
-        REFERENCE_VERSION_PATH="/tmp/redwg134/libredwg-0.13.4"
-        TARGET_VERSION_PATH="/home/ws/Desktop/libredwg-pilot/v0.12.5"
+        REFERENCE_VERSION_PATH="$BASE_DIR/libredwg-versions/libredwg-0.13.4"
+        TARGET_VERSION_PATH="$BASE_DIR/libredwg-versions/libredwg-0.12.5"
         DEFAULT_INPUT="$INPUT_FILE_DIR/libredwg/CVE-2026-9502.dwg"
         # 0.12 -> 0.13 reorganized decode paths; match by function name.
         EXTRA_ARGS=(--match-level name)
         ;;
     "libsndfile")
-        REFERENCE_VERSION_PATH="/tmp/libsndfile-1.0.28"
-        TARGET_VERSION_PATH="/tmp/libsndfile-1.0.26"
+        REFERENCE_VERSION_PATH="$BASE_DIR/libsndfile-versions/libsndfile-1.0.28"
+        TARGET_VERSION_PATH="$BASE_DIR/libsndfile-versions/libsndfile-1.0.26"
         DEFAULT_INPUT="$INPUT_FILE_DIR/libsndfile/CVE-2024-50612"
         EXTRA_ARGS=(--include-exits)
         ;;
