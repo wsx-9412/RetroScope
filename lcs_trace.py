@@ -380,52 +380,59 @@ def longest_common_substring(a, b):
 
 def decompose(a, b, ka, kb, a_base, b_base, depth, min_length, matches, gaps):
     """
-    Recursively split traces a/b at their longest common substring.
+    Iteratively split traces a/b at their longest common substring.
 
-    `a`/`b` are the lists of TraceNode; `ka`/`kb` are the parallel lists of
-    comparison keys (one per call). `a_base`/`b_base` are the starting offsets
-    of these segments in the original traces, used to report global positions.
-    Uses indices instead of slicing for better performance.
+    Uses an explicit stack instead of Python recursion: matching by function
+    name can produce thousands of nested one-element splits, which previously
+    raised RecursionError once the split chain exceeded the recursion limit.
     """
-    lcs = longest_common_substring(ka, kb)
-    if lcs is None:
-        if a or b:
-            gaps.append({"level": depth, "a": list(a), "b": list(b),
-                         "a_range": (a_base, a_base + len(a)),
-                         "b_range": (b_base, b_base + len(b))})
-        return
+    ids = {}
+    ka = [ids.setdefault(k, len(ids)) for k in ka]
+    kb = [ids.setdefault(k, len(ids)) for k in kb]
 
-    a_start, b_start, length = lcs
-    if length < min_length:
-        # LCS too short to be meaningful: discard it and leave the whole
-        # segment as an unmatched gap, stopping the recursion here.
-        if a or b:
-            gaps.append({"level": depth, "a": list(a), "b": list(b),
-                         "a_range": (a_base, a_base + len(a)),
-                         "b_range": (b_base, b_base + len(b))})
-        return
+    processed = 0
+    stack = [(a, b, ka, kb, a_base, b_base, depth)]
+    while stack:
+        a, b, ka, kb, a_base, b_base, depth = stack.pop()
+        processed += 1
+        if processed % 2000 == 0:
+            print(f"  [decompose] {processed} segments processed, "
+                  f"{len(stack)} pending", flush=True)
+        lcs = longest_common_substring(ka, kb)
+        if lcs is None:
+            if a or b:
+                gaps.append({"level": depth, "a": list(a), "b": list(b),
+                             "a_range": (a_base, a_base + len(a)),
+                             "b_range": (b_base, b_base + len(b))})
+            continue
 
-    match_a = list(a[a_start:a_start + length])
+        a_start, b_start, length = lcs
+        if length < min_length:
+            if a or b:
+                gaps.append({"level": depth, "a": list(a), "b": list(b),
+                             "a_range": (a_base, a_base + len(a)),
+                             "b_range": (b_base, b_base + len(b))})
+            continue
 
-    matches.append({
-        "level": depth,
-        "functions": match_a,
-        "length": length,
-        "a_range": (a_base + a_start, a_base + a_start + length),
-        "b_range": (b_base + b_start, b_base + b_start + length),
-    })
+        match_a = list(a[a_start:a_start + length])
+        matches.append({
+            "level": depth,
+            "functions": match_a,
+            "length": length,
+            "a_range": (a_base + a_start, a_base + a_start + length),
+            "b_range": (b_base + b_start, b_base + b_start + length),
+        })
 
-    # Process left part
-    if a_start > 0 or b_start > 0:
-        decompose(a[:a_start], b[:b_start], ka[:a_start], kb[:b_start],
-                  a_base, b_base, depth + 1, min_length, matches, gaps)
-    # Process right part
-    a_end = a_start + length
-    b_end = b_start + length
-    if a_end < len(a) or b_end < len(b):
-        decompose(a[a_end:], b[b_end:], ka[a_end:], kb[b_end:],
-                  a_base + a_end, b_base + b_end,
-                  depth + 1, min_length, matches, gaps)
+        a_end = a_start + length
+        b_end = b_start + length
+
+        # Push right first so the left part is processed first (pre-order).
+        if a_end < len(a) or b_end < len(b):
+            stack.append((a[a_end:], b[b_end:], ka[a_end:], kb[b_end:],
+                          a_base + a_end, b_base + b_end, depth + 1))
+        if a_start > 0 or b_start > 0:
+            stack.append((a[:a_start], b[:b_start], ka[:a_start], kb[:b_start],
+                          a_base, b_base, depth + 1))
 
 
 def format_range(rng):
