@@ -36,7 +36,9 @@ _PRE_BUILD = [
     "make clean || true",
     "make -C src -j4 CFLAGS='" + _CFLAGS + "' LDFLAGS='-fsanitize=address'",
     "make -C programs -j4 CFLAGS='" + _CFLAGS + "' "
-    "LDFLAGS='-fsanitize=address' sndfile-convert sndfile-info",
+    "LDFLAGS='-fsanitize=address "
+    "-L/tmp/flacdev/root/usr/lib/x86_64-linux-gnu "
+    "-L/tmp/opusroot/lib' sndfile-convert sndfile-info",
 ]
 
 COMPILE_COMMANDS = {
