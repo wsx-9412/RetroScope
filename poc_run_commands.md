@@ -347,6 +347,6 @@ PoC 来源: `https://github.com/4n0nym4u5/CVE/raw/main/libsndfile/segmentation_f
 | openjpeg | 5 |
 | libarchive | 1 |
 | libtiff | 2 |
-| libredwg | 1 |
+| libredwg | 6 |
 | libsndfile | 4 |
-| **总计** | **33** |
+| **总计** | **38** |
