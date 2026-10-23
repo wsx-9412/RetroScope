@@ -6643,63 +6643,74 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
 
 
 # Pairwise (two-offset) probe values.  A full 255x255 sweep per pair is
-# usually prohibitive; these boundary/corner values capture the meaningful
-# two-byte interactions (e.g. flipping the sign byte AND the low byte of a
-# corrupt sample-rate field).  They form the TAIL of the derived per-offset
-# probe sets built by _pairwise_probe_values.
-PAIRWISE_PROBE = (0x00, 0x01, 0x02, 0x04, 0x08, 0x7f, 0x80, 0xfe, 0xff)
+# usually prohibitive, so each side is mutated with a small fuzzing-style
+# operator set derived from its ORIGINAL byte: integer extremes, +/-1
+# arithmetic, and single-bit flips.  The two per-offset sets are then
+# combined as a Cartesian product.  This is deliberately not a dictionary
+# of fixed "magic" bytes: the candidates depend on the byte actually found
+# at that position, which is what makes a two-byte interaction meaningful.
+PAIRWISE_LIMITS = (0x00, 0x01, 0x7f, 0x80, 0xfe, 0xff)
+PAIRWISE_BIT_FLIPS = (0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80)
+
+# Backwards-compatible name for callers that still import the old constant.
+PAIRWISE_PROBE = PAIRWISE_LIMITS
 
 
 def _pairwise_probe_cap():
     """Per-offset probe-set size for the two-offset mutation (env-tunable)."""
     try:
-        return max(4, min(64,
+        return max(6, min(64,
                           int(os.environ.get('RETROSCOPE_PAIR_PROBE_MAX',
-                                             '12'))))
+                                             '20'))))
     except ValueError:
-        return 12
+        return 20
 
 
 def _pairwise_probe_values(orig, hints=None, cap=None):
-    """Interesting byte values for ONE side of a two-offset mutation.
+    """Fuzzing-style byte values for ONE side of a two-offset mutation.
 
-    Order (truncated to ``cap``):
-      1. the eight single-bit flips of the original byte — a tag/flag class
-         change such as 0x14 -> 0x16 or 0x01 -> 0x21 is exactly one bit,
-         and the bit flips are the only values an INERT offset (one whose
-         single-byte sweep crashed nowhere) can still contribute;
-      2. the fork-flipping / crash-changing values the single-byte sweeps
-         already observed at this offset (when available);
-      3. +1/-1/+2/-2 neighbours of the original;
-      4. the classic boundary values (PAIRWISE_PROBE).
+    Operators, in priority order (truncated to ``cap``):
+      1. observed fork-flipping / crash-changing values from the single-byte
+         sweep at this same offset (the highest-signal fuzz hints);
+      2. integer extremes (0x00, 0x01, 0x7f, 0x80, 0xfe, 0xff);
+      3. +/-1 arithmetic on the original byte (mod 256, so 0x00-1 wraps);
+      4. every single-bit flip of the original byte;
+      5. bitwise inversion and +/-2 neighbours when budget remains.
 
-    Capped so a pair stays within ``cap*cap`` target runs.
+    The same generator is used for both offsets in a pair, and the two sets
+    are combined pairwise.  Values never equal the original byte and are
+    deduplicated, so ``cap*cap`` is an upper bound on one pair's runs.
     """
     if cap is None:
         cap = _pairwise_probe_cap()
     vals = []
 
     def _add(v):
-        if isinstance(v, int) and 0 <= v <= 255 and v != orig \
-                and v not in vals:
-            vals.append(v)
+        if isinstance(v, int):
+            v &= 0xff
+            if v != orig and v not in vals:
+                vals.append(v)
 
-    for bit in (0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80):
-        if len(vals) >= cap:
-            break
-        _add(orig ^ bit)
     for h in (hints or ()):
         if len(vals) >= cap:
             break
         _add(h)
-    for d in (1, -1, 2, -2, 0x10, -0x10):
+    for v in PAIRWISE_LIMITS:
+        if len(vals) >= cap:
+            break
+        _add(v)
+    for d in (1, -1):
         if len(vals) >= cap:
             break
         _add(orig + d)
-    for b in PAIRWISE_PROBE:
+    for bit in PAIRWISE_BIT_FLIPS:
         if len(vals) >= cap:
             break
-        _add(b)
+        _add(orig ^ bit)
+    for v in (orig ^ 0xff, orig + 2, orig - 2):
+        if len(vals) >= cap:
+            break
+        _add(v)
     return vals or [orig]
 
 
@@ -7204,9 +7215,9 @@ def run_pairwise_mutation_stage(binary, binary_ref, input_file, program_args,
     print(f'  Reference binary: {resolve_binary(binary_ref)}')
     print(f'  Pairs to test: {len(pairs)} '
           f'(interaction: {n_ix}, historical/coverage: {len(pairs) - n_ix}; '
-          f'probe: per-offset derived '
-          f'[bit-flips -> observed values -> +-1/+-2 -> boundaries], '
-          f'cap {_pairwise_probe_cap()}/side)')
+          f'probe: per-offset fuzz set '
+          f'[hints -> extremes -> +-1 -> bit-flips -> invert/+-2], '
+          f'caps {_pairwise_probe_cap()}x{_pairwise_probe_cap()}/pair)')
     return test_pairwise_mutations_compare(
         binary, binary_ref, input_file, program_args, pairs, timeout=timeout,
         version=version, value_hints=value_hints)
