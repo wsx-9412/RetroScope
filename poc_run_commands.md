@@ -173,13 +173,18 @@ gcc -g -O0 -fsanitize=address -fno-omit-frame-pointer \
 
 ---
 
-## libredwg (1 个)
+## libredwg (6 个)
 
-工具路径: `/home/ws/Desktop/libredwg-pilot/v0.12.5/programs/dwg2dxf`；快照为 `/home/ws/Desktop/libredwg-pilot/snap/programs/dwg2dxf`
+工具路径: 参考版本 `/tmp/redwg134/libredwg-0.13.4/programs/{dwgread,dwgbmp,dwggrep,dwg2dxf}`（ASan 构建）；旧版本 `/home/ws/Desktop/libredwg-pilot/v0.12.5/programs/`。CVE-2022-33034 另用快照 `/home/ws/Desktop/libredwg-pilot/snap/programs/dwg2dxf`。
 
 | CVE | 发现版本触发 | 更老版本不触发 | 命令 |
 |-----|-------------|---------------|------|
 | CVE-2022-33034 | 0.12.5, 2022-05 快照 | 0.12.3-0.12.4 | `dwg2dxf -b -m -y -o /dev/null in/libredwg/CVE-2022-33034-copy_bytes_sof` |
+| CVE-2026-9502 | 0.13.4 | 0.12.5 | `dwgread in/libredwg/CVE-2026-9502.dwg` |
+| CVE-2026-9605 | 0.13.4 | 0.12.5 | `dwgbmp in/libredwg/CVE-2026-9605.dwg` |
+| CVE-2026-15182 | 0.13.4 | 0.12.5 | `dwgbmp in/libredwg/CVE-2026-15182.dwg` |
+| CVE-2026-15184 | 0.13.4 | 0.12.5 | `dwggrep '.*' in/libredwg/CVE-2026-15184.dwg` |
+| CVE-2026-15520 | 0.13.4 | 0.12.5 | `dwg2dxf --binary in/libredwg/CVE-2026-15520.dwg` |
 
 崩溃位置: stack-buffer-overflow in `copy_bytes` (`src/decode_r2007.c:228`)，调用链 `decompress_r2007` (`decode_r2007.c:563`) → `read_file_header` → `read_r2007_meta_data`。
 
