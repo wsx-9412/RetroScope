@@ -215,6 +215,33 @@ sh autogen.sh
 make -j
 ```
 
+### 2026 系列 (CVE-2026-9502 / 9605 / 15182 / 15184 / 15520)
+
+崩溃位置:
+- CVE-2026-9502: heap-buffer-overflow in `decompress_R2004_section` (`src/decode.c:1313`)，调用链 `read_2004_compressed_section` (`:2166`) → `read_2004_section_template` (`:3230`) → `decode_R2004`；工具 `dwgread`。
+- CVE-2026-9605: heap-buffer-overflow in `bit_read_RC` (`src/bits.c:282`)，调用链 `copy_bytes` (`src/decode.c:1149`) → `decompress_R2004_section` (`:1328`)；工具 `dwgbmp`。
+- CVE-2026-15182: heap-buffer-overflow（READ）in `__interceptor_fwrite`，调用 `get_bmp` (`programs/dwgbmp.c:218`) 写出 `dwg_bmp` 返回的缩略图数据，源缓冲由 `decode_R13_R2000` (`src/decode.c:450`) 分配。修复 commit `18fd542` 调整 `dwg_bmp` 的溢出检查。
+- CVE-2026-15184: SEGV（NULL read at `0x30`）in `dwg_next_entity` (`src/dwg.c:1233`)，调用 `get_next_owned_entity` (`:1274`)；工具 `dwggrep`。
+- CVE-2026-15520: heap-buffer-overflow in `decompress_R2004_section` (`src/decode.c:1313`)，调用链同上；工具 `dwg2dxf --binary`。
+
+版本差异: 0.13.4（ASan）全部触发；0.12.5 已包含 `decompress_R2004_section`、`bit_read_RC`、`dwg_bmp`、`dwg_next_entity`，但同一样本无 ASan 报告：0.12.5 对 R2018 样本报 `ERROR 0x441` 拒绝解析，对 R2004/R2000 样本解析后在边界检查处返回（`ERROR: Failed to read compressed AcDbObjects section` 或 `bit_read_* buffer overflow`），不越界。0.13.4 在同一读取路径上越过边界。
+
+PoC 来源: `https://github.com/HackC0der/CVE-Repos/tree/main/libredwg`（6d6a339 / 0b57303 的 fuzz 崩溃样本），原样收录为 `in/libredwg/CVE-2026-*.dwg`，无需变异。NVD 将 CVE-2026-9502/9605/15182/15184/15520 的引用指向同一仓库；其中 9605 的通用引用样本不触发，仓库内按函数命名的 `libredwg_6d6a339_heap_overflow_bit_read_RC.dwg` 才在 `bit_read_RC` 触发，故采用后者。
+
+编译命令（0.13.4 参考版本）:
+```bash
+curl -L -o r.tar.gz https://codeload.github.com/LibreDWG/libredwg/tar.gz/refs/tags/0.13.4
+tar xzf r.tar.gz && cd libredwg-0.13.4
+# jsmn 子模块；无 .git 时 autogen.sh 会跳过子模块，需手动放入
+curl -L -o /tmp/jsmn.tar.gz https://codeload.github.com/zserge/jsmn/tar.gz/refs/heads/master
+tar xzf /tmp/jsmn.tar.gz -C jsmn --strip-components=1
+sh autogen.sh || true    # configure 已生成；末尾 git submodule 会失败
+CFLAGS="-O0 -g -fno-omit-frame-pointer -fsanitize=address -Wno-error" \
+LDFLAGS="-fsanitize=address" \
+./configure --enable-debug --enable-trace --disable-shared --disable-bindings --disable-docs
+make -j8
+```
+
 ---
 
 ## libsndfile (4 个)
