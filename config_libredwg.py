@@ -30,7 +30,7 @@ _PRE_BUILD = [
     "--enable-debug --enable-trace --disable-shared --disable-bindings",
     # Do not build the whole tree: doc/ needs makeinfo, which is often absent.
     "make -C src -j4",
-    "make -C programs -j4 dwgread dwgbmp dwggrep dwg2dxf",
+    "make -C programs -j4 dwgread dwgbmp dwggrep dwg2dxf dwg2SVG",
 ]
 
 COMPILE_COMMANDS = {
