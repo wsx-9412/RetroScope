@@ -175,7 +175,7 @@ gcc -g -O0 -fsanitize=address -fno-omit-frame-pointer \
 
 ## libredwg (6 个)
 
-工具路径: 参考版本 `/tmp/redwg134/libredwg-0.13.4/programs/{dwgread,dwgbmp,dwggrep,dwg2dxf}`（ASan 构建）；旧版本 `/home/ws/Desktop/libredwg-pilot/v0.12.5/programs/`。CVE-2022-33034 另用快照 `/home/ws/Desktop/libredwg-pilot/snap/programs/dwg2dxf`。
+工具路径: 参考版本 `libredwg-versions/libredwg-0.13.4/programs/{dwgread,dwgbmp,dwggrep,dwg2dxf}`（ASan 构建）；旧版本 `libredwg-versions/libredwg-0.12.5/programs/`。CVE-2022-33034 另用快照 `/home/ws/Desktop/libredwg-pilot/snap/programs/dwg2dxf`。
 
 | CVE | 发现版本触发 | 更老版本不触发 | 命令 |
 |-----|-------------|---------------|------|
@@ -246,7 +246,7 @@ make -j8
 
 ## libsndfile (4 个)
 
-工具路径: `/tmp/libsndfile-<ver>/programs/{sndfile-convert,sndfile-info}`（ASan 构建）
+工具路径: `libsndfile-versions/libsndfile-<ver>/programs/{sndfile-convert,sndfile-info}`（ASan 构建）
 
 | CVE | 发现版本触发 | 更老版本不触发 | 命令 |
 |-----|-------------|---------------|------|
@@ -266,9 +266,9 @@ PoC 来源: `https://github.com/erikd/libsndfile/issues/292` 中的公开测试�
 编译命令（以参考版本为例）:
 ```bash
 gcc -std=c99 -g -O1 -fsanitize=address -fno-omit-frame-pointer \
-  -I/tmp/libsndfile-1.0.28/src -I/tmp/libsndfile-1.0.28 \
+  -Ilibsndfile-versions/libsndfile-1.0.28/src -Ilibsndfile-versions/libsndfile-1.0.28 \
   in/libsndfile/CVE-2017-12562.c -o /tmp/bug1 \
-  -Wl,--start-group /tmp/libsndfile-1.0.28/src/.libs/libsndfile.a \
+  -Wl,--start-group libsndfile-versions/libsndfile-1.0.28/src/.libs/libsndfile.a \
   /tmp/flacdev/root/usr/lib/x86_64-linux-gnu/libFLAC.a \
   /tmp/flacdev/root/usr/lib/x86_64-linux-gnu/libvorbisenc.a \
   /tmp/flacdev/root/usr/lib/x86_64-linux-gnu/libvorbis.a \
@@ -301,7 +301,7 @@ CVE-2018-19662 是同一修复 PR 的 alaw 分支；其下标 `-2048` 在 1.0.25
 
 编译命令（参考版本）:
 ```bash
-cd /tmp/libsndfile-1.0.26
+cd libsndfile-versions/libsndfile-1.0.26
 sed -i 's|^prefix=/usr|prefix=/tmp/flacdev/root/usr|' /tmp/flacdev/root/usr/lib/x86_64-linux-gnu/pkgconfig/*.pc
 sed -i '16s/^/#/' configure.ac    # 去掉重复的 AC_CONFIG_MACRO_DIR
 autoreconf -fi
