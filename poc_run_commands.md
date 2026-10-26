@@ -408,6 +408,26 @@ PoC 来源: `https://github.com/4n0nym4u5/CVE/raw/main/libsndfile/segmentation_f
 
 ---
 
+## lame (1 个)
+
+工具路径: `lame-versions/lame-<ver>/frontend/lame`（ASan 构建；3.98.2、3.98.4、3.99.5 已构建）
+
+逐版本结果见 `results/lame_version_matrix.tsv`。
+
+| CVE | 发现版本触发 | 更老版本不触发 | 命令 |
+|-----|-------------|---------------|------|
+| CVE-2015-9101 | 3.99.5 | 3.98.2、3.98.4 | `./lame-versions/lame-3.99.5/frontend/lame -f -V 9 in/lame/CVE-2015-9101 /dev/null` |
+
+### CVE-2015-9101
+
+崩溃位置: SEGV in `fill_buffer_resample` (`libmp3lame/util.c:606`)，调用链 `lame_encode_flush` → `lame_encode_buffer_sample_t` → `fill_buffer_resample`。报告中的 `inbuf_old[BLACKSIZE + j2]` 越界读位于同一行。
+
+PoC 来源: Debian bug #777161 附件 `test09.wav`（`https://bugs.debian.org/cgi-bin/bugreport.cgi?att=2;bug=777161;filename=test09.wav;msg=5`）。68 字节 RIFF/WAVE；SHA-256 `d489f9144810aae6774574c65cd2af0ea5258b9b2a0fafa27c74d6aaba3fbf1f`。收录为 `in/lame/CVE-2015-9101`，未变异。
+
+版本差异: 3.99.5 在 `fill_buffer_resample` 稳定触发 ASan SEGV；3.98.2/3.98.4 对该参考 PoC 在进入重采样前返回 rc=1，报 `Only 8, 16, 24 and 32 bit input files supported`，不崩溃。两版仍包含同一 `fill_buffer_resample`（`util.c:606`）；Hack-Me 的按版本公开 PoC（`CVE-2015-9101_3.98.2` / `CVE-2015-9101_3.98.4`）可在同版同函数触发，说明老版本代码路径存在，但本 CVE 的参考 PoC 不触发。
+
+---
+
 ## 汇总
 
 | 项目 | 版本敏感 CVE 数 |
@@ -422,4 +442,5 @@ PoC 来源: `https://github.com/4n0nym4u5/CVE/raw/main/libsndfile/segmentation_f
 | libredwg | 8 |
 | audiofile | 1 |
 | libsndfile | 4 |
-| **总计** | **41** |
+| lame | 1 |
+| **总计** | **42** |
