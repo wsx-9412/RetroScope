@@ -131,8 +131,8 @@ case "$PROJECT_NAME" in
         EXTRA_ARGS=(--match-level name)
         ;;
     "libsndfile")
-        REFERENCE_VERSION_PATH="$BASE_DIR/libsndfile-versions/libsndfile-1.0.28"
-        TARGET_VERSION_PATH="$BASE_DIR/libsndfile-versions/libsndfile-1.0.26"
+        REFERENCE_VERSION_PATH="$BASE_DIR/libsndfile-versions/libsndfile-1.0.26"
+        TARGET_VERSION_PATH="$BASE_DIR/libsndfile-versions/libsndfile-1.0.25"
         DEFAULT_INPUT="$INPUT_FILE_DIR/libsndfile/CVE-2024-50612"
         EXTRA_ARGS=(--include-exits)
         ;;
