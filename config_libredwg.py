@@ -10,8 +10,8 @@
 # =====================================================
 # CVE configuration: change this section for each CVE
 # =====================================================
-CVE_ID = "CVE-2026-9503"                          # CVE number
-INPUT_FILE = "in/libredwg/CVE-2026-9503.dwg"       # input file path (relative to RetroScope/)
+CVE_ID = "CVE-2026-9605"                          # CVE number
+INPUT_FILE = "in/libredwg/CVE-2026-9605.dwg"       # input file path (relative to RetroScope/)
 OUTPUT_FILE = "/dev/null"                          # dwgread writes JSON to stdout
 # Program arguments template: {program_path}, {input_file}, {output_file}
 COMMAND_FORMAT = "{program_path} {input_file}"
@@ -54,7 +54,7 @@ COMPILE_COMMANDS = {
 
 # Program execution parameter configuration
 EXECUTION_CONFIG = {
-    "program_name": "dwg2SVG",
+    "program_name": "dwgbmp",
     "timeout": 120,
     "exec_subdir": "/programs",
     "command_format": COMMAND_FORMAT,
