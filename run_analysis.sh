@@ -125,7 +125,7 @@ case "$PROJECT_NAME" in
         ;;
     "libredwg")
         REFERENCE_VERSION_PATH="$BASE_DIR/libredwg-versions/libredwg-0.13.4"
-        TARGET_VERSION_PATH="$BASE_DIR/libredwg-versions/libredwg-0.12.5"
+        TARGET_VERSION_PATH="$BASE_DIR/libredwg-versions/libredwg-0.13.3"
         DEFAULT_INPUT="$INPUT_FILE_DIR/libredwg/CVE-2026-9502.dwg"
         # 0.12 -> 0.13 reorganized decode paths; match by function name.
         EXTRA_ARGS=(--match-level name)
