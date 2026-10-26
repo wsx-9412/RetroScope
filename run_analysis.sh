@@ -77,7 +77,7 @@ case "$PROJECT_NAME" in
         ;;
     "audiofile")
         REFERENCE_VERSION_PATH="$BASE_DIR/audiofile-versions/audiofile-0.3.6"
-        TARGET_VERSION_PATH="$BASE_DIR/audiofile-versions/audiofile-0.3.0"
+        TARGET_VERSION_PATH="$BASE_DIR/audiofile-versions/audiofile-0.3.5"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2017-6831"
         EXTRA_ARGS=(--include-exits)
         ;;
