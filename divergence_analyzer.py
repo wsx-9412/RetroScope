@@ -148,6 +148,54 @@ def find_libtiff_path(binary):
     return None
 
 
+def _needed_sonames(binary):
+    """Return the DT_NEEDED shared-library names of an ELF binary."""
+    try:
+        r = subprocess.run(["readelf", "-d", str(binary)],
+                           capture_output=True, text=True,
+                           errors="replace", timeout=30)
+        return re.findall(r'\(NEEDED\)\s+Shared library: \[([^\]]+)\]',
+                          r.stdout)
+    except Exception:
+        return []
+
+
+def find_library_path(binary):
+    """Project-agnostic library search path for a binary.
+
+    Combines every ``.libs`` directory with the directories where the
+    binary's DT_NEEDED libraries actually live under its version root.
+    Returns a colon-joined string, the format expected by both
+    ``LD_LIBRARY_PATH`` and GDB's ``solib-search-path``.
+    """
+    dirs = list(collect_lib_dirs(binary))
+    try:
+        root = Path(find_version_root(binary))
+        for soname in _needed_sonames(binary):
+            for path in root.rglob(soname):
+                if path.is_file():
+                    d = str(path.parent)
+                    if d not in dirs:
+                        dirs.append(d)
+    except Exception:
+        pass
+    return ":".join(dirs) if dirs else None
+
+
+def _as_lib_dirs(lib_path):
+    """Normalise a str/list/None library path into a list of directories."""
+    if not lib_path:
+        return []
+    if isinstance(lib_path, str):
+        return [p for p in lib_path.split(":") if p]
+    return [str(p) for p in lib_path]
+
+
+def _solib_search_path(lib_path):
+    """Colon-joined GDB solib-search-path value for a str/list path."""
+    return ":".join(_as_lib_dirs(lib_path))
+
+
 def find_source_dirs(binary):
     """Find source directories containing .c files for this binary."""
     root = find_version_root(binary)
