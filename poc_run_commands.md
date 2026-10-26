@@ -150,7 +150,7 @@ cmake -S . -B . -DCMAKE_BUILD_TYPE=Debug \
 
 ---
 
-## libtiff (2 个)
+## libtiff (4 个)
 
 工具路径: `tiff-versions/tiff-<ver>/tools/<tool>`
 
@@ -158,10 +158,18 @@ cmake -S . -B . -DCMAKE_BUILD_TYPE=Debug \
 |-----|-------------|---------------|------|
 | CVE-2025-8176 | 4.7.0 | 4.1.0-4.5.1 | `tiffmedian -C 256 -c lzw:2 -f in/libtiff/CVE-2025-8176.tif /tmp/out.tif` |
 | CVE-2025-8177 | 4.7.0 | 4.1.0-4.5.1 | `thumbnail in/libtiff/CVE-2025-8177.tif /tmp/out.tif` |
+| CVE-2017-9147 | 4.0.7 | 3.9.5、3.9.6 | `tiffsplit in/libtiff/CVE-2017-9147.tif` |
+| CVE-2017-17095 | 4.0.9 | 3.9.6 | `pal2rgb in/libtiff/CVE-2017-17095.tif /tmp/out.tif` |
 
 崩溃位置:
 - CVE-2025-8176: heap-use-after-free in quant_fsdither (tiffmedian.c:952)
 - CVE-2025-8177: global-buffer-overflow in setrow (thumbnail.c:623), 目标 4.1.0 同函数 (thumbnail.c:541)；变异 offset 254 (`0x08 -> 0x25`) 可在 4.1.0 复现
+- CVE-2017-9147: heap-buffer-overflow in _TIFFVGetField (tif_dir.c:1080)，调用链 OJPEGVGetField → TIFFVGetField → TIFFGetField → tiffsplit；3.9.5/3.9.6 返回 rc=255，不触发 ASan，函数 _TIFFVGetField 仍在 (3.9.6 tif_dir.c:676)
+- CVE-2017-17095: heap-buffer-overflow in main (pal2rgb.c:196)，越界写源于 pal2rgb.c:188 的 obuf 分配过小；3.9.6 返回 rc=255，不触发 ASan，同名输出循环仍在 (pal2rgb.c:201)
+
+PoC 来源:
+- CVE-2017-9147: Exploit-DB 42301 (`https://www.exploit-db.com/exploits/42301`)，226 字节 TIFF；SHA-256 `dfd1da512d77382d46e5e590a5dcb6809c8f358759a310b4a03a1c09bf96c8b8`
+- CVE-2017-17095: Exploit-DB 43322 (`https://www.exploit-db.com/exploits/43322`)，9662 字节 TIFF；SHA-256 `35f95051bdf3668d0d8886e9bded3a7185902e7fadb5d8ac57bbb8b858cb0d25`
 
 注: thumbnail 需手动构建:
 ```bash
@@ -438,9 +446,9 @@ PoC 来源: Debian bug #777161 附件 `test09.wav`（`https://bugs.debian.org/cg
 | freetype | 3 |
 | openjpeg | 5 |
 | libarchive | 1 |
-| libtiff | 2 |
+| libtiff | 4 |
 | libredwg | 8 |
 | audiofile | 1 |
 | libsndfile | 4 |
 | lame | 1 |
-| **总计** | **42** |
+| **总计** | **44** |
