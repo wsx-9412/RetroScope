@@ -309,7 +309,7 @@ tar xzf r.tar.gz && cd libredwg-6d6a33987a1a97095b069c799c3d8a793320f812
 
 PoC 来源: `https://github.com/erikd/libsndfile/issues/292` 中的公开测试代码 `bug1.c`（CVE-2017-12562，原报告针对 openmpt123 写入超长 `SF_STR_COMMENT`）。代码原样收录为 `in/libsndfile/CVE-2017-12562.c`；无需变异。
 
-版本差异: 1.0.28 引入 `psf_bump_header_allocation`，`psf_binheader_writef` 对大小写 `'s'` 只预留 16 字节而不是 `size` 字节，超长字符串元数据在 `memcpy` 时越过 512 字节堆块。1.0.25-1.0.27 的 header 缓冲扩容逻辑不同，不产生越界；但三个版本都包含 `psf_binheader_writef`。1.0.28 在 `test(SF_FORMAT_WAV, 456, 190, 0)` 处直接崩溃。
+版本差异: 1.0.28 引入 `psf_bump_header_allocation`，`psf_binheader_writef` 对大小写 `'s'` 只预留 16 字节而不是 `size` 字节，超长字符串元数据在 `memcpy` 时越过 512 字节堆块。1.0.25-1.0.27 的 header 缓冲扩容逻辑不同，不产生越界；但三个版本都包含 `psf_binheader_writef`。1.0.28 在 `test(SF_FORMAT_WAV, 456, 190, 0)` 处直接崩溃；1.0.29+ 不再触发。
 
 编译命令（以参考版本为例）:
 ```bash
