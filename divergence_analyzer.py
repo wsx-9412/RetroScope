@@ -6495,9 +6495,9 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
     print(f"  Trace A position: {a_idx}")
     print(f"  Trace B position: {b_idx}")
 
-    # Find library paths
-    lib_path_a = find_libtiff_path(str(binary_a))
-    lib_path_b = find_libtiff_path(str(binary_b))
+    # Find library paths (project-agnostic: DT_NEEDED + .libs discovery)
+    lib_path_a = find_library_path(str(binary_a))
+    lib_path_b = find_library_path(str(binary_b))
     print(f"  Library path A: {lib_path_a}")
     print(f"  Library path B: {lib_path_b}")
 
