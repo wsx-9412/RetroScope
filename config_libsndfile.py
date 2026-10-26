@@ -10,11 +10,11 @@
 # =====================================================
 # CVE configuration: change this section for each CVE
 # =====================================================
-CVE_ID = "CVE-2024-50612"                                  # CVE number
-INPUT_FILE = "in/libsndfile/CVE-2024-50612"                # input file path (relative to RetroScope/)
+CVE_ID = "CVE-2018-19661"                                  # CVE number
+INPUT_FILE = "in/libsndfile/CVE-2018-19661"                # input file path (relative to RetroScope/)
 OUTPUT_FILE = "/tmp/out.ogg"                               # program output file
 # Program arguments template: {program_path}, {input_file}, {output_file}
-COMMAND_FORMAT = "{program_path} -vorbis {input_file} {output_file}"
+COMMAND_FORMAT = "{program_path} -ulaw {input_file} {output_file}"
 
 # =====================================================
 # Compilation configuration (usually no need to change)
