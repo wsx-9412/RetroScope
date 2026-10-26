@@ -424,7 +424,7 @@ PoC 来源: `https://github.com/4n0nym4u5/CVE/raw/main/libsndfile/segmentation_f
 
 PoC 来源: Debian bug #777161 附件 `test09.wav`（`https://bugs.debian.org/cgi-bin/bugreport.cgi?att=2;bug=777161;filename=test09.wav;msg=5`）。68 字节 RIFF/WAVE；SHA-256 `d489f9144810aae6774574c65cd2af0ea5258b9b2a0fafa27c74d6aaba3fbf1f`。收录为 `in/lame/CVE-2015-9101`，未变异。
 
-版本差异: 3.99.5 在 `fill_buffer_resample` 稳定触发 ASan SEGV；3.98.2/3.98.4 对该参考 PoC 在进入重采样前返回 rc=1，报 `Only 8, 16, 24 and 32 bit input files supported`，不崩溃。两版仍包含同一 `fill_buffer_resample`（`util.c:606`）；Hack-Me 的按版本公开 PoC（`CVE-2015-9101_3.98.2` / `CVE-2015-9101_3.98.4`）可在同版同函数触发，说明老版本代码路径存在，但本 CVE 的参考 PoC 不触发。
+版本差异: 3.99.5 在 `fill_buffer_resample` 稳定触发 ASan SEGV；3.98.2/3.98.4 对该参考 PoC 在进入重采样前返回 rc=1，报 `Only 8, 16, 24 and 32 bit input files supported`，不崩溃。两版仍包含同一 `fill_buffer_resample`（3.98.2 `util.c:625`、3.98.4 `util.c:631`、3.99.5 `util.c:606`）；Hack-Me 的按版本公开 PoC（`CVE-2015-9101_3.98.2` / `CVE-2015-9101_3.98.4`）可在同版同函数触发，说明老版本代码路径存在，但本 CVE 的参考 PoC 不触发。
 
 ---
 
