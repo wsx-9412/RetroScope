@@ -154,6 +154,8 @@ cmake -S . -B . -DCMAKE_BUILD_TYPE=Debug \
 
 工具路径: `tiff-versions/tiff-<ver>/tools/<tool>`
 
+逐版本结果见 `results/libtiff_version_matrix.tsv`。
+
 | CVE | 发现版本触发 | 更老版本不触发 | 命令 |
 |-----|-------------|---------------|------|
 | CVE-2016-10268 | 4.0.7 | 4.0.6 | `tiffcp -i in/libtiff/CVE-2016-10268 /tmp/foo` |
