@@ -288,6 +288,30 @@ tar xzf r.tar.gz && cd libredwg-6d6a33987a1a97095b069c799c3d8a793320f812
 
 ---
 
+## audiofile (1 个)
+
+工具路径: `audiofile-versions/audiofile-<ver>/sfcommands/sfconvert`（ASan 构建；0.3.5/0.3.6 已重新编译 `sfconvert`）
+
+逐版本结果见 `results/audiofile_version_matrix.tsv`。
+
+| CVE | 发现版本触发 | 更老版本不触发 | 命令 |
+|-----|-------------|---------------|------|
+| CVE-2019-13147 | 0.3.5-0.3.6 | 0.3.0-0.3.4 | `./audiofile-versions/audiofile-0.3.6/sfcommands/sfconvert in/audiofile/CVE-2019-13147 /tmp/out.aiff format aiff` |
+
+构建备注: 0.3.5/0.3.6 原树只构建了 `sfinfo`；需 `make distclean` 后以 `-g -O1 -fsanitize=address -fno-omit-frame-pointer` 重新 configure，并分别执行 `make -C libaudiofile`、`make -C sfcommands`。
+
+### CVE-2019-13147
+
+崩溃位置: SEGV（WRITE of size 2，空指针写）in `ulaw2linear_buf` (`libaudiofile/modules/G711.cpp:42`)，调用链 `G711::runPull` (`G711.cpp:206`) → `afReadFrames` (`data.cpp:222`) → `copyaudiodata` (`sfconvert.c:340`)。0.3.6 先报 `AddressSanitizer failed to allocate 0xffffffffc2c00000 bytes`，随后在 `ulaw2linear_buf` 写空 `linear`。
+
+PoC 来源: `https://github.com/mpruett/audiofile/issues/54`，附件 `https://github.com/mpruett/audiofile/files/3341808/poc.zip`。压缩包内为 24 字节公开 PoC；原报告使用 `format voc`，为兼容 0.3.0 的输出格式支持，本表统一改用 `format aiff`。收录为 `in/audiofile/CVE-2019-13147`，未变异。
+
+版本差异: 0.3.0-0.3.4 均包含同一 `ulaw2linear_buf`（`G711.cpp:42`），`format aiff` 下 rc=0，不崩溃；0.3.5/0.3.6 稳定在 `ulaw2linear_buf` 触发 SEGV。0.3.0 不支持 `format voc`，因此不采用原命令作为版本判定命令。
+
+候选剔除: `2017-6827/6828/6829/6830/6837` 在 0.2.7 也触发；`2017-6833/6838` 的老版本缺少对应 `BlockCodec` 路径；`2018-13440` 与 `2025-50950` 指向同一 `ModuleState::setup` 空指针问题，且 0.3.6 上会在 `ModuleState::setup` SEGV 与 `RebufferModule` OOM 之间不稳定切换，未收录。
+
+---
+
 ## libsndfile (4 个)
 
 工具路径: `libsndfile-versions/libsndfile-<ver>/programs/{sndfile-convert,sndfile-info}`（ASan 构建；1.0.29+ 为 CMake 构建）
@@ -396,5 +420,6 @@ PoC 来源: `https://github.com/4n0nym4u5/CVE/raw/main/libsndfile/segmentation_f
 | libarchive | 1 |
 | libtiff | 2 |
 | libredwg | 8 |
+| audiofile | 1 |
 | libsndfile | 4 |
-| **总计** | **40** |
+| **总计** | **41** |
