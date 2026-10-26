@@ -150,18 +150,38 @@ cmake -S . -B . -DCMAKE_BUILD_TYPE=Debug \
 
 ---
 
-## libtiff (2 个)
+## libtiff (10 个)
 
 工具路径: `tiff-versions/tiff-<ver>/tools/<tool>`
 
 | CVE | 发现版本触发 | 更老版本不触发 | 命令 |
 |-----|-------------|---------------|------|
+| CVE-2016-10268 | 4.0.7 | 4.0.6 | `tiffcp -i in/libtiff/CVE-2016-10268 /tmp/foo` |
+| CVE-2016-10269 | 4.0.7 | 4.0.6 | `tiffcp -i in/libtiff/CVE-2016-10269 /tmp/foo` |
+| CVE-2018-17795 | 4.0.9 | 4.0.8 | `tiff2pdf in/libtiff/CVE-2018-17795 -o /tmp/foo.pdf` |
+| CVE-2020-19144 | 4.0.10 | 4.0.8 | `tiffcp -i in/libtiff/CVE-2020-19144 /tmp/foo` |
+| CVE-2022-3626 | 4.4.0 | 4.0.7 | `tiffcrop -X 1 -Y 2 -R 180 -H 300 -V 300 -i in/libtiff/CVE-2022-3626 /tmp/foo` |
+| CVE-2022-48281 | 4.4.0 | 4.0.7 | `tiffcrop -Z 1:3,2:4 -e divided in/libtiff/CVE-2022-48281 /dev/null` |
+| CVE-2023-26966 | 4.5.0 | 4.0.7 | `tiffcp -i -B in/libtiff/CVE-2023-26966 /tmp/foo` |
+| CVE-2023-30775 | 4.4.0 | 4.0.7 | `tiffcrop -i in/libtiff/CVE-2023-30775 /tmp/foo` |
 | CVE-2025-8176 | 4.7.0 | 4.1.0-4.5.1 | `tiffmedian -C 256 -c lzw:2 -f in/libtiff/CVE-2025-8176.tif /tmp/out.tif` |
 | CVE-2025-8177 | 4.7.0 | 4.1.0-4.5.1 | `thumbnail in/libtiff/CVE-2025-8177.tif /tmp/out.tif` |
 
 崩溃位置:
+- CVE-2016-10268: heap-buffer-overflow in `TIFFReverseBits` (`libtiff/tif_swab.c:289`)，调用链 `TIFFWriteEncodedStrip` → `cpDecodedStrips`；4.0.6 同函数在 `tif_swab.c:286`，参考 PoC rc=0 不崩溃。
+- CVE-2016-10269: heap-buffer-overflow in `_TIFFmemcpy` (`libtiff/tif_unix.c:340`)，由 `TIFFWriteDirectoryTagTransferfunction` (`tif_dirwrite.c:1842`) 调用；4.0.6 含同函数，参考 PoC rc=1 报 PixarLog 不支持 1-bit，无 ASan。
+- CVE-2018-17795: heap-use-after-free，`t2p_writeproc` (`tools/tiff2pdf.c:405`) → `t2p_write_pdf_stream` (`tiff2pdf.c:3989`)；4.0.8 含 `t2p_write_pdf`，参考 PoC rc=1 被 StripOffsets 校验拒绝，无 ASan。
+- CVE-2020-19144: heap-buffer-overflow in `_TIFFmemcpy` (`libtiff/tif_unix.c:346`)，由 `TIFFWriteDirectoryTagColormap` (`tif_dirwrite.c:1863`) 调用；4.0.8 含同函数，rc=253 无 ASan；4.0.9 也可触发，故取 4.0.8 作更老不触发版本。
+- CVE-2022-3626: heap-buffer-overflow in `_TIFFmemset` (`libtiff/tif_unix.c:340`)，由 `processCropSelections` (`tools/tiffcrop.c:7612`) 调用；4.0.7 含同函数，rc=253 无 ASan。
+- CVE-2022-48281: heap-buffer-overflow in `_TIFFmemset`，由 `processCropSelections` (`tools/tiffcrop.c:7715`) 调用；4.0.7 含同函数，rc=253 无 ASan。
+- CVE-2023-26966: SEGV in `uv_encode` (`libtiff/tif_luv.c:961`)，调用链 `LogLuv24fromXYZ` → `LogLuvEncode24`；4.0.7 含同函数，`tiffcp -i -B` rc=253 无 ASan。
+- CVE-2023-30775: heap-buffer-overflow in `extractContigSamples32bits` (`tools/tiffcrop.c:3196`)；4.0.7 含同函数 (`tiffcrop.c:3040`)，rc=253 无 ASan。
 - CVE-2025-8176: heap-use-after-free in quant_fsdither (tiffmedian.c:952)
 - CVE-2025-8177: global-buffer-overflow in setrow (thumbnail.c:623), 目标 4.1.0 同函数 (thumbnail.c:541)；变异 offset 254 (`0x08 -> 0x25`) 可在 4.1.0 复现
+
+PoC 说明:
+- CVE-2016-10268 / CVE-2016-10269: 来自 Agostino Sarubbo 公开 PoC（`00066-libtiff-heapoverflow-TIFFReverseBits`、`00071-libtiff-heapoverflow-_TIFFmemcpy`），未变异收录。
+- CVE-2018-17795、CVE-2020-19144、CVE-2022-3626、CVE-2022-48281、CVE-2023-26966、CVE-2023-30775: 从现有 `in/CVE-*` 语料复制为 `in/libtiff/CVE-*`，未变异；对应公开 issue 命令见上表。
 
 注: thumbnail 需手动构建:
 ```bash
@@ -408,7 +428,7 @@ PoC 来源: `https://github.com/4n0nym4u5/CVE/raw/main/libsndfile/segmentation_f
 
 ---
 
-## lame (1 个)
+## lame (2 个)
 
 工具路径: `lame-versions/lame-<ver>/frontend/lame`（ASan 构建；3.98.2、3.98.4、3.99.5 已构建）
 
@@ -417,6 +437,7 @@ PoC 来源: `https://github.com/4n0nym4u5/CVE/raw/main/libsndfile/segmentation_f
 | CVE | 发现版本触发 | 更老版本不触发 | 命令 |
 |-----|-------------|---------------|------|
 | CVE-2015-9101 | 3.99.5 | 3.98.2、3.98.4 | `./lame-versions/lame-3.99.5/frontend/lame -f -V 9 in/lame/CVE-2015-9101 /dev/null` |
+| CVE-2017-15045 | 3.99.5 | 3.98.4 | `./lame-versions/lame-3.99.5/frontend/lame -f -V 9 in/lame/CVE-2017-15045 /dev/null` |
 
 ### CVE-2015-9101
 
@@ -425,6 +446,14 @@ PoC 来源: `https://github.com/4n0nym4u5/CVE/raw/main/libsndfile/segmentation_f
 PoC 来源: Debian bug #777161 附件 `test09.wav`（`https://bugs.debian.org/cgi-bin/bugreport.cgi?att=2;bug=777161;filename=test09.wav;msg=5`）。68 字节 RIFF/WAVE；SHA-256 `d489f9144810aae6774574c65cd2af0ea5258b9b2a0fafa27c74d6aaba3fbf1f`。收录为 `in/lame/CVE-2015-9101`，未变异。
 
 版本差异: 3.99.5 在 `fill_buffer_resample` 稳定触发 ASan SEGV；3.98.2/3.98.4 对该参考 PoC 在进入重采样前返回 rc=1，报 `Only 8, 16, 24 and 32 bit input files supported`，不崩溃。两版仍包含同一 `fill_buffer_resample`（3.98.2 `util.c:625`、3.98.4 `util.c:631`、3.99.5 `util.c:606`）；Hack-Me 的按版本公开 PoC（`CVE-2015-9101_3.98.2` / `CVE-2015-9101_3.98.4`）可在同版同函数触发，说明老版本代码路径存在，但本 CVE 的参考 PoC 不触发。
+
+### CVE-2017-15045
+
+崩溃位置: heap-buffer-overflow in `fill_buffer_resample` (`libmp3lame/util.c:606`)，调用链 `lame_encode_flush` → `lame_encode_buffer_sample_t` → `fill_buffer` → `fill_buffer_resample`；与 CVE-2015-9101 同函数，但本 PoC 报 heap-buffer-overflow 而非 SEGV。
+
+PoC 来源: Hack-Me `Pocs_for_Multi_Versions` 的 3.99–3.99.4 版本文件（该目录未提供原 SourceForge 参考 PoC，本文件与 `CVE-2017-15045_3.99`/`_3.99.4` 同 SHA-256）。162 字节；SHA-256 `bdaf4f301868d4718212c76819721f8fd6aa8a6c09403b4edf482d3bad738b85`。收录为 `in/lame/CVE-2017-15045`，未变异。
+
+版本差异: 3.99.5 在 `fill_buffer_resample` 稳定触发 ASan heap-buffer-overflow；3.98.4 对该 PoC rc=1，报 `Error reading input file`，无 ASan；3.98.2 触发 glibc `*** buffer overflow detected ***` 后 abort，故采用 3.98.4 作为更老不触发版本。3.98.4 仍包含同一 `fill_buffer_resample`（`util.c:551`），代码路径存在。
 
 ---
 
@@ -438,9 +467,9 @@ PoC 来源: Debian bug #777161 附件 `test09.wav`（`https://bugs.debian.org/cg
 | freetype | 3 |
 | openjpeg | 5 |
 | libarchive | 1 |
-| libtiff | 2 |
+| libtiff | 10 |
 | libredwg | 8 |
 | audiofile | 1 |
 | libsndfile | 4 |
-| lame | 1 |
-| **总计** | **42** |
+| lame | 2 |
+| **总计** | **52** |
