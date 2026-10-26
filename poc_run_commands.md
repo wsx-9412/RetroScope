@@ -345,7 +345,7 @@ PoC 来源: 公开 PoC 为 `https://github.com/erikd/libsndfile/files/2619018/po
 
 ASan 布局说明: 越界下标固定为 `-8192`（`-INT_MIN >> 18`）。原始 PoC 在 1.0.26/1.0.28 的 stock ASan 布局中可报错；1.0.27 的全局布局把 `ulaw_encode - 8192` 放进可寻址邻区，需在 `src/ulaw.c` 的 `ulaw_decode` 前加入 7584 字节全局 `asan_pad`，并用 `-fno-toplevel-reorder` 编译，才能稳定复现同一越界（不改变逻辑）。对 1.0.25 使用 offset 66 变异样本时，该下标同样落在红区而报错；原始样本因不产生 `INT_MIN` 不触发。
 
-CVE-2018-19662 是同一修复 PR 的 alaw 分支；其下标 `-2048` 在 1.0.25 和 1.0.26 的原始布局中都落在可寻址区，未单独收录。
+CVE-2018-19662 是同一修复 PR 的 alaw 分支；本次 1.0.26/1.0.28 用原始 PoC 加 `-alaw` 也能复现 `i2alaw_array` 越界（1.0.25 不触发），但未纳入本轮 4 个已收录 CVE 的复核范围。
 
 编译命令（参考版本）:
 ```bash
@@ -376,11 +376,11 @@ __attribute__((used)) unsigned char asan_pad [7584] = { 1 } ;
 
 ### CVE-2024-50612
 
-崩溃位置: SEGV in `vorbis_analysis_wrote`（1.0.28 / 1.2.2）或 `vorbis_analysis_buffer`（1.0.27），调用链 `sf_close` → `psf_close` → `vorbis_close` (`src/ogg_vorbis.c:450`) → `vorbis_analysis_wrote`。1.2.2 中 `vorbis_close` 位于 `src/ogg_vorbis.c:417`。
+崩溃位置: 1.0.27 为 SEGV in `vorbis_analysis_buffer`，调用链 `vorbis_write_d` (`src/ogg_vorbis.c:851`) → `sf_writef_double`；1.0.28-1.0.31、1.2.0-1.2.2 为 SEGV in `vorbis_analysis_wrote`，调用链 `sf_close` → `psf_close` → `vorbis_close` (`src/ogg_vorbis.c:450`) → `vorbis_analysis_wrote`。1.2.2 中 `vorbis_close` 位于 `src/ogg_vorbis.c:417`。
 
 PoC 来源: `https://github.com/4n0nym4u5/CVE/raw/main/libsndfile/segmentation_fault/poc`（issue #1035，284 字节 RF64/WAV）。原始 PoC 直接触发，无需变异；收录为 `in/libsndfile/CVE-2024-50612`。
 
-版本差异: 1.0.26 已包含 `vorbis_close` 与 `vorbis_analysis_wrote`（`ogg_vorbis.c:435/450`），但其 WAV 解析器不识别该 RF64 文件，报 `No 'data' chunk marker`；1.0.27 起可解析并在写 OGG 时崩溃。1.0.27/1.0.28 需显式 `-vorbis`，1.2.2 对 `.ogg` 输出默认选择 Vorbis。
+版本差异: 1.0.26 及更早版本已包含 `vorbis_close` 与 `vorbis_analysis_wrote`（`ogg_vorbis.c:435/450`），但其 WAV 解析器不识别该 RF64 文件，报 `No 'data' chunk marker`；1.0.27 起可解析并在写 OGG 时崩溃。1.0.27-1.0.31 与 1.2.0-1.2.2 均复现；1.1.0 的 `sf_open` 对该文件返回 `Internal error : SF_INFO struct incomplete`，未能进入写入路径。1.0.27/1.0.28 需显式 `-vorbis`，1.2.x 对 `.ogg` 输出默认选择 Vorbis。逐版本见 `results/libsndfile_version_matrix.tsv`。
 
 ---
 
