@@ -339,11 +339,11 @@ PoC 来源: `https://github.com/asarubbo/poc/blob/master/00261-libsndfile-invali
 
 崩溃位置: global-buffer-overflow in `i2ulaw_array` (`src/ulaw.c:833`)，调用链 `sf_writef_int` → `ulaw_write_i2ulaw`。
 
-PoC 来源与变异: 公开 PoC 为 `https://github.com/erikd/libsndfile/files/2619018/poc.tar.gz`（issue #429）。原始文件在 1.0.26/1.0.27/1.0.28 的 GSM 解码输出中出现 `INT_MIN`，1.0.25 不会；将 data 区 offset 66 的字节 `0x60` 改为 `0x9F`（XOR 0xFF）后，1.0.25 也产生 `INT_MIN`，并触发同一处越界读。
+PoC 来源: 公开 PoC 为 `https://github.com/erikd/libsndfile/files/2619018/poc.tar.gz`（issue #429）。`in/libsndfile/CVE-2018-19661` 已恢复为原始文件（data 区 offset 66 为 `0x60`）。原始文件在 1.0.26/1.0.28 的 GSM 解码输出中出现 `INT_MIN`，1.0.25 不会；将 offset 66 改为 `0x9F`（XOR 0xFF）可让 1.0.25 也产生 `INT_MIN` 并触发同一处越界读，但该变异仅用于确认底层代码路径，不作为版本敏感判定依据。
 
-版本差异: 1.0.26 起 `src/GSM610/decode.c` 使用 `int16_t` 中间类型，`src/gsm610.c` 改用 `arith_shift_left`，同一 GSM 帧可解出 `-32768`，再左移 16 位得到 `INT_MIN`；1.0.25 的旧解码路径对该帧不产生 `-32768`。两个版本的 `i2ulaw_array` 代码相同，均缺少 `INT_MIN` 处理。
+版本差异: 1.0.26 起 `src/GSM610/decode.c` 使用 `int16_t` 中间类型，`src/gsm610.c` 改用 `arith_shift_left`，同一 GSM 帧可解出 `-32768`，再左移 16 位得到 `INT_MIN`；1.0.25 的旧解码路径对该帧不产生 `-32768`。1.0.26/1.0.28 在 stock ASan 下直接复现；1.0.27 的 `ulaw.c` 与 1.0.26/1.0.28 相同，但 stock ASan 全局布局未报，用 `asan_pad` + `-fno-toplevel-reorder` 可复现同一 `i2ulaw_array` 越界。1.0.29+ 不再触发；相关版本的 `i2ulaw_array` 代码相同，均缺少 `INT_MIN` 处理。
 
-ASan 布局说明: 越界下标固定为 `-8192`（`-INT_MIN >> 18`）。1.0.25 中 `ulaw_encode - 8192` 正好落在 ASan 全局红区，可直接报错；1.0.26 原始布局落在可寻址的相邻全局，ASan 静默。参考版本构建时在 `src/ulaw.c` 的 `ulaw_decode` 前加入 7584 字节全局 `asan_pad`，并用 `-fno-toplevel-reorder` 编译，使 `ulaw_encode - 8192` 落入该全局之前的红区（不改变被测代码），从而稳定复现参考崩溃。
+ASan 布局说明: 越界下标固定为 `-8192`（`-INT_MIN >> 18`）。原始 PoC 在 1.0.26/1.0.28 的 stock ASan 布局中可报错；1.0.27 的全局布局把 `ulaw_encode - 8192` 放进可寻址邻区，需在 `src/ulaw.c` 的 `ulaw_decode` 前加入 7584 字节全局 `asan_pad`，并用 `-fno-toplevel-reorder` 编译，才能稳定复现同一越界（不改变逻辑）。对 1.0.25 使用 offset 66 变异样本时，该下标同样落在红区而报错；原始样本因不产生 `INT_MIN` 不触发。
 
 CVE-2018-19662 是同一修复 PR 的 alaw 分支；其下标 `-2048` 在 1.0.25 和 1.0.26 的原始布局中都落在可寻址区，未单独收录。
 
