@@ -54,7 +54,7 @@ COMPILE_COMMANDS = {
 
 # Program execution parameter configuration
 EXECUTION_CONFIG = {
-    "program_name": "dwgread",
+    "program_name": "dwg2SVG",
     "timeout": 120,
     "exec_subdir": "/programs",
     "command_format": COMMAND_FORMAT,
