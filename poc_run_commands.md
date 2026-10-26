@@ -290,14 +290,18 @@ tar xzf r.tar.gz && cd libredwg-6d6a33987a1a97095b069c799c3d8a793320f812
 
 ## libsndfile (4 个)
 
-工具路径: `libsndfile-versions/libsndfile-<ver>/programs/{sndfile-convert,sndfile-info}`（ASan 构建）
+工具路径: `libsndfile-versions/libsndfile-<ver>/programs/{sndfile-convert,sndfile-info}`（ASan 构建；1.0.29+ 为 CMake 构建）
+
+逐版本原始结果见 `results/libsndfile_version_matrix.tsv`。
 
 | CVE | 发现版本触发 | 更老版本不触发 | 命令 |
 |-----|-------------|---------------|------|
 | CVE-2017-7741 | 1.0.26-1.0.27 | 1.0.25 | `sndfile-info in/libsndfile/CVE-2017-7741` |
 | CVE-2017-12562 | 1.0.28 | 1.0.25-1.0.27 | 编译 `in/libsndfile/CVE-2017-12562.c` 后运行生成的程序 |
 | CVE-2018-19661 | 1.0.26-1.0.28 | 1.0.25 | `sndfile-convert -ulaw in/libsndfile/CVE-2018-19661 /tmp/out.raw` |
-| CVE-2024-50612 | 1.0.27-1.0.28, 1.2.2 | 1.0.26 | `sndfile-convert -vorbis in/libsndfile/CVE-2024-50612 /tmp/out.ogg` |
+| CVE-2024-50612 | 1.0.27-1.0.31, 1.2.0-1.2.2 | 1.0.25-1.0.26 | `sndfile-convert -vorbis in/libsndfile/CVE-2024-50612 /tmp/out.ogg` |
+
+构建备注: 1.0.25-1.0.28 使用 autotools；1.0.29+ 使用 CMake（`ENABLE_EXTERNAL_LIBS=ON`，静态 FLAC/Vorbis/Opus）。CMake 构建前需删除 autotools 生成的 `src/config.h`，否则源码目录的 `HAVE_EXTERNAL_XIPH_LIBS 0` 会覆盖 CMake 生成头，导致 FLAC/Vorbis 实际未启用。
 
 ### CVE-2017-12562
 
