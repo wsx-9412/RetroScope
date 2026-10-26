@@ -2702,6 +2702,7 @@ def _record_branch_decisions(binary, func_name, args, lib_path, source_dirs,
             f.write(script)
 
         env = os.environ.copy()
+        env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1"
         env["LSAN_OPTIONS"] = "detect_leaks=0"
         if lib_path:
             old_ld = env.get("LD_LIBRARY_PATH", "")
@@ -3559,6 +3560,7 @@ def _step_trace_binary(binary, func_name, args, lib_path, source_dirs,
             f.write(script)
 
         env = os.environ.copy()
+        env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1"
         env["LSAN_OPTIONS"] = "detect_leaks=0"
         if lib_path:
             old_ld = env.get("LD_LIBRARY_PATH", "")
@@ -3692,6 +3694,7 @@ def _step_into_trace_binary(binary, func_name, args, lib_path, source_dirs,
             f.write(script)
 
         env = os.environ.copy()
+        env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1"
         env["LSAN_OPTIONS"] = "detect_leaks=0"
         if lib_path:
             old_ld = env.get("LD_LIBRARY_PATH", "")
