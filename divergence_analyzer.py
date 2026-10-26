@@ -123,9 +123,10 @@ def run_gdb_with_source(binary, source_dirs, commands, lib_path=None, timeout=12
 
     gdb_cmds = ["gdb", "-batch", "-ex", "set pagination off",
                 "-ex", "set confirm off"]
-    # Set solib-search-path so GDB loads the bundled libtiff with debug info
-    if lib_path:
-        gdb_cmds.extend(["-iex", f"set solib-search-path {lib_path}"])
+    # Set solib-search-path so GDB loads the bundled libraries with debug info
+    solib_path = _solib_search_path(lib_path)
+    if solib_path:
+        gdb_cmds.extend(["-iex", f"set solib-search-path {solib_path}"])
     for d in source_dirs:
         gdb_cmds.extend(["-iex", f"directory {d}"])
     for cmd in commands:
@@ -4717,9 +4718,7 @@ def _detect_crash_point(binary, args, lib_path, source_dirs, timeout=120):
     env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1"
 
     # Collect library paths: explicit lib_path + any .libs directories
-    lib_dirs = []
-    if lib_path:
-        lib_dirs.append(lib_path)
+    lib_dirs = _as_lib_dirs(lib_path)
     # Walk up from binary to find .libs directories
     bin_path = Path(binary) if not isinstance(binary, Path) else binary
     for parent in [bin_path] + list(bin_path.parents):
@@ -4873,9 +4872,7 @@ def _count_crash_point_hits(binary, args, crash_file, crash_line,
     _count_gdb_run(binary)
     env = os.environ.copy()
     env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1"
-    lib_dirs = []
-    if lib_path:
-        lib_dirs.append(lib_path)
+    lib_dirs = _as_lib_dirs(lib_path)
     for parent in [Path(binary)] + list(Path(binary).parents):
         libs = parent / ".libs"
         if libs.exists() and str(libs) not in lib_dirs:
