@@ -416,15 +416,16 @@ PoC 来源: `https://github.com/4n0nym4u5/CVE/raw/main/libsndfile/segmentation_f
 
 ---
 
-## lame (1 个)
+## lame (2 个)
 
 工具路径: `lame-versions/lame-<ver>/frontend/lame`（ASan 构建；3.98.2、3.98.4、3.99.5 已构建）
 
-逐版本结果见 `results/lame_version_matrix.tsv`。
+CVE-2015-9101 逐版本结果见 `results/lame_version_matrix.tsv`。
 
 | CVE | 发现版本触发 | 更老版本不触发 | 命令 |
 |-----|-------------|---------------|------|
 | CVE-2015-9101 | 3.99.5 | 3.98.2、3.98.4 | `./lame-versions/lame-3.99.5/frontend/lame -f -V 9 in/lame/CVE-2015-9101 /dev/null` |
+| CVE-2017-9872 | 3.99.5 | 3.98.2、3.98.4 | `./lame-versions/lame-3.99.5/frontend/lame --mp3input -f -V 9 in/lame/CVE-2017-9872 /dev/null` |
 
 ### CVE-2015-9101
 
@@ -433,6 +434,12 @@ PoC 来源: `https://github.com/4n0nym4u5/CVE/raw/main/libsndfile/segmentation_f
 PoC 来源: Debian bug #777161 附件 `test09.wav`（`https://bugs.debian.org/cgi-bin/bugreport.cgi?att=2;bug=777161;filename=test09.wav;msg=5`）。68 字节 RIFF/WAVE；SHA-256 `d489f9144810aae6774574c65cd2af0ea5258b9b2a0fafa27c74d6aaba3fbf1f`。收录为 `in/lame/CVE-2015-9101`，未变异。
 
 版本差异: 3.99.5 在 `fill_buffer_resample` 稳定触发 ASan SEGV；3.98.2/3.98.4 对该参考 PoC 在进入重采样前返回 rc=1，报 `Only 8, 16, 24 and 32 bit input files supported`，不崩溃。两版仍包含同一 `fill_buffer_resample`（3.98.2 `util.c:625`、3.98.4 `util.c:631`、3.99.5 `util.c:606`）；Hack-Me 的按版本公开 PoC（`CVE-2015-9101_3.98.2` / `CVE-2015-9101_3.98.4`）可在同版同函数触发，说明老版本代码路径存在，但本 CVE 的参考 PoC 不触发。
+
+### CVE-2017-9872
+
+崩溃位置: stack-buffer-overflow in `III_dequantize_sample` (`mpglib/layer3.c:912`)，调用链 `decode_layer3_frame → decodeMP3_clipchoice → decodeMP3 → decode1_headersB_clipchoice → hip_decode1_headersB → lame_decode_fromfile`。3.98.2/3.98.4 对该 PoC 返回 rc=0、不触发 ASan，且仍包含 `III_dequantize_sample`（3.98.2 `layer3.c:667`、3.98.4 `layer3.c:685`、3.99.5 `layer3.c:710`）。
+
+PoC 来源: Exploit-DB 42259 / asarubbo 00294 (`https://gitlab.com/exploit-database/exploitdb-bin-sploits/-/raw/main/bin-sploits/42259.zip`)，11,130 字节 MP3；SHA-256 `57216dc488eaec7bff64ca01c7bcb5d39d3623387adf3b05c47113952473b6e7`。需用 `--mp3input` 让 LAME 走 mpglib 解码路径。
 
 ---
 
@@ -450,5 +457,5 @@ PoC 来源: Debian bug #777161 附件 `test09.wav`（`https://bugs.debian.org/cg
 | libredwg | 8 |
 | audiofile | 1 |
 | libsndfile | 4 |
-| lame | 1 |
-| **总计** | **44** |
+| lame | 2 |
+| **总计** | **45** |
