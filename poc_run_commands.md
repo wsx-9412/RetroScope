@@ -8,7 +8,7 @@
 
 ---
 
-## binutils (14 个)
+## binutils (18 个)
 
 工具路径: `binutils-versions/binutils-<ver>/build-asan/binutils/<tool>`
 
@@ -28,12 +28,22 @@
 | CVE-2022-47695 | 2.28 | 2.25-2.27 | `objdump -d in/CVE-2022-47695` |
 | CVE-2022-47696 | 2.34 | 2.26-2.32 | `objdump -d in/CVE-2022-47696` |
 | CVE-2023-1972 | 2.40 | 2.25-2.38 | `objdump -x in/CVE-2023-1972` |
+| CVE-2017-9750 | 2.28 | 2.25 | `objdump -D in/CVE-2017-9750` |
+| CVE-2017-9747 | 2.26 | 2.24 | `objdump -D in/CVE-2017-9747` |
+| CVE-2017-9748 | 2.26 | 2.24 | `objdump -D in/CVE-2017-9748` |
+| CVE-2017-14939 | 2.29 | 2.26 | `nm-new -A -a -l -S -s --special-syms --synthetic --with-symbol-versions -D in/CVE-2017-14939` |
 
 示例:
 ```bash
 ASAN_OPTIONS=detect_leaks=0:allocator_may_return_null=1 \
   ./binutils-versions/binutils-2.26/build-asan/binutils/objdump -g in/CVE-2017-8396
 ```
+
+新增 PoC 来源:
+- CVE-2017-9750: Exploit-DB 42198；global-buffer-overflow in `rx_disp` / `rx_decode_opcode`（2.26 `opcodes/rx-decode.opc:230`）；SHA-256 `6dce426f802ceae8ef3da57ffde287e32e15408cf1f044ddc3d957d2d8589b90`
+- CVE-2017-9747: Exploit-DB 42200；stack-buffer-overflow in `bfd_get_string`（2.26 `bfd/ieee.c:198`）；2.24 不触发 ASan，函数仍在 `bfd/ieee.c:187`；SHA-256 `ce9e7f07e6c04e28b53d9cc458eee01106c762817bd1e0b7c1162124ece4231b`
+- CVE-2017-9748: Exploit-DB 42202；stack-buffer-overflow in `ieee_object_p`（2.26 `bfd/ieee.c:1983`）；2.24 不触发 ASan，函数仍在 `bfd/ieee.c:1788`；SHA-256 `98c5aa525da96ba0f2689dc3876a4eed2201ee3c80cf19e68372a8be76860fa3`
+- CVE-2017-14939: Exploit-DB 42970；heap-buffer-overflow in `read_1_byte`（2.29 `bfd/dwarf2.c:593`）；2.26 不触发 ASan，函数仍在 `bfd/dwarf2.c:562`；SHA-256 `4c454b52d5f8b3d3562909ec38e8d2fc5692f284afce6c4690e448784f513a30`
 
 ### 变异测试结论（14 个）
 
@@ -447,7 +457,7 @@ PoC 来源: Exploit-DB 42259 / asarubbo 00294 (`https://gitlab.com/exploit-datab
 
 | 项目 | 版本敏感 CVE 数 |
 |------|-----------------|
-| binutils | 14 |
+| binutils | 18 |
 | libxml2 | 2 |
 | giflib | 1 |
 | freetype | 3 |
@@ -458,4 +468,4 @@ PoC 来源: Exploit-DB 42259 / asarubbo 00294 (`https://gitlab.com/exploit-datab
 | audiofile | 1 |
 | libsndfile | 4 |
 | lame | 2 |
-| **总计** | **45** |
+| **总计** | **49** |
