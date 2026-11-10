@@ -25,7 +25,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-POLYTRACKER_ROOT = Path("/home/ws/Desktop/RetroScope/polytracker")
+_REPO_ROOT = Path(__file__).resolve().parent
+POLYTRACKER_ROOT = _REPO_ROOT / "polytracker"
 PASS_PLUGIN = POLYTRACKER_ROOT / "build/src/passes/libPolytrackerPass.so"
 POLY_LIB = POLYTRACKER_ROOT / "build/src/libPolytracker.a"
 DFSAN_RT = POLYTRACKER_ROOT / "build/src/compiler-rt/lib/linux/libclang_rt.dfsan-x86_64.a"
@@ -34,9 +35,10 @@ POLY_ABILIST = POLYTRACKER_ROOT / "custom_abi/polytracker_abilist.txt"
 CLANG = "clang-14"
 CLANGXX = "clang++-14"
 OPT = POLYTRACKER_ROOT / "bin/opt"
-WLLVM = "/home/ws/.local/bin/wllvm"
-WLLVMXX = "/home/ws/.local/bin/wllvm++"
-EXTRACT_BC = "/home/ws/.local/bin/extract-bc"
+# Optional: install with `pip install wllvm` (provides wllvm/wllvm++/extract-bc).
+WLLVM = shutil.which("wllvm") or "wllvm"
+WLLVMXX = shutil.which("wllvm++") or "wllvm++"
+EXTRACT_BC = shutil.which("extract-bc") or "extract-bc"
 LLVM_COMPILER_PATH = "/usr/lib/llvm-14/bin"
 
 _PT_TRACE = None
@@ -53,7 +55,7 @@ def _load_trace_module():
     # graphs.py in the source tree uses an absolute `from polytracker.cache`
     # import that triggers the package's side-effectful __init__; use the
     # pre-patched copy instead.
-    fixed_graphs = Path("/home/ws/Desktop/RetroScope/pt_analyze/graphs.py")
+    fixed_graphs = _REPO_ROOT / "pt_analyze" / "graphs.py"
     mod_names = [
         "cache", "inputs", "plugins", "graphs", "taint_forest",
         "tracing", "repl", "polytracker", "taint_dag",

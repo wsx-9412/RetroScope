@@ -71,6 +71,7 @@ Validated (2026-09-29, this machine)
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -1092,6 +1093,20 @@ def trace_read_request(parent, max_lookback=300):
             }
             if target and any(k in target for k in ("read", "pread")):
                 add_event(parent, "read_request", **rec)
+                # If the request buffer maps into a logged input read,
+                # record a control-path origin offset (the actionable byte
+                # may live in the control dependency, not the value chain).
+                _buf = reg_value("rsi")
+                _cnt = reg_value("rdx")
+                if _buf is not None and _cnt:
+                    _t = terminal_for_mem(_buf, min(int(_cnt), 64) or 1)
+                    if _t and _t.get("offset") is not None:
+                        _eid = add_event(parent, "read_request_input",
+                                         **_t)
+                        record_offset(_t.get("offset"),
+                                      _t.get("length", 1), _eid,
+                                      _t.get("via", "read"),
+                                      _t.get("file"))
                 return
             if target is None:
                 # indirect call (through a function pointer, e.g. the TIFF
@@ -1433,7 +1448,7 @@ def handle_write(slot, parent, depth, value_before=None, value_after=None,
             add_event(eid, "constant", value=hex(s[1] & MASK))
             if CFG.get("trace_control", True):
                 trace_control(eid, depth)
-            if CFG.get("trace_read_request", False):
+            if CFG.get("trace_read_request", True):
                 trace_read_request(eid)
         elif s[0] == "mem":
             addr = (s[1] + delta) & 0xFFFFFFFFFFFFFFFF
@@ -1697,6 +1712,55 @@ for info in result["variables"]:
     goto_anchor()
     scan_mem(info["addr"], info["size"], root, 0)
     goto_anchor()
+    # Bit_Chain / buffer-struct: the fork reads the pointed-to payload
+    # (decompressed or file-backed chain), not only the struct header.
+    # Watch/scan chain[0..min(size, cap)] so reverse finds decompress/copy
+    # writes whose sources map back to the input read.
+    _etype = (info.get("type") or "")
+    _is_chain = ("bit_chain" in _etype.lower()) or (
+        info.get("size") and 16 <= int(info.get("size") or 0) <= 128
+        and "struct" in _etype.lower())
+    if _is_chain or _etype.lower().endswith("_bit_chain"):
+        _expr = info.get("expr") or ""
+        for _cand in ((_expr + ".chain", _expr + ".size"),
+                      (_expr + "->chain", _expr + "->size"),
+                      ("(" + _expr + ").chain", "(" + _expr + ").size")):
+            try:
+                _cp = int(gdb.parse_and_eval(_cand[0]))
+                _cs = int(gdb.parse_and_eval(_cand[1]))
+            except Exception:
+                continue
+            if not _cp or _cs <= 0:
+                continue
+            _cs = min(int(_cs), 1 << 16)
+            add_event(root, "chain_scan", chain=hex(_cp), size=_cs,
+                      note="Bit_Chain payload scan (decompress output)")
+            goto_anchor()
+            scan_mem(_cp, _cs, root, 0)
+            goto_anchor()
+            break
+        else:
+            # field form (e.g. dat->bit): walk parent via type expression
+            if "->" in _expr or "." in _expr:
+                _base = _expr.split("->")[0].split(".")[0].strip()
+                if _base and _base != _expr:
+                    try:
+                        _cp = int(gdb.parse_and_eval(
+                            _base + "->chain" if "->" in _expr
+                            else _base + ".chain"))
+                        _cs = int(gdb.parse_and_eval(
+                            _base + "->size" if "->" in _expr
+                            else _base + ".size"))
+                        if _cp and _cs > 0:
+                            _cs = min(int(_cs), 1 << 16)
+                            add_event(root, "chain_scan", chain=hex(_cp),
+                                      size=_cs,
+                                      note="parent Bit_Chain payload scan")
+                            goto_anchor()
+                            scan_mem(_cp, _cs, root, 0)
+                            goto_anchor()
+                    except Exception:
+                        pass
 
 stats["reads"] = len(result["reads"])
 stats["events"] = len(result["events"])
@@ -1778,6 +1842,565 @@ def extract_variables(div):
             seen.add(v)
             out.append(v)
     return out[:8]
+
+
+def _extract_vars_from_statement(stmt, prefer=None):
+    """Variable-like tokens from a fork statement.
+
+    ``prefer`` (curated list from the divergence JSON) is tried first and
+    only kept when it actually appears in the statement — that avoids the
+    type keywords / function names a raw token scan would pick up
+    (``const``, ``FILE``, ``opj_version``, ...).  The raw scan runs on the
+    statement with comments and string/char literals blanked, so words
+    inside log messages (``"Codec provided to the ..."``) never become
+    fork variables, and identifiers immediately followed by ``(`` (calls)
+    are skipped.
+    """
+    import re
+    text = stmt or ""
+
+    # Blank comments and string/char literals BEFORE any matching: message
+    # words ("to", "the", "failed") were leaking into the variable list.
+    cleaned = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)
+    cleaned = re.sub(r"//[^\n]*", " ", cleaned)
+    cleaned = re.sub(r'"(?:\\.|[^"\\])*"', ' "" ', cleaned)
+    cleaned = re.sub(r"'(?:\\.|[^'\\])*'", " '' ", cleaned)
+
+    black = {"if", "while", "for", "do", "return", "sizeof", "NULL", "else",
+             "goto", "switch", "case", "default", "break", "continue",
+             "const", "char", "int", "long", "short", "float", "double",
+             "void", "unsigned", "signed", "struct", "union", "enum",
+             "FILE", "static", "extern", "inline", "register", "volatile",
+             "auto", "bool", "true", "false", "size_t", "typedef",
+             "uint8_t", "uint16_t", "uint32_t", "uint64_t",
+             "int8_t", "int16_t", "int32_t", "int64_t"}
+
+    out, seen = [], set()
+
+    def _add(v):
+        v = (v or "").strip()
+        if v and v not in seen:
+            seen.add(v)
+            out.append(v)
+
+    # Curated/preferred variables: whole-word match against the
+    # literal-blanked text (so a name that only occurs inside a log message
+    # is rejected), plus the same quality bar as the raw scan — no type
+    # keywords, no calls, no bare member suffixes (``tiff_version`` alone
+    # is not a valid GDB expression when it only appears as
+    # ``tif->tif_header.tiff_version``).
+    for v in prefer or []:
+        if not v:
+            continue
+        v = v.strip()
+        base = v.split("->")[0].split(".")[0].strip()
+        if v in black or base in black:
+            continue
+        if not re.search(r"(?<![\w>])%s(?![\w])" % re.escape(v), cleaned):
+            continue
+        # a call, not a value the fork reads
+        if re.search(r"(?<![\w>])%s\s*\(" % re.escape(v), cleaned):
+            continue
+        # a simple name that only appears as a member suffix
+        # (``->x`` / ``.x``) needs its qualifier to evaluate
+        if re.fullmatch(r"[A-Za-z_]\w*", v) and re.search(
+                r"(?:\.|->)%s(?![\w])" % re.escape(v), cleaned):
+            continue
+        _add(v)
+    # drop items that are a strict member-path prefix of a longer kept item
+    # (``tif->tif_header`` when ``tif->tif_header.tiff_version`` survived)
+    if len(out) > 1:
+        longer = [x for x in out if any(
+            y != x and y.startswith(x + "->") or y.startswith(x + ".")
+            for y in out)]
+        out = [x for x in out if x not in longer]
+    if out:
+        return out[:8]
+
+    # Skip type-cast wrappers like ``(uint32)`` / ``(uint64)``.
+    scanned = re.sub(r"\(\s*(?:const\s+)?[A-Za-z_]\w*(?:\s*\*)*\s*\)", " ",
+                     cleaned)
+    # ``->`` AND ``.`` member chains: without the dot branch
+    # ``tif->tif_header.tiff_version`` split into a bogus prefix
+    # ``tif->tif_header`` plus a bare ``tiff_version``.
+    toks = re.findall(
+        r"[A-Za-z_][A-Za-z0-9_]*(?:\s*(?:->|\.)\s*[A-Za-z_][A-Za-z0-9_]*)*",
+        scanned)
+    for t in toks:
+        base = t.split("->")[0].split(".")[0].strip()
+        if t in black or base in black:
+            continue
+        # A bare identifier immediately followed by ``(`` is a call, not a
+        # value the fork reads.
+        if re.search(r"(?<![\w>])%s\s*\(" % re.escape(t), scanned):
+            continue
+        # a simple name that only appears as a member suffix needs its
+        # qualifier to evaluate as a GDB expression
+        if re.fullmatch(r"[A-Za-z_]\w*", t) and re.search(
+                r"(?:\.|->)%s(?![\w])" % re.escape(t), scanned):
+            continue
+        _add(t)
+    return out[:8]
+
+
+def _target_source_dirs(binary, source_dir=None):
+    """Source directories that belong to the TARGET version tree.
+
+    Deliberately does NOT glob every ``*-versions/*`` tree: that list can
+    reach hundreds of projects and makes any downstream statement search
+    time out.  Version-tree fallback lives in ``_resolve_file_in_target``
+    and is filename-targeted (short-circuits on the first hit).
+    """
+    dirs = []
+    if source_dir and os.path.isdir(source_dir):
+        dirs.append(str(source_dir))
+    try:
+        import divergence_analyzer as da
+        for d in da.find_source_dirs(str(binary)) or []:
+            if d and os.path.isdir(d) and d not in dirs:
+                dirs.append(d)
+    except Exception:
+        pass
+    return dirs
+
+
+def _resolve_file_in_target(file_ref, source_dirs, allow_version_fallback=True):
+    """Resolve ``file_ref`` to a real file under the target source dirs.
+
+    Cheap common-subdir probes first, then a filename-targeted rglob
+    (short-circuits).  ``*-versions/*`` fallback is only used when
+    ``allow_version_fallback`` — a wrong-version guess with a bare line
+    number silently produces a bogus fork location, so callers that cannot
+    verify the statement text must disable it.
+    """
+    if not file_ref:
+        return None
+    name = Path(str(file_ref)).name
+    p = Path(str(file_ref))
+    # Trailing path components of file_ref (e.g. ("src","lib","openjp2",
+    # "openjpeg.c")) used to rank same-basename candidates: a bare rglob
+    # returned openmj2/openjpeg.c for a file_ref pointing at openjp2/.
+    # ``.``/``..`` are dropped so a relative ref like ``../../bfd/x.c``
+    # never joins outside the candidate root.
+    ref_parts = tuple(x for x in p.parts if x not in ("/", ".", ".."))
+    subs = ("", "libtiff", "tools", "src", "frontend", "libaudiofile",
+            "lib", "bin", "bfd", "gas", "opcodes")
+
+    def _score(cand):
+        """How many trailing components of file_ref ``cand`` matches."""
+        cp = Path(str(cand)).parts
+        n = 0
+        while n < len(cp) and n < len(ref_parts) and \
+                cp[-1 - n] == ref_parts[-1 - n]:
+            n += 1
+        return n
+
+    def _pick(cands):
+        best = None
+        for c in cands:
+            if not c or not Path(c).is_file():
+                continue
+            s = _score(c)
+            if best is None or s > best[0]:
+                best = (s, str(c))
+        return best[1] if best else None
+
+    for d in source_dirs or []:
+        root = Path(d)
+        if not root.is_dir():
+            continue
+        # exact path-suffix join first (fast + unambiguous)
+        for i in range(len(ref_parts)):
+            cand = root.joinpath(*ref_parts[i:])
+            if cand.is_file():
+                return str(cand)
+        cands = []
+        for sub in subs:
+            cands.append(str(root / sub / name) if sub else str(root / name))
+        try:
+            cands.extend(str(m) for m in root.rglob(name))
+        except Exception:
+            pass
+        hit = _pick(cands)
+        if hit:
+            return hit
+    if p.is_absolute() and p.is_file():
+        return str(p)
+    if not allow_version_fallback:
+        return None
+    # Targeted version-tree fallback: same suffix-join / ranking, but only
+    # for the basename (never a bare line-number guess).
+    try:
+        for v in Path(".").glob("*-versions/*"):
+            if not v.is_dir():
+                continue
+            for i in range(len(ref_parts)):
+                cand = v.joinpath(*ref_parts[i:])
+                if cand.is_file():
+                    return str(cand)
+            cands = []
+            for sub in subs:
+                cands.append(str(v / sub / name) if sub else str(v / name))
+            try:
+                cands.extend(str(m) for m in v.rglob(name))
+            except Exception:
+                pass
+            hit = _pick(cands)
+            if hit:
+                return hit
+    except Exception:
+        pass
+    return None
+
+
+def _search_statement_in_file(path, statement, line_hint=None):
+    """Locate ``statement`` inside one file.  Returns (path, line) or None."""
+    if not statement or not path:
+        return None
+    import re as _re
+    try:
+        lines = Path(path).read_text(encoding="utf-8",
+                                     errors="replace").splitlines()
+    except Exception:
+        return None
+    if not lines:
+        return None
+    needle = _re.sub(r"\s+", " ", (statement or "")).strip()
+    if not needle:
+        return None
+    # 1) exact normalised line match
+    for i, line in enumerate(lines):
+        if _re.sub(r"\s+", " ", line.strip()) == needle:
+            return path, i + 1
+    # 2) containment over a small window, ranked by distance to the hint
+    prefix = needle[:60]
+    best = None
+    for i in range(len(lines)):
+        window = _re.sub(r"\s+", " ", " ".join(lines[i:i + 6])).strip()
+        if needle in window or (len(prefix) > 20
+                                and (window.startswith(prefix)
+                                     or prefix in window)):
+            dist = abs(i + 1 - int(line_hint)) if line_hint else i + 1
+            if best is None or dist < best[0]:
+                best = (dist, i + 1)
+    if best:
+        return path, best[1]
+    return None
+
+
+def _statement_is_meaningful(stmt):
+    """True when ``stmt`` carries real code, not just ``{`` / ``;``.
+
+    The divergence JSON sometimes stores only a brace as
+    ``root_cause_statement_b``; text-matching that would hit the first
+    ``{`` in any file.
+    """
+    s = (stmt or "").strip()
+    if not s:
+        return False
+    core = re.sub(r"[\s{}();,\[\]]+", "", s)
+    return len(core) >= 2
+
+
+def _locate_statement_in_target(statement, source_dirs, line_hint=None,
+                                file_ref=None, version_hint=None,
+                                max_tree_searches=8):
+    """Find ``(path, line)`` of ``statement`` inside the target source tree.
+
+    Strategy (cheap -> expensive):
+      1. resolve ``file_ref`` under the *target* tree and search only that
+         file (statement match, else a target-side line hint);
+      2. if the target tree misses the file, walk ``*-versions/*`` looking
+         for the statement text itself — a bare line-number guess on an
+         arbitrary version is never accepted.  When several versions
+         contain the statement, the one closest to ``line_hint`` wins and a
+         ``version_hint`` (e.g. ``version_b`` = ``tiff-3.9.3``) breaks ties
+         toward the correct target version;
+      3. last resort: the generic statement search over a *small*
+         ``source_dirs`` (bounded by ``max_tree_searches``).
+
+    When ``statement`` is not meaningful (a bare ``{``), only
+    ``file_ref`` + target-side ``line_hint`` + ``version_hint`` are used —
+    no text matching is attempted.
+    """
+    if not _statement_is_meaningful(statement):
+        statement = None
+    if not statement and not file_ref:
+        return None
+
+    # 1) target tree (trusted: same build the pipeline analysed)
+    if file_ref:
+        path = _resolve_file_in_target(file_ref, source_dirs,
+                                       allow_version_fallback=False)
+        if path:
+            if statement:
+                hit = _search_statement_in_file(path, statement, line_hint)
+                if hit:
+                    return hit
+            # Same file, statement text differs (or was meaningless): only
+            # trust the line hint when it came from the TARGET side
+            # (caller passes target-side hints; reference-only hints are
+            # stripped).
+            if line_hint:
+                try:
+                    n = sum(1 for _ in open(path, "rb"))
+                    if 1 <= int(line_hint) <= n:
+                        return path, int(line_hint)
+                except Exception:
+                    pass
+
+    # 2) version-tree fallback: statement text MUST match when we have one.
+    #    The version_hint directory is visited first so a full-tree walk is
+    #    normally skipped; candidates are ranked by path-suffix match so a
+    #    same-basename sibling (openmj2 vs openjp2) cannot win.
+    if file_ref:
+        name = Path(str(file_ref)).name
+        ref_parts = tuple(x for x in Path(str(file_ref)).parts
+                          if x not in ("/", ".", ".."))
+        subs = ("", "libtiff", "tools", "src", "frontend", "libaudiofile",
+                "lib", "bin", "bfd", "gas", "opcodes")
+
+        def _rank(vroot):
+            """Candidate files under ``vroot`` as ``(score, path)``,
+            best path-suffix match first (score = trailing components of
+            file_ref that match)."""
+            out = []
+            seen = set()
+
+            def _sc(c):
+                cp = Path(str(c)).parts
+                n = 0
+                while n < len(cp) and n < len(ref_parts) and \
+                        cp[-1 - n] == ref_parts[-1 - n]:
+                    n += 1
+                return n
+
+            def _add(c):
+                c = str(c)
+                if c not in seen and Path(c).is_file():
+                    seen.add(c)
+                    out.append((_sc(c), c))
+
+            for i in range(len(ref_parts)):
+                _add(vroot.joinpath(*ref_parts[i:]))
+            for sub in subs:
+                _add(vroot / sub / name if sub else vroot / name)
+            # rglob only when the cheap probes missed: walking every
+            # version tree costs ~1.5s for a single basename
+            if not out:
+                try:
+                    for m in vroot.rglob(name):
+                        if m.is_file():
+                            _add(m)
+                except Exception:
+                    pass
+            out.sort(key=lambda t: -t[0])
+            return out
+
+        best = None
+        fb = None  # version-matched file + valid line hint, no text match
+        _hint = (version_hint or "").lower()
+        _roots = list(Path(".").glob("*-versions/*"))
+        _roots.sort(key=lambda p: not (
+            bool(_hint) and (_hint in p.name.lower()
+                             or p.name.lower() in _hint)))
+        try:
+            for v in _roots:
+                if not v.is_dir():
+                    continue
+                _vname = v.name.lower()
+                _ver_match = bool(_hint) and (_hint in _vname
+                                              or _vname in _hint)
+                # sort key: correct version first (it must beat a closer
+                # line in the wrong version), then path-suffix score
+                # (openjp2 beats openmj2), then line distance
+                _pkey = 0 if _ver_match else 1
+                for _score, f in _rank(v):
+                    if statement:
+                        hit = _search_statement_in_file(f, statement,
+                                                        line_hint)
+                        if hit:
+                            dist = (abs(hit[1] - int(line_hint))
+                                    if line_hint else hit[1])
+                            key = (_pkey, -_score, dist)
+                            if best is None or key < best[0]:
+                                best = (key, hit)
+                            continue
+                    if line_hint:
+                        try:
+                            n = sum(1 for _ in open(f, "rb"))
+                        except Exception:
+                            continue
+                        if not (1 <= int(line_hint) <= n):
+                            continue
+                        # A text mismatch is acceptable only for the
+                        # TARGET version (both file and line come from the
+                        # target side then); without a statement at all any
+                        # version with a valid line hint still counts.
+                        if _ver_match or not statement:
+                            key = (_pkey, -_score, 0)
+                            if fb is None or key < fb[0]:
+                                fb = (key, (f, int(line_hint)))
+        except Exception:
+            pass
+        if best:
+            return best[1]
+        if fb:
+            return fb[1]
+
+    # 3) generic search, only when the dir list is small enough to be safe
+    if statement and source_dirs and len(source_dirs) <= max_tree_searches:
+        try:
+            import divergence_analyzer as da
+            hit = da._find_statement_source(statement, source_dirs, line_hint)
+            if hit:
+                return hit
+        except Exception:
+            pass
+    return None
+
+
+def _origin_trace_needs_relocate(res):
+    """True when the origin trace failed or produced no input offsets."""
+    if res is None or res.get("status") != "ok":
+        return True
+    return not (res.get("offsets") or [])
+
+
+def _origin_result_better(new, old):
+    if old is None:
+        return True
+    _n_ok = new.get("status") == "ok"
+    _o_ok = old.get("status") == "ok"
+    if _n_ok != _o_ok:
+        return _n_ok
+    if not _n_ok:
+        return False
+    return len(new.get("offsets") or []) > len(old.get("offsets") or [])
+
+
+def relocate_fork_on_target(div, binary, source_dir=None,
+                            fork_specs=None, variables=None):
+    """A2: re-locate the fork statement/variables on the TARGET version.
+
+    The divergence JSON may carry reference-side line numbers, stale
+    build-tree paths, or reference-only expressions.  When the origin trace
+    cannot create/reach the fork breakpoint (or reaches it but finds no
+    input offsets), re-resolve the statement text inside the target source
+    tree and rebuild the breakpoint specs + variable list from the target's
+    own copy.
+
+    Returns ``(new_fork_specs, new_variables, info)`` or ``None``.
+    """
+    if not div:
+        return None
+
+    # Statement text: prefer a MEANINGFUL target-side copy.  The divergence
+    # JSON sometimes stores only ``{`` as root_cause_statement_b — that must
+    # not win over the real statement_a / poly_track text.
+    statement = ""
+    for key in ("root_cause_statement_b", "fork_statement",
+                "root_cause_statement_a"):
+        cand = div.get(key) or ""
+        if _statement_is_meaningful(cand):
+            statement = cand
+            break
+    # Line hint: TARGET-side sources only.  A reference-side line number
+    # (root_cause_line / line_a) pointed at a different file revision and
+    # produced bogus fork locations — never trust it as a fallback hint.
+    line_hint = div.get("root_cause_line_b")
+    file_ref = (div.get("root_cause_file_b")
+                or div.get("root_cause_file")
+                or div.get("root_cause_file_a"))
+
+    # The dynamic fork carries the target-side location explicitly.
+    dyn = div.get("dynamic_fork") or {}
+    if dyn.get("file_b"):
+        file_ref = dyn.get("file_b") or file_ref
+    _dfb = (dyn.get("diff") or {}).get("b") or {}
+    if _dfb.get("line"):
+        line_hint = _dfb.get("line") or line_hint
+
+    # Semantic forks: the guard lives in the reference; the target only has
+    # the equivalent value-read site (poly_track_*), which IS what a target
+    # breakpoint must use.
+    if div.get("semantic_fork") and div.get("poly_track_file"):
+        file_ref = div.get("poly_track_file") or file_ref
+        line_hint = div.get("poly_track_line") or line_hint
+        _pts = div.get("poly_track_statement") or ""
+        if _statement_is_meaningful(_pts):
+            statement = _pts
+
+    if not statement:
+        statement = div.get("root_cause_statement_a") or ""
+
+    # Target version (e.g. ``tiff-3.9.3``) breaks version-tree ties toward
+    # the correct revision — statement text alone matches several versions.
+    version_hint = div.get("version_b") or div.get("version") or ""
+
+    source_dirs = _target_source_dirs(binary, source_dir)
+    # Empty source_dirs is OK: _resolve_file_in_target falls back to a
+    # filename-targeted search across the *-versions/* trees.
+
+    # _locate_statement_in_target resolves file_ref first and, when the
+    # statement text differs (code change), trusts a target-side line hint.
+    located = _locate_statement_in_target(
+        statement, source_dirs, line_hint, file_ref=file_ref,
+        version_hint=version_hint)
+    if not located:
+        return None
+
+    path, line = located
+    # Re-read the target-side statement at the located line so the variable
+    # list comes from the target's own text (not the reference's).
+    target_stmt = statement
+    located_line = line
+    try:
+        import divergence_analyzer as da
+        got = da._get_complete_fork_statement(path, line, source_dirs)
+        if got and got[0]:
+            target_stmt = got[0]
+            located_line = got[1] or line
+    except Exception:
+        pass
+
+    # Curated ``div.variables`` first (they were picked by the divergence
+    # analysis), then whatever else the caller passed (extract_variables
+    # prepends a raw statement-token scan, which can carry junk).  The
+    # extractor applies its own quality bar to every candidate anyway.
+    prefer = []
+    _div_vars = [v for v in (div.get("variables") or [])
+                 if isinstance(v, str) and v.strip()]
+    for v in _div_vars + list(variables or []):
+        if v and v not in prefer:
+            prefer.append(v)
+    new_vars = _extract_vars_from_statement(target_stmt, prefer=prefer)
+    if not new_vars:
+        new_vars = _extract_vars_from_statement(target_stmt)
+    if not new_vars:
+        new_vars = [v for v in prefer if v][:8]
+
+    # Basename first: debug info may reference a different absolute path
+    # (pipeline build tree vs trace build); basename resolves either way.
+    new_specs = [
+        "%s:%d" % (Path(path).name, located_line),
+        "%s:%d" % (path, located_line),
+    ]
+    for s in fork_specs or []:
+        if s not in new_specs:
+            new_specs.append(s)
+
+    info = {
+        "file": path,
+        "line": located_line,
+        "statement": (target_stmt or "")[:200],
+        "variables": new_vars,
+        "specs": new_specs[:8],
+        "source_dirs": source_dirs[:6],
+        "line_hint": line_hint,
+        "version_hint": version_hint,
+    }
+    return new_specs, new_vars, info
 
 
 def sanitize_compile_cfg(cfg):
@@ -1904,6 +2527,9 @@ def main():
                     help="disable trace-build caching (always rebuild)")
     ap.add_argument("--refresh-trace-build", action="store_true",
                     help="force a rebuild of the cached trace build")
+    ap.add_argument("--no-relocate", action="store_true",
+                    help="disable A2 fork re-location retry (never re-resolve "
+                         "the fork statement on the target source tree)")
     ap.add_argument("--binary", help="target binary")
     ap.add_argument("--input", help="input file (PoC)")
     ap.add_argument("--args", default="", help="program args template, "
@@ -1934,9 +2560,13 @@ def main():
     ap.add_argument("--no-trace-args", dest="trace_args", action="store_false",
                     default=True, help="do not trace call argument registers "
                     "at call boundaries (default: on)")
-    ap.add_argument("--trace-read-request", action="store_true",
+    ap.add_argument("--trace-read-request", dest="trace_read_request",
+                    action="store_true", default=True,
                     help="at constant/error terminals, look back for the nearest "
-                    "read/pread call and report its request arguments (heuristic)")
+                    "read/pread call and report its request arguments (default: on)")
+    ap.add_argument("--no-trace-read-request", dest="trace_read_request",
+                    action="store_false",
+                    help="disable the constant-terminal read-request lookback")
     ap.add_argument("--no-follow-returns", action="store_true",
                     help="do not follow function return values")
     ap.add_argument("--glibc-avx-off", dest="avx_off", action="store_true",
@@ -2271,6 +2901,7 @@ def main():
                   % read_paranoid())
 
     res, gdb_out, elapsed = run_engine(real_bin)
+    _last_bin = real_bin
     if engine == "rr" and (res is None or res.get("status") != "ok"):
         print("[*] rr engine failed; falling back to gdb record full")
         res, gdb_out, elapsed = run_gdb(real_bin)
@@ -2295,9 +2926,67 @@ def main():
             res2, gdb_out2, elapsed2 = run_engine(trace_bin)
             if res2 is not None:
                 res, gdb_out, elapsed = res2, gdb_out2, elapsed2
+                _last_bin = trace_bin
+
+    # A2: fork re-location.  The divergence JSON may carry reference-side
+    # line numbers / stale build-tree paths / reference-only expressions;
+    # when the trace failed to create or reach the fork (or reached it but
+    # found no input offsets), re-resolve the statement on the TARGET
+    # source tree and retry once.
+    if not args.no_relocate and _origin_trace_needs_relocate(res) and div:
+        reloc = relocate_fork_on_target(
+            div, _last_bin, source_dir=source_dir,
+            fork_specs=fork_specs, variables=variables)
+        if reloc:
+            new_specs, new_vars, rinfo = reloc
+            if new_specs != fork_specs or new_vars != variables:
+                print("[*] fork re-location (target source): %s:%s"
+                      % (rinfo.get("file"), rinfo.get("line")))
+                print("    statement: %s" % (rinfo.get("statement") or ""))
+                print("    variables : %s" % ", ".join(new_vars or []))
+                fork_specs, variables = new_specs, new_vars
+                cfg["fork_specs"] = fork_specs
+                cfg["variables"] = variables
+                res2, gdb_out2, elapsed2 = run_engine(_last_bin)
+                if res2 is not None and _origin_result_better(res2, res):
+                    res, gdb_out, elapsed = res2, gdb_out2, elapsed2
+                    if res.get("status") == "ok":
+                        print("[*] fork re-location succeeded "
+                              "(%d offset(s))" % len(res.get("offsets") or []))
+                    res["_relocation"] = rinfo
+                elif res2 is not None:
+                    # Keep the original result but record the attempt so the
+                    # attribution report can see that relocation was tried.
+                    res.setdefault("_relocation", rinfo)
+                    res["_relocation"]["retry_status"] = res2.get("status")
+                    res["_relocation"]["retry_offsets"] = len(
+                        res2.get("offsets") or [])
+            else:
+                print("[*] fork re-location: no change needed "
+                      "(specs/variables already target-side)")
+        else:
+            print("[*] fork re-location: statement not found in target tree")
 
     res["wall_seconds"] = round(elapsed, 2)
     res["_output"] = output
+
+    # Section-targeted fallback: decompress-indirect forks never reach a
+    # read()/mmap buffer; map the fork function to on-disk section pages
+    # so mutation still has actionable offsets.
+    if not (res.get("offsets") or []) and res.get("status") == "ok":
+        try:
+            from origin_fallback import enrich_origin_result
+            _ff = (div.get("root_cause_function")
+                   or div.get("divergence_function") or "")
+            n_fb = enrich_origin_result(
+                res, input_file=input_file, fork_func=_ff)
+            if n_fb and not args.quiet:
+                print("[*] section fallback: %d origin offsets "
+                      "(fork_func=%s)" % (n_fb, _ff or "?"))
+        except Exception as _e:
+            if not args.quiet:
+                print("[!] section fallback failed: %s" % _e)
+
     with open(output, "w") as f:
         json.dump(res, f, indent=1, default=str)
 

@@ -1,0 +1,51 @@
+=================================================================
+==131257==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x602000000017 at pc 0x6475e8b270f4 bp 0x7ffce52a2600 sp 0x7ffce52a25f8
+READ of size 1 at 0x602000000017 thread T0
+    #0 0x6475e8b270f3 in TIFFSwabDouble <libtiff-source>/libtiff/tif_swab.c:206:7
+    #1 0x6475e8b25d94 in entry_func <reproducer-dir>/wrapper.c:12:5
+    #2 0x6475e8b25d08 in main <reproducer-dir>/reproducer.c:35:5
+    #3 0x79aee8a2a1c9 in __libc_start_call_main csu/../sysdeps/nptl/libc_start_call_main.h:58:16
+    #4 0x79aee8a2a28a in __libc_start_main csu/../csu/libc-start.c:360:3
+    #5 0x6475e8a66304 in _start (<reproducer-dir>/reproducer_bin+0x21304) (BuildId: 8b46b21a42b261e921f65d74702d2d1af917148c)
+
+0x602000000017 is located 3 bytes to the right of 4-byte region [0x602000000010,0x602000000014)
+allocated by thread T0 here:
+    #0 0x6475e8ae9d12 in __interceptor_malloc (<reproducer-dir>/reproducer_bin+0xa4d12) (BuildId: 8b46b21a42b261e921f65d74702d2d1af917148c)
+    #1 0x6475e8b25cc0 in main <reproducer-dir>/reproducer.c:22:43
+    #2 0x79aee8a2a1c9 in __libc_start_call_main csu/../sysdeps/nptl/libc_start_call_main.h:58:16
+    #3 0x79aee8a2a28a in __libc_start_main csu/../csu/libc-start.c:360:3
+    #4 0x6475e8a66304 in _start (<reproducer-dir>/reproducer_bin+0x21304) (BuildId: 8b46b21a42b261e921f65d74702d2d1af917148c)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow <libtiff-source>/libtiff/tif_swab.c:206:7 in TIFFSwabDouble
+Shadow bytes around the buggy address:
+  0x0c047fff7fb0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0c047fff7fc0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0c047fff7fd0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0c047fff7fe0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0c047fff7ff0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x0c047fff8000: fa fa[04]fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c047fff8010: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c047fff8020: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c047fff8030: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c047fff8040: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c047fff8050: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==131257==ABORTING

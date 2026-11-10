@@ -1,185 +1,271 @@
 {
-  "binary_target": "/tmp/fork_analysis_pjwx94vo/target/build/bin/opj_decompress",
-  "binary_ref": "/tmp/fork_analysis_pjwx94vo/ref/build/bin/opj_decompress",
-  "fork_spec": "src/lib/openjp2/j2k.c:2516",
+  "binary_target": "/tmp/fork_analysis_7yuu8uaj/target/build/bin/opj_decompress",
+  "binary_ref": "/tmp/fork_analysis_7yuu8uaj/ref/build/bin/opj_decompress",
+  "fork_spec": "/tmp/fork_analysis_7yuu8uaj/target/src/lib/openjp2/cio.c:586",
   "variables": [
-    "l_tcp->cod",
-    "l_tcp",
-    "p_j2k->m_current_tile_number"
+    "p_stream->m_byte_offset"
   ],
   "differing_variables": [
-    "l_tcp->cod",
-    "l_tcp",
-    "p_j2k->m_current_tile_number"
+    "p_stream->m_byte_offset"
   ],
   "target_file_reads": [
     {
       "fd": 3,
       "offset": 0,
       "size": 832,
-      "buf_addr": 140726191217944
+      "buf_addr": 140733263402184
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 4096,
-      "buf_addr": 128558091710464
+      "buf_addr": 135891353219072
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 8192,
-      "buf_addr": 128558091448320
+      "buf_addr": 135891352956928
     },
     {
       "fd": 3,
       "offset": 0,
-      "size": 1307,
+      "size": 16384,
+      "buf_addr": 135891352948736
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 202,
       "buf_addr": 90228672959744
     },
     {
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140726191216800
+      "buf_addr": 140733263400976
     },
     {
       "fd": 3,
-      "offset": 137,
+      "offset": 136,
       "size": 4096,
-      "buf_addr": 128558091710464
+      "buf_addr": 135891353219072
     },
     {
       "fd": 3,
-      "offset": 137,
-      "size": 3959,
-      "buf_addr": 128558091710601
+      "offset": 136,
+      "size": 3960,
+      "buf_addr": 135891353219208
     },
     {
       "fd": 3,
-      "offset": 832,
-      "size": 832,
-      "buf_addr": 140726191217944
-    },
-    {
-      "fd": 3,
-      "offset": 848,
-      "size": 48,
-      "buf_addr": 140726191216736
-    },
-    {
-      "fd": 3,
-      "offset": 896,
-      "size": 68,
-      "buf_addr": 140726191216656
-    },
-    {
-      "fd": 3,
-      "offset": 1307,
+      "offset": 202,
       "size": 4096,
       "buf_addr": 90228672954624
     },
     {
       "fd": 3,
-      "offset": 1307,
-      "size": 1307,
+      "offset": 202,
+      "size": 202,
       "buf_addr": 90228672959744
     },
     {
       "fd": 3,
-      "offset": 3493,
+      "offset": 832,
+      "size": 832,
+      "buf_addr": 140733263402184
+    },
+    {
+      "fd": 3,
+      "offset": 848,
+      "size": 48,
+      "buf_addr": 140733263400912
+    },
+    {
+      "fd": 3,
+      "offset": 896,
+      "size": 68,
+      "buf_addr": 140733263400832
+    },
+    {
+      "fd": 3,
+      "offset": 3530,
       "size": 4096,
-      "buf_addr": 128558091710464
+      "buf_addr": 135891353219072
     },
     {
       "fd": 3,
-      "offset": 3493,
-      "size": 603,
-      "buf_addr": 128558091713957
+      "offset": 3530,
+      "size": 566,
+      "buf_addr": 135891353222602
     },
     {
       "fd": 3,
-      "offset": 4052,
+      "offset": 4022,
       "size": 4096,
-      "buf_addr": 128558091407360
+      "buf_addr": 135891337281536
     },
     {
       "fd": 3,
-      "offset": 4052,
-      "size": 44,
-      "buf_addr": 128558091411412
+      "offset": 4022,
+      "size": 74,
+      "buf_addr": 135891337285558
     },
     {
       "fd": 3,
-      "offset": 4052,
+      "offset": 4022,
       "size": 8192,
-      "buf_addr": 128558091378688
+      "buf_addr": 135891337277440
     },
     {
       "fd": 3,
-      "offset": 4052,
-      "size": 4140,
-      "buf_addr": 128558091382740
+      "offset": 4022,
+      "size": 4170,
+      "buf_addr": 135891337281462
     },
     {
       "fd": 3,
-      "offset": 4088,
+      "offset": 4022,
+      "size": 16384,
+      "buf_addr": 135891337269248
+    },
+    {
+      "fd": 3,
+      "offset": 4022,
+      "size": 12362,
+      "buf_addr": 135891337273270
+    },
+    {
+      "fd": 3,
+      "offset": 4041,
       "size": 4096,
-      "buf_addr": 128558091452416
+      "buf_addr": 135891352961024
     },
     {
       "fd": 3,
-      "offset": 4088,
-      "size": 8,
-      "buf_addr": 128558091456504
+      "offset": 4041,
+      "size": 55,
+      "buf_addr": 135891352965065
     },
     {
       "fd": 3,
-      "offset": 4088,
+      "offset": 4041,
       "size": 8192,
-      "buf_addr": 128558091448320
+      "buf_addr": 135891352956928
     },
     {
       "fd": 3,
-      "offset": 4088,
-      "size": 4104,
-      "buf_addr": 128558091452408
+      "offset": 4041,
+      "size": 4151,
+      "buf_addr": 135891352960969
+    },
+    {
+      "fd": 3,
+      "offset": 4041,
+      "size": 16384,
+      "buf_addr": 135891352948736
+    },
+    {
+      "fd": 3,
+      "offset": 4041,
+      "size": 12343,
+      "buf_addr": 135891352952777
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 8,
-      "buf_addr": 128558091456504
+      "size": 55,
+      "buf_addr": 135891352965065
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 44,
-      "buf_addr": 128558091411412
+      "size": 74,
+      "buf_addr": 135891337285558
     },
     {
       "fd": 3,
-      "offset": 5905,
-      "size": 4104,
-      "buf_addr": 128558091452408
+      "offset": 8033,
+      "size": 4170,
+      "buf_addr": 135891337281462
     },
     {
       "fd": 3,
-      "offset": 5905,
-      "size": 2287,
-      "buf_addr": 128558091454225
+      "offset": 8033,
+      "size": 159,
+      "buf_addr": 135891337285473
     },
     {
       "fd": 3,
-      "offset": 6283,
-      "size": 4140,
-      "buf_addr": 128558091382740
+      "offset": 8033,
+      "size": 12362,
+      "buf_addr": 135891337273270
     },
     {
       "fd": 3,
-      "offset": 6283,
-      "size": 1909,
-      "buf_addr": 128558091384971
+      "offset": 8033,
+      "size": 8351,
+      "buf_addr": 135891337277281
+    },
+    {
+      "fd": 3,
+      "offset": 8098,
+      "size": 4151,
+      "buf_addr": 135891352960969
+    },
+    {
+      "fd": 3,
+      "offset": 8098,
+      "size": 94,
+      "buf_addr": 135891352965026
+    },
+    {
+      "fd": 3,
+      "offset": 8098,
+      "size": 12343,
+      "buf_addr": 135891352952777
+    },
+    {
+      "fd": 3,
+      "offset": 8098,
+      "size": 8286,
+      "buf_addr": 135891352956834
+    },
+    {
+      "fd": 3,
+      "offset": 8192,
+      "size": 94,
+      "buf_addr": 135891352965026
+    },
+    {
+      "fd": 3,
+      "offset": 8192,
+      "size": 159,
+      "buf_addr": 135891337285473
+    },
+    {
+      "fd": 3,
+      "offset": 10748,
+      "size": 8286,
+      "buf_addr": 135891352956834
+    },
+    {
+      "fd": 3,
+      "offset": 10748,
+      "size": 5636,
+      "buf_addr": 135891352959484
+    },
+    {
+      "fd": 3,
+      "offset": 11077,
+      "size": 8351,
+      "buf_addr": 135891337277281
+    },
+    {
+      "fd": 3,
+      "offset": 11077,
+      "size": 5307,
+      "buf_addr": 135891337280325
     }
   ],
   "ref_file_reads": [
@@ -187,174 +273,268 @@
       "fd": 3,
       "offset": 0,
       "size": 832,
-      "buf_addr": 140726381499768
+      "buf_addr": 140721211189896
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 4096,
-      "buf_addr": 128276561907712
+      "buf_addr": 124694668537856
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 8192,
-      "buf_addr": 128276561645568
+      "buf_addr": 124694668275712
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 16384,
+      "buf_addr": 124694668267520
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 202,
+      "buf_addr": 90228672959744
     },
     {
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140726381498624
+      "buf_addr": 140721211188688
     },
     {
       "fd": 3,
-      "offset": 134,
+      "offset": 133,
       "size": 4096,
-      "buf_addr": 128276561907712
+      "buf_addr": 124694668537856
     },
     {
       "fd": 3,
-      "offset": 134,
-      "size": 3962,
-      "buf_addr": 128276561907846
+      "offset": 133,
+      "size": 3963,
+      "buf_addr": 124694668537989
+    },
+    {
+      "fd": 3,
+      "offset": 202,
+      "size": 4096,
+      "buf_addr": 90228672954624
+    },
+    {
+      "fd": 3,
+      "offset": 202,
+      "size": 202,
+      "buf_addr": 90228672959744
     },
     {
       "fd": 3,
       "offset": 832,
       "size": 832,
-      "buf_addr": 140726381499768
+      "buf_addr": 140721211189896
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140726381498560
+      "buf_addr": 140721211188624
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140726381498480
+      "buf_addr": 140721211188544
     },
     {
       "fd": 3,
-      "offset": 3493,
+      "offset": 3530,
       "size": 4096,
-      "buf_addr": 128276561907712
+      "buf_addr": 124694668537856
     },
     {
       "fd": 3,
-      "offset": 3493,
-      "size": 603,
-      "buf_addr": 128276561911205
+      "offset": 3530,
+      "size": 566,
+      "buf_addr": 124694668541386
     },
     {
       "fd": 3,
-      "offset": 4020,
+      "offset": 3997,
       "size": 4096,
-      "buf_addr": 128276561604608
+      "buf_addr": 124694668279808
     },
     {
       "fd": 3,
-      "offset": 4020,
-      "size": 76,
-      "buf_addr": 128276561608628
+      "offset": 3997,
+      "size": 99,
+      "buf_addr": 124694668283805
     },
     {
       "fd": 3,
-      "offset": 4020,
+      "offset": 3997,
       "size": 8192,
-      "buf_addr": 128276561330176
+      "buf_addr": 124694668275712
     },
     {
       "fd": 3,
-      "offset": 4020,
-      "size": 4172,
-      "buf_addr": 128276561334196
+      "offset": 3997,
+      "size": 4195,
+      "buf_addr": 124694668279709
     },
     {
       "fd": 3,
-      "offset": 4030,
+      "offset": 3997,
+      "size": 16384,
+      "buf_addr": 124694668267520
+    },
+    {
+      "fd": 3,
+      "offset": 3997,
+      "size": 12387,
+      "buf_addr": 124694668271517
+    },
+    {
+      "fd": 3,
+      "offset": 4027,
       "size": 4096,
-      "buf_addr": 128276561649664
+      "buf_addr": 124694667636736
     },
     {
       "fd": 3,
-      "offset": 4030,
-      "size": 66,
-      "buf_addr": 128276561653694
+      "offset": 4027,
+      "size": 69,
+      "buf_addr": 124694667640763
     },
     {
       "fd": 3,
-      "offset": 4030,
+      "offset": 4027,
       "size": 8192,
-      "buf_addr": 128276561645568
+      "buf_addr": 124694667632640
     },
     {
       "fd": 3,
-      "offset": 4030,
-      "size": 4162,
-      "buf_addr": 128276561649598
+      "offset": 4027,
+      "size": 4165,
+      "buf_addr": 124694667636667
+    },
+    {
+      "fd": 3,
+      "offset": 4027,
+      "size": 16384,
+      "buf_addr": 124694653255680
+    },
+    {
+      "fd": 3,
+      "offset": 4027,
+      "size": 12357,
+      "buf_addr": 124694653259707
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 66,
-      "buf_addr": 128276561653694
+      "size": 99,
+      "buf_addr": 124694668283805
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 76,
-      "buf_addr": 128276561608628
+      "size": 69,
+      "buf_addr": 124694667640763
     },
     {
       "fd": 3,
-      "offset": 5737,
-      "size": 4162,
-      "buf_addr": 128276561649598
+      "offset": 8052,
+      "size": 4195,
+      "buf_addr": 124694668279709
     },
     {
       "fd": 3,
-      "offset": 5737,
-      "size": 2455,
-      "buf_addr": 128276561651305
+      "offset": 8052,
+      "size": 140,
+      "buf_addr": 124694668283764
     },
     {
       "fd": 3,
-      "offset": 6115,
-      "size": 4172,
-      "buf_addr": 128276561334196
+      "offset": 8052,
+      "size": 12387,
+      "buf_addr": 124694668271517
     },
     {
       "fd": 3,
-      "offset": 6115,
-      "size": 2077,
-      "buf_addr": 128276561336291
+      "offset": 8052,
+      "size": 8332,
+      "buf_addr": 124694668275572
+    },
+    {
+      "fd": 3,
+      "offset": 8091,
+      "size": 4165,
+      "buf_addr": 124694667636667
+    },
+    {
+      "fd": 3,
+      "offset": 8091,
+      "size": 101,
+      "buf_addr": 124694667640731
+    },
+    {
+      "fd": 3,
+      "offset": 8091,
+      "size": 12357,
+      "buf_addr": 124694653259707
+    },
+    {
+      "fd": 3,
+      "offset": 8091,
+      "size": 8293,
+      "buf_addr": 124694653263771
+    },
+    {
+      "fd": 3,
+      "offset": 8192,
+      "size": 140,
+      "buf_addr": 124694668283764
+    },
+    {
+      "fd": 3,
+      "offset": 8192,
+      "size": 101,
+      "buf_addr": 124694667640731
+    },
+    {
+      "fd": 3,
+      "offset": 10629,
+      "size": 8332,
+      "buf_addr": 124694668275572
+    },
+    {
+      "fd": 3,
+      "offset": 10629,
+      "size": 5755,
+      "buf_addr": 124694668278149
+    },
+    {
+      "fd": 3,
+      "offset": 11007,
+      "size": 8293,
+      "buf_addr": 124694653263771
+    },
+    {
+      "fd": 3,
+      "offset": 11007,
+      "size": 5377,
+      "buf_addr": 124694653266687
     }
   ],
   "chain_trace": {
     "var_mappings": {
-      "l_tcp->cod": {
+      "p_stream->m_byte_offset": {
         "file_offset": null,
         "kind": null,
         "values": [
-          1
-        ]
-      },
-      "l_tcp": {
-        "file_offset": null,
-        "kind": null,
-        "values": [
-          90297392431360
-        ]
-      },
-      "p_j2k->m_current_tile_number": {
-        "file_offset": null,
-        "kind": null,
-        "values": [
-          0
+          202
         ]
       }
     },
@@ -362,9 +542,7 @@
       {
         "inv": 2,
         "varvals": {
-          "l_tcp->cod": 0,
-          "l_tcp": 90297392431360,
-          "p_j2k->m_current_tile_number": 0
+          "p_stream->m_byte_offset": 120
         },
         "diroff": null,
         "dp": null,
@@ -378,9 +556,175 @@
       {
         "inv": 3,
         "varvals": {
-          "l_tcp->cod": 1,
-          "l_tcp": 90297392431360,
-          "p_j2k->m_current_tile_number": 0
+          "p_stream->m_byte_offset": 132
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 4,
+        "varvals": {
+          "p_stream->m_byte_offset": 132
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 5,
+        "varvals": {
+          "p_stream->m_byte_offset": 147
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 6,
+        "varvals": {
+          "p_stream->m_byte_offset": 159
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 7,
+        "varvals": {
+          "p_stream->m_byte_offset": 161
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 8,
+        "varvals": {
+          "p_stream->m_byte_offset": 173
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 9,
+        "varvals": {
+          "p_stream->m_byte_offset": 175
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 10,
+        "varvals": {
+          "p_stream->m_byte_offset": 187
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 11,
+        "varvals": {
+          "p_stream->m_byte_offset": 187
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 12,
+        "varvals": {
+          "p_stream->m_byte_offset": 200
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 13,
+        "varvals": {
+          "p_stream->m_byte_offset": 202
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 15,
+        "varvals": {
+          "p_stream->m_byte_offset": 202
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 16,
+        "varvals": {
+          "p_stream->m_byte_offset": 202
         },
         "diroff": null,
         "dp": null,
@@ -403,220 +747,177 @@
     }
   },
   "deep_trace": {},
-  "arithmetic_backtrace": null,
+  "arithmetic_backtrace": {
+    "source": "/tmp/fork_analysis_7yuu8uaj/target/src/lib/openjp2/cio.c",
+    "fork_line": 586,
+    "nodes": {
+      "p_stream->m_byte_offset": {
+        "kind": "assign",
+        "line": 635,
+        "rhs": "p_size"
+      },
+      "p_size": {
+        "kind": "assign",
+        "line": 370,
+        "rhs": "p_stream->m_bytes_in_buffer"
+      },
+      "p_stream->m_bytes_in_buffer": {
+        "kind": "assign",
+        "line": 354,
+        "rhs": "p_stream->m_read_fn(p_buffer, p_size, p_stream->m_user_data)"
+      },
+      "p_stream->m_stored_data": {
+        "kind": "unknown",
+        "line": 324,
+        "rhs": null
+      },
+      "p_stream->m_buffer_size": {
+        "kind": "unknown",
+        "line": 324,
+        "rhs": null
+      },
+      "p_stream->m_user_data": {
+        "kind": "unknown",
+        "line": 324,
+        "rhs": null
+      },
+      "p_buffer": {
+        "kind": "assign",
+        "line": 369,
+        "rhs": "p_stream->m_bytes_in_buffer"
+      },
+      "l_remaining_bytes": {
+        "kind": "assign",
+        "line": 398,
+        "rhs": "p_stream->m_buffer_size - p_stream->m_bytes_in_buffer"
+      },
+      "l_skip_nb_bytes": {
+        "kind": "assign",
+        "line": 530,
+        "rhs": "l_current_skip_nb_bytes"
+      },
+      "p_stream->m_user_data_length": {
+        "kind": "unknown",
+        "line": 508,
+        "rhs": null
+      },
+      "l_current_skip_nb_bytes": {
+        "kind": "assign",
+        "line": 520,
+        "rhs": "p_stream->m_skip_fn(p_size, p_stream->m_user_data)"
+      }
+    },
+    "runtime_values": {
+      "p_stream->m_byte_offset": 202,
+      "p_stream->m_bytes_in_buffer": 0,
+      "p_stream->m_stored_data": 140737288075264,
+      "p_stream->m_buffer_size": 1048576,
+      "p_stream->m_user_data": 89404039234304,
+      "p_stream->m_user_data_length": 202
+    },
+    "tag_mappings": {},
+    "chains": {
+      "p_stream->m_byte_offset": {
+        "kind": "assign",
+        "tag_offsets": [],
+        "cli_leaves": [],
+        "node_count": 12
+      }
+    },
+    "explanation": {
+      "p_stream->m_byte_offset": [
+        "p_stream->m_byte_offset [GDB: 202] <- p_size  (line 635)",
+        "  p_size <- p_stream->m_bytes_in_buffer  (line 370)",
+        "    p_stream->m_bytes_in_buffer [GDB: 0] <- p_stream->m_read_fn(p_buffer, p_size, p_stream->m_user_data)  (line 354)",
+        "      p_stream->m_stored_data [GDB: 140737288075264] -> unknown",
+        "      p_stream->m_buffer_size [GDB: 1048576] -> unknown",
+        "      p_stream->m_user_data [GDB: 89404039234304] -> unknown",
+        "      p_buffer <- p_stream->m_bytes_in_buffer  (line 369)",
+        "  l_remaining_bytes <- p_stream->m_buffer_size - p_stream->m_bytes_in_buffer  (line 398)",
+        "  l_skip_nb_bytes <- l_current_skip_nb_bytes  (line 530)",
+        "    p_stream->m_user_data_length [GDB: 202] -> unknown",
+        "    p_stream->m_byte_offset [GDB: 202] <- p_size  (line 635)",
+        "    l_current_skip_nb_bytes <- p_stream->m_skip_fn(p_size, p_stream->m_user_data)  (line 520)"
+      ]
+    }
+  },
   "variable_offsets": {},
   "candidate_tiers": {
     "S_structural_format": [
       2,
       3,
-      51,
-      52,
-      67,
-      68,
-      73,
-      74,
-      76,
-      77,
-      115,
-      116,
+      45,
+      46,
+      59,
+      60,
+      65,
+      66,
+      104,
+      105,
       118,
       119,
-      120,
-      121,
-      168,
-      169,
-      233,
-      234,
-      249,
-      250,
-      255,
-      256,
-      258,
-      259,
-      307,
-      308,
-      310,
-      311,
-      312,
-      313,
-      340,
-      341,
-      342,
-      343,
-      346,
-      347,
-      362,
-      363,
-      401,
-      402,
-      421,
-      422,
-      438,
-      439,
-      461,
-      462,
-      463,
-      464,
-      477,
-      478,
-      495,
-      496,
-      497,
-      498,
-      503,
-      504,
-      509,
-      510,
-      511,
-      512,
-      517,
-      518,
-      536,
-      537,
-      550,
-      551,
-      558,
-      559,
-      561,
-      562,
-      595,
-      596,
-      597,
-      598,
-      609,
-      610,
-      648,
-      649,
-      653,
-      654,
-      668,
-      669,
-      673,
-      674,
-      685,
-      686,
-      708,
-      709,
-      710,
-      711,
-      725,
-      726,
-      742,
-      743,
-      744,
-      745,
-      756,
-      757
+      130,
+      131,
+      139,
+      140,
+      145,
+      146,
+      157,
+      158,
+      159,
+      160,
+      171,
+      172,
+      173,
+      174,
+      185,
+      186,
+      194,
+      195,
+      200,
+      201
     ]
   },
   "ifd_region": {
     "format": "j2k",
     "label": "J2K codestream marker IDs",
     "region_offset": 0,
-    "count": 190,
+    "count": 32,
     "entry_size": 1,
     "entries_base": 0,
     "field_offsets": [
       2,
       3,
-      51,
-      52,
-      67,
-      68,
-      73,
-      74,
-      76,
-      77,
-      115,
-      116,
+      45,
+      46,
+      59,
+      60,
+      65,
+      66,
+      104,
+      105,
       118,
       119,
-      120,
-      121,
-      168,
-      169,
-      233,
-      234,
-      249,
-      250,
-      255,
-      256,
-      258,
-      259,
-      307,
-      308,
-      310,
-      311,
-      312,
-      313,
-      340,
-      341,
-      342,
-      343,
-      346,
-      347,
-      362,
-      363,
-      401,
-      402,
-      421,
-      422,
-      438,
-      439,
-      461,
-      462,
-      463,
-      464,
-      477,
-      478,
-      495,
-      496,
-      497,
-      498,
-      503,
-      504,
-      509,
-      510,
-      511,
-      512,
-      517,
-      518,
-      536,
-      537,
-      550,
-      551,
-      558,
-      559,
-      561,
-      562,
-      595,
-      596,
-      597,
-      598,
-      609,
-      610,
-      648,
-      649,
-      653,
-      654,
-      668,
-      669,
-      673,
-      674,
-      685,
-      686,
-      708,
-      709,
-      710,
-      711,
-      725,
-      726,
-      742,
-      743,
-      744,
-      745,
-      756,
-      757
+      130,
+      131,
+      139,
+      140,
+      145,
+      146,
+      157,
+      158,
+      159,
+      160,
+      171,
+      172,
+      173,
+      174,
+      185,
+      186,
+      194,
+      195,
+      200,
+      201
     ],
     "fields": [
       {
@@ -632,61 +933,49 @@
         "name": "marker_id_lo"
       },
       {
-        "offset": 51,
+        "offset": 45,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_hi"
       },
       {
-        "offset": 52,
+        "offset": 46,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_lo"
       },
       {
-        "offset": 67,
+        "offset": 59,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_hi"
       },
       {
-        "offset": 68,
+        "offset": 60,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_lo"
       },
       {
-        "offset": 73,
+        "offset": 65,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_hi"
       },
       {
-        "offset": 74,
+        "offset": 66,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_lo"
       },
       {
-        "offset": 76,
+        "offset": 104,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_hi"
       },
       {
-        "offset": 77,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 115,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 116,
+        "offset": 105,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_lo"
@@ -704,1057 +993,121 @@
         "name": "marker_id_lo"
       },
       {
-        "offset": 120,
+        "offset": 130,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_hi"
       },
       {
-        "offset": 121,
+        "offset": 131,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_lo"
       },
       {
-        "offset": 168,
+        "offset": 139,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_hi"
       },
       {
-        "offset": 169,
+        "offset": 140,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_lo"
       },
       {
-        "offset": 233,
+        "offset": 145,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_hi"
       },
       {
-        "offset": 234,
+        "offset": 146,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_lo"
       },
       {
-        "offset": 249,
+        "offset": 157,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_hi"
       },
       {
-        "offset": 250,
+        "offset": 158,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_lo"
       },
       {
-        "offset": 255,
+        "offset": 159,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_hi"
       },
       {
-        "offset": 256,
+        "offset": 160,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_lo"
       },
       {
-        "offset": 258,
+        "offset": 171,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_hi"
       },
       {
-        "offset": 259,
+        "offset": 172,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_lo"
       },
       {
-        "offset": 307,
+        "offset": 173,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_hi"
       },
       {
-        "offset": 308,
+        "offset": 174,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_lo"
       },
       {
-        "offset": 310,
+        "offset": 185,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_hi"
       },
       {
-        "offset": 311,
+        "offset": 186,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_lo"
       },
       {
-        "offset": 312,
+        "offset": 194,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_hi"
       },
       {
-        "offset": 313,
+        "offset": 195,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_lo"
       },
       {
-        "offset": 340,
+        "offset": 200,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_hi"
       },
       {
-        "offset": 341,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 342,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 343,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 346,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 347,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 362,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 363,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 401,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 402,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 421,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 422,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 438,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 439,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 461,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 462,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 463,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 464,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 477,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 478,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 495,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 496,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 497,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 498,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 503,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 504,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 509,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 510,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 511,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 512,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 517,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 518,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 536,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 537,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 550,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 551,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 558,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 559,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 561,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 562,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 595,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 596,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 597,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 598,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 609,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 610,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 648,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 649,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 653,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 654,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 668,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 669,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 673,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 674,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 685,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 686,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 708,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 709,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 710,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 711,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 725,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 726,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 742,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 743,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 744,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 745,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 756,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 757,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 758,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 759,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 762,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 763,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 768,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 769,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 775,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 776,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 787,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 788,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 789,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 790,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 813,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 814,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 815,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 816,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 836,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 837,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 838,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 839,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 876,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 877,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 887,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 888,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 891,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 892,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 896,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 897,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 898,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 899,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 901,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 902,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 914,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 915,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 929,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 930,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 980,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 981,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 982,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 983,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 986,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 987,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1002,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1003,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1008,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1009,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1011,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1012,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1043,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1044,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1060,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1061,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1063,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1064,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1065,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1066,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1081,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1082,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1088,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1089,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1100,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1101,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1122,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1123,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1125,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1126,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1139,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1140,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1158,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1159,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1162,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1163,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1183,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1184,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1199,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1200,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1201,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1202,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1224,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1225,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1228,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1229,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1244,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1245,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1253,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1254,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1277,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1278,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_lo"
-      },
-      {
-        "offset": 1298,
-        "size": 1,
-        "kind": "marker",
-        "name": "marker_id_hi"
-      },
-      {
-        "offset": 1299,
+        "offset": 201,
         "size": 1,
         "kind": "marker",
         "name": "marker_id_lo"
@@ -1768,136 +1121,3436 @@
   "static_mutation_offsets": [
     2,
     3,
-    51,
-    52,
-    67,
-    68,
-    73,
-    74,
-    76,
-    77,
-    115,
-    116,
+    45,
+    46,
+    59,
+    60,
+    65,
+    66,
+    104,
+    105,
     118,
     119,
-    120,
-    121,
-    168,
-    169,
-    233,
-    234,
-    249,
-    250,
-    255,
-    256,
-    258,
-    259,
-    307,
-    308,
-    310,
-    311,
-    312,
-    313,
-    340,
-    341,
-    342,
-    343,
-    346,
-    347,
-    362,
-    363,
-    401,
-    402,
-    421,
-    422,
-    438,
-    439,
-    461,
-    462,
-    463,
-    464,
-    477,
-    478,
-    495,
-    496,
-    497,
-    498,
-    503,
-    504,
-    509,
-    510,
-    511,
-    512,
-    517,
-    518,
-    536,
-    537,
-    550,
-    551,
-    558,
-    559,
-    561,
-    562,
-    595,
-    596,
-    597,
-    598,
-    609,
-    610,
-    648,
-    649,
-    653,
-    654,
-    668,
-    669,
-    673,
-    674,
-    685,
-    686,
-    708,
-    709,
-    710,
-    711,
-    725,
-    726,
-    742,
-    743,
-    744,
-    745,
-    756,
-    757
+    130,
+    131,
+    139,
+    140,
+    145,
+    146,
+    157,
+    158,
+    159,
+    160,
+    171,
+    172,
+    173,
+    174,
+    185,
+    186,
+    194,
+    195,
+    200,
+    201
   ],
   "static_crash_results": {},
   "static_pairwise_results": {},
   "mutation_offsets": [],
   "crash_results": {},
-  "pairwise_results": {},
-  "multi_combo_results": {
-    "match": {
-      "combo": [
+  "pairwise_results": {
+    "ref_signature": {
+      "type": "heap-buffer-overflow",
+      "crash_frame": {
+        "function": "opj_j2k_read_sod",
+        "file": "/tmp/fork_analysis_7yuu8uaj/ref/src/lib/openjp2/j2k.c",
+        "line": 5086
+      },
+      "summary": {
+        "file": "/tmp/fork_analysis_7yuu8uaj/ref/src/lib/openjp2/j2k.c",
+        "line": 5086,
+        "function": "opj_j2k_read_sod"
+      }
+    },
+    "baseline_target": {
+      "rc": 1,
+      "crash": null
+    },
+    "0x8+0x9": {
+      "original": [
+        0,
+        0
+      ],
+      "matches": {},
+      "no_crash": [
         [
-          52,
-          0
+          1,
+          1
         ],
         [
-          234,
-          0
+          1,
+          127
         ],
         [
-          464,
-          0
+          1,
+          128
         ],
         [
-          537,
-          0
+          1,
+          254
+        ],
+        [
+          1,
+          255
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          1,
+          8
+        ],
+        [
+          1,
+          16
+        ],
+        [
+          1,
+          32
+        ],
+        [
+          1,
+          64
+        ],
+        [
+          127,
+          1
+        ],
+        [
+          127,
+          127
+        ],
+        [
+          127,
+          128
+        ],
+        [
+          127,
+          254
+        ],
+        [
+          127,
+          255
+        ],
+        [
+          127,
+          2
+        ],
+        [
+          127,
+          4
+        ],
+        [
+          127,
+          8
+        ],
+        [
+          127,
+          16
+        ],
+        [
+          127,
+          32
+        ],
+        [
+          127,
+          64
+        ],
+        [
+          128,
+          1
+        ],
+        [
+          128,
+          127
+        ],
+        [
+          128,
+          128
+        ],
+        [
+          128,
+          254
+        ],
+        [
+          128,
+          255
+        ],
+        [
+          128,
+          2
+        ],
+        [
+          128,
+          4
+        ],
+        [
+          128,
+          8
+        ],
+        [
+          128,
+          16
+        ],
+        [
+          128,
+          32
+        ],
+        [
+          128,
+          64
+        ],
+        [
+          254,
+          1
+        ],
+        [
+          254,
+          127
+        ],
+        [
+          254,
+          128
+        ],
+        [
+          254,
+          254
+        ],
+        [
+          254,
+          255
+        ],
+        [
+          254,
+          2
+        ],
+        [
+          254,
+          4
+        ],
+        [
+          254,
+          8
+        ],
+        [
+          254,
+          16
+        ],
+        [
+          254,
+          32
+        ],
+        [
+          254,
+          64
+        ],
+        [
+          255,
+          1
+        ],
+        [
+          255,
+          127
+        ],
+        [
+          255,
+          128
+        ],
+        [
+          255,
+          254
+        ],
+        [
+          255,
+          255
+        ],
+        [
+          255,
+          2
+        ],
+        [
+          255,
+          4
+        ],
+        [
+          255,
+          8
+        ],
+        [
+          255,
+          16
+        ],
+        [
+          255,
+          32
+        ],
+        [
+          255,
+          64
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          127
+        ],
+        [
+          2,
+          128
+        ],
+        [
+          2,
+          254
+        ],
+        [
+          2,
+          255
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          2,
+          8
+        ],
+        [
+          2,
+          16
+        ],
+        [
+          2,
+          32
+        ],
+        [
+          2,
+          64
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          4,
+          127
+        ],
+        [
+          4,
+          128
+        ],
+        [
+          4,
+          254
+        ],
+        [
+          4,
+          255
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          4,
+          8
+        ],
+        [
+          4,
+          16
+        ],
+        [
+          4,
+          32
+        ],
+        [
+          4,
+          64
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          8,
+          127
+        ],
+        [
+          8,
+          128
+        ],
+        [
+          8,
+          254
+        ],
+        [
+          8,
+          255
+        ],
+        [
+          8,
+          2
+        ],
+        [
+          8,
+          4
+        ],
+        [
+          8,
+          8
+        ],
+        [
+          8,
+          16
+        ],
+        [
+          8,
+          32
+        ],
+        [
+          8,
+          64
+        ],
+        [
+          16,
+          1
+        ],
+        [
+          16,
+          127
+        ],
+        [
+          16,
+          128
+        ],
+        [
+          16,
+          254
+        ],
+        [
+          16,
+          255
+        ],
+        [
+          16,
+          2
+        ],
+        [
+          16,
+          4
+        ],
+        [
+          16,
+          8
+        ],
+        [
+          16,
+          16
+        ],
+        [
+          16,
+          32
+        ],
+        [
+          16,
+          64
+        ],
+        [
+          32,
+          1
+        ],
+        [
+          32,
+          127
+        ],
+        [
+          32,
+          128
+        ],
+        [
+          32,
+          254
+        ],
+        [
+          32,
+          255
+        ],
+        [
+          32,
+          2
+        ],
+        [
+          32,
+          4
+        ],
+        [
+          32,
+          8
+        ],
+        [
+          32,
+          16
+        ],
+        [
+          32,
+          32
+        ],
+        [
+          32,
+          64
+        ],
+        [
+          64,
+          1
+        ],
+        [
+          64,
+          127
+        ],
+        [
+          64,
+          128
+        ],
+        [
+          64,
+          254
+        ],
+        [
+          64,
+          255
+        ],
+        [
+          64,
+          2
+        ],
+        [
+          64,
+          4
+        ],
+        [
+          64,
+          8
+        ],
+        [
+          64,
+          16
+        ],
+        [
+          64,
+          32
+        ],
+        [
+          64,
+          64
         ]
       ],
-      "uniform_value": 0,
-      "verdict": "same_func",
-      "matched": true,
-      "total_runs": 518,
-      "elapsed_seconds": 4
-    }
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": []
+    },
+    "0x8+0xa": {
+      "original": [
+        0,
+        0
+      ],
+      "matches": {},
+      "no_crash": [
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          127
+        ],
+        [
+          1,
+          128
+        ],
+        [
+          1,
+          254
+        ],
+        [
+          1,
+          255
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          1,
+          8
+        ],
+        [
+          1,
+          16
+        ],
+        [
+          1,
+          32
+        ],
+        [
+          1,
+          64
+        ],
+        [
+          127,
+          1
+        ],
+        [
+          127,
+          127
+        ],
+        [
+          127,
+          128
+        ],
+        [
+          127,
+          254
+        ],
+        [
+          127,
+          255
+        ],
+        [
+          127,
+          2
+        ],
+        [
+          127,
+          4
+        ],
+        [
+          127,
+          8
+        ],
+        [
+          127,
+          16
+        ],
+        [
+          127,
+          32
+        ],
+        [
+          127,
+          64
+        ],
+        [
+          128,
+          1
+        ],
+        [
+          128,
+          127
+        ],
+        [
+          128,
+          128
+        ],
+        [
+          128,
+          254
+        ],
+        [
+          128,
+          255
+        ],
+        [
+          128,
+          2
+        ],
+        [
+          128,
+          4
+        ],
+        [
+          128,
+          8
+        ],
+        [
+          128,
+          16
+        ],
+        [
+          128,
+          32
+        ],
+        [
+          128,
+          64
+        ],
+        [
+          254,
+          1
+        ],
+        [
+          254,
+          127
+        ],
+        [
+          254,
+          128
+        ],
+        [
+          254,
+          254
+        ],
+        [
+          254,
+          255
+        ],
+        [
+          254,
+          2
+        ],
+        [
+          254,
+          4
+        ],
+        [
+          254,
+          8
+        ],
+        [
+          254,
+          16
+        ],
+        [
+          254,
+          32
+        ],
+        [
+          254,
+          64
+        ],
+        [
+          255,
+          1
+        ],
+        [
+          255,
+          127
+        ],
+        [
+          255,
+          128
+        ],
+        [
+          255,
+          254
+        ],
+        [
+          255,
+          255
+        ],
+        [
+          255,
+          2
+        ],
+        [
+          255,
+          4
+        ],
+        [
+          255,
+          8
+        ],
+        [
+          255,
+          16
+        ],
+        [
+          255,
+          32
+        ],
+        [
+          255,
+          64
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          127
+        ],
+        [
+          2,
+          128
+        ],
+        [
+          2,
+          254
+        ],
+        [
+          2,
+          255
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          2,
+          8
+        ],
+        [
+          2,
+          16
+        ],
+        [
+          2,
+          32
+        ],
+        [
+          2,
+          64
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          4,
+          127
+        ],
+        [
+          4,
+          128
+        ],
+        [
+          4,
+          254
+        ],
+        [
+          4,
+          255
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          4,
+          8
+        ],
+        [
+          4,
+          16
+        ],
+        [
+          4,
+          32
+        ],
+        [
+          4,
+          64
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          8,
+          127
+        ],
+        [
+          8,
+          128
+        ],
+        [
+          8,
+          254
+        ],
+        [
+          8,
+          255
+        ],
+        [
+          8,
+          2
+        ],
+        [
+          8,
+          4
+        ],
+        [
+          8,
+          8
+        ],
+        [
+          8,
+          16
+        ],
+        [
+          8,
+          32
+        ],
+        [
+          8,
+          64
+        ],
+        [
+          16,
+          1
+        ],
+        [
+          16,
+          127
+        ],
+        [
+          16,
+          128
+        ],
+        [
+          16,
+          254
+        ],
+        [
+          16,
+          255
+        ],
+        [
+          16,
+          2
+        ],
+        [
+          16,
+          4
+        ],
+        [
+          16,
+          8
+        ],
+        [
+          16,
+          16
+        ],
+        [
+          16,
+          32
+        ],
+        [
+          16,
+          64
+        ],
+        [
+          32,
+          1
+        ],
+        [
+          32,
+          127
+        ],
+        [
+          32,
+          128
+        ],
+        [
+          32,
+          254
+        ],
+        [
+          32,
+          255
+        ],
+        [
+          32,
+          2
+        ],
+        [
+          32,
+          4
+        ],
+        [
+          32,
+          8
+        ],
+        [
+          32,
+          16
+        ],
+        [
+          32,
+          32
+        ],
+        [
+          32,
+          64
+        ],
+        [
+          64,
+          1
+        ],
+        [
+          64,
+          127
+        ],
+        [
+          64,
+          128
+        ],
+        [
+          64,
+          254
+        ],
+        [
+          64,
+          255
+        ],
+        [
+          64,
+          2
+        ],
+        [
+          64,
+          4
+        ],
+        [
+          64,
+          8
+        ],
+        [
+          64,
+          16
+        ],
+        [
+          64,
+          32
+        ],
+        [
+          64,
+          64
+        ]
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": []
+    },
+    "0x8+0xb": {
+      "original": [
+        0,
+        128
+      ],
+      "matches": {},
+      "no_crash": [
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          127
+        ],
+        [
+          1,
+          254
+        ],
+        [
+          1,
+          255
+        ],
+        [
+          1,
+          129
+        ],
+        [
+          1,
+          130
+        ],
+        [
+          1,
+          132
+        ],
+        [
+          1,
+          136
+        ],
+        [
+          1,
+          144
+        ],
+        [
+          1,
+          160
+        ],
+        [
+          1,
+          192
+        ],
+        [
+          1,
+          126
+        ],
+        [
+          127,
+          0
+        ],
+        [
+          127,
+          1
+        ],
+        [
+          127,
+          127
+        ],
+        [
+          127,
+          254
+        ],
+        [
+          127,
+          255
+        ],
+        [
+          127,
+          129
+        ],
+        [
+          127,
+          130
+        ],
+        [
+          127,
+          132
+        ],
+        [
+          127,
+          136
+        ],
+        [
+          127,
+          144
+        ],
+        [
+          127,
+          160
+        ],
+        [
+          127,
+          192
+        ],
+        [
+          127,
+          126
+        ],
+        [
+          128,
+          0
+        ],
+        [
+          128,
+          1
+        ],
+        [
+          128,
+          127
+        ],
+        [
+          128,
+          254
+        ],
+        [
+          128,
+          255
+        ],
+        [
+          128,
+          129
+        ],
+        [
+          128,
+          130
+        ],
+        [
+          128,
+          132
+        ],
+        [
+          128,
+          136
+        ],
+        [
+          128,
+          144
+        ],
+        [
+          128,
+          160
+        ],
+        [
+          128,
+          192
+        ],
+        [
+          128,
+          126
+        ],
+        [
+          254,
+          0
+        ],
+        [
+          254,
+          1
+        ],
+        [
+          254,
+          127
+        ],
+        [
+          254,
+          254
+        ],
+        [
+          254,
+          255
+        ],
+        [
+          254,
+          129
+        ],
+        [
+          254,
+          130
+        ],
+        [
+          254,
+          132
+        ],
+        [
+          254,
+          136
+        ],
+        [
+          254,
+          144
+        ],
+        [
+          254,
+          160
+        ],
+        [
+          254,
+          192
+        ],
+        [
+          254,
+          126
+        ],
+        [
+          255,
+          0
+        ],
+        [
+          255,
+          1
+        ],
+        [
+          255,
+          127
+        ],
+        [
+          255,
+          254
+        ],
+        [
+          255,
+          255
+        ],
+        [
+          255,
+          129
+        ],
+        [
+          255,
+          130
+        ],
+        [
+          255,
+          132
+        ],
+        [
+          255,
+          136
+        ],
+        [
+          255,
+          144
+        ],
+        [
+          255,
+          160
+        ],
+        [
+          255,
+          192
+        ],
+        [
+          255,
+          126
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          127
+        ],
+        [
+          2,
+          254
+        ],
+        [
+          2,
+          255
+        ],
+        [
+          2,
+          129
+        ],
+        [
+          2,
+          130
+        ],
+        [
+          2,
+          132
+        ],
+        [
+          2,
+          136
+        ],
+        [
+          2,
+          144
+        ],
+        [
+          2,
+          160
+        ],
+        [
+          2,
+          192
+        ],
+        [
+          2,
+          126
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          4,
+          127
+        ],
+        [
+          4,
+          254
+        ],
+        [
+          4,
+          255
+        ],
+        [
+          4,
+          129
+        ],
+        [
+          4,
+          130
+        ],
+        [
+          4,
+          132
+        ],
+        [
+          4,
+          136
+        ],
+        [
+          4,
+          144
+        ],
+        [
+          4,
+          160
+        ],
+        [
+          4,
+          192
+        ],
+        [
+          4,
+          126
+        ],
+        [
+          8,
+          0
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          8,
+          127
+        ],
+        [
+          8,
+          254
+        ],
+        [
+          8,
+          255
+        ],
+        [
+          8,
+          129
+        ],
+        [
+          8,
+          130
+        ],
+        [
+          8,
+          132
+        ],
+        [
+          8,
+          136
+        ],
+        [
+          8,
+          144
+        ],
+        [
+          8,
+          160
+        ],
+        [
+          8,
+          192
+        ],
+        [
+          8,
+          126
+        ],
+        [
+          16,
+          0
+        ],
+        [
+          16,
+          1
+        ],
+        [
+          16,
+          127
+        ],
+        [
+          16,
+          254
+        ],
+        [
+          16,
+          255
+        ],
+        [
+          16,
+          129
+        ],
+        [
+          16,
+          130
+        ],
+        [
+          16,
+          132
+        ],
+        [
+          16,
+          136
+        ],
+        [
+          16,
+          144
+        ],
+        [
+          16,
+          160
+        ],
+        [
+          16,
+          192
+        ],
+        [
+          16,
+          126
+        ],
+        [
+          32,
+          0
+        ],
+        [
+          32,
+          1
+        ],
+        [
+          32,
+          127
+        ],
+        [
+          32,
+          254
+        ],
+        [
+          32,
+          255
+        ],
+        [
+          32,
+          129
+        ],
+        [
+          32,
+          130
+        ],
+        [
+          32,
+          132
+        ],
+        [
+          32,
+          136
+        ],
+        [
+          32,
+          144
+        ],
+        [
+          32,
+          160
+        ],
+        [
+          32,
+          192
+        ],
+        [
+          32,
+          126
+        ],
+        [
+          64,
+          0
+        ],
+        [
+          64,
+          1
+        ],
+        [
+          64,
+          127
+        ],
+        [
+          64,
+          254
+        ],
+        [
+          64,
+          255
+        ],
+        [
+          64,
+          129
+        ],
+        [
+          64,
+          130
+        ],
+        [
+          64,
+          132
+        ],
+        [
+          64,
+          136
+        ],
+        [
+          64,
+          144
+        ],
+        [
+          64,
+          160
+        ],
+        [
+          64,
+          192
+        ],
+        [
+          64,
+          126
+        ]
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": []
+    },
+    "0x9+0xa": {
+      "original": [
+        0,
+        0
+      ],
+      "matches": {},
+      "no_crash": [
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          127
+        ],
+        [
+          1,
+          128
+        ],
+        [
+          1,
+          254
+        ],
+        [
+          1,
+          255
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          1,
+          8
+        ],
+        [
+          1,
+          16
+        ],
+        [
+          1,
+          32
+        ],
+        [
+          1,
+          64
+        ],
+        [
+          127,
+          1
+        ],
+        [
+          127,
+          127
+        ],
+        [
+          127,
+          128
+        ],
+        [
+          127,
+          254
+        ],
+        [
+          127,
+          255
+        ],
+        [
+          127,
+          2
+        ],
+        [
+          127,
+          4
+        ],
+        [
+          127,
+          8
+        ],
+        [
+          127,
+          16
+        ],
+        [
+          127,
+          32
+        ],
+        [
+          127,
+          64
+        ],
+        [
+          128,
+          1
+        ],
+        [
+          128,
+          127
+        ],
+        [
+          128,
+          128
+        ],
+        [
+          128,
+          254
+        ],
+        [
+          128,
+          255
+        ],
+        [
+          128,
+          2
+        ],
+        [
+          128,
+          4
+        ],
+        [
+          128,
+          8
+        ],
+        [
+          128,
+          16
+        ],
+        [
+          128,
+          32
+        ],
+        [
+          128,
+          64
+        ],
+        [
+          254,
+          1
+        ],
+        [
+          254,
+          127
+        ],
+        [
+          254,
+          128
+        ],
+        [
+          254,
+          254
+        ],
+        [
+          254,
+          255
+        ],
+        [
+          254,
+          2
+        ],
+        [
+          254,
+          4
+        ],
+        [
+          254,
+          8
+        ],
+        [
+          254,
+          16
+        ],
+        [
+          254,
+          32
+        ],
+        [
+          254,
+          64
+        ],
+        [
+          255,
+          1
+        ],
+        [
+          255,
+          127
+        ],
+        [
+          255,
+          128
+        ],
+        [
+          255,
+          254
+        ],
+        [
+          255,
+          255
+        ],
+        [
+          255,
+          2
+        ],
+        [
+          255,
+          4
+        ],
+        [
+          255,
+          8
+        ],
+        [
+          255,
+          16
+        ],
+        [
+          255,
+          32
+        ],
+        [
+          255,
+          64
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          127
+        ],
+        [
+          2,
+          128
+        ],
+        [
+          2,
+          254
+        ],
+        [
+          2,
+          255
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          2,
+          8
+        ],
+        [
+          2,
+          16
+        ],
+        [
+          2,
+          32
+        ],
+        [
+          2,
+          64
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          4,
+          127
+        ],
+        [
+          4,
+          128
+        ],
+        [
+          4,
+          254
+        ],
+        [
+          4,
+          255
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          4,
+          8
+        ],
+        [
+          4,
+          16
+        ],
+        [
+          4,
+          32
+        ],
+        [
+          4,
+          64
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          8,
+          127
+        ],
+        [
+          8,
+          128
+        ],
+        [
+          8,
+          254
+        ],
+        [
+          8,
+          255
+        ],
+        [
+          8,
+          2
+        ],
+        [
+          8,
+          4
+        ],
+        [
+          8,
+          8
+        ],
+        [
+          8,
+          16
+        ],
+        [
+          8,
+          32
+        ],
+        [
+          8,
+          64
+        ],
+        [
+          16,
+          1
+        ],
+        [
+          16,
+          127
+        ],
+        [
+          16,
+          128
+        ],
+        [
+          16,
+          254
+        ],
+        [
+          16,
+          255
+        ],
+        [
+          16,
+          2
+        ],
+        [
+          16,
+          4
+        ],
+        [
+          16,
+          8
+        ],
+        [
+          16,
+          16
+        ],
+        [
+          16,
+          32
+        ],
+        [
+          16,
+          64
+        ],
+        [
+          32,
+          1
+        ],
+        [
+          32,
+          127
+        ],
+        [
+          32,
+          128
+        ],
+        [
+          32,
+          254
+        ],
+        [
+          32,
+          255
+        ],
+        [
+          32,
+          2
+        ],
+        [
+          32,
+          4
+        ],
+        [
+          32,
+          8
+        ],
+        [
+          32,
+          16
+        ],
+        [
+          32,
+          32
+        ],
+        [
+          32,
+          64
+        ],
+        [
+          64,
+          1
+        ],
+        [
+          64,
+          127
+        ],
+        [
+          64,
+          128
+        ],
+        [
+          64,
+          254
+        ],
+        [
+          64,
+          255
+        ],
+        [
+          64,
+          2
+        ],
+        [
+          64,
+          4
+        ],
+        [
+          64,
+          8
+        ],
+        [
+          64,
+          16
+        ],
+        [
+          64,
+          32
+        ],
+        [
+          64,
+          64
+        ]
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": []
+    },
+    "0x9+0xb": {
+      "original": [
+        0,
+        128
+      ],
+      "matches": {},
+      "no_crash": [
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          127
+        ],
+        [
+          1,
+          254
+        ],
+        [
+          1,
+          255
+        ],
+        [
+          1,
+          129
+        ],
+        [
+          1,
+          130
+        ],
+        [
+          1,
+          132
+        ],
+        [
+          1,
+          136
+        ],
+        [
+          1,
+          144
+        ],
+        [
+          1,
+          160
+        ],
+        [
+          1,
+          192
+        ],
+        [
+          1,
+          126
+        ],
+        [
+          127,
+          0
+        ],
+        [
+          127,
+          1
+        ],
+        [
+          127,
+          127
+        ],
+        [
+          127,
+          254
+        ],
+        [
+          127,
+          255
+        ],
+        [
+          127,
+          129
+        ],
+        [
+          127,
+          130
+        ],
+        [
+          127,
+          132
+        ],
+        [
+          127,
+          136
+        ],
+        [
+          127,
+          144
+        ],
+        [
+          127,
+          160
+        ],
+        [
+          127,
+          192
+        ],
+        [
+          127,
+          126
+        ],
+        [
+          128,
+          0
+        ],
+        [
+          128,
+          1
+        ],
+        [
+          128,
+          127
+        ],
+        [
+          128,
+          254
+        ],
+        [
+          128,
+          255
+        ],
+        [
+          128,
+          129
+        ],
+        [
+          128,
+          130
+        ],
+        [
+          128,
+          132
+        ],
+        [
+          128,
+          136
+        ],
+        [
+          128,
+          144
+        ],
+        [
+          128,
+          160
+        ],
+        [
+          128,
+          192
+        ],
+        [
+          128,
+          126
+        ],
+        [
+          254,
+          0
+        ],
+        [
+          254,
+          1
+        ],
+        [
+          254,
+          127
+        ],
+        [
+          254,
+          254
+        ],
+        [
+          254,
+          255
+        ],
+        [
+          254,
+          129
+        ],
+        [
+          254,
+          130
+        ],
+        [
+          254,
+          132
+        ],
+        [
+          254,
+          136
+        ],
+        [
+          254,
+          144
+        ],
+        [
+          254,
+          160
+        ],
+        [
+          254,
+          192
+        ],
+        [
+          254,
+          126
+        ],
+        [
+          255,
+          0
+        ],
+        [
+          255,
+          1
+        ],
+        [
+          255,
+          127
+        ],
+        [
+          255,
+          254
+        ],
+        [
+          255,
+          255
+        ],
+        [
+          255,
+          129
+        ],
+        [
+          255,
+          130
+        ],
+        [
+          255,
+          132
+        ],
+        [
+          255,
+          136
+        ],
+        [
+          255,
+          144
+        ],
+        [
+          255,
+          160
+        ],
+        [
+          255,
+          192
+        ],
+        [
+          255,
+          126
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          127
+        ],
+        [
+          2,
+          254
+        ],
+        [
+          2,
+          255
+        ],
+        [
+          2,
+          129
+        ],
+        [
+          2,
+          130
+        ],
+        [
+          2,
+          132
+        ],
+        [
+          2,
+          136
+        ],
+        [
+          2,
+          144
+        ],
+        [
+          2,
+          160
+        ],
+        [
+          2,
+          192
+        ],
+        [
+          2,
+          126
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          4,
+          127
+        ],
+        [
+          4,
+          254
+        ],
+        [
+          4,
+          255
+        ],
+        [
+          4,
+          129
+        ],
+        [
+          4,
+          130
+        ],
+        [
+          4,
+          132
+        ],
+        [
+          4,
+          136
+        ],
+        [
+          4,
+          144
+        ],
+        [
+          4,
+          160
+        ],
+        [
+          4,
+          192
+        ],
+        [
+          4,
+          126
+        ],
+        [
+          8,
+          0
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          8,
+          127
+        ],
+        [
+          8,
+          254
+        ],
+        [
+          8,
+          255
+        ],
+        [
+          8,
+          129
+        ],
+        [
+          8,
+          130
+        ],
+        [
+          8,
+          132
+        ],
+        [
+          8,
+          136
+        ],
+        [
+          8,
+          144
+        ],
+        [
+          8,
+          160
+        ],
+        [
+          8,
+          192
+        ],
+        [
+          8,
+          126
+        ],
+        [
+          16,
+          0
+        ],
+        [
+          16,
+          1
+        ],
+        [
+          16,
+          127
+        ],
+        [
+          16,
+          254
+        ],
+        [
+          16,
+          255
+        ],
+        [
+          16,
+          129
+        ],
+        [
+          16,
+          130
+        ],
+        [
+          16,
+          132
+        ],
+        [
+          16,
+          136
+        ],
+        [
+          16,
+          144
+        ],
+        [
+          16,
+          160
+        ],
+        [
+          16,
+          192
+        ],
+        [
+          16,
+          126
+        ],
+        [
+          32,
+          0
+        ],
+        [
+          32,
+          1
+        ],
+        [
+          32,
+          127
+        ],
+        [
+          32,
+          254
+        ],
+        [
+          32,
+          255
+        ],
+        [
+          32,
+          129
+        ],
+        [
+          32,
+          130
+        ],
+        [
+          32,
+          132
+        ],
+        [
+          32,
+          136
+        ],
+        [
+          32,
+          144
+        ],
+        [
+          32,
+          160
+        ],
+        [
+          32,
+          192
+        ],
+        [
+          32,
+          126
+        ],
+        [
+          64,
+          0
+        ],
+        [
+          64,
+          1
+        ],
+        [
+          64,
+          127
+        ],
+        [
+          64,
+          254
+        ],
+        [
+          64,
+          255
+        ],
+        [
+          64,
+          129
+        ],
+        [
+          64,
+          130
+        ],
+        [
+          64,
+          132
+        ],
+        [
+          64,
+          136
+        ],
+        [
+          64,
+          144
+        ],
+        [
+          64,
+          160
+        ],
+        [
+          64,
+          192
+        ],
+        [
+          64,
+          126
+        ]
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": []
+    },
+    "0xa+0xb": {
+      "original": [
+        0,
+        128
+      ],
+      "matches": {},
+      "no_crash": [
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          127
+        ],
+        [
+          1,
+          254
+        ],
+        [
+          1,
+          255
+        ],
+        [
+          1,
+          129
+        ],
+        [
+          1,
+          130
+        ],
+        [
+          1,
+          132
+        ],
+        [
+          1,
+          136
+        ],
+        [
+          1,
+          144
+        ],
+        [
+          1,
+          160
+        ],
+        [
+          1,
+          192
+        ],
+        [
+          1,
+          126
+        ],
+        [
+          127,
+          0
+        ],
+        [
+          127,
+          1
+        ],
+        [
+          127,
+          127
+        ],
+        [
+          127,
+          254
+        ],
+        [
+          127,
+          255
+        ],
+        [
+          127,
+          129
+        ],
+        [
+          127,
+          130
+        ],
+        [
+          127,
+          132
+        ],
+        [
+          127,
+          136
+        ],
+        [
+          127,
+          144
+        ],
+        [
+          127,
+          160
+        ],
+        [
+          127,
+          192
+        ],
+        [
+          127,
+          126
+        ],
+        [
+          128,
+          0
+        ],
+        [
+          128,
+          1
+        ],
+        [
+          128,
+          127
+        ],
+        [
+          128,
+          254
+        ],
+        [
+          128,
+          255
+        ],
+        [
+          128,
+          129
+        ],
+        [
+          128,
+          130
+        ],
+        [
+          128,
+          132
+        ],
+        [
+          128,
+          136
+        ],
+        [
+          128,
+          144
+        ],
+        [
+          128,
+          160
+        ],
+        [
+          128,
+          192
+        ],
+        [
+          128,
+          126
+        ],
+        [
+          254,
+          0
+        ],
+        [
+          254,
+          1
+        ],
+        [
+          254,
+          127
+        ],
+        [
+          254,
+          254
+        ],
+        [
+          254,
+          255
+        ],
+        [
+          254,
+          129
+        ],
+        [
+          254,
+          130
+        ],
+        [
+          254,
+          132
+        ],
+        [
+          254,
+          136
+        ],
+        [
+          254,
+          144
+        ],
+        [
+          254,
+          160
+        ],
+        [
+          254,
+          192
+        ],
+        [
+          254,
+          126
+        ],
+        [
+          255,
+          0
+        ],
+        [
+          255,
+          1
+        ],
+        [
+          255,
+          127
+        ],
+        [
+          255,
+          254
+        ],
+        [
+          255,
+          255
+        ],
+        [
+          255,
+          129
+        ],
+        [
+          255,
+          130
+        ],
+        [
+          255,
+          132
+        ],
+        [
+          255,
+          136
+        ],
+        [
+          255,
+          144
+        ],
+        [
+          255,
+          160
+        ],
+        [
+          255,
+          192
+        ],
+        [
+          255,
+          126
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          127
+        ],
+        [
+          2,
+          254
+        ],
+        [
+          2,
+          255
+        ],
+        [
+          2,
+          129
+        ],
+        [
+          2,
+          130
+        ],
+        [
+          2,
+          132
+        ],
+        [
+          2,
+          136
+        ],
+        [
+          2,
+          144
+        ],
+        [
+          2,
+          160
+        ],
+        [
+          2,
+          192
+        ],
+        [
+          2,
+          126
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          4,
+          127
+        ],
+        [
+          4,
+          254
+        ],
+        [
+          4,
+          255
+        ],
+        [
+          4,
+          129
+        ],
+        [
+          4,
+          130
+        ],
+        [
+          4,
+          132
+        ],
+        [
+          4,
+          136
+        ],
+        [
+          4,
+          144
+        ],
+        [
+          4,
+          160
+        ],
+        [
+          4,
+          192
+        ],
+        [
+          4,
+          126
+        ],
+        [
+          8,
+          0
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          8,
+          127
+        ],
+        [
+          8,
+          254
+        ],
+        [
+          8,
+          255
+        ],
+        [
+          8,
+          129
+        ],
+        [
+          8,
+          130
+        ],
+        [
+          8,
+          132
+        ],
+        [
+          8,
+          136
+        ],
+        [
+          8,
+          144
+        ],
+        [
+          8,
+          160
+        ],
+        [
+          8,
+          192
+        ],
+        [
+          8,
+          126
+        ],
+        [
+          16,
+          0
+        ],
+        [
+          16,
+          1
+        ],
+        [
+          16,
+          127
+        ],
+        [
+          16,
+          254
+        ],
+        [
+          16,
+          255
+        ],
+        [
+          16,
+          129
+        ],
+        [
+          16,
+          130
+        ],
+        [
+          16,
+          132
+        ],
+        [
+          16,
+          136
+        ],
+        [
+          16,
+          144
+        ],
+        [
+          16,
+          160
+        ],
+        [
+          16,
+          192
+        ],
+        [
+          16,
+          126
+        ],
+        [
+          32,
+          0
+        ],
+        [
+          32,
+          1
+        ],
+        [
+          32,
+          127
+        ],
+        [
+          32,
+          254
+        ],
+        [
+          32,
+          255
+        ],
+        [
+          32,
+          129
+        ],
+        [
+          32,
+          130
+        ],
+        [
+          32,
+          132
+        ],
+        [
+          32,
+          136
+        ],
+        [
+          32,
+          144
+        ],
+        [
+          32,
+          160
+        ],
+        [
+          32,
+          192
+        ],
+        [
+          32,
+          126
+        ],
+        [
+          64,
+          0
+        ],
+        [
+          64,
+          1
+        ],
+        [
+          64,
+          127
+        ],
+        [
+          64,
+          254
+        ],
+        [
+          64,
+          255
+        ],
+        [
+          64,
+          129
+        ],
+        [
+          64,
+          130
+        ],
+        [
+          64,
+          132
+        ],
+        [
+          64,
+          136
+        ],
+        [
+          64,
+          144
+        ],
+        [
+          64,
+          160
+        ],
+        [
+          64,
+          192
+        ],
+        [
+          64,
+          126
+        ]
+      ],
+      "fork_flip": [],
+      "same_type": {},
+      "different_type": []
+    },
+    "pairwise_target_crash_summary": {}
   },
-  "mutation_any_match": true
+  "multi_combo_results": {},
+  "extended_mutation_results": {
+    "enabled": true,
+    "primary_offsets": [
+      8,
+      9,
+      10,
+      11
+    ],
+    "dynamic_neighbourhood": [
+      8,
+      9,
+      10,
+      11,
+      7,
+      12,
+      6,
+      13,
+      5,
+      14,
+      4,
+      15,
+      0,
+      16,
+      1,
+      17,
+      2,
+      18,
+      3,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      40,
+      41,
+      42,
+      43,
+      72,
+      73,
+      74,
+      75,
+      45,
+      46,
+      59,
+      60,
+      65,
+      66
+    ],
+    "dynamic_structure_offsets": [
+      2,
+      3,
+      45,
+      46,
+      59,
+      60,
+      65,
+      66,
+      104,
+      105,
+      118,
+      119,
+      130,
+      131,
+      139,
+      140,
+      145,
+      146,
+      157,
+      158,
+      159,
+      160,
+      171,
+      172,
+      173,
+      174,
+      185,
+      186,
+      194,
+      195,
+      200,
+      201
+    ],
+    "static_offsets": [
+      2,
+      3,
+      45,
+      46,
+      59,
+      60,
+      65,
+      66,
+      104,
+      105,
+      118,
+      119,
+      130,
+      131,
+      139,
+      140,
+      145,
+      146,
+      157,
+      158,
+      159,
+      160,
+      171,
+      172,
+      173,
+      174,
+      185,
+      186,
+      194,
+      195,
+      200,
+      201
+    ],
+    "candidates_tested": 1200,
+    "matched": false,
+    "matches": [],
+    "novel_behaviours": 72,
+    "corpus_seeds": 24,
+    "operators": {
+      "mb": 323,
+      "arith": 122,
+      "uniform": 423,
+      "ins": 230,
+      "havoc": 102
+    },
+    "budget_exhausted": true,
+    "elapsed_seconds": 9.352
+  },
+  "mutation_any_match": false
 }

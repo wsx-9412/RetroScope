@@ -5,7 +5,7 @@
 # =====================================================
 CVE_ID = "CVE-2019-13147"           # CVE number
 INPUT_FILE = "in/audiofile/CVE-2019-13147"    # input file path (relative to RetroScope/)
-OUTPUT_FILE = "/tmp/foo"           # program output file
+OUTPUT_FILE = "/tmp/out.aiff format aiff"           # program output file
 # Program arguments template: {program_path}, {input_file}, {output_file}
 COMMAND_FORMAT = "{program_path} {input_file} {output_file} format aiff"
 

@@ -13,16 +13,20 @@
 # For other CVEs pick the matching harness in build/ (test_face.c,
 # test_var.c, ft_get_design_dump.c, ...) and adapt COMMAND_FORMAT.
 
+import os as _os
+
 # =====================================================
 # CVE configuration: change this section for each CVE
 # =====================================================
-CVE_ID = "CVE-2022-27404"        # CVE number
-INPUT_FILE = "in/CVE-2022-27404" # input file path (relative to RetroScope/)
+CVE_ID = "CVE-2026-50811"        # CVE number
+INPUT_FILE = "in/CVE-2026-50811" # input file path (relative to RetroScope/)
 OUTPUT_FILE = "/tmp/foo"         # program output file
 # Program arguments template: {program_path}, {input_file}, {output_file}
-COMMAND_FORMAT = "{program_path} {input_file}"
+COMMAND_FORMAT = "{program_path} {input_file} 64"
 
-HARNESS_SRC = "/home/ws/Desktop/RetroScope/build/test_face_idx.c"
+# Absolute path (pre_build runs with cwd = version tree, not RetroScope/)
+HARNESS_SRC = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
+                            "build", "ft_get_design_dump.c")
 
 # =====================================================
 # Compilation configuration (usually no need to change)

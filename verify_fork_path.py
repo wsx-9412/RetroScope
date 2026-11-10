@@ -137,8 +137,47 @@ def build_hint(div, binary_target, fork_file=None, fork_line=None,
         f_line = int(f_line) + _delta
     spec = "%s:%d" % (f_file, int(f_line))
     stmt = b.get("text") or div.get("root_cause_statement_b") or ""
+    # Multi-line if: statement text is truncated at first line and lacks
+    # closing ')'. Read subsequent source lines until parens balance.
+    if re.match(r"^\s*if\s*\(", stmt) and stmt.count("(") > stmt.count(")"):
+        candidates = [f_file]
+        if not os.path.isabs(f_file):
+            try:
+                from divergence_analyzer import find_version_root
+                vroot = find_version_root(binary_target)
+                if vroot:
+                    candidates = [
+                        os.path.join(str(vroot), f_file),
+                        os.path.join(str(vroot), "src", os.path.basename(f_file)),
+                        os.path.join(str(vroot), "programs", os.path.basename(f_file)),
+                        f_file,
+                    ]
+            except Exception:
+                pass
+        for cand in candidates:
+            if not cand or not os.path.isfile(cand):
+                continue
+            try:
+                with open(cand) as sf:
+                    src_lines = sf.read().splitlines()
+                i = int(f_line)
+                extra = []
+                while 0 <= i < len(src_lines) and i < int(f_line) + 8:
+                    extra.append(src_lines[i])
+                    joined = "\n".join([stmt] + extra)
+                    if joined.count("(") <= joined.count(")"):
+                        break
+                    i += 1
+                if extra:
+                    stmt = stmt + "\n" + "\n".join(extra)
+                    break
+            except Exception:
+                continue
     m = re.match(r"^\s*if\s*\((.*)\)\s*$", stmt, re.S)
-    cond = ("((%s))" % m.group(1).strip()) if m else None
+    cond = None
+    if m:
+        # collapse newlines from multi-line if continuation for GDB eval
+        cond = ("((%s))" % re.sub(r"\s+", " ", m.group(1).strip()))
     exp = expected_outcome
     if exp is None:
         exp = a.get("outcome")

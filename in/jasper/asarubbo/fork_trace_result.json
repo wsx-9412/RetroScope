@@ -1,0 +1,505 @@
+{
+  "binary_target": "/tmp/fork_analysis__cll1l7v/target/src/appl/imginfo",
+  "binary_ref": "/tmp/fork_analysis__cll1l7v/ref/build/src/appl/imginfo",
+  "fork_spec": "/tmp/fork_analysis__cll1l7v/target/src/libjasper/base/jas_seq.c:253",
+  "variables": [
+    "mat0->rows_[i]",
+    "mat1->rows_",
+    "r0",
+    "i",
+    "c0"
+  ],
+  "differing_variables": [
+    "r0"
+  ],
+  "target_file_reads": [
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 832,
+      "buf_addr": 140735497330008
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 4096,
+      "buf_addr": 127332632985600
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 8192,
+      "buf_addr": 127332632723456
+    },
+    {
+      "fd": 3,
+      "offset": 64,
+      "size": 784,
+      "buf_addr": 140735497328896
+    },
+    {
+      "fd": 3,
+      "offset": 146,
+      "size": 4096,
+      "buf_addr": 127332632985600
+    },
+    {
+      "fd": 3,
+      "offset": 146,
+      "size": 3950,
+      "buf_addr": 127332632985746
+    },
+    {
+      "fd": 3,
+      "offset": 725,
+      "size": 8192,
+      "buf_addr": 90503550861584
+    },
+    {
+      "fd": 3,
+      "offset": 832,
+      "size": 832,
+      "buf_addr": 140735497330008
+    },
+    {
+      "fd": 3,
+      "offset": 848,
+      "size": 48,
+      "buf_addr": 140735497328832
+    },
+    {
+      "fd": 3,
+      "offset": 896,
+      "size": 68,
+      "buf_addr": 140735497328752
+    },
+    {
+      "fd": 3,
+      "offset": 3718,
+      "size": 4096,
+      "buf_addr": 127332632985600
+    },
+    {
+      "fd": 3,
+      "offset": 3718,
+      "size": 378,
+      "buf_addr": 127332632989318
+    },
+    {
+      "fd": 3,
+      "offset": 4021,
+      "size": 4096,
+      "buf_addr": 127332632682496
+    },
+    {
+      "fd": 3,
+      "offset": 4021,
+      "size": 75,
+      "buf_addr": 127332632686517
+    },
+    {
+      "fd": 3,
+      "offset": 4021,
+      "size": 8192,
+      "buf_addr": 127332632678400
+    },
+    {
+      "fd": 3,
+      "offset": 4021,
+      "size": 4171,
+      "buf_addr": 127332632682421
+    },
+    {
+      "fd": 3,
+      "offset": 4079,
+      "size": 4096,
+      "buf_addr": 127332632727552
+    },
+    {
+      "fd": 3,
+      "offset": 4079,
+      "size": 17,
+      "buf_addr": 127332632731631
+    },
+    {
+      "fd": 3,
+      "offset": 4079,
+      "size": 8192,
+      "buf_addr": 127332632723456
+    },
+    {
+      "fd": 3,
+      "offset": 4079,
+      "size": 4113,
+      "buf_addr": 127332632727535
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 17,
+      "buf_addr": 127332632731631
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 75,
+      "buf_addr": 127332632686517
+    },
+    {
+      "fd": 3,
+      "offset": 4933,
+      "size": 4113,
+      "buf_addr": 127332632727535
+    },
+    {
+      "fd": 3,
+      "offset": 4933,
+      "size": 3259,
+      "buf_addr": 127332632728389
+    },
+    {
+      "fd": 3,
+      "offset": 5262,
+      "size": 4171,
+      "buf_addr": 127332632682421
+    },
+    {
+      "fd": 3,
+      "offset": 5262,
+      "size": 2930,
+      "buf_addr": 127332632683662
+    }
+  ],
+  "ref_file_reads": [
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 832,
+      "buf_addr": 140730888056520
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 4096,
+      "buf_addr": 137902677168128
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 8192,
+      "buf_addr": 137902676905984
+    },
+    {
+      "fd": 3,
+      "offset": 64,
+      "size": 784,
+      "buf_addr": 140730888055408
+    },
+    {
+      "fd": 3,
+      "offset": 149,
+      "size": 4096,
+      "buf_addr": 137902677168128
+    },
+    {
+      "fd": 3,
+      "offset": 149,
+      "size": 3947,
+      "buf_addr": 137902677168277
+    },
+    {
+      "fd": 3,
+      "offset": 725,
+      "size": 8192,
+      "buf_addr": 90503550861584
+    },
+    {
+      "fd": 3,
+      "offset": 832,
+      "size": 832,
+      "buf_addr": 140730888056520
+    },
+    {
+      "fd": 3,
+      "offset": 848,
+      "size": 48,
+      "buf_addr": 140730888055344
+    },
+    {
+      "fd": 3,
+      "offset": 896,
+      "size": 68,
+      "buf_addr": 140730888055264
+    },
+    {
+      "fd": 3,
+      "offset": 3647,
+      "size": 4096,
+      "buf_addr": 137902677168128
+    },
+    {
+      "fd": 3,
+      "offset": 3647,
+      "size": 449,
+      "buf_addr": 137902677171775
+    },
+    {
+      "fd": 3,
+      "offset": 4065,
+      "size": 4096,
+      "buf_addr": 137902676910080
+    },
+    {
+      "fd": 3,
+      "offset": 4065,
+      "size": 31,
+      "buf_addr": 137902676914145
+    },
+    {
+      "fd": 3,
+      "offset": 4065,
+      "size": 8192,
+      "buf_addr": 137902676905984
+    },
+    {
+      "fd": 3,
+      "offset": 4065,
+      "size": 4127,
+      "buf_addr": 137902676910049
+    },
+    {
+      "fd": 3,
+      "offset": 4067,
+      "size": 4096,
+      "buf_addr": 137902676865024
+    },
+    {
+      "fd": 3,
+      "offset": 4067,
+      "size": 29,
+      "buf_addr": 137902676869091
+    },
+    {
+      "fd": 3,
+      "offset": 4067,
+      "size": 8192,
+      "buf_addr": 137902676860928
+    },
+    {
+      "fd": 3,
+      "offset": 4067,
+      "size": 4125,
+      "buf_addr": 137902676864995
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 31,
+      "buf_addr": 137902676914145
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 29,
+      "buf_addr": 137902676869091
+    },
+    {
+      "fd": 3,
+      "offset": 5088,
+      "size": 4127,
+      "buf_addr": 137902676910049
+    },
+    {
+      "fd": 3,
+      "offset": 5088,
+      "size": 3104,
+      "buf_addr": 137902676911072
+    },
+    {
+      "fd": 3,
+      "offset": 5417,
+      "size": 4125,
+      "buf_addr": 137902676864995
+    },
+    {
+      "fd": 3,
+      "offset": 5417,
+      "size": 2775,
+      "buf_addr": 137902676866345
+    }
+  ],
+  "chain_trace": {
+    "var_mappings": {
+      "mat0->rows_[i]": {
+        "file_offset": null,
+        "kind": null,
+        "values": [
+          13744632839234567870
+        ]
+      },
+      "mat1->rows_": {
+        "file_offset": null,
+        "kind": null,
+        "values": [
+          88098369176528
+        ]
+      },
+      "r0": {
+        "file_offset": null,
+        "kind": null,
+        "values": [
+          0
+        ]
+      },
+      "i": {
+        "file_offset": null,
+        "kind": null,
+        "values": [
+          0
+        ]
+      },
+      "c0": {
+        "file_offset": null,
+        "kind": null,
+        "values": [
+          0
+        ]
+      }
+    },
+    "fork_points": [
+      {
+        "inv": 2,
+        "varvals": {
+          "mat0->rows_[i]": 13744632839234567870,
+          "mat1->rows_": 88098369176528,
+          "r0": 0,
+          "i": 0,
+          "c0": 0
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      }
+    ],
+    "pread64": [],
+    "ifd_region": {
+      "ifd_offset": null,
+      "entry_size": null,
+      "entries_base": null,
+      "count": null,
+      "entry_offsets": [],
+      "field_offsets": []
+    }
+  },
+  "deep_trace": {},
+  "arithmetic_backtrace": {
+    "source": "/tmp/fork_analysis__cll1l7v/target/src/libjasper/base/jas_seq.c",
+    "fork_line": 253,
+    "nodes": {
+      "mat0->rows_[i]": {
+        "kind": "assign",
+        "line": 253,
+        "rhs": "mat1->rows_[r0 + i] + c0"
+      },
+      "mat1->rows_": {
+        "kind": "unknown",
+        "line": 253,
+        "rhs": null
+      },
+      "r0": {
+        "kind": "unknown",
+        "line": 253,
+        "rhs": null
+      },
+      "i": {
+        "kind": "unknown",
+        "line": 253,
+        "rhs": null
+      },
+      "c0": {
+        "kind": "unknown",
+        "line": 253,
+        "rhs": null
+      }
+    },
+    "runtime_values": {
+      "mat0->rows_[i]": 13744632839234567870,
+      "mat1->rows_": 88098369176528,
+      "r0": 0,
+      "i": 0,
+      "c0": 0
+    },
+    "tag_mappings": {},
+    "chains": {
+      "mat0->rows_[i]": {
+        "kind": "assign",
+        "tag_offsets": [],
+        "cli_leaves": [],
+        "node_count": 5
+      },
+      "mat1->rows_": {
+        "kind": "unknown",
+        "tag_offsets": [],
+        "cli_leaves": [],
+        "node_count": 1
+      },
+      "r0": {
+        "kind": "unknown",
+        "tag_offsets": [],
+        "cli_leaves": [],
+        "node_count": 1
+      },
+      "i": {
+        "kind": "unknown",
+        "tag_offsets": [],
+        "cli_leaves": [],
+        "node_count": 1
+      },
+      "c0": {
+        "kind": "unknown",
+        "tag_offsets": [],
+        "cli_leaves": [],
+        "node_count": 1
+      }
+    },
+    "explanation": {
+      "mat0->rows_[i]": [
+        "mat0->rows_[i] [GDB: 13744632839234567870] <- mat1->rows_[r0 + i] + c0  (line 253)",
+        "  mat1->rows_ [GDB: 88098369176528] -> unknown",
+        "  r0 [GDB: 0] -> unknown",
+        "  i [GDB: 0] -> unknown",
+        "  c0 [GDB: 0] -> unknown"
+      ],
+      "mat1->rows_": [
+        "mat1->rows_ [GDB: 88098369176528]"
+      ],
+      "r0": [
+        "r0 [GDB: 0]"
+      ],
+      "i": [
+        "i [GDB: 0]"
+      ],
+      "c0": [
+        "c0 [GDB: 0]"
+      ]
+    }
+  },
+  "variable_offsets": {},
+  "candidate_tiers": {},
+  "ifd_region": {},
+  "ifd_region_from_dynamic": false,
+  "ifd_region_mutation": {},
+  "static_mutation_offsets": [],
+  "static_crash_results": {},
+  "static_pairwise_results": {},
+  "mutation_offsets": [],
+  "crash_results": {},
+  "pairwise_results": {},
+  "multi_combo_results": {},
+  "mutation_any_match": false
+}

@@ -1,6 +1,6 @@
 {
-  "binary_target": "/home/ws/Desktop/RetroScope/libsndfile-versions/libsndfile-1.0.26/programs/sndfile-convert",
-  "binary_ref": "/home/ws/Desktop/RetroScope/libsndfile-versions/libsndfile-1.0.28/programs/sndfile-convert",
+  "binary_target": "/home/ws/Desktop/libsndfile-versions/libsndfile-1.0.26/programs/sndfile-convert",
+  "binary_ref": "/home/ws/Desktop/libsndfile-versions/libsndfile-1.0.27/programs/sndfile-convert",
   "fork_spec": "rf64.c:84",
   "variables": [
     "wpriv"
@@ -13,19 +13,19 @@
       "fd": 3,
       "offset": 0,
       "size": 832,
-      "buf_addr": 140721640294376
+      "buf_addr": 140726050015800
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 4096,
-      "buf_addr": 140410566303744
+      "buf_addr": 135194705448960
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 8192,
-      "buf_addr": 140410566041600
+      "buf_addr": 135194705186816
     },
     {
       "fd": 3,
@@ -43,133 +43,151 @@
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140721640293264
+      "buf_addr": 140726050014720
     },
     {
       "fd": 3,
-      "offset": 169,
+      "offset": 158,
       "size": 4096,
-      "buf_addr": 140410566303744
+      "buf_addr": 135194705448960
     },
     {
       "fd": 3,
-      "offset": 169,
-      "size": 3927,
-      "buf_addr": 140410566303913
+      "offset": 158,
+      "size": 3938,
+      "buf_addr": 135194705449118
     },
     {
       "fd": 3,
       "offset": 832,
       "size": 832,
-      "buf_addr": 140721640294376
+      "buf_addr": 140726050015800
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140721640293200
+      "buf_addr": 140726050014656
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140721640293120
+      "buf_addr": 140726050014576
     },
     {
       "fd": 3,
-      "offset": 3493,
+      "offset": 3624,
       "size": 4096,
-      "buf_addr": 140410566303744
+      "buf_addr": 135194705448960
     },
     {
       "fd": 3,
-      "offset": 3493,
-      "size": 603,
-      "buf_addr": 140410566307237
+      "offset": 3624,
+      "size": 472,
+      "buf_addr": 135194705452584
     },
     {
       "fd": 3,
-      "offset": 4028,
+      "offset": 4017,
       "size": 4096,
-      "buf_addr": 140410566000640
+      "buf_addr": 135194705190912
     },
     {
       "fd": 3,
-      "offset": 4028,
-      "size": 68,
-      "buf_addr": 140410566004668
+      "offset": 4017,
+      "size": 79,
+      "buf_addr": 135194705194929
     },
     {
       "fd": 3,
-      "offset": 4028,
+      "offset": 4048,
+      "size": 4096,
+      "buf_addr": 135194705190912
+    },
+    {
+      "fd": 3,
+      "offset": 4048,
+      "size": 48,
+      "buf_addr": 135194705194960
+    },
+    {
+      "fd": 3,
+      "offset": 4048,
       "size": 8192,
-      "buf_addr": 140410565554176
+      "buf_addr": 135194705186816
     },
     {
       "fd": 3,
-      "offset": 4028,
-      "size": 4164,
-      "buf_addr": 140410565558204
+      "offset": 4048,
+      "size": 4144,
+      "buf_addr": 135194705190864
     },
     {
       "fd": 3,
-      "offset": 4038,
+      "offset": 4088,
       "size": 4096,
-      "buf_addr": 140410566045696
+      "buf_addr": 135194705145856
     },
     {
       "fd": 3,
-      "offset": 4038,
-      "size": 58,
-      "buf_addr": 140410566049734
+      "offset": 4088,
+      "size": 8,
+      "buf_addr": 135194705149944
     },
     {
       "fd": 3,
-      "offset": 4038,
+      "offset": 4088,
       "size": 8192,
-      "buf_addr": 140410566041600
+      "buf_addr": 135194705141760
     },
     {
       "fd": 3,
-      "offset": 4038,
-      "size": 4154,
-      "buf_addr": 140410566045638
+      "offset": 4088,
+      "size": 4104,
+      "buf_addr": 135194705145848
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 58,
-      "buf_addr": 140410566049734
+      "size": 48,
+      "buf_addr": 135194705194960
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 68,
-      "buf_addr": 140410566004668
+      "size": 8,
+      "buf_addr": 135194705149944
     },
     {
       "fd": 3,
-      "offset": 5877,
-      "size": 4154,
-      "buf_addr": 140410566045638
+      "offset": 4096,
+      "size": 79,
+      "buf_addr": 135194705194929
     },
     {
       "fd": 3,
-      "offset": 5877,
-      "size": 2315,
-      "buf_addr": 140410566047477
+      "offset": 4493,
+      "size": 4144,
+      "buf_addr": 135194705190864
     },
     {
       "fd": 3,
-      "offset": 6206,
-      "size": 4164,
-      "buf_addr": 140410565558204
+      "offset": 4493,
+      "size": 3699,
+      "buf_addr": 135194705191309
     },
     {
       "fd": 3,
-      "offset": 6206,
-      "size": 1986,
-      "buf_addr": 140410565560382
+      "offset": 4822,
+      "size": 4104,
+      "buf_addr": 135194705145848
+    },
+    {
+      "fd": 3,
+      "offset": 4822,
+      "size": 3370,
+      "buf_addr": 135194705146582
     }
   ],
   "ref_file_reads": [
@@ -177,163 +195,181 @@
       "fd": 3,
       "offset": 0,
       "size": 832,
-      "buf_addr": 140724723661576
+      "buf_addr": 140728344243560
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 4096,
-      "buf_addr": 125797933846528
+      "buf_addr": 137930111856640
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 8192,
-      "buf_addr": 125797933584384
+      "buf_addr": 137930111594496
     },
     {
       "fd": 3,
       "offset": 0,
       "size": 12,
-      "buf_addr": 89129161326656
+      "buf_addr": 90915867733812
     },
     {
       "fd": 3,
       "offset": 12,
       "size": 12,
-      "buf_addr": 89129161326656
+      "buf_addr": 90915867733812
     },
     {
       "fd": 3,
       "offset": 64,
       "size": 784,
-      "buf_addr": 140724723660464
+      "buf_addr": 140728344242480
     },
     {
       "fd": 3,
-      "offset": 169,
+      "offset": 158,
       "size": 4096,
-      "buf_addr": 125797933846528
+      "buf_addr": 137930111856640
     },
     {
       "fd": 3,
-      "offset": 169,
-      "size": 3927,
-      "buf_addr": 125797933846697
+      "offset": 158,
+      "size": 3938,
+      "buf_addr": 137930111856798
     },
     {
       "fd": 3,
       "offset": 832,
       "size": 832,
-      "buf_addr": 140724723661576
+      "buf_addr": 140728344243560
     },
     {
       "fd": 3,
       "offset": 848,
       "size": 48,
-      "buf_addr": 140724723660400
+      "buf_addr": 140728344242416
     },
     {
       "fd": 3,
       "offset": 896,
       "size": 68,
-      "buf_addr": 140724723660320
+      "buf_addr": 140728344242336
     },
     {
       "fd": 3,
-      "offset": 3493,
+      "offset": 3624,
       "size": 4096,
-      "buf_addr": 125797933846528
+      "buf_addr": 137930111856640
     },
     {
       "fd": 3,
-      "offset": 3493,
-      "size": 603,
-      "buf_addr": 125797933850021
+      "offset": 3624,
+      "size": 472,
+      "buf_addr": 137930111860264
     },
     {
       "fd": 3,
-      "offset": 4038,
+      "offset": 4017,
       "size": 4096,
-      "buf_addr": 125797933588480
+      "buf_addr": 137930111553536
     },
     {
       "fd": 3,
-      "offset": 4038,
-      "size": 58,
-      "buf_addr": 125797933592518
+      "offset": 4017,
+      "size": 79,
+      "buf_addr": 137930111557553
     },
     {
       "fd": 3,
-      "offset": 4038,
+      "offset": 4017,
       "size": 8192,
-      "buf_addr": 125797933584384
+      "buf_addr": 137930111549440
     },
     {
       "fd": 3,
-      "offset": 4038,
-      "size": 4154,
-      "buf_addr": 125797933588422
+      "offset": 4017,
+      "size": 4175,
+      "buf_addr": 137930111553457
     },
     {
       "fd": 3,
-      "offset": 4077,
+      "offset": 4048,
       "size": 4096,
-      "buf_addr": 125797933543424
+      "buf_addr": 137930111598592
     },
     {
       "fd": 3,
-      "offset": 4077,
-      "size": 19,
-      "buf_addr": 125797933547501
+      "offset": 4048,
+      "size": 48,
+      "buf_addr": 137930111602640
     },
     {
       "fd": 3,
-      "offset": 4077,
+      "offset": 4048,
       "size": 8192,
-      "buf_addr": 125797921755136
+      "buf_addr": 137930111594496
     },
     {
       "fd": 3,
-      "offset": 4077,
-      "size": 4115,
-      "buf_addr": 125797921759213
+      "offset": 4048,
+      "size": 4144,
+      "buf_addr": 137930111598544
+    },
+    {
+      "fd": 3,
+      "offset": 4066,
+      "size": 4096,
+      "buf_addr": 137930111598592
+    },
+    {
+      "fd": 3,
+      "offset": 4066,
+      "size": 30,
+      "buf_addr": 137930111602658
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 58,
-      "buf_addr": 125797933592518
+      "size": 48,
+      "buf_addr": 137930111602640
     },
     {
       "fd": 3,
       "offset": 4096,
-      "size": 19,
-      "buf_addr": 125797933547501
+      "size": 79,
+      "buf_addr": 137930111557553
     },
     {
       "fd": 3,
-      "offset": 5877,
-      "size": 4154,
-      "buf_addr": 125797933588422
+      "offset": 4096,
+      "size": 30,
+      "buf_addr": 137930111602658
     },
     {
       "fd": 3,
-      "offset": 5877,
-      "size": 2315,
-      "buf_addr": 125797933590261
+      "offset": 4493,
+      "size": 4144,
+      "buf_addr": 137930111598544
     },
     {
       "fd": 3,
-      "offset": 6255,
-      "size": 4115,
-      "buf_addr": 125797921759213
+      "offset": 4493,
+      "size": 3699,
+      "buf_addr": 137930111598989
     },
     {
       "fd": 3,
-      "offset": 6255,
-      "size": 1937,
-      "buf_addr": 125797921761391
+      "offset": 4871,
+      "size": 4175,
+      "buf_addr": 137930111553457
+    },
+    {
+      "fd": 3,
+      "offset": 4871,
+      "size": 3321,
+      "buf_addr": 137930111554311
     }
   ],
   "chain_trace": {
@@ -342,7 +378,7 @@
         "file_offset": null,
         "kind": null,
         "values": [
-          93824992585969
+          93824992585377
         ]
       }
     },
@@ -350,7 +386,7 @@
       {
         "inv": 1,
         "varvals": {
-          "wpriv": 93824992585969
+          "wpriv": 93824992585377
         },
         "diroff": null,
         "dp": null,

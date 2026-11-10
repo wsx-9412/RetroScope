@@ -1,0 +1,23 @@
+[HARNESS] libtiff loaded. TIFFClientOpen=0x76881c2c8fc9 TIFFSetField=0x76881c277708 TIFFClose=0x76881c27160a
+[STANDALONE] Running fuzz body with 83 bytes
+TIFFSetField: fuzz_mem: Unknown tag 0.
+TIFFSetField: fuzz_mem: Unknown tag 32768.
+TIFFSetField: fuzz_mem: Unknown pseudo-tag 892679477.
+TIFFSetField: fuzz_mem: Unknown pseudo-tag 55318325.
+TIFFSetField: fuzz_mem: Unknown pseudo-tag 111087.
+=================================================================
+==1364334==ERROR: AddressSanitizer: negative-size-param: (size=-1811415040)
+    #0 0x76881c43a3ff in __interceptor_memcpy ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:827
+    #1 0x76881c2e14f6 in _TIFFmemcpy (/media/sanjay/f574986f-8197-4e72-a69d-87ddf200a6a9/sanjay/research/tii/tii24/tmp/libtiff4.7.2-install/lib/libtiff.so.6.2.0+0x7b4f6)
+    #2 0x76881c276750 in _TIFFVSetField (/media/sanjay/f574986f-8197-4e72-a69d-87ddf200a6a9/sanjay/research/tii/tii24/tmp/libtiff4.7.2-install/lib/libtiff.so.6.2.0+0x10750)
+    #3 0x76881c277a0b in TIFFVSetField (/media/sanjay/f574986f-8197-4e72-a69d-87ddf200a6a9/sanjay/research/tii/tii24/tmp/libtiff4.7.2-install/lib/libtiff.so.6.2.0+0x11a0b)
+    #4 0x76881c2777c0 in TIFFSetField (/media/sanjay/f574986f-8197-4e72-a69d-87ddf200a6a9/sanjay/research/tii/tii24/tmp/libtiff4.7.2-install/lib/libtiff.so.6.2.0+0x117c0)
+    #5 0x5e66bb0cd8cc in fuzz_body /tmp/standalone_new.c:161
+    #6 0x5e66bb0cd8cc in main /tmp/standalone_new.c:223
+    #7 0x76881c029d8f in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+    #8 0x76881c029e3f in __libc_start_main_impl ../csu/libc-start.c:392
+    #9 0x5e66bb0cdde4 in _start (/tmp/standalone_471+0x2de4)
+
+Address 0x76881c30a447 is a wild pointer.
+SUMMARY: AddressSanitizer: negative-size-param ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:827 in __interceptor_memcpy
+==1364334==ABORTING

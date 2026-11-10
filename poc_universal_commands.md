@@ -170,6 +170,7 @@ gcc -g -O0 -fsanitize=address -fno-omit-frame-pointer \
 |-----------|----------|-----------|------|------|
 | issue879 | version.2.0-2.1（全部） | v2.3.0+ | `opj_decompress -i in/openjpeg/issue879/poc1.j2k -o /tmp/out.pgm`（zip 密码 `infected`） | SEGV opj_read_bytes_LE (cio.c:87) |
 | issue1221 | 2.0 (j2k.c:7451) / 2.3.0-2.3.1 (color.c:201) — 两个不同漏洞 | 2.0.1-2.1, v2.4.0+ | `opj_decompress -i in/openjpeg/issue1221/poc.j2k -o /tmp/out.bmp` | 2.0: heap-buffer-overflow opj_j2k_update_image_data；2.3.x: SEGV sycc422_to_rgb |
+| CVE-2025-50952 | 2.4.0-5.5.4(发现版本) |
 
 ---
 

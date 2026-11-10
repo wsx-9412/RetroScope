@@ -1,0 +1,250 @@
+{
+  "binary_target": "/tmp/fork_analysis_cmkgiaeq/target/build/examples/heif-info",
+  "binary_ref": "/tmp/fork_analysis_cmkgiaeq/ref/build/examples/heif-info",
+  "fork_spec": "/tmp/fork_analysis_cmkgiaeq/target/examples/heif_info.cc:243",
+  "variables": [
+    "std",
+    "cerr"
+  ],
+  "differing_variables": [
+    "std",
+    "cerr"
+  ],
+  "target_file_reads": [
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 832,
+      "buf_addr": 140730060421704
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 4096,
+      "buf_addr": 129661264723968
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 8192,
+      "buf_addr": 129661264461824
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 8191,
+      "buf_addr": 90503550861568
+    },
+    {
+      "fd": 3,
+      "offset": 28,
+      "size": 8191,
+      "buf_addr": 90503550861568
+    },
+    {
+      "fd": 3,
+      "offset": 64,
+      "size": 784,
+      "buf_addr": 140730060420560
+    },
+    {
+      "fd": 3,
+      "offset": 145,
+      "size": 4096,
+      "buf_addr": 129661264723968
+    },
+    {
+      "fd": 3,
+      "offset": 145,
+      "size": 3951,
+      "buf_addr": 129661264724113
+    },
+    {
+      "fd": 3,
+      "offset": 286,
+      "size": 4096,
+      "buf_addr": 90228672959744
+    },
+    {
+      "fd": 3,
+      "offset": 286,
+      "size": 8191,
+      "buf_addr": 90503550861568
+    },
+    {
+      "fd": 3,
+      "offset": 832,
+      "size": 832,
+      "buf_addr": 140730060421704
+    },
+    {
+      "fd": 3,
+      "offset": 848,
+      "size": 48,
+      "buf_addr": 140730060420496
+    },
+    {
+      "fd": 3,
+      "offset": 896,
+      "size": 68,
+      "buf_addr": 140730060420416
+    },
+    {
+      "fd": 3,
+      "offset": 3612,
+      "size": 4096,
+      "buf_addr": 129661264723968
+    },
+    {
+      "fd": 3,
+      "offset": 3612,
+      "size": 484,
+      "buf_addr": 129661264727580
+    },
+    {
+      "fd": 3,
+      "offset": 4024,
+      "size": 4096,
+      "buf_addr": 129661264465920
+    },
+    {
+      "fd": 3,
+      "offset": 4024,
+      "size": 72,
+      "buf_addr": 129661264469944
+    },
+    {
+      "fd": 3,
+      "offset": 4024,
+      "size": 8192,
+      "buf_addr": 129661264461824
+    },
+    {
+      "fd": 3,
+      "offset": 4024,
+      "size": 4168,
+      "buf_addr": 129661264465848
+    },
+    {
+      "fd": 3,
+      "offset": 4026,
+      "size": 4096,
+      "buf_addr": 129661264420864
+    },
+    {
+      "fd": 3,
+      "offset": 4026,
+      "size": 70,
+      "buf_addr": 129661264424890
+    },
+    {
+      "fd": 3,
+      "offset": 4026,
+      "size": 8192,
+      "buf_addr": 129661264416768
+    },
+    {
+      "fd": 3,
+      "offset": 4026,
+      "size": 4166,
+      "buf_addr": 129661264420794
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 72,
+      "buf_addr": 129661264469944
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 70,
+      "buf_addr": 129661264424890
+    },
+    {
+      "fd": 3,
+      "offset": 5156,
+      "size": 4168,
+      "buf_addr": 129661264465848
+    },
+    {
+      "fd": 3,
+      "offset": 5156,
+      "size": 3036,
+      "buf_addr": 129661264466980
+    },
+    {
+      "fd": 3,
+      "offset": 5485,
+      "size": 4166,
+      "buf_addr": 129661264420794
+    },
+    {
+      "fd": 3,
+      "offset": 5485,
+      "size": 2707,
+      "buf_addr": 129661264422253
+    }
+  ],
+  "ref_file_reads": [],
+  "chain_trace": {
+    "var_mappings": {
+      "std": {
+        "file_offset": null,
+        "kind": null,
+        "values": []
+      },
+      "cerr": {
+        "file_offset": null,
+        "kind": null,
+        "values": []
+      }
+    },
+    "fork_points": [
+      {
+        "inv": 2,
+        "varvals": {},
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      }
+    ],
+    "pread64": [],
+    "ifd_region": {
+      "ifd_offset": null,
+      "entry_size": null,
+      "entries_base": null,
+      "count": null,
+      "entry_offsets": [],
+      "field_offsets": []
+    }
+  },
+  "deep_trace": {},
+  "arithmetic_backtrace": {
+    "source": "/tmp/fork_analysis_cmkgiaeq/target/examples/heif_info.cc",
+    "fork_line": 243,
+    "nodes": {},
+    "runtime_values": {},
+    "tag_mappings": {},
+    "chains": {},
+    "explanation": {}
+  },
+  "variable_offsets": {},
+  "candidate_tiers": {},
+  "ifd_region": {},
+  "ifd_region_from_dynamic": false,
+  "ifd_region_mutation": {},
+  "static_mutation_offsets": [],
+  "static_crash_results": {},
+  "static_pairwise_results": {},
+  "mutation_offsets": [],
+  "crash_results": {},
+  "pairwise_results": {},
+  "multi_combo_results": {},
+  "mutation_any_match": false
+}

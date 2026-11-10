@@ -5,7 +5,9 @@ __pycache__/
 *.o
 *.a
 *.dylib
-build/
+build/*
+!build/*.c
+!build/cmake/
 dist/
 *.egg-info/
 .eggs/
@@ -15,6 +17,8 @@ venv/
 env/
 .env
 *.log
+# PoC corpora under in/ must fully sync (including logs that ship with samples)
+!in/**/*.log
 *.tdag
 polytracker/
 polytracker.tdag
@@ -23,8 +27,10 @@ results/
 output/
 {output}
 out.mp3
+sync.log
 
 # ---- large/regenerable: per-software target trees (source + ASAN build output) ----
+# Ship these via release archive / separate download, not git (multi-GB).
 *-versions/
 third_party/
 # build artifacts (belt and suspenders)
@@ -38,5 +44,8 @@ objs/
 *.Plo
 out/
 .instr-build/
-# multi-GB PoC corpora (GitHub rejects files >100MB anyway)
-in/libtiff/
+
+# editor / OS junk
+*~
+*.swp
+.DS_Store

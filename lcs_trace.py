@@ -181,10 +181,12 @@ def resolve_local(binpath, offset):
     return None
 
 
-def capture_function_trace(cmd, timeout=900, include_exits=False):
+def capture_function_trace(cmd, timeout=900, include_exits=False, max_events=0):
     """Run `cmd` under functracer.so and return the list of function calls (TraceNode).
     
     If include_exits is True, exit events are also recorded in the trace.
+    max_events > 0 stops parsing once the collapsed sequence reaches that
+    length (the caller truncates to the same size downstream anyway).
     """
     out_file = tempfile.mktemp(prefix="lcs_", suffix=".log")
     env = os.environ.copy()
@@ -213,55 +215,21 @@ def capture_function_trace(cmd, timeout=900, include_exits=False):
     except subprocess.TimeoutExpired:
         pass
 
-    base_map, last_module, last_base, events = {}, None, 0, []
-    try:
-        for line in open(out_file):
-            parts = line.split()
-            if len(parts) >= 3 and parts[0] == 'M':
-                try:
-                    mpath = parts[2]
-                    base_addr = int(parts[1], 16)
-                    base_map[base_addr] = mpath
-                    last_module = mpath
-                    last_base = base_addr
-                except (IndexError, ValueError):
-                    pass
-            elif len(parts) == 3 and parts[0] in ('>', '<') and parts[1].startswith('@'):
-                try:
-                    offset = int(parts[1][1:], 16)
-                    events.append((parts[0], ('local',
-                                              last_module,
-                                              offset)))
-                except ValueError:
-                    continue
-            elif len(parts) == 2 and parts[0] in ('>', '<'):
-                tok = parts[1]
-                if tok.startswith('@') and last_module:
-                    try:
-                        offset = int(tok[1:], 16)
-                        events.append((parts[0], ('local', last_module,
-                                                  offset)))
-                        continue
-                    except ValueError:
-                        pass
-                events.append((parts[0], tok))
-    finally:
-        try:
-            os.unlink(out_file)
-        except Exception:
-            pass
-
+    base_map, last_module, last_base = {}, None, 0
     seq = []
     stack = []
-    for d, tok in events:
+    stop_after = max_events if max_events and max_events > 0 else 0
+
+    def _consume(d, tok):
         if isinstance(tok, tuple):
             name = resolve_local(tok[1], tok[2])
             if not name:
-                continue
+                return
         else:
             name = tok
-        if name.startswith(NOISE_PREFIX) or 'asan' in name.lower():
-            continue
+        if (name.startswith(NOISE_PREFIX) or 'asan' in name.lower()
+                or '__gthread' in name or '_ZnwmPv' in name):
+            return
         if d == '>':
             node = TraceNode(name, len(stack), tuple(stack) + (name,), is_enter=True)
             # Loop collapsing: detect >A <A >A pattern
@@ -285,6 +253,48 @@ def capture_function_trace(cmd, timeout=900, include_exits=False):
                     if not seq or seq[-1].path != node.path or seq[-1].is_enter:
                         seq.append(node)
                 stack.pop()
+
+    # Stream-parse the trace file: never materialize the full event list
+    # (a big C++ binary like openexr's exrcheck can emit tens of GB of
+    #  events; loading them into a Python list exhausts RAM).  Processing
+    # stops once the collapsed sequence reaches max_events, which matches
+    # the downstream seq_a[:max_trace_size] truncation.
+    try:
+        with open(out_file) as _trace_f:
+            for line in _trace_f:
+                parts = line.split()
+                if len(parts) >= 3 and parts[0] == 'M':
+                    try:
+                        mpath = parts[2]
+                        base_addr = int(parts[1], 16)
+                        base_map[base_addr] = mpath
+                        last_module = mpath
+                        last_base = base_addr
+                    except (IndexError, ValueError):
+                        pass
+                elif len(parts) == 3 and parts[0] in ('>', '<') and parts[1].startswith('@'):
+                    try:
+                        offset = int(parts[1][1:], 16)
+                        _consume(parts[0], ('local', last_module, offset))
+                    except ValueError:
+                        continue
+                elif len(parts) == 2 and parts[0] in ('>', '<'):
+                    tok = parts[1]
+                    if tok.startswith('@') and last_module:
+                        try:
+                            offset = int(tok[1:], 16)
+                            _consume(parts[0], ('local', last_module, offset))
+                            continue
+                        except ValueError:
+                            pass
+                    _consume(parts[0], tok)
+                if stop_after and len(seq) >= stop_after:
+                    break
+    finally:
+        try:
+            os.unlink(out_file)
+        except Exception:
+            pass
     return seq
 
 
@@ -538,19 +548,23 @@ def main():
         input_a, input_b = args.input_a, args.input_b
 
     def mk_a(input_file):
-        return [str(real_a)] + args.args.replace(
-            "{input}", str(Path(input_file).resolve())).split()
+        import shlex
+        return [str(real_a)] + shlex.split(args.args.replace(
+            "{input}", str(Path(input_file).resolve())))
 
     def mk_b(input_file):
-        return [str(real_b)] + args.args.replace(
-            "{input}", str(Path(input_file).resolve())).split()
+        import shlex
+        return [str(real_b)] + shlex.split(args.args.replace(
+            "{input}", str(Path(input_file).resolve())))
 
     print(f"binary A: {real_a}")
     print(f"binary B: {real_b}")
     print("capturing trace A ...")
-    seq_a = capture_function_trace(mk_a(input_a), include_exits=args.include_exits)
+    seq_a = capture_function_trace(mk_a(input_a), include_exits=args.include_exits,
+                                   max_events=args.max_trace_size)
     print("capturing trace B ...")
-    seq_b = capture_function_trace(mk_b(input_b), include_exits=args.include_exits)
+    seq_b = capture_function_trace(mk_b(input_b), include_exits=args.include_exits,
+                                   max_events=args.max_trace_size)
     print(f"trace A length: {len(seq_a)}")
     print(f"trace B length: {len(seq_b)}")
     print(f"match level: {args.match_level}")

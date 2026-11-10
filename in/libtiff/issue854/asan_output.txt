@@ -1,0 +1,79 @@
+=== Natural Trigger Local TCP Test (no LD_PRELOAD) ===
+TIFF strip at offset 200 (just past IFD)
+readproc: raw read() syscall
+Expected: read() returns -1 on RST -> TIFFReadAndRealloc OOB write
+
+[srv] Listening on 127.0.0.1:14759
+[client] Connected to local server
+[srv] Client connected
+[srv] Sent 200 bytes of TIFF header (strip at offset 200)
+[srv] Waiting 300ms before RST...
+
+[read] pos=0      req=8      got=8
+[read] pos=8      req=2      got=2
+[read] pos=10     req=108    got=108
+[read] pos=118    req=4      got=4
+
+[tiff] Image: 1x1
+[tiff] Strip size: 1 bytes
+[tiff] Calling TIFFReadEncodedStrip(0) ...
+
+[seek] fwd 122->200 (discarding 78 pad bytes)
+[srv] RST sent -- client read() will return -1
+[read] pos=200    req=2      got=-1 (ECONNRESET -> -1 returned to libtiff!)
+
+=================================================================
+==46012==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x51900000007f at pc 0x7109182fa35c bp 0x7ffd97639b10 sp 0x7ffd976392b8
+WRITE of size 1025 at 0x51900000007f thread T0
+    #0 0x7109182fa35b in __asan_memset ../../../../src/libsanitizer/asan/asan_interceptors_memintrinsics.cpp:67
+    #1 0x710918072023 in TIFFReadAndRealloc /libtiff/tif_read.c:133
+    #2 0x710918069ca3 in TIFFReadRawStripOrTile2 /libtiff/tif_read.c:743
+    #3 0x7109180674f9 in TIFFFillStrip /libtiff/tif_read.c:978
+    #4 0x710918065ad9 in TIFFReadEncodedStrip /libtiff/tif_read.c:579
+    #5 0x58c41dd322fe in main natural_trigger_local_tcp.c:234
+    #6 0x71091722a1c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+    #7 0x71091722a28a in __libc_start_main_impl ../csu/libc-start.c:360
+    #8 0x58c41dd2f6a4 in _start (/tmp/natural_trigger_local+0x46a4)
+
+0x51900000007f is located 1 bytes before 1024-byte region [0x519000000080, 0x519000000480)
+allocated by thread T0 here:
+    #0 0x7109182fc778 in realloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:85
+    #1 0x710918072023 in TIFFReadAndRealloc /libtiff/tif_read.c:108
+    #2 0x710918069ca3 in TIFFReadRawStripOrTile2 /libtiff/tif_read.c:743
+    #3 0x7109180674f9 in TIFFFillStrip /libtiff/tif_read.c:978
+    #4 0x710918065ad9 in TIFFReadEncodedStrip /libtiff/tif_read.c:579
+    #5 0x58c41dd322fe in main natural_trigger_local_tcp.c:234
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow
+         ../../../../src/libsanitizer/asan/asan_interceptors_memintrinsics.cpp:67
+         in __asan_memset
+
+Shadow bytes around the buggy address:
+  0x518ffffffd80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x518ffffffe00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x518ffffffe80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x518fffffff00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x518fffffff80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x519000000000: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa[fa]
+  0x519000000080: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x519000000100: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x519000000180: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x519000000200: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x519000000280: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07
+  Heap left redzone:       fa
+  Freed heap region:       fd
+
+TIFFFillStrip: Read error at scanline 4294967295; got -1 bytes, expected 2.
+
+[result] TIFFReadEncodedStrip returned: -1
+[!!!] NEGATIVE RETURN -- read() -1 propagated into TIFFReadAndRealloc
+      heap-buffer-overflow CONFIRMED
+
+Environment:
+  OS        : WSL Linux on Windows (x86_64)
+  libtiff   : upstream master commit a94d1ded80b9b46327d3982a3c80043b29f23e2e
+  Build     : gcc -fsanitize=address,undefined
+  Date      : 2026-06-13

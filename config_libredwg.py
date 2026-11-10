@@ -10,11 +10,11 @@
 # =====================================================
 # CVE configuration: change this section for each CVE
 # =====================================================
-CVE_ID = "CVE-2026-9605"                          # CVE number
-INPUT_FILE = "in/libredwg/CVE-2026-9605.dwg"       # input file path (relative to RetroScope/)
+CVE_ID = "CVE-2026-15520"                          # CVE number
+INPUT_FILE = "in/libredwg/CVE-2026-15520.dwg"       # input file path (relative to RetroScope/)
 OUTPUT_FILE = "/dev/null"                          # dwgread writes JSON to stdout
 # Program arguments template: {program_path}, {input_file}, {output_file}
-COMMAND_FORMAT = "{program_path} {input_file}"
+COMMAND_FORMAT = "{program_path} --binary {input_file}"
 
 # =====================================================
 # Compilation configuration (usually no need to change)
@@ -23,8 +23,12 @@ COMMAND_FORMAT = "{program_path} {input_file}"
 # a generated configure script and the jsmn submodule, so neither autogen.sh
 # nor a network fetch is needed here.
 _PRE_BUILD = [
-    "make clean || true",
-    "./configure "
+    # codeload/git checkouts ship no configure; generate it once (jsmn must
+    # already be in jsmn/, since autogen.sh's submodule step fails without
+    # .git).  Rebuild incrementally -- the trees are pre-built, and a full
+    # clean rebuild of src/programs costs ~7min per run per version.
+    "[ -f configure ] || sh autogen.sh || true",
+    "[ -f Makefile ] || ./configure "
     "CFLAGS='-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer -Wno-error' "
     "LDFLAGS='-fsanitize=address' "
     "--enable-debug --enable-trace --disable-shared --disable-bindings",
@@ -54,7 +58,7 @@ COMPILE_COMMANDS = {
 
 # Program execution parameter configuration
 EXECUTION_CONFIG = {
-    "program_name": "dwgbmp",
+    "program_name": "dwg2dxf",
     "timeout": 120,
     "exec_subdir": "/programs",
     "command_format": COMMAND_FORMAT,

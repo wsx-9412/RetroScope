@@ -367,6 +367,12 @@ def _find_function_containing_line(source_file, line):
         if not l or l[0] in ' \t':  # functions are declared at column 0
             i += 1
             continue
+        stripped = l.lstrip()
+        # Skip comment lines that happen to contain "word (" at column 0
+        # (e.g. "/** Read 1 byte (raw char)." must not become function "byte").
+        if stripped.startswith(('/*', '*', '//', '/**')):
+            i += 1
+            continue
         if '#' in l or l.rstrip().endswith(';'):
             i += 1
             continue
@@ -379,11 +385,12 @@ def _find_function_containing_line(source_file, line):
         if name in _CTRL:
             i += 1
             continue
-        # Find the opening brace
+        # Find the opening brace — must appear within a few lines of the
+        # signature so a distant '{' (from a later function) is not consumed.
         j = i
-        while j < n and '{' not in lines[j] and ';' not in lines[j]:
+        while j < n and j - i <= 6 and '{' not in lines[j] and ';' not in lines[j]:
             j += 1
-        if j >= n or '{' not in lines[j]:
+        if j >= n or j - i > 6 or '{' not in lines[j]:
             i += 1
             continue
         depth = 0

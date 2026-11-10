@@ -1,0 +1,9 @@
+# Default GDB pipeline uses only the Python standard library.
+# Python >= 3.8 recommended (tested on 3.10).
+
+# Optional — PolyTracker comparison path only (-pt / -full):
+#   (install PolyTracker separately; see POLYTRACKER_README.md)
+#   wllvm          # pip install wllvm
+
+# Optional — function_aligner.py fallback backend:
+#   (system package: lldb / python3-lldb)

@@ -1,23 +1,9 @@
 # config_libtiff.py
-# LibTIFF project compilation configuration file
-#
-# To test a different CVE, edit ONLY the CVE section below (CVE_ID, INPUT_FILE,
-# OUTPUT_FILE, COMMAND_FORMAT), then run:
-#     ./run_analysis.sh config_libtiff.py          # polytracker only
-#     ./run_analysis.sh config_libtiff.py -gdb     # polytracker + GDB trace
+CVE_ID = "CVE-2016-10269"
+INPUT_FILE = "in/libtiff/asarubbo/00071-libtiff-heapoverflow-_TIFFmemcpy"
+OUTPUT_FILE = "/tmp/foo"
+COMMAND_FORMAT = "{program_path} -i {input_file} {output_file}"
 
-# =====================================================
-# CVE configuration: change this section for each CVE
-# =====================================================
-CVE_ID = "CVE-2025-8176"          # CVE number
-INPUT_FILE = "in/libtiff/CVE-2025-8176.tif"   # input file path (relative to RetroScope/)
-OUTPUT_FILE = "/tmp/foo"          # program output file
-# Program arguments template: {program_path}, {input_file}, {output_file}
-COMMAND_FORMAT = "{program_path} -C 256 -c lzw:2 -f {input_file} {output_file}"
-
-# =====================================================
-# Compilation configuration (usually no need to change)
-# =====================================================
 COMPILE_COMMANDS = {
     "reference": {
         "pre_build": [
@@ -47,28 +33,20 @@ COMPILE_COMMANDS = {
     }
 }
 
-# Program execution parameter configuration
 EXECUTION_CONFIG = {
-    "program_name": "tiffmedian",
+    "program_name": "tiffcp",
     "timeout": 120,
     "exec_subdir": "/tools",
     "command_format": COMMAND_FORMAT,
     "build_dir_pattern": "/tools/"
 }
 
-# Analysis parameter configuration
 ANALYSIS_CONFIG = {
     "max_test_bytes": 64,
     "crash_detection_keywords": [
-        "division by zero",
-        "heap-buffer-overflow",
-        "stack-buffer-overflow",
-        "SEGV",
-        "use-after-free",
-        "libtiff",
-        "buffer overflow",
-        "tiff",
-        "Assertion failure"
+        "division by zero", "heap-buffer-overflow", "stack-buffer-overflow",
+        "SEGV", "use-after-free", "libtiff", "buffer overflow", "tiff",
+        "Assertion failure", "AddressSanitizer", "ERROR", "Aborted"
     ],
     "separate_build_and_run": True
 }

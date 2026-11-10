@@ -4789,23 +4789,28 @@ def arithmetic_backtrace(binary, fork_file, fork_line, variables, fork_vals,
 
 
 def fork_flip_probe(binary, input_file, program_args, offsets, fork_marker,
-                    timeout=30):
+                    timeout=30, values=None, deadline=None):
     """Cheap fork-outcome validation: mutate each mapped offset with a few
     byte values and check whether the target's fork outcome changes.
 
     ``fork_marker`` is a substring that appears in the target's output exactly
     when the fork condition is taken (e.g. the 'Unable to allocate' message).
+
+    ``values`` overrides the default trial bytes; ``deadline`` (epoch seconds)
+    stops the probe early so a caller can enforce a phase budget.
     """
     results = {}
     if not (binary and input_file and os.path.isfile(input_file)):
         return results
+    trial_values = tuple(values) if values else (0x01, 0x32, 0x63, 0x64, 0xFF)
     with open(input_file, 'rb') as f:
         orig = bytearray(f.read())
     run_parts = [a.replace('{input_file}', '{IN}').replace('{input}', '{IN}')
                  for a in (program_args or [])]
+    _suffix = os.path.splitext(input_file)[1] or '.bin'
 
     def _run(data):
-        fd, tmp = tempfile.mkstemp(suffix='.tif', prefix='probe_')
+        fd, tmp = tempfile.mkstemp(suffix=_suffix, prefix='probe_')
         os.close(fd)
         with open(tmp, 'wb') as f:
             f.write(data)
@@ -4832,16 +4837,22 @@ def fork_flip_probe(binary, input_file, program_args, offsets, fork_marker,
     base_out = _run(orig)
     base_flip = fork_marker in base_out
     for off in sorted(offsets):
+        if deadline and time.time() > deadline:
+            break
         if off >= len(orig):
             continue
         trials = {}
-        for v in (0x01, 0x32, 0x63, 0x64, 0xFF):
+        for v in trial_values:
+            if deadline and time.time() > deadline:
+                break
             if v == orig[off]:
                 continue
             m = bytearray(orig)
             m[off] = v
             out = _run(m)
             trials[v] = fork_marker in out
+        if not trials:
+            continue
         results[off] = {
             'original_byte': orig[off],
             'original_fork_taken': base_flip,
@@ -4913,8 +4924,20 @@ def _path_basename(p):
 def _is_sanitizer_frame(frame):
     fn = (frame.get("function") or "")
     fl = (frame.get("file") or "")
-    return bool(_SANITIZER_FRAME_RE.search(fn)) or \
-        bool(_SANITIZER_FRAME_RE.search(fl))
+    if _SANITIZER_FRAME_RE.search(fn) or _SANITIZER_FRAME_RE.search(fl):
+        return True
+    # glibc fortify wrappers (memcpy/memset inlined via <bits/string_fortified.h>)
+    # sit between the ASan interceptor and the real project frame; without
+    # filtering them crash_frames[0] becomes the wrapper and same_func
+    # comparison fails against stacks built without fortify (e.g. -O0 ref).
+    if "string_fortified" in fl or "bits/fortify" in fl or "chk_fail" in fl:
+        return True
+    if fn in ("memcpy", "memmove", "memset", "memcmp", "mempcpy",
+              "__memcpy_chk", "__memmove_chk", "__memset_chk") and (
+            fl.startswith("/usr/include") or fl.startswith("/usr/lib")
+            or "libc" in fl or fl.startswith("../")):
+        return True
+    return False
 
 
 def extract_crash_signature(output):
@@ -5886,13 +5909,20 @@ def _replace_input_arg(arg, tmp_path, input_file):
     """Map a program argument to the mutated temp file.
 
     The arg may reference the input via ``{input_file}``/``{input}``
-    placeholders, the exact input path, or a relative spelling of it —
+    placeholders, the exact input path, a relative spelling of it, or the
+    path embedded inside a larger token (e.g. sqlite3 ``.read /path``) —
     all must be rewritten or the mutation silently runs the ORIGINAL file.
     """
     if '{' in arg:
         return arg.replace('{input_file}', tmp_path).replace('{input}', tmp_path)
     if arg == input_file or os.path.abspath(arg) == os.path.abspath(input_file):
         return tmp_path
+    if input_file:
+        if input_file in arg:
+            return arg.replace(input_file, tmp_path)
+        absv = os.path.abspath(input_file)
+        if absv in arg:
+            return arg.replace(absv, tmp_path)
     return arg
 
 
@@ -7494,6 +7524,22 @@ def main():
     ap.add_argument('--fork-line', type=int, help='fork-statement line number')
     ap.add_argument('--variables', nargs='+', help='variable names')
     ap.add_argument('--timeout', type=int, default=30, help='GDB timeout seconds')
+    ap.add_argument('--no-extended-mutation', dest='extended_mutation',
+                    action='store_false',
+                    help='disable Step 6f generic extended mutation')
+    ap.add_argument('--extended-max-candidates', type=int,
+                    default=int(os.environ.get('RETROSCOPE_EXTENDED_MAX',
+                                               '1200')),
+                    help='Step 6f candidate budget (default 1200)')
+    ap.add_argument('--extended-budget', type=float,
+                    default=float(os.environ.get(
+                        'RETROSCOPE_EXTENDED_BUDGET', '600')),
+                    help='Step 6f wall-clock budget seconds (default 600)')
+    ap.add_argument('--extended-timeout', type=int,
+                    default=int(os.environ.get(
+                        'RETROSCOPE_EXTENDED_TIMEOUT', '0')),
+                    help='Step 6f per-candidate timeout (0 = use --timeout)')
+    ap.set_defaults(extended_mutation=True)
     ap.add_argument('--origin-mutation',
                     help='results/<CVE>_origin_mutation.json from the '
                          'dynamic stage: its active/inert single-byte '
@@ -7619,6 +7665,8 @@ def main():
     # before any mutation stage archives new results.
     _reset_dir = _reset_mutation_out_dir(input_file, config.get('version_b'))
     print(f'[*] Mutation output dir (reset): {_reset_dir}')
+    print('[*] Next mutation stages: Step 6b pairwise -> Step 6a directed '
+          '-> Step 6e combo -> Step 6f P0 -> Steps 6c/6d static last')
 
     # ================================================================
     # Step 1: Run GDB on TARGET binary (tiff-4.0.8)
@@ -8431,16 +8479,17 @@ def main():
     # Mutation ordering (dynamic first, static last):
     #   Step 6   — single-byte sweep over the GDB-discovered fork-variable
     #              offsets (dynamic);
+    #   Step 6b  — pairwise (two-offset) mutation over the dynamic offset
+    #              pool only;
     #   Step 6a  — directed-value mutation of structure fields derived from
     #              the DYNAMIC fork-point context (e.g. the TIFF IFD region
     #              traced at the fork statement);
-    #   Step 6b  — pairwise (two-offset) mutation over the dynamic offset
-    #              pool only;
+    #   Step 6e  — k-offset uniform combinations over the dynamic pool;
+    #   Step 6f  — generic P0 extended mutation (dynamic offsets first);
     #   Step 6c  — full 255-value single-byte sweep over the STATIC
     #              format-parse offsets (ELF/GIF/XML/font headers, or the
     #              TIFF IFD when no dynamic fork context exists);
-    #   Step 6d  — pairwise over the static offsets, still gated on the
-    #              dynamic phases having found nothing.
+    #   Step 6d  — pairwise over the static offsets (last fallback).
     def _directed_structural_stage(_probe_offsets, _step_label):
         """Directed-meaning-value mutation of structural fields.
 
@@ -8491,15 +8540,15 @@ def main():
             print(f'  [!] {_step_label} mutation failed: {_e}')
         return _results, _matched
 
-    ifd_crash_results = {}
-    # Step 6a: dynamic-context structure fields (still "GDB-discovered").
-    _dyn_probe_offsets = list(_ifd_probe_offsets) if _ifd_from_dynamic \
-        else []
-    ifd_crash_results, ifd_any_match = _directed_structural_stage(
-        _dyn_probe_offsets, 'Step 6a')
-    if ifd_any_match:
-        any_match = True
-
+    print("\n" + "=" * 60)
+    print("  Mutation order (dynamic first, static last)")
+    print("=" * 60)
+    print("  1. single-byte over dynamic origin/fork offsets (above)")
+    print("  2. pairwise over the dynamic offset pool (Step 6b)")
+    print("  3. directed structural fields from dynamic context (Step 6a)")
+    print("  4. k-offset uniform combinations, dynamic pool (Step 6e)")
+    print("  5. P0 generic extended mutation, dynamic offsets first (Step 6f)")
+    print("  6. static-analysis offsets, single then pairwise (Steps 6c/6d)")
     # Step 6b: two-offset combined mutation — single-byte sweeps miss
     # interactions that need TWO bytes changed (e.g. the sign byte AND the
     # low byte of a corrupt sample-rate field).  The pool covers every
@@ -8537,6 +8586,15 @@ def main():
                 any_match = True
                 break
 
+    ifd_crash_results = {}
+    # Step 6a: dynamic-context structure fields (still "GDB-discovered").
+    _dyn_probe_offsets = list(_ifd_probe_offsets) if _ifd_from_dynamic \
+        else []
+    ifd_crash_results, ifd_any_match = _directed_structural_stage(
+        _dyn_probe_offsets, 'Step 6a')
+    if ifd_any_match:
+        any_match = True
+
     # Step 6c/6d: STATIC-analysis offsets — the on-disk structure fields
     # from the static format parse (ELF/GIF/XML/font headers, or the TIFF
     # IFD when no dynamic fork-point context exists).  Same treatment as
@@ -8548,6 +8606,97 @@ def main():
     _stat_offsets = [] if _ifd_from_dynamic \
         else sorted(set(_ifd_fields) - stage1_offsets)
     _combo_only = bool(_ifd_region.get('combo_only'))
+    # Step 6e: automatic k-offset combination mutation (k = 3, 4, ...) over
+    # the DYNAMICALLY discovered offset pool — runs only when the single-byte
+    # and two-offset stages found nothing.  Combos are tested with a uniform
+    # byte value across all offsets (marker/flag families), greedy-minimized
+    # on a hit and archived.  The pool is DYNAMIC-only: STATIC structure
+    # offsets are the last fallback and run in Steps 6c/6d after P0.
+    multi_combo_results = {}
+    _combo_pool = set(_pair_pool)
+    if not any_match and len(_combo_pool) >= 3:
+        print(f'\n{"="*60}')
+        print(f'  Step 6e: Multi-offset combination mutation '
+              f'(pool={len(_combo_pool)} offsets)')
+        print(f'{"="*60}')
+        multi_combo_results, _combo_match = \
+            run_multi_offset_combination_stage(
+                binary, binary_ref, input_file, program_args,
+                _combo_pool, a.timeout, version=config.get('version_b'),
+                single_results=crash_results, value_hints=_value_hints)
+        if _combo_match:
+            any_match = True
+
+    # Step 6f: generic extended mutation (P0).  Runs only when every
+    # existing stage failed to reproduce the reference crash.  The exact
+    # dynamic offsets (fork variables / origin trace) are mutated first,
+    # then their neighbourhood, the dynamic structure region, the static
+    # offsets and finally global/havoc candidates.
+    extended_results = {}
+    if not any_match and a.extended_mutation:
+        # Path A: fold in dynamic-origin offsets (incl. section fallback)
+        # from the sibling *_origin.json when present.
+        _origin_offs = set()
+        if a.trace_json:
+            _op = os.path.splitext(str(a.trace_json))[0] + '_origin.json'
+            if not os.path.isfile(_op) and str(a.trace_json).endswith(
+                    '.diverge.json'):
+                _op = str(a.trace_json)[:-len('.diverge.json')] + \
+                    '_origin.json'
+            if os.path.isfile(_op):
+                try:
+                    with open(_op) as _of:
+                        _od = json.load(_of) or {}
+                    for _o in (_od.get('offsets') or []):
+                        _off = _o.get('offset')
+                        if _off is None:
+                            continue
+                        _ln = int(_o.get('length') or 1)
+                        for _k in range(int(_off),
+                                        int(_off) + max(1, _ln)):
+                            _origin_offs.add(_k)
+                    if _origin_offs and not any_match:
+                        print('[*] origin offsets folded into Step 6f: %d '
+                              'bytes (from %s)' % (len(_origin_offs),
+                                                   os.path.basename(_op)))
+                except Exception as _oe:
+                    print('[!] origin offsets unreadable: %s' % _oe)
+        _ext_primary = sorted(
+            set(stage1_offsets)
+            | {k for k in origin_results if isinstance(k, int)}
+            | {int(k) for k in origin_results
+               if isinstance(k, str) and k.isdigit()}
+            | set(_active_offs)
+            | _origin_offs)
+        _t_ext = time.time()
+        try:
+            from extended_mutation import run_extended_mutation_stage
+            extended_results, _ext_match = run_extended_mutation_stage(
+                binary, binary_ref, input_file, program_args,
+                _ext_primary,
+                static_offsets=_stat_offsets,
+                structure=_ifd_region,
+                timeout=a.timeout,
+                version=config.get('version_b'),
+                max_candidates=a.extended_max_candidates,
+                budget_seconds=a.extended_budget,
+                per_candidate_timeout=a.extended_timeout or None,
+                fork_file=fork_file,
+                fork_line=fork_line,
+                fork_func=(config.get('root_cause_function')
+                           or config.get('poly_track_function')
+                           or (config.get('dynamic_fork') or {}).get('function_b')
+                           or None),
+            )
+            if _ext_match:
+                any_match = True
+            stage_timing.record('Step 6f extended mutation',
+                                time.time() - _t_ext)
+        except Exception as _e:
+            print(f'  [!] Step 6f extended mutation failed: {_e}')
+
+    # Static offsets are the last fallback: run only after every
+    # dynamic stage (single, pairwise, combo, P0) failed.
     if not any_match and _stat_offsets and not _combo_only:
         static_crash_results, _stat_match = run_byte_mutation_stage(
             binary, binary_ref, input_file, program_args,
@@ -8560,10 +8709,14 @@ def main():
     elif _stat_offsets and _combo_only:
         print(f'\n  Steps 6c/6d skipped: '
               f'{_ifd_region.get("label")} is combo-only '
-              f'({len(_stat_offsets)} field offsets go straight to Step 6e)')
+              f'({len(_stat_offsets)} static field offsets are not '
+              f'swept separately)')
     elif _stat_offsets:
         print(f'\n  Steps 6c/6d skipped: a dynamic offset already reproduces '
               f'the reference crash (static structure offsets not mutated)')
+    elif not any_match:
+        print('\n  Steps 6c/6d: no static-analysis offsets to mutate '
+              '(static fallback empty)')
     if not any_match and len(_stat_offsets) >= 2 and not _combo_only:
         _s_active, _s_inert, _s_weak, _s_hints = \
             _classify_sweep_results(static_crash_results)
@@ -8582,27 +8735,6 @@ def main():
             if isinstance(_pv, dict) and _pv.get('matches'):
                 any_match = True
                 break
-
-    # Step 6e: automatic k-offset combination mutation (k = 3, 4, ...) over
-    # the DYNAMICALLY discovered offset pool — runs only when the single-byte
-    # and two-offset stages found nothing.  Combos are tested with a uniform
-    # byte value across all offsets (marker/flag families), greedy-minimized
-    # on a hit and archived.  The pool also covers the STATIC structure
-    # offsets (e.g. the J2K marker IDs from _static_j2k_region).
-    multi_combo_results = {}
-    _combo_pool = set(_pair_pool) | set(_stat_offsets)
-    if not any_match and len(_combo_pool) >= 3:
-        print(f'\n{"="*60}')
-        print(f'  Step 6e: Multi-offset combination mutation '
-              f'(pool={len(_combo_pool)} offsets)')
-        print(f'{"="*60}')
-        multi_combo_results, _combo_match = \
-            run_multi_offset_combination_stage(
-                binary, binary_ref, input_file, program_args,
-                _combo_pool, a.timeout, version=config.get('version_b'),
-                single_results=crash_results, value_hints=_value_hints)
-        if _combo_match:
-            any_match = True
 
     print(f'{"="*60}')
 
@@ -8630,6 +8762,7 @@ def main():
         'crash_results': crash_results,
         'pairwise_results': pairwise_results,
         'multi_combo_results': multi_combo_results,
+        'extended_mutation_results': extended_results,
         'mutation_any_match': any_match,
     }
     out_path = os.path.join(os.path.dirname(input_file) if input_file else '.', 'fork_trace_result.json')

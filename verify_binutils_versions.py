@@ -10,7 +10,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-BASE = Path("/home/ws/Desktop/RetroScope")
+BASE = Path(__file__).resolve().parent
 ENV = dict(os.environ,
            ASAN_OPTIONS="detect_leaks=0:allocator_may_return_null=1")
 TIMEOUT = 20

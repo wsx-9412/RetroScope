@@ -61,8 +61,8 @@ CONFIG_MODULE="$PROJECT_CONFIG"
 # Per-project: reference/target version paths + default input file
 case "$PROJECT_NAME" in
     "libtiff")
-        REFERENCE_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.7.0"
-        TARGET_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.5.1"
+        REFERENCE_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.0.7"
+        TARGET_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.0.6"
         DEFAULT_INPUT="$INPUT_FILE_DIR/libtiff/CVE-2025-8177.tif"
         EXTRA_ARGS=(--include-exits)
         ;;
@@ -77,13 +77,13 @@ case "$PROJECT_NAME" in
         ;;
     "audiofile")
         REFERENCE_VERSION_PATH="$BASE_DIR/audiofile-versions/audiofile-0.3.6"
-        TARGET_VERSION_PATH="$BASE_DIR/audiofile-versions/audiofile-0.3.5"
+        TARGET_VERSION_PATH="$BASE_DIR/audiofile-versions/audiofile-0.3.2"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2017-6831"
         EXTRA_ARGS=(--include-exits)
         ;;
     "jasper")
-        REFERENCE_VERSION_PATH="$BASE_DIR/jasper-versions/jasper-version-2.0.33"
-        TARGET_VERSION_PATH="$BASE_DIR/jasper-versions/jasper-version-2.0.32"
+        REFERENCE_VERSION_PATH="$BASE_DIR/jasper-versions/jasper-version-1.900.27"
+        TARGET_VERSION_PATH="$BASE_DIR/jasper-versions/jasper-version-1.900.24"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2021-26926"
         EXTRA_ARGS=(--include-exits)
         ;;
@@ -93,8 +93,8 @@ case "$PROJECT_NAME" in
     # For another CVE, update both paths so one version crashes and the other
     # does not, and pick the matching tool in the config's EXECUTION_CONFIG.
     "libxml2")
-        REFERENCE_VERSION_PATH="$BASE_DIR/libxml2-versions/libxml2-2.9.4"
-        TARGET_VERSION_PATH="$BASE_DIR/libxml2-versions/libxml2-2.9.2"
+        REFERENCE_VERSION_PATH="$BASE_DIR/libxml2-versions/libxml2-2.9.5"
+        TARGET_VERSION_PATH="$BASE_DIR/libxml2-versions/libxml2-2.9.4"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2017-9049"
         EXTRA_ARGS=(--include-exits)
         ;;
@@ -105,21 +105,21 @@ case "$PROJECT_NAME" in
         EXTRA_ARGS=(--include-exits)
         ;;
     "binutils")
-        REFERENCE_VERSION_PATH="$BASE_DIR/binutils-versions/binutils-2.42"
-        TARGET_VERSION_PATH="$BASE_DIR/binutils-versions/binutils-2.41"
+        REFERENCE_VERSION_PATH="$BASE_DIR/binutils-versions/binutils-2.38"
+        TARGET_VERSION_PATH="$BASE_DIR/binutils-versions/binutils-2.36"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2017-8396"
         EXTRA_ARGS=(--include-exits)
         ;;
     "freetype")
         REFERENCE_VERSION_PATH="$BASE_DIR/freetype-versions/freetype-2.11.1"
-        TARGET_VERSION_PATH="$BASE_DIR/freetype-versions/freetype-2.9.1"
+        TARGET_VERSION_PATH="$BASE_DIR/freetype-versions/freetype-2.5.5"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2022-27404"
         EXTRA_ARGS=(--include-exits)
         ;;
     
     "openjpeg")
-        REFERENCE_VERSION_PATH="$BASE_DIR/openjpeg-versions/v2.3.0"
-        TARGET_VERSION_PATH="$BASE_DIR/openjpeg-versions/v2.2.0"
+        REFERENCE_VERSION_PATH="$BASE_DIR/openjpeg-versions/v2.5.4"
+        TARGET_VERSION_PATH="$BASE_DIR/openjpeg-versions/v2.5.2"
         DEFAULT_INPUT="$INPUT_FILE_DIR/openjpeg/CVE-2018-18088/291554_FlipDeter"
         EXTRA_ARGS=(--include-exits)
         ;;
@@ -136,12 +136,42 @@ case "$PROJECT_NAME" in
         DEFAULT_INPUT="$INPUT_FILE_DIR/libsndfile/CVE-2024-50612"
         EXTRA_ARGS=(--include-exits)
         ;;
+    "libarchive")
+        REFERENCE_VERSION_PATH="$BASE_DIR/libarchive-versions/v3.6.0"
+        TARGET_VERSION_PATH="$BASE_DIR/libarchive-versions/v3.5.3"
+        DEFAULT_INPUT="$INPUT_FILE_DIR/libarchive/CVE-2025-5915/official_2565.rar"
+        EXTRA_ARGS=(--include-exits)
+        ;;
+    "openexr")
+        REFERENCE_VERSION_PATH="$BASE_DIR/openexr-versions/openexr-3.3.2"
+        TARGET_VERSION_PATH="$BASE_DIR/openexr-versions/openexr-3.2.12"
+        DEFAULT_INPUT="$INPUT_FILE_DIR/openexr/CVE-2025-48071-heap_overflow.exr"
+        EXTRA_ARGS=(--include-exits)
+        ;;
+    "exiv2")
+        REFERENCE_VERSION_PATH="$BASE_DIR/exiv2-versions/exiv2-0.28.4"
+        TARGET_VERSION_PATH="$BASE_DIR/exiv2-versions/exiv2-0.27.7"
+        DEFAULT_INPUT="$INPUT_FILE_DIR/exiv2/CVE-2025-26623-poc.tiff"
+        EXTRA_ARGS=(--include-exits)
+        ;;
+    "pcre2")
+        REFERENCE_VERSION_PATH="$BASE_DIR/pcre2-versions/pcre2-pcre2-10.34"
+        TARGET_VERSION_PATH="$BASE_DIR/pcre2-versions/pcre2-pcre2-10.30"
+        DEFAULT_INPUT="$INPUT_FILE_DIR/pcre2/CVE-2026-86145.txt"
+        EXTRA_ARGS=(--include-exits)
+        ;;
     *)
         echo "Error: unknown project '$PROJECT_NAME'"
-        echo "Available: libtiff, lame, audiofile, jasper, libxml2, giflib, binutils, freetype, openjpeg, libredwg, libsndfile"
+        echo "Available: libtiff, lame, audiofile, jasper, libxml2, giflib, binutils, freetype, openjpeg, libredwg, libsndfile, libarchive, openexr, exiv2, pcre2"
         exit 1
         ;;
 esac
+
+# Allow per-run version override (for version-sweep work).  Set RETRO_REF /
+# RETRO_TGT to override the reference (vulnerable) / target (non-vulnerable)
+# version paths without editing the case statement above.
+if [ -n "${RETRO_REF:-}" ]; then REFERENCE_VERSION_PATH="$RETRO_REF"; fi
+if [ -n "${RETRO_TGT:-}" ]; then TARGET_VERSION_PATH="$RETRO_TGT"; fi
 
 # Cross-version refactoring/rename detection is enabled for EVERY project so
 # that traces from differently-named functions are aligned before the LCS
@@ -318,13 +348,13 @@ DYN_MUT_PY
             echo "[*] dynamic origin trace + mutation reproduced the reference crash; legacy stage skipped."
             SKIP_LEGACY=1
         else
-            echo "[*] dynamic offsets did not reproduce the crash; falling back to legacy."
+            echo "[*] dynamic single-byte sweep did not reproduce the crash; continuing with dynamic pairwise -> directed fields -> combo -> P0 -> static."
         fi
     fi
 
     if [ "${SKIP_LEGACY:-0}" != "1" ]; then
         echo ""
-        echo "=== Legacy GDB offset trace (fallback) ==="
+        echo "=== Dynamic offset mutation continuation (pairwise -> directed fields -> combo -> P0 -> static last) ==="
         # Feed the dynamic stage's single-byte classification (when this
         # run produced one) into the legacy tracer: its active/inert
         # offsets extend the two-offset mutation pool and define the

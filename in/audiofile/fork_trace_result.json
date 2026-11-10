@@ -1,0 +1,6550 @@
+{
+  "binary_target": "/tmp/fork_analysis_sfdu23h8/target/sfcommands/.libs/sfconvert",
+  "binary_ref": "/tmp/fork_analysis_sfdu23h8/ref/sfcommands/.libs/sfconvert",
+  "fork_spec": "/tmp/fork_analysis_sfdu23h8/target/libaudiofile/Setup.cpp:285",
+  "variables": [
+    "setup"
+  ],
+  "differing_variables": [
+    "setup"
+  ],
+  "target_file_reads": [
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 832,
+      "buf_addr": 140733387029240
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 4096,
+      "buf_addr": 128242509590528
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 8192,
+      "buf_addr": 128242509328384
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 8,
+      "buf_addr": 140733387031584
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 4,
+      "buf_addr": 140733387031584
+    },
+    {
+      "fd": 3,
+      "offset": 4,
+      "size": 4,
+      "buf_addr": 140733387031584
+    },
+    {
+      "fd": 3,
+      "offset": 8,
+      "size": 8,
+      "buf_addr": 140733387031584
+    },
+    {
+      "fd": 3,
+      "offset": 8,
+      "size": 4,
+      "buf_addr": 140733387031584
+    },
+    {
+      "fd": 3,
+      "offset": 12,
+      "size": 4,
+      "buf_addr": 140733387031600
+    },
+    {
+      "fd": 3,
+      "offset": 16,
+      "size": 4,
+      "buf_addr": 140733387031616
+    },
+    {
+      "fd": 3,
+      "offset": 20,
+      "size": 4,
+      "buf_addr": 140733387031632
+    },
+    {
+      "fd": 3,
+      "offset": 24,
+      "size": 4,
+      "buf_addr": 140733387031648
+    },
+    {
+      "fd": 3,
+      "offset": 64,
+      "size": 784,
+      "buf_addr": 140733387028128
+    },
+    {
+      "fd": 3,
+      "offset": 156,
+      "size": 4096,
+      "buf_addr": 128242509590528
+    },
+    {
+      "fd": 3,
+      "offset": 156,
+      "size": 3940,
+      "buf_addr": 128242509590684
+    },
+    {
+      "fd": 3,
+      "offset": 832,
+      "size": 832,
+      "buf_addr": 140733387029240
+    },
+    {
+      "fd": 3,
+      "offset": 848,
+      "size": 48,
+      "buf_addr": 140733387028064
+    },
+    {
+      "fd": 3,
+      "offset": 896,
+      "size": 68,
+      "buf_addr": 140733387027984
+    },
+    {
+      "fd": 3,
+      "offset": 3605,
+      "size": 4096,
+      "buf_addr": 128242509590528
+    },
+    {
+      "fd": 3,
+      "offset": 3605,
+      "size": 491,
+      "buf_addr": 128242509594133
+    },
+    {
+      "fd": 3,
+      "offset": 3991,
+      "size": 4096,
+      "buf_addr": 128242509332480
+    },
+    {
+      "fd": 3,
+      "offset": 3991,
+      "size": 105,
+      "buf_addr": 128242509336471
+    },
+    {
+      "fd": 3,
+      "offset": 3991,
+      "size": 8192,
+      "buf_addr": 128242509328384
+    },
+    {
+      "fd": 3,
+      "offset": 3991,
+      "size": 4201,
+      "buf_addr": 128242509332375
+    },
+    {
+      "fd": 3,
+      "offset": 3993,
+      "size": 4096,
+      "buf_addr": 128242509287424
+    },
+    {
+      "fd": 3,
+      "offset": 3993,
+      "size": 103,
+      "buf_addr": 128242509291417
+    },
+    {
+      "fd": 3,
+      "offset": 3993,
+      "size": 8192,
+      "buf_addr": 128242509283328
+    },
+    {
+      "fd": 3,
+      "offset": 3993,
+      "size": 4199,
+      "buf_addr": 128242509287321
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 105,
+      "buf_addr": 128242509336471
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 103,
+      "buf_addr": 128242509291417
+    },
+    {
+      "fd": 3,
+      "offset": 6011,
+      "size": 4201,
+      "buf_addr": 128242509332375
+    },
+    {
+      "fd": 3,
+      "offset": 6011,
+      "size": 2181,
+      "buf_addr": 128242509334395
+    },
+    {
+      "fd": 3,
+      "offset": 6340,
+      "size": 4199,
+      "buf_addr": 128242509287321
+    },
+    {
+      "fd": 3,
+      "offset": 6340,
+      "size": 1852,
+      "buf_addr": 128242509289668
+    }
+  ],
+  "ref_file_reads": [
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 832,
+      "buf_addr": 140730848034184
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 4096,
+      "buf_addr": 133613657804800
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 8192,
+      "buf_addr": 133613657542656
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 8,
+      "buf_addr": 140730848036528
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 4,
+      "buf_addr": 140730848036528
+    },
+    {
+      "fd": 3,
+      "offset": 4,
+      "size": 4,
+      "buf_addr": 140730848036528
+    },
+    {
+      "fd": 3,
+      "offset": 8,
+      "size": 8,
+      "buf_addr": 140730848036528
+    },
+    {
+      "fd": 3,
+      "offset": 8,
+      "size": 4,
+      "buf_addr": 140730848036528
+    },
+    {
+      "fd": 3,
+      "offset": 12,
+      "size": 4,
+      "buf_addr": 140730848036544
+    },
+    {
+      "fd": 3,
+      "offset": 16,
+      "size": 4,
+      "buf_addr": 140730848036560
+    },
+    {
+      "fd": 3,
+      "offset": 20,
+      "size": 4,
+      "buf_addr": 140730848036576
+    },
+    {
+      "fd": 3,
+      "offset": 24,
+      "size": 4,
+      "buf_addr": 140730848036592
+    },
+    {
+      "fd": 3,
+      "offset": 64,
+      "size": 784,
+      "buf_addr": 140730848033072
+    },
+    {
+      "fd": 3,
+      "offset": 153,
+      "size": 4096,
+      "buf_addr": 133613657804800
+    },
+    {
+      "fd": 3,
+      "offset": 153,
+      "size": 3943,
+      "buf_addr": 133613657804953
+    },
+    {
+      "fd": 3,
+      "offset": 832,
+      "size": 832,
+      "buf_addr": 140730848034184
+    },
+    {
+      "fd": 3,
+      "offset": 848,
+      "size": 48,
+      "buf_addr": 140730848033008
+    },
+    {
+      "fd": 3,
+      "offset": 896,
+      "size": 68,
+      "buf_addr": 140730848032928
+    },
+    {
+      "fd": 3,
+      "offset": 3602,
+      "size": 4096,
+      "buf_addr": 133613657804800
+    },
+    {
+      "fd": 3,
+      "offset": 3602,
+      "size": 494,
+      "buf_addr": 133613657808402
+    },
+    {
+      "fd": 3,
+      "offset": 4028,
+      "size": 4096,
+      "buf_addr": 133613657501696
+    },
+    {
+      "fd": 3,
+      "offset": 4028,
+      "size": 68,
+      "buf_addr": 133613657505724
+    },
+    {
+      "fd": 3,
+      "offset": 4028,
+      "size": 8192,
+      "buf_addr": 133613657497600
+    },
+    {
+      "fd": 3,
+      "offset": 4028,
+      "size": 4164,
+      "buf_addr": 133613657501628
+    },
+    {
+      "fd": 3,
+      "offset": 4038,
+      "size": 4096,
+      "buf_addr": 133613657546752
+    },
+    {
+      "fd": 3,
+      "offset": 4038,
+      "size": 58,
+      "buf_addr": 133613657550790
+    },
+    {
+      "fd": 3,
+      "offset": 4038,
+      "size": 8192,
+      "buf_addr": 133613657542656
+    },
+    {
+      "fd": 3,
+      "offset": 4038,
+      "size": 4154,
+      "buf_addr": 133613657546694
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 58,
+      "buf_addr": 133613657550790
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 68,
+      "buf_addr": 133613657505724
+    },
+    {
+      "fd": 3,
+      "offset": 5832,
+      "size": 4154,
+      "buf_addr": 133613657546694
+    },
+    {
+      "fd": 3,
+      "offset": 5832,
+      "size": 2360,
+      "buf_addr": 133613657548488
+    },
+    {
+      "fd": 3,
+      "offset": 6161,
+      "size": 4164,
+      "buf_addr": 133613657501628
+    },
+    {
+      "fd": 3,
+      "offset": 6161,
+      "size": 2031,
+      "buf_addr": 133613657503761
+    }
+  ],
+  "chain_trace": {
+    "var_mappings": {
+      "setup": {
+        "file_offset": null,
+        "kind": null,
+        "values": [
+          88373247082624
+        ]
+      }
+    },
+    "fork_points": [
+      {
+        "inv": 2,
+        "varvals": {
+          "setup": 88373247082720
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 4,
+        "varvals": {
+          "setup": 88373247082624
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      }
+    ],
+    "pread64": [],
+    "ifd_region": {
+      "ifd_offset": null,
+      "entry_size": null,
+      "entries_base": null,
+      "count": null,
+      "entry_offsets": [],
+      "field_offsets": []
+    }
+  },
+  "deep_trace": {},
+  "arithmetic_backtrace": {
+    "source": "/tmp/fork_analysis_sfdu23h8/target/libaudiofile/Setup.cpp",
+    "fork_line": 285,
+    "nodes": {
+      "setup": {
+        "kind": "unknown",
+        "line": 285,
+        "rhs": null
+      }
+    },
+    "runtime_values": {
+      "setup": 88373247082624
+    },
+    "tag_mappings": {},
+    "chains": {
+      "setup": {
+        "kind": "unknown",
+        "tag_offsets": [],
+        "cli_leaves": [],
+        "node_count": 1
+      }
+    },
+    "explanation": {
+      "setup": [
+        "setup [GDB: 88373247082624]"
+      ]
+    }
+  },
+  "variable_offsets": {},
+  "candidate_tiers": {},
+  "ifd_region": {},
+  "ifd_region_from_dynamic": false,
+  "ifd_region_mutation": {},
+  "static_mutation_offsets": [],
+  "static_crash_results": {},
+  "static_pairwise_results": {},
+  "mutation_offsets": [],
+  "crash_results": {},
+  "pairwise_results": {},
+  "multi_combo_results": {},
+  "extended_mutation_results": {
+    "enabled": true,
+    "format_profile": null,
+    "primary_offsets": [],
+    "primary_deferred_offsets": [],
+    "fork_flip_gate": {
+      "skipped": true
+    },
+    "dynamic_neighbourhood": [],
+    "dynamic_structure_offsets": [],
+    "static_offsets": [],
+    "candidates_tested": 373,
+    "matched": false,
+    "matches": [],
+    "novel_behaviours": 6,
+    "corpus_seeds": 6,
+    "operators": {
+      "ins": 146,
+      "del": 12,
+      "mb": 48,
+      "arith": 30,
+      "havoc": 135,
+      "splice": 2
+    },
+    "budget_exhausted": false,
+    "elapsed_seconds": 131.493,
+    "attribution_summary": {
+      "total": 373,
+      "reached_fork": {
+        "unknown": 373
+      },
+      "error_class": {
+        "parse_error": 326,
+        "reported_error": 41,
+        "timeout": 3,
+        "asan_crash": 3
+      },
+      "parse_stage": {
+        "unknown": 373
+      },
+      "crash_relation": {
+        "None": 370,
+        "elsewhere": 3
+      },
+      "phase": {
+        "dynamic-blocks": 120,
+        "havoc": 95,
+        "fb2/neighbour": 78,
+        "fb2/blocks": 38,
+        "fb2/havoc": 20,
+        "fb3/havoc": 20,
+        "splice": 2
+      },
+      "verdict": {
+        "None": 373
+      },
+      "capped": false
+    },
+    "attribution_records": [
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins1@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins1@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins1@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins1@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins2@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins2@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins2@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins2@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins4@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins4@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins4@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins4@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins8@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins8@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins8@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins8@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins12@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins12@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins12@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins12@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins16@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins16@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins16@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins16@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins24@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins24@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins24@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins24@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins32@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins32@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins32@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins32@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins64@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins64@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins64@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins64@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins1@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins1@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins1@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins1@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins2@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins2@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins2@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins2@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins4@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins4@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins4@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins4@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins8@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins8@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins8@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins8@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins12@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins12@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins12@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins12@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins16@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins16@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins16@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins16@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins24@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins24@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins24@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins24@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins32@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins32@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins32@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins32@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins64@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins64@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins64@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins64@0x18",
+        "offsets": [
+          24
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins1@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins1@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins1@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins1@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins2@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins2@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins2@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins2@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins4@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins4@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins4@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins4@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins8@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins8@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins8@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins8@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins12@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins12@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins12@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins12@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins16@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins16@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins16@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins16@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins24@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins24@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins24@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins24@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins32@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins32@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins32@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins32@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins64@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins64@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins64@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "ins",
+        "detail": "ins64@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "del",
+        "detail": "del1@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "del",
+        "detail": "del2@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "del",
+        "detail": "del4@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "del",
+        "detail": "del8@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "del",
+        "detail": "del12@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "del",
+        "detail": "del16@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "del",
+        "detail": "del24@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "del",
+        "detail": "del1@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "del",
+        "detail": "del2@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "del",
+        "detail": "del4@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "del",
+        "detail": "del8@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "dynamic-blocks",
+        "op": "del",
+        "detail": "del12@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x1",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x2",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x3",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x5",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x4",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x10",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x8",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x20",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x40",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x80",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x100",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x200",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x400",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x800",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x1000",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x10000",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x100000",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x7fffffff",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x80000000",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x19",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0xffffffff",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x18",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x1a",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0+0x1",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0-0x1",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0+0x2",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0-0x2",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0-0x3",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0+0x3",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0+0x4",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0-0x4",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0+0x8",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0-0x8",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0+0x10",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0-0x10",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0+0x20",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0-0x20",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0+0x40",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins1@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins1@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins1@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins2@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins2@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins2@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins2@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins4@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins4@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins4@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins4@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins8@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins8@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins8@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins8@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins12@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins12@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins12@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins12@0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          12,
+          14,
+          7,
+          6,
+          11,
+          10
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          25,
+          17,
+          26
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          12,
+          3
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          20,
+          3
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          8,
+          3,
+          28,
+          20,
+          16
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          12,
+          17
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          1,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          0,
+          2,
+          2,
+          16,
+          8
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          0,
+          41,
+          32
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          2,
+          13,
+          20,
+          3
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x1",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x0",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x2",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x3",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x4",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x5",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x10",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x8",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x20",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x40",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x80",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x100",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x200",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x400",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x800",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x1000",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x10000",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x100000",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x7fffffff",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x80000000",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0xffffffff",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x19",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x18",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "mb",
+        "detail": "mb4@0x0=0x1a",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0+0x1",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0-0x1",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0+0x2",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0-0x2",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0+0x3",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0-0x3",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0+0x4",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0-0x4",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0+0x8",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0-0x8",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0+0x10",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0-0x10",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0+0x20",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0-0x20",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/neighbour",
+        "op": "arith",
+        "detail": "ar4@0x0+0x40",
+        "offsets": [
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins1@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins1@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins1@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins2@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins2@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins2@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins4@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins2@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins4@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins4@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins4@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins8@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins8@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins8@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins12@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins8@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins12@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins12@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/blocks",
+        "op": "ins",
+        "detail": "ins12@0xc",
+        "offsets": [
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          1,
+          0,
+          0,
+          9,
+          5,
+          14
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          10,
+          8,
+          21,
+          12,
+          10
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          4,
+          10,
+          24,
+          35,
+          16
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          5,
+          28,
+          4,
+          15,
+          16
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          7,
+          16,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          21,
+          15,
+          20
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          4,
+          1,
+          13
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          18,
+          25,
+          8
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          0,
+          29,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb2/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb2",
+        "offsets": [
+          8,
+          10,
+          24,
+          1,
+          6
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          16,
+          1,
+          10,
+          5
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          25,
+          16,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          17,
+          2,
+          1,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          8,
+          2,
+          0,
+          5
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          3,
+          1,
+          1,
+          6
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          2,
+          13,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          6,
+          2,
+          0,
+          4,
+          26,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          8,
+          4,
+          2
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          0,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          14,
+          4,
+          2,
+          4,
+          11
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          20,
+          14,
+          23,
+          31,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          9,
+          2,
+          19
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          3,
+          0,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          10,
+          21,
+          22,
+          8
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          12,
+          5,
+          2
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          7,
+          7
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          10,
+          1
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          14,
+          17,
+          12,
+          12,
+          15
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          22,
+          33,
+          6
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "fb3/havoc",
+        "op": "havoc",
+        "detail": "havoc-fb3",
+        "offsets": [
+          25,
+          13,
+          61,
+          26,
+          3,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc1",
+        "offsets": [
+          4,
+          8,
+          16,
+          14,
+          2
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc2",
+        "offsets": [
+          12,
+          8
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc5",
+        "offsets": [
+          1,
+          10,
+          16
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc6",
+        "offsets": [
+          11,
+          0,
+          0,
+          10,
+          8,
+          1
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc7",
+        "offsets": [
+          22,
+          18,
+          9,
+          7,
+          8
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc3",
+        "offsets": [
+          15,
+          12,
+          16
+        ],
+        "error_class": "timeout",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "5031aaf7e6de72cb3e0d03005007ef58cc368b8a"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc9",
+        "offsets": [
+          14,
+          32,
+          31
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc10",
+        "offsets": [
+          13
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc11",
+        "offsets": [
+          3,
+          7
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc12",
+        "offsets": [
+          5,
+          35,
+          16,
+          27,
+          15,
+          36
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc13",
+        "offsets": [
+          24,
+          14
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc14",
+        "offsets": [
+          8,
+          13,
+          38
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc15",
+        "offsets": [
+          7,
+          12,
+          11,
+          20,
+          19,
+          6
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc16",
+        "offsets": [
+          14,
+          10
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc17",
+        "offsets": [
+          24,
+          21,
+          23,
+          11,
+          2,
+          1
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc18",
+        "offsets": [
+          16,
+          9,
+          6
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc19",
+        "offsets": [
+          1,
+          14,
+          12,
+          18,
+          5,
+          2
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc20",
+        "offsets": [
+          0,
+          12,
+          13,
+          5,
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc21",
+        "offsets": [
+          0,
+          5,
+          5,
+          2,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc22",
+        "offsets": [
+          8,
+          26,
+          18,
+          14,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc23",
+        "offsets": [
+          7,
+          7,
+          40,
+          29
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc24",
+        "offsets": [
+          23,
+          18,
+          5
+        ],
+        "error_class": "asan_crash",
+        "parse_stage": "unknown",
+        "crash_func": "NeXTFile::readInit(_AFfilesetup*)",
+        "crash_relation": "elsewhere",
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "b98ae40f0e3137ab77d8c5e1414db7d760608ac5"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc25",
+        "offsets": [
+          20,
+          2,
+          52,
+          3,
+          35
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc26",
+        "offsets": [
+          14,
+          24,
+          22,
+          13,
+          13,
+          16
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc27",
+        "offsets": [
+          9,
+          22,
+          29,
+          20
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc28",
+        "offsets": [
+          14,
+          3
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc29",
+        "offsets": [
+          17,
+          5,
+          39,
+          30,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc30",
+        "offsets": [
+          0,
+          8,
+          0,
+          15,
+          8
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc8",
+        "offsets": [
+          9,
+          12,
+          17,
+          7,
+          12
+        ],
+        "error_class": "timeout",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "5031aaf7e6de72cb3e0d03005007ef58cc368b8a"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc33",
+        "offsets": [
+          24,
+          34,
+          7,
+          8
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc32",
+        "offsets": [
+          18,
+          3
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc34",
+        "offsets": [
+          11,
+          14
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc36",
+        "offsets": [
+          11,
+          18,
+          5,
+          22,
+          26,
+          14
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc35",
+        "offsets": [
+          13,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc37",
+        "offsets": [
+          17,
+          6,
+          8
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc38",
+        "offsets": [
+          18,
+          12,
+          3
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc40",
+        "offsets": [
+          2,
+          3
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc41",
+        "offsets": [
+          4,
+          4
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc42",
+        "offsets": [
+          6,
+          4,
+          18,
+          9,
+          21,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc43",
+        "offsets": [
+          20,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc44",
+        "offsets": [
+          11,
+          2,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc45",
+        "offsets": [
+          7,
+          5,
+          0,
+          17
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc39",
+        "offsets": [
+          6,
+          21,
+          40,
+          48,
+          43
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc47",
+        "offsets": [
+          0,
+          2,
+          23,
+          24,
+          7,
+          10
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc48",
+        "offsets": [
+          13,
+          32,
+          0,
+          14,
+          34
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc49",
+        "offsets": [
+          0,
+          7,
+          24,
+          15,
+          5
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc50",
+        "offsets": [
+          16,
+          1,
+          2
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc51",
+        "offsets": [
+          13,
+          15
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc52",
+        "offsets": [
+          0,
+          3,
+          13,
+          9,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc53",
+        "offsets": [
+          20,
+          20,
+          2
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc54",
+        "offsets": [
+          14,
+          6
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc55",
+        "offsets": [
+          16,
+          13,
+          10,
+          16,
+          11
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc56",
+        "offsets": [
+          6,
+          12,
+          22
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc57",
+        "offsets": [
+          1,
+          4,
+          7
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc58",
+        "offsets": [
+          0,
+          22
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc59",
+        "offsets": [
+          7,
+          12,
+          4
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc46",
+        "offsets": [
+          23,
+          15,
+          20
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "88383cc1c62f8957ca6165a72a5e9760dd7505dc"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc61",
+        "offsets": [
+          3,
+          20,
+          12,
+          6
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc62",
+        "offsets": [
+          20,
+          2,
+          6,
+          5,
+          4
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc63",
+        "offsets": [
+          6,
+          7,
+          8
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc60",
+        "offsets": [
+          22,
+          19
+        ],
+        "error_class": "timeout",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "5031aaf7e6de72cb3e0d03005007ef58cc368b8a"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc65",
+        "offsets": [
+          19,
+          9,
+          24
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc64",
+        "offsets": [
+          17,
+          9,
+          25,
+          12,
+          16
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc67",
+        "offsets": [
+          4,
+          1,
+          17,
+          7
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc68",
+        "offsets": [
+          12,
+          14,
+          36,
+          13
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc66",
+        "offsets": [
+          19,
+          19
+        ],
+        "error_class": "asan_crash",
+        "parse_stage": "unknown",
+        "crash_func": "NeXTFile::readInit(_AFfilesetup*)",
+        "crash_relation": "elsewhere",
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "b98ae40f0e3137ab77d8c5e1414db7d760608ac5"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc70",
+        "offsets": [
+          4,
+          12,
+          12,
+          2,
+          6
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc71",
+        "offsets": [
+          8,
+          8,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc72",
+        "offsets": [
+          6,
+          24,
+          0,
+          1
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc73",
+        "offsets": [
+          12,
+          10,
+          26
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc74",
+        "offsets": [
+          16,
+          7
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc75",
+        "offsets": [
+          18,
+          13,
+          5,
+          14,
+          5,
+          18
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc76",
+        "offsets": [
+          8,
+          7,
+          17,
+          1,
+          9,
+          26
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc77",
+        "offsets": [
+          23,
+          21,
+          7,
+          1,
+          12
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc78",
+        "offsets": [
+          5,
+          3,
+          4,
+          12,
+          17
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc69",
+        "offsets": [
+          11,
+          23
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc79",
+        "offsets": [
+          5,
+          2,
+          7
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc80",
+        "offsets": [
+          17,
+          11,
+          15,
+          14,
+          23,
+          6
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc81",
+        "offsets": [
+          0,
+          3,
+          11,
+          9
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc83",
+        "offsets": [
+          0,
+          19,
+          12,
+          7
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc84",
+        "offsets": [
+          15
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc85",
+        "offsets": [
+          12,
+          6,
+          0,
+          0,
+          1
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc86",
+        "offsets": [
+          21,
+          0,
+          16,
+          5,
+          17
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc87",
+        "offsets": [
+          0,
+          3,
+          11,
+          1,
+          22,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc88",
+        "offsets": [
+          7,
+          2
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc89",
+        "offsets": [
+          13,
+          7,
+          0,
+          18
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc90",
+        "offsets": [
+          12,
+          22,
+          0,
+          16,
+          20,
+          11
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc91",
+        "offsets": [
+          8,
+          3
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc92",
+        "offsets": [
+          13,
+          12,
+          3
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc94",
+        "offsets": [
+          24,
+          15,
+          7,
+          26,
+          31
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc95",
+        "offsets": [
+          7,
+          17,
+          18,
+          14,
+          0
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc93",
+        "offsets": [
+          16,
+          7,
+          23
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "3fd0f81f289719f021db73044545a7323308f755"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc96",
+        "offsets": [
+          8,
+          0,
+          0,
+          22,
+          9,
+          7
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc97",
+        "offsets": [
+          18,
+          5,
+          8,
+          19,
+          11,
+          11
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "8a07739ce26d9f2d6cd378b7a53852dced8c0104"
+      },
+      {
+        "phase": "havoc",
+        "op": "havoc",
+        "detail": "havoc99",
+        "offsets": [
+          3,
+          15
+        ],
+        "error_class": "parse_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "2c5df97e36ca3f446af1f22a795ae6159fe0cee6"
+      },
+      {
+        "phase": "splice",
+        "op": "splice",
+        "detail": "splice3@0xa",
+        "offsets": [
+          10
+        ],
+        "error_class": "asan_crash",
+        "parse_stage": "unknown",
+        "crash_func": "NeXTFile::readInit(_AFfilesetup*)",
+        "crash_relation": "elsewhere",
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "b98ae40f0e3137ab77d8c5e1414db7d760608ac5"
+      },
+      {
+        "phase": "splice",
+        "op": "splice",
+        "detail": "splice0@0x16",
+        "offsets": [
+          22
+        ],
+        "error_class": "reported_error",
+        "parse_stage": "unknown",
+        "crash_func": null,
+        "crash_relation": null,
+        "reached_fork": "unknown",
+        "verdict": null,
+        "key": "56b5da00d3b8f740aeb0c94ef24fb98ea50a41c8"
+      }
+    ]
+  },
+  "mutation_any_match": false
+}

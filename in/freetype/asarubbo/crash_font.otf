@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html class="html-devise-layout gl-system" lang="en">
+<head prefix="og: http://ogp.me/ns#">
+<meta charset="utf-8">
+<meta content="IE=edge" http-equiv="X-UA-Compatible">
+<meta content="width=device-width, initial-scale=1" name="viewport">
+<title>Sign in · GitLab</title>
+<link as="font" crossorigin="" href="/assets/gitlab-sans/GitLabSans-9892dc17af892e03de41625c0ee325117a3b8ee4ba6005f3a3eac68510030aed.woff2" rel="preload">
+<link as="font" crossorigin="" href="/assets/gitlab-sans/GitLabSans-Italic-f96f17332d67b21ada2dfba5f0c0e1d5801eab99330472057bf18edd93d4ccf7.woff2" rel="preload">
+<link as="font" crossorigin="" href="/assets/gitlab-mono/GitLabMono-29c2152dac8739499dd0fe5cd37a486ebcc7d4798c9b6d3aeab65b3172375b05.woff2" rel="preload">
+<link as="font" crossorigin="" href="/assets/gitlab-mono/GitLabMono-Italic-af36701a2188df32a9dcea12e0424c380019698d4f76da9ad8ea2fd59432cf83.woff2" rel="preload">
+
+<script>
+//<![CDATA[
+window.gon={};gon.features={"twoStepSignIn":false};
+//]]>
+</script>
+
+<script>
+//<![CDATA[
+const root = document.documentElement;
+if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  root.classList.add('gl-dark');
+}
+
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+  if (e.matches) {
+    root.classList.add('gl-dark');
+  } else {
+    root.classList.remove('gl-dark');
+  }
+});
+
+//]]>
+</script>
+
+
+
+
+<meta content="light dark" name="color-scheme">
+<link rel="stylesheet" href="/assets/application-79f356d98146549c21e5657de00ff91a957f995329d1725db0bb2a7251d2b59a.css" media="(prefers-color-scheme: light)" />
+<link rel="stylesheet" href="/assets/application_dark-a3de088d254f447173abe48a05ec6b7ac075668b58b5be1aa26c5012bb0f8395.css" media="(prefers-color-scheme: dark)" />
+<link rel="stylesheet" href="/assets/page_bundles/login-3ec976d9dffa42e31701205d5ec9278bcebc30cb236179b8ee23a08067fcc2da.css" /><link rel="stylesheet" href="/assets/page_bundles/commit_description-9e7efe20f0cef17d0606edabfad0418e9eb224aaeaa2dae32c817060fa60abcc.css" /><link rel="stylesheet" href="/assets/page_bundles/design_management-4765252040ab8edacfb27d7015bf41527629b0dc4fdacd1f1bc9d3f65cecae1b.css" /><link rel="stylesheet" href="/assets/page_bundles/issuable_list-7a33f8b5a79c609e4bac7e1fa1c5553962adf726cd700fbead1f9e974c41e7c9.css" /><link rel="stylesheet" href="/assets/page_bundles/issues_list-1d9cdbbaf9469f9073c410dc7a7f2543b02071773aa332daf63803eaaec87e62.css" /><link rel="stylesheet" href="/assets/page_bundles/issues_show-ec954ae4932e0bfe7383adee3c75f53c5985c6edea62c7ae4370cb1f6e85a91a.css" /><link rel="stylesheet" href="/assets/page_bundles/notes_shared-bd75305a90734f71761e8d13c4286994caf487acb52219ee52dcc65c0c3f6a05.css" /><link rel="stylesheet" href="/assets/page_bundles/work_items-b2f575a41145c7ff2490084c75138aab201b2593b93846f5812aec8cfb2a6ca2.css" />
+<link rel="stylesheet" href="/assets/tailwind-1643fe418f6d3ad9eacf47d603d9c8150de2e6a435bbd333f32fd5f776cd7c7c.css" />
+
+
+<link rel="stylesheet" href="/assets/fonts-deb7ad1d55ca77c0172d8538d53442af63604ff490c74acc2859db295c125bdb.css" />
+<link rel="stylesheet" href="/assets/highlight/themes/white-2a02e7cdb193dcec5b8068ad0a57aee70b1cd0888c8d1dbe8ab5996651334922.css" media="(prefers-color-scheme: light)" />
+<link rel="stylesheet" href="/assets/highlight/themes/dark-7fbedc840cde3d684b77966ee3740cd6cf4ba7c26a807b7c8701223af70f772f.css" media="(prefers-color-scheme: dark)" />
+
+<script src="/assets/webpack/runtime.ea79027a.bundle.js" defer="defer"></script>
+<script src="/assets/webpack/main.02b8bf31.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/tracker.1eb446cb.chunk.js" defer="defer"></script>
+<script>
+//<![CDATA[
+window.snowplowOptions = {"namespace":"gl","hostname":"gitlab.freedesktop.org:443","postPath":"/-/collect_events","forceSecureTracker":true,"appId":"gitlab_sm"};
+gl = window.gl || {};
+gl.snowplowStandardContext = {"schema":"iglu:com.gitlab/gitlab_standard/jsonschema/1-1-8","data":{"environment":"self-managed","source":"gitlab-rails","client_type":"api","correlation_id":"01M5YSWRMYQXR6S1ARGHWKT8RC","extra":{},"user_id":null,"global_user_id":null,"user_type":null,"is_gitlab_team_member":null,"namespace_id":null,"ultimate_parent_namespace_id":null,"project_id":null,"feature_enabled_by_namespace_ids":null,"realm":"self-managed","deployment_type":"self-managed","context_generated_at":"2026-10-27T13:48:14.407Z","organization_id":1}};
+gl.snowplowPseudonymizedPageUrl = "https://gitlab.freedesktop.org/users/sign_in";
+gl.maskedDefaultReferrerUrl = null;
+gl.ga4MeasurementId = 'G-ENFH3X7M5Y';
+gl.duoEvents = [];
+gl.onlySendDuoEvents = false;
+
+
+//]]>
+</script>
+
+
+
+<script src="/assets/webpack/commons-graphql_explorer-pages.admin.application_settings.service_accounts-pages.admin.applications--b635524d.b3338b4b.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/commons-pages.admin.abuse_reports.show-pages.dashboard.issues-pages.dashboard.issues.vue3-pages.dash-5ffc317d.0bcd8c23.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/commons-pages.admin.abuse_reports.show-pages.dashboard.issues-pages.dashboard.issues.vue3-pages.dash-f8003152.f196957a.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/commons-pages.admin.application_settings.service_accounts-pages.explore.analytics_dashboards-pages.e-306889d5.8b0f4475.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/commons-pages.admin.abuse_reports.show-pages.dashboard.issues-pages.dashboard.work_items-pages.group-b344e337.050faeee.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/commons-pages.admin.deploy_keys.index-pages.admin.deploy_keys.index.vue3-pages.admin.groups.index-pa-95f4ca76.204c76b4.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/commons-pages.dashboard.home-pages.registrations.new-pages.root-pages.root.vue3-pages.sessions.new-p-a41aff06.d68c093a.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/commons-pages.dashboard.home-pages.projects.snippets.show-pages.projects.snippets.show.vue3-pages.ro-3e3d840b.db458a62.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/0dcf7166.fee24f6c.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/commons-pages.search.show-pages.search.show.vue3-super_sidebar-super_sidebar.vue3.e1ab1d65.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/commons-super_sidebar-super_sidebar.vue3.e38d27a4.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/commons-pages.search.show-super_sidebar.e41625fd.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/super_sidebar.ff1bc863.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/commons-pages.admin.application_settings.general-pages.admin.application_settings.service_accounts-p-03200518.ed8822a6.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/commons-pages.admin.sessions-pages.ldap.omniauth_callbacks-pages.omniauth_callbacks-pages.sessions-p-ea3be603.e1736b7d.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/commons-pages.registrations.new-pages.sessions.new.e2ddcfe6.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/pages.sessions.new.1980aed2.chunk.js" defer="defer"></script>
+
+
+
+<meta content="object" property="og:type">
+<meta content="GitLab" property="og:site_name">
+<meta content="Sign in · GitLab" property="og:title">
+<meta content="freedesktop.org GitLab login" property="og:description">
+<meta content="https://gitlab.freedesktop.org/assets/twitter_card-570ddb06edf56a2312253c5872489847a0f385112ddbcd71ccfa1570febab5d2.jpg" property="og:image">
+<meta content="64" property="og:image:width">
+<meta content="64" property="og:image:height">
+<meta content="https://gitlab.freedesktop.org/users/sign_in" property="og:url">
+<meta content="summary" property="twitter:card">
+<meta content="Sign in · GitLab" property="twitter:title">
+<meta content="freedesktop.org GitLab login" property="twitter:description">
+<meta content="https://gitlab.freedesktop.org/assets/twitter_card-570ddb06edf56a2312253c5872489847a0f385112ddbcd71ccfa1570febab5d2.jpg" property="twitter:image">
+
+<meta name="csrf-param" content="authenticity_token" />
+<meta name="csrf-token" content="fXssmyo6XISAIpwH401C86YPzbysvqYH4r7KBM0Yoa8PVlKSQhGGO6Nb0fLVo8cIQURdWcmZOI6C7oM3OYHQ1Q" />
+<meta name="csp-nonce" />
+<meta name="action-cable-url" content="/-/cable" />
+<link crossorigin="use-credentials" href="/-/manifest.json" rel="manifest">
+<link rel="icon" type="image/png" href="/uploads/-/system/appearance/favicon/1/fdo-favicon.ico" id="favicon" data-original-href="/uploads/-/system/appearance/favicon/1/fdo-favicon.ico" />
+<link rel="apple-touch-icon" type="image/x-icon" href="/assets/apple-touch-icon-b049d4bc0dd9626f31db825d61880737befc7835982586d015bded10b4435460.png" />
+<link crossorigin="use-credentials" href="/search/opensearch.xml" rel="search" title="Search GitLab" type="application/opensearchdescription+xml">
+
+
+
+
+<meta content="freedesktop.org GitLab login" name="description">
+<meta content="#F1F0F6" media="(prefers-color-scheme: light)" name="theme-color">
+<meta content="#232128" media="(prefers-color-scheme: dark)" name="theme-color">
+</head>
+
+<body class="gl-min-h-full gl-flex gl-flex-col login-page gl-browser-generic gl-platform-other" data-page="sessions:new" data-testid="login-page">
+
+<script>
+//<![CDATA[
+gl = window.gl || {};
+gl.client = {"isGeneric":true,"isOther":true};
+
+
+//]]>
+</script>
+<div class="gl-broadcast-message banner js-broadcast-notification-10 light-red" data-broadcast-banner data-testid="banner-broadcast-message" role="alert">
+<div class="gl-broadcast-message-content">
+<div class="gl-broadcast-message-icon">
+<svg class="s16" data-testid="bullhorn-icon"><use href="/assets/icons-557611e974a59dbbc29ee0980dc4bc97610b136af3a30b5c715d47d566317bc5.svg#bullhorn"></use></svg>
+</div>
+<div class="gl-broadcast-message-text">
+<h2 class="gl-sr-only">Admin message</h2>
+<p>Due to an influx of spam, we have had to impose restrictions on new accounts. Please see <a href="https://gitlab.freedesktop.org/freedesktop/freedesktop/-/wikis/home">this wiki page</a> for instructions on how to get full permissions. Sorry for the inconvenience.</p>
+</div>
+</div>
+<button class="gl-button btn btn-icon btn-sm btn-default btn-default-tertiary gl-broadcast-message-dismiss js-dismiss-current-broadcast-notification" aria-label="Close" data-id="10" data-expire-date="2030-12-01T21:21:05Z" data-cookie-key="hide_broadcast_message_10" type="button"><svg class="s16 gl-icon gl-button-icon " data-testid="close-icon"><use href="/assets/icons-557611e974a59dbbc29ee0980dc4bc97610b136af3a30b5c715d47d566317bc5.svg#close"></use></svg>
+
+</button>
+</div>
+
+
+
+
+
+
+<div class="gl-grow gl-flex gl-flex-wrap">
+<div class="container gl-self-center">
+<main class="content">
+<div class="flash-container flash-container-page sticky" data-testid="flash-container">
+<div id="js-global-alerts"></div>
+</div>
+
+<div class="row gl-mt-5 gl-gap-y-6">
+<div class="col-md !gl-order-12">
+<div class="col-sm-12">
+<h1 class="gl-mb-5 gl-text-size-h2 gl-hidden md:gl-block">
+freedesktop.org GitLab login
+</h1>
+<div class="md" id="js-custom-sign-in-description"><p data-sourcepos="1:1-1:271" dir="auto">freedesktop.org is a community of open-source projects dedicated to advancing the open-source desktop ecosystem. If you would like to contribute code, bug reports, or ideas to our existing member projects, you can register or log in here and contribute to these projects.</p>&#x000A;<p data-sourcepos="3:1-3:487" dir="auto"><strong data-sourcepos="3:1-3:487">When creating a new account, you will be sent an email to confirm and validate your account. Please check your inbox (including spam) to ensure that you receive this message and follow the link to confirm your account. Once this is done, you will be able to report issues in existing projects. To fork projects, you will need to <a data-sourcepos="3:332-3:485" href="https://gitlab.freedesktop.org/freedesktop/freedesktop/-/wikis/home#how-can-i-contribute-to-an-existing-project-or-create-a-new-one">request permissions</a></strong></p>&#x000A;<p data-sourcepos="5:1-5:295" dir="auto"><strong data-sourcepos="5:1-5:295">When creating a new account, you will be sent an email to confirm and validate your account. Please check your inbox (including spam) to ensure that you receive this message and follow the link to confirm your account. Once this is done, your account will become active within 10-15 minutes.</strong></p>&#x000A;<p data-sourcepos="7:1-7:292" dir="auto">Please conduct yourself in a polite and respectful way when using these services, per our <a data-sourcepos="7:91-7:155" href="https://www.freedesktop.org/wiki/CodeOfConduct" rel="nofollow noreferrer noopener" target="_blank">Code of Conduct</a>. The information we collect and how we use it is also described in our <a data-sourcepos="7:228-7:291" href="https://www.freedesktop.org/wiki/PrivacyPolicy" rel="nofollow noreferrer noopener" target="_blank">Privacy Policy</a>.</p></div>
+</div>
+</div>
+<div class="col-md order-md-12">
+<div class="col-sm-12 bar">
+<div class="gl-text-center gl-mb-5">
+<img alt="freedesktop.org GitLab login" class="gl-invisible gl-h-10 js-portrait-logo-detection lazy" data-src="/assets/logo-911de323fa0def29aaf817fca33916653fc92f3ff31647ac41d2c39bbe243edb.svg" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" />
+<h1 class="gl-mb-3 gl-text-size-h2 md:gl-hidden">
+freedesktop.org GitLab login
+</h1>
+</div>
+
+<div class="js-non-oauth-login">
+<div data-app-data="{&quot;sign_in_path&quot;:&quot;/users/sign_in&quot;,&quot;users_sign_in_path_path&quot;:&quot;/users/sign_in_path&quot;,&quot;passkeys_sign_in_path&quot;:&quot;/users/passkeys/sign_in&quot;,&quot;is_unconfirmed_email&quot;:false,&quot;new_user_confirmation_path&quot;:&quot;/users/confirmation/new&quot;,&quot;new_password_path&quot;:&quot;/users/password/new&quot;,&quot;show_captcha&quot;:false,&quot;is_remember_me_enabled&quot;:true,&quot;show_passkey_immediately&quot;:true}" id="js-sign-in-form">
+<div class="gl-spinner-container gl-my-5" role="status"><span aria-hidden class="gl-spinner gl-spinner-md gl-spinner-dark !gl-align-text-bottom"></span><span class="gl-sr-only !gl-absolute">Loading</span>
+</div>
+<form action="/users/sign_in" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="zngEdxnhoCdQDbTGsAECb4rZnS0HU8LCMamWq-5M3PW8VXp-ccp6mHN0-TOG74eUbZINyGJ0XEtR-d-YGtWtjw" autocomplete="off" /><input data-js-name="login" autocomplete="off" type="hidden" name="user[login]" id="user_login" />
+<input data-js-name="password" autocomplete="off" type="hidden" name="user[password]" id="user_password" />
+<input data-js-name="rememberMe" autocomplete="off" type="hidden" name="user[remember_me]" id="user_remember_me" />
+</form></div>
+
+</div>
+<div class="gl-mt-3">
+By signing in you accept the <a href='/-/users/terms' target='_blank' rel='noreferrer noopener'>Terms of Use and acknowledge the Privacy Statement and Cookie Policy</a>.
+</div>
+<div class="gl-mt-3 gl-text-center">
+Don&#39;t have an account yet?
+<a data-testid="register-link" data-track-action="click_register_from_sign_in_page" href="/users/sign_up">Register now</a>
+</div>
+<div class="gl-flex gl-items-center gl-gap-5" data-testid="divider">
+<hr class="gl-grow gl-border-default">
+or sign in with
+<hr class="gl-grow gl-border-default">
+</div>
+
+<div class="gl-mt-5 gl-text-center gl-flex gl-flex-col gl-gap-3 js-oauth-login">
+<form class="js-omniauth-form" method="post" action="/users/auth/google_oauth2"><button class="gl-button btn btn-block btn-md btn-default " type="submit"><span class="gl-button-text">
+<img alt="Google" title="Sign in with Google" class="gl-button-icon lazy" data-src="/assets/auth_buttons/google_64-9ab7462cd2115e11f80171018d8c39bd493fc375e83202fbb6d37a487ad01908.png" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" />
+<span class="gl-button-text">
+Google
+</span>
+
+</span>
+
+</button><input type="hidden" name="authenticity_token" value="UeFlSFCw23ZubAaC0rUyXYuAhnHCl_-mddBp7n_oWpojzBtBOJsByU0VS3fkW7embMsWlKewYS8VgCDdi3Er4A" autocomplete="off" /></form>
+<form class="js-omniauth-form" method="post" action="/users/auth/github"><button class="gl-button btn btn-block btn-md btn-default " data-testid="github-login-button" type="submit"><span class="gl-button-text">
+<img alt="GitHub" title="Sign in with GitHub" class="gl-button-icon lazy" data-src="/assets/auth_buttons/github_64-84041cd0ea392220da96f0fb9b9473c08485c4924b98c776be1bd33b0daab8c0.png" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" />
+<span class="gl-button-text">
+GitHub
+</span>
+
+</span>
+
+</button><input type="hidden" name="authenticity_token" value="_ljhYrCqkLsxvsq6BkLFu56gA2AejAFoKQIJKYxIFJGMdZ9r2IFKBBLHh08wrEBAeeuThXurn-FJUkAaeNFl6w" autocomplete="off" /></form>
+<form class="js-omniauth-form" method="post" action="/users/auth/gitlab"><button class="gl-button btn btn-block btn-md btn-default " data-testid="gitlab-oauth-login-button" type="submit"><span class="gl-button-text">
+<img alt="GitLab" title="Sign in with GitLab" class="gl-button-icon lazy" data-src="/assets/auth_buttons/gitlab_64-2808a5fce900f4cb87b4dce9f9907bf68ac00a39086aa3a125e3250652f9967f.png" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" />
+<span class="gl-button-text">
+GitLab
+</span>
+
+</span>
+
+</button><input type="hidden" name="authenticity_token" value="SH_V9TF2UQhNJ779aGWpR3Z8YgqF3T2jsFPxRgQp4ko6Uqv8WV2Lt25e8wheiyy8kTfy7-D6oyrQA7h18LCTMA" autocomplete="off" /></form>
+<div class="gl-form-checkbox custom-control custom-checkbox">
+<input type="checkbox" name="js-remember-me-omniauth" id="js-remember-me-omniauth" class="custom-control-input" />
+<label class="custom-control-label" for="js-remember-me-omniauth"><span>Remember me
+</span></label>
+</div>
+</div>
+
+
+</div>
+</div>
+</div>
+</main>
+</div>
+<div class="gl-w-full gl-self-end">
+<div class="footer-container">
+<hr class="gl-m-0">
+<div class="container gl-py-5 gl-flex gl-justify-between gl-items-start">
+<div class="gl-hidden md:gl-flex gl-gap-5 gl-flex-wrap">
+<a href="/explore">Explore</a>
+<a href="/help">Help</a>
+<a href="https://about.gitlab.com">About GitLab</a>
+<a target="_blank" class="!gl-whitespace-nowrap" rel="noopener noreferrer" href="https://forum.gitlab.com">GitLab community forum</a>
+</div>
+<div class="js-language-switcher" data-locales="[{&quot;value&quot;:&quot;en&quot;,&quot;percentage&quot;:100,&quot;text&quot;:&quot;English&quot;},{&quot;value&quot;:&quot;zh_CN&quot;,&quot;percentage&quot;:99,&quot;text&quot;:&quot;简体中文&quot;},{&quot;value&quot;:&quot;ja&quot;,&quot;percentage&quot;:99,&quot;text&quot;:&quot;日本語&quot;},{&quot;value&quot;:&quot;ga_IE&quot;,&quot;percentage&quot;:99,&quot;text&quot;:&quot;Gaeilge&quot;},{&quot;value&quot;:&quot;pt_BR&quot;,&quot;percentage&quot;:98,&quot;text&quot;:&quot;português (Brasil)&quot;},{&quot;value&quot;:&quot;it&quot;,&quot;percentage&quot;:98,&quot;text&quot;:&quot;italiano&quot;},{&quot;value&quot;:&quot;fr&quot;,&quot;percentage&quot;:98,&quot;text&quot;:&quot;français&quot;},{&quot;value&quot;:&quot;es&quot;,&quot;percentage&quot;:98,&quot;text&quot;:&quot;español&quot;},{&quot;value&quot;:&quot;ko&quot;,&quot;percentage&quot;:96,&quot;text&quot;:&quot;한국어&quot;},{&quot;value&quot;:&quot;de&quot;,&quot;percentage&quot;:95,&quot;text&quot;:&quot;Deutsch&quot;}]"></div>
+
+</div>
+</div>
+
+</div>
+
+</div>
+</body>
+</html>

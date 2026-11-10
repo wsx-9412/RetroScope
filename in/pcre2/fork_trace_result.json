@@ -1,0 +1,616 @@
+{
+  "binary_target": "/tmp/fork_analysis_z03ldr4i/target/pcre2test",
+  "binary_ref": "/tmp/fork_analysis_z03ldr4i/ref/pcre2test",
+  "fork_spec": "src/pcre2_dfa_match.c:519",
+  "variables": [
+    "end_code"
+  ],
+  "differing_variables": [
+    "end_code"
+  ],
+  "target_file_reads": [
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 832,
+      "buf_addr": 140721912440344
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 4096,
+      "buf_addr": 132364447440896
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 8192,
+      "buf_addr": 132364447178752
+    },
+    {
+      "fd": 3,
+      "offset": 64,
+      "size": 784,
+      "buf_addr": 140721912439296
+    },
+    {
+      "fd": 3,
+      "offset": 67,
+      "size": 4096,
+      "buf_addr": 90228672959744
+    },
+    {
+      "fd": 3,
+      "offset": 101,
+      "size": 4096,
+      "buf_addr": 132364447440896
+    },
+    {
+      "fd": 3,
+      "offset": 101,
+      "size": 3995,
+      "buf_addr": 132364447440997
+    },
+    {
+      "fd": 3,
+      "offset": 832,
+      "size": 832,
+      "buf_addr": 140721912440344
+    },
+    {
+      "fd": 3,
+      "offset": 848,
+      "size": 48,
+      "buf_addr": 140721912439232
+    },
+    {
+      "fd": 3,
+      "offset": 896,
+      "size": 68,
+      "buf_addr": 140721912439152
+    },
+    {
+      "fd": 3,
+      "offset": 3614,
+      "size": 4096,
+      "buf_addr": 132364447440896
+    },
+    {
+      "fd": 3,
+      "offset": 3614,
+      "size": 482,
+      "buf_addr": 132364447444510
+    },
+    {
+      "fd": 3,
+      "offset": 4074,
+      "size": 4096,
+      "buf_addr": 132364447182848
+    },
+    {
+      "fd": 3,
+      "offset": 4074,
+      "size": 22,
+      "buf_addr": 132364447186922
+    },
+    {
+      "fd": 3,
+      "offset": 4074,
+      "size": 8192,
+      "buf_addr": 132364447178752
+    },
+    {
+      "fd": 3,
+      "offset": 4074,
+      "size": 4118,
+      "buf_addr": 132364447182826
+    },
+    {
+      "fd": 3,
+      "offset": 4082,
+      "size": 4096,
+      "buf_addr": 132364447137792
+    },
+    {
+      "fd": 3,
+      "offset": 4082,
+      "size": 14,
+      "buf_addr": 132364447141874
+    },
+    {
+      "fd": 3,
+      "offset": 4082,
+      "size": 8192,
+      "buf_addr": 132364447133696
+    },
+    {
+      "fd": 3,
+      "offset": 4082,
+      "size": 4110,
+      "buf_addr": 132364447137778
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 22,
+      "buf_addr": 132364447186922
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 14,
+      "buf_addr": 132364447141874
+    },
+    {
+      "fd": 3,
+      "offset": 4318,
+      "size": 4118,
+      "buf_addr": 132364447182826
+    },
+    {
+      "fd": 3,
+      "offset": 4318,
+      "size": 3874,
+      "buf_addr": 132364447183070
+    },
+    {
+      "fd": 3,
+      "offset": 4647,
+      "size": 4110,
+      "buf_addr": 132364447137778
+    },
+    {
+      "fd": 3,
+      "offset": 4647,
+      "size": 3545,
+      "buf_addr": 132364447138343
+    }
+  ],
+  "ref_file_reads": [
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 832,
+      "buf_addr": 140721657968328
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 4096,
+      "buf_addr": 137917245734912
+    },
+    {
+      "fd": 3,
+      "offset": 0,
+      "size": 8192,
+      "buf_addr": 137917245472768
+    },
+    {
+      "fd": 3,
+      "offset": 64,
+      "size": 784,
+      "buf_addr": 140721657967280
+    },
+    {
+      "fd": 3,
+      "offset": 67,
+      "size": 4096,
+      "buf_addr": 90228672959744
+    },
+    {
+      "fd": 3,
+      "offset": 98,
+      "size": 4096,
+      "buf_addr": 137917245734912
+    },
+    {
+      "fd": 3,
+      "offset": 98,
+      "size": 3998,
+      "buf_addr": 137917245735010
+    },
+    {
+      "fd": 3,
+      "offset": 832,
+      "size": 832,
+      "buf_addr": 140721657968328
+    },
+    {
+      "fd": 3,
+      "offset": 848,
+      "size": 48,
+      "buf_addr": 140721657967216
+    },
+    {
+      "fd": 3,
+      "offset": 896,
+      "size": 68,
+      "buf_addr": 140721657967136
+    },
+    {
+      "fd": 3,
+      "offset": 3614,
+      "size": 4096,
+      "buf_addr": 137917245734912
+    },
+    {
+      "fd": 3,
+      "offset": 3614,
+      "size": 482,
+      "buf_addr": 137917245738526
+    },
+    {
+      "fd": 3,
+      "offset": 4059,
+      "size": 4096,
+      "buf_addr": 137917245476864
+    },
+    {
+      "fd": 3,
+      "offset": 4059,
+      "size": 37,
+      "buf_addr": 137917245480923
+    },
+    {
+      "fd": 3,
+      "offset": 4059,
+      "size": 8192,
+      "buf_addr": 137917245472768
+    },
+    {
+      "fd": 3,
+      "offset": 4059,
+      "size": 4133,
+      "buf_addr": 137917245476827
+    },
+    {
+      "fd": 3,
+      "offset": 4067,
+      "size": 4096,
+      "buf_addr": 137917245431808
+    },
+    {
+      "fd": 3,
+      "offset": 4067,
+      "size": 29,
+      "buf_addr": 137917245435875
+    },
+    {
+      "fd": 3,
+      "offset": 4067,
+      "size": 8192,
+      "buf_addr": 137917245427712
+    },
+    {
+      "fd": 3,
+      "offset": 4067,
+      "size": 4125,
+      "buf_addr": 137917245431779
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 37,
+      "buf_addr": 137917245480923
+    },
+    {
+      "fd": 3,
+      "offset": 4096,
+      "size": 29,
+      "buf_addr": 137917245435875
+    },
+    {
+      "fd": 3,
+      "offset": 4303,
+      "size": 4133,
+      "buf_addr": 137917245476827
+    },
+    {
+      "fd": 3,
+      "offset": 4303,
+      "size": 3889,
+      "buf_addr": 137917245477071
+    },
+    {
+      "fd": 3,
+      "offset": 4632,
+      "size": 4125,
+      "buf_addr": 137917245431779
+    },
+    {
+      "fd": 3,
+      "offset": 4632,
+      "size": 3560,
+      "buf_addr": 137917245432344
+    }
+  ],
+  "chain_trace": {
+    "var_mappings": {
+      "end_code": {
+        "file_offset": null,
+        "kind": null,
+        "values": [
+          89129161326816
+        ]
+      }
+    },
+    "fork_points": [
+      {
+        "inv": 2,
+        "varvals": {
+          "end_code": 89129161326792
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 4,
+        "varvals": {
+          "end_code": 89129161326795
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 6,
+        "varvals": {
+          "end_code": 89129161326798
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 8,
+        "varvals": {
+          "end_code": 89129161326801
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 10,
+        "varvals": {
+          "end_code": 89129161326804
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 12,
+        "varvals": {
+          "end_code": 89129161326807
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 14,
+        "varvals": {
+          "end_code": 89129161326810
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 16,
+        "varvals": {
+          "end_code": 89129161326813
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 18,
+        "varvals": {
+          "end_code": 89129161326816
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 20,
+        "varvals": {
+          "end_code": 89129161326792
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 22,
+        "varvals": {
+          "end_code": 89129161326795
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 24,
+        "varvals": {
+          "end_code": 89129161326798
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 26,
+        "varvals": {
+          "end_code": 89129161326801
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 28,
+        "varvals": {
+          "end_code": 89129161326804
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 30,
+        "varvals": {
+          "end_code": 89129161326807
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 32,
+        "varvals": {
+          "end_code": 89129161326810
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 34,
+        "varvals": {
+          "end_code": 89129161326813
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      },
+      {
+        "inv": 36,
+        "varvals": {
+          "end_code": 89129161326816
+        },
+        "diroff": null,
+        "dp": null,
+        "dir": null,
+        "entry": null,
+        "frame_dir": null,
+        "entsize": null,
+        "flags": null,
+        "dircount": null
+      }
+    ],
+    "pread64": [],
+    "ifd_region": {
+      "ifd_offset": null,
+      "entry_size": null,
+      "entries_base": null,
+      "count": null,
+      "entry_offsets": [],
+      "field_offsets": []
+    }
+  },
+  "deep_trace": {},
+  "arithmetic_backtrace": null,
+  "variable_offsets": {},
+  "candidate_tiers": {},
+  "ifd_region": {},
+  "ifd_region_from_dynamic": false,
+  "ifd_region_mutation": {},
+  "static_mutation_offsets": [],
+  "static_crash_results": {},
+  "static_pairwise_results": {},
+  "mutation_offsets": [],
+  "crash_results": {},
+  "pairwise_results": {},
+  "multi_combo_results": {},
+  "mutation_any_match": false
+}

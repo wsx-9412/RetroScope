@@ -6,9 +6,8 @@
 #     ./run_analysis.sh config_giflib.py          # GDB pipeline
 #     ./run_analysis.sh config_giflib.py -full    # GDB + polytracker
 #
-# Note: the default reference/target pair (5.2.2 / 5.2.1) uses the plain
-# Makefile build (giflib >= 5.1.7).  For autotools versions (<= 5.1.4, tools
-# under util/) adjust the pre_build commands accordingly.
+# The default reference/target pair (5.1.1 / 4.1.6, CVE-2022-28506) are BOTH
+# autotools builds (configure + make), with gif2rgb produced under util/.
 
 # =====================================================
 # CVE configuration: change this section for each CVE
@@ -22,24 +21,24 @@ COMMAND_FORMAT = "{program_path} {input_file}"
 # =====================================================
 # Compilation configuration (usually no need to change)
 # =====================================================
-# giflib's Makefile assigns CFLAGS with '=', so the flags must be passed on
-# the make command line (they are also exported via compile_flags below).
+# giflib 4.1.6 and 5.1.1 are autotools trees: configure then make.  gif2rgb
+# and libgif land in util/ and lib/ respectively.
+_PRE_BUILD = [
+    "make clean || true",
+    "bash -c 'CFLAGS=\"-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer\" LDFLAGS=\"-fsanitize=address\" ./configure'",
+    "make -j2",
+]
+
 COMPILE_COMMANDS = {
     "reference": {
-        "pre_build": [
-            "make clean || true",
-            "make -j2 CFLAGS='-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer' libgif.a gif2rgb",
-        ],
+        "pre_build": _PRE_BUILD,
         "compile_flags": {
             "CFLAGS": "-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer",
             "LDFLAGS": "-fsanitize=address"
         }
     },
     "target": {
-        "pre_build": [
-            "make clean || true",
-            "make -j2 CFLAGS='-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer' libgif.a gif2rgb",
-        ],
+        "pre_build": _PRE_BUILD,
         "compile_flags": {
             "CFLAGS": "-finstrument-functions -g -O0 -fsanitize=address -fno-omit-frame-pointer",
             "LDFLAGS": "-fsanitize=address"
@@ -51,9 +50,9 @@ COMPILE_COMMANDS = {
 EXECUTION_CONFIG = {
     "program_name": "gif2rgb",
     "timeout": 120,
-    "exec_subdir": "",
+    "exec_subdir": "/util",
     "command_format": COMMAND_FORMAT,
-    "build_dir_pattern": ""
+    "build_dir_pattern": "/util/"
 }
 
 # Analysis parameter configuration

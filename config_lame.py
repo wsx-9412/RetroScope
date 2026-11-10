@@ -3,11 +3,11 @@
 # =====================================================
 # CVE configuration: change this section for each CVE
 # =====================================================
-CVE_ID = "CVE-2017-15045"            # CVE number
-INPUT_FILE = "in/CVE-2017-15045"     # input file path (relative to RetroScope/)
+CVE_ID = "CVE-2017-9872"            # CVE number
+INPUT_FILE = "in/lame/CVE-2017-9872"     # input file path (relative to RetroScope/)
 OUTPUT_FILE = "/dev/null"            # program output file
 # Program arguments template: {program_path}, {input_file}, {output_file}
-COMMAND_FORMAT = "{program_path} -f -V 9 {input_file} {output_file}"
+COMMAND_FORMAT = "{program_path} --mp3input -f -V 9 {input_file} {output_file}"
 
 COMPILE_COMMANDS = {
     "reference": {
@@ -40,7 +40,7 @@ EXECUTION_CONFIG = {
     "program_name": "lame",
     "timeout": 120,
     "exec_subdir": "/frontend",
-    "command_format": "{program_path} -f -V 9 {input_file} /dev/null",
+    "command_format": COMMAND_FORMAT,
     "build_dir_pattern": "/frontend/"
 }
 

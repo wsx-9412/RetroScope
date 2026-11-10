@@ -1,0 +1,16 @@
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==2202183==ERROR: AddressSanitizer: SEGV on unknown address 0x615fffffffc8 (pc 0x646212a34f71 bp 0x615fffffffc8 sp 0x7ffde2ae8240 T0)
+==2202183==The signal is caused by a READ memory access.
+    #0 0x646212a34f71 in opj_tcd_get_decoded_tile_size /home/js/ctf_dreamhack/fuzzing/2_fuzz/openjpeg/src/lib/openjp2/tcd.c:1426:37
+    #1 0x6462129d11e2 in opj_j2k_read_tile_header /home/js/ctf_dreamhack/fuzzing/2_fuzz/openjpeg/src/lib/openjp2/j2k.c:10097:24
+    #2 0x6462129bb598 in opj_read_tile_header /home/js/ctf_dreamhack/fuzzing/2_fuzz/openjpeg/src/lib/openjp2/openjpeg.c:575:16
+    #3 0x6462129af809 in LLVMFuzzerTestOneInput /home/js/ctf_dreamhack/fuzzing/2_fuzz/openjpeg/campaign/harnesses/tile_header_data_partial_fuzzer.cpp:344:10
+    #4 0x6462129b1cf4 in main /home/js/ctf_dreamhack/fuzzing/2_fuzz/openjpeg/campaign/harnesses/tile_header_data_partial_afl_driver.cpp:50:5
+    #5 0x7a29b2c2a1c9 in __libc_start_call_main csu/../sysdeps/nptl/libc_start_call_main.h:58:16
+    #6 0x7a29b2c2a28a in __libc_start_main csu/../csu/libc-start.c:360:3
+    #7 0x6462128ec564 in _start (/home/js/ctf_dreamhack/fuzzing/2_fuzz/openjpeg/campaign/bin/tile_header_data_partial_afl_asan+0x34564) (BuildId: 2aeeb6fa331bd702a125346c6c51cbf407655749)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /home/js/ctf_dreamhack/fuzzing/2_fuzz/openjpeg/src/lib/openjp2/tcd.c:1426:37 in opj_tcd_get_decoded_tile_size
+==2202183==ABORTING

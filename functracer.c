@@ -10,6 +10,7 @@
 
 static FILE *trace_out = NULL;
 static int enabled = 0;
+static unsigned long last_base = 0;
 __thread int in_hook = 0;   /* prevent hook recursion */
 
 static void write_event(const char *dir, void *func, void *caller)
@@ -22,9 +23,15 @@ static void write_event(const char *dir, void *func, void *caller)
         if (info.dli_sname)
             fprintf(trace_out, "%s %s\n", dir, info.dli_sname);
         else {
-            /* local symbol (e.g. static function): record module path + offset, resolve with nm afterwards */
-            fprintf(trace_out, "M %p %s\n", info.dli_fbase,
-                    info.dli_fname ? info.dli_fname : "?");
+            /* local symbol (e.g. static function): record module path + offset,
+             * resolve with nm afterwards.  Emit the mapping line only when the
+             * module changes: large C++ binaries otherwise emit one mapping
+             * line per call, bloating the trace to tens of GB. */
+            if ((unsigned long)info.dli_fbase != last_base) {
+                fprintf(trace_out, "M %p %s\n", info.dli_fbase,
+                        info.dli_fname ? info.dli_fname : "?");
+                last_base = (unsigned long)info.dli_fbase;
+            }
             fprintf(trace_out, "%s @%lx\n", dir, off);
         }
     }

@@ -2498,20 +2498,49 @@ def _find_function_source(func_name, source_dirs, file_hint=None):
 def _locate_source_file(source_file, source_dirs):
     """Return the absolute path of source_file under source_dirs, or None.
 
-    Matches by basename first so absolute debug paths and cross-version
-    basename collisions resolve to the correct version's file.
+    Prefers the longest path-suffix match under each source dir so that
+    ``.../openjp2/cio.c`` does not resolve to a sibling ``openmj2/cio.c``.
+    Falls back to basename, then rglob.
     """
-    base = os.path.basename(source_file)
-    for d in source_dirs:
-        candidate = os.path.join(d, base)
-        if os.path.exists(candidate):
-            return candidate
-    if not os.path.isabs(source_file):
-        for d in source_dirs:
-            candidate = os.path.join(d, source_file)
-            if os.path.exists(candidate):
+    if not source_file:
+        return None
+    sf = str(source_file)
+    dirs = [str(d) for d in (source_dirs or []) if d]
+    if not dirs:
+        return sf if os.path.isfile(sf) else None
+
+    # Existing absolute path that already lives under a source dir wins.
+    if os.path.isabs(sf) and os.path.isfile(sf):
+        abs_sf = os.path.abspath(sf)
+        for d in dirs:
+            try:
+                if os.path.commonpath([abs_sf, os.path.abspath(d)]) == os.path.abspath(d):
+                    return sf
+            except ValueError:
+                continue
+
+    parts = [p for p in sf.replace("\\", "/").split("/") if p and p != "."]
+    # Longest → shortest path suffix under each source dir.
+    for i in range(len(parts)):
+        suffix = os.path.join(*parts[i:])
+        if os.path.isabs(suffix):
+            continue
+        for d in dirs:
+            candidate = os.path.join(d, suffix)
+            if os.path.isfile(candidate):
                 return candidate
-    for d in source_dirs:
+
+    base = os.path.basename(sf)
+    for d in dirs:
+        candidate = os.path.join(d, base)
+        if os.path.isfile(candidate):
+            return candidate
+    if not os.path.isabs(sf):
+        for d in dirs:
+            candidate = os.path.join(d, sf)
+            if os.path.isfile(candidate):
+                return candidate
+    for d in dirs:
         for path in Path(d).rglob(base):
             return str(path)
     return None
@@ -4711,89 +4740,72 @@ def _clean_func_name(sig):
     return m.group(1) if m else sig
 
 
-def _detect_crash_point(binary, args, lib_path, source_dirs, timeout=120):
-    """Run binary under GDB and detect if/where it crashes.
-
-    Returns dict with crash info (function, file, line, signal) or None if no crash.
-    """
-    _count_gdb_run(binary)
-    env = os.environ.copy()
-    env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1"
-
-    # Collect library paths: explicit lib_path + any .libs directories
-    lib_dirs = _as_lib_dirs(lib_path)
-    # Walk up from binary to find .libs directories
-    bin_path = Path(binary) if not isinstance(binary, Path) else binary
+def _collect_asan_lib_dirs(binary):
+    """Library dirs for ASan/libtool binaries (all project ``.libs`` trees)."""
+    lib_dirs = []
+    bin_path = Path(binary) if not isinstance(binary, Path) else Path(binary)
     for parent in [bin_path] + list(bin_path.parents):
         libs = parent / ".libs"
         if libs.exists() and str(libs) not in lib_dirs:
             lib_dirs.append(str(libs))
-    # Also search the source tree for .libs (for libraries in sibling dirs)
+    # Prefer autotools roots (configure) over a shallow CMakeLists.txt —
+    # tiff's tools/CMakeLists.txt must not hide libtiff/.libs.
+    configure_roots = []
+    cmake_roots = []
     for parent in bin_path.parents:
-        if (parent / "configure").exists() or (parent / "CMakeLists.txt").exists():
-            for d in parent.rglob(".libs"):
-                if d.is_dir() and str(d) not in lib_dirs:
-                    lib_dirs.append(str(d))
-            break
+        if (parent / "configure").exists():
+            configure_roots.append(parent)
+        if (parent / "CMakeLists.txt").exists():
+            cmake_roots.append(parent)
+    for root in (configure_roots or cmake_roots)[:3]:
+        for d in root.rglob(".libs"):
+            if d.is_dir() and str(d) not in lib_dirs:
+                lib_dirs.append(str(d))
+    return lib_dirs
+
+
+def _build_crash_env(binary, lib_path=None):
+    env = os.environ.copy()
+    env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1"
+    lib_dirs = _as_lib_dirs(lib_path) if lib_path else []
+    for d in _collect_asan_lib_dirs(binary):
+        if d not in lib_dirs:
+            lib_dirs.append(d)
+    # Libtool wrapper scripts hardcode their own LD_LIBRARY_PATH — run the
+    # wrapper as-is when given one; for .libs ELF also honour sibling wrapper.
+    bin_path = Path(binary)
+    if bin_path.name and (bin_path.parent / ".libs").exists():
+        # binary is likely the wrapper next to .libs/
+        pass
     if lib_dirs:
         old_ld = env.get("LD_LIBRARY_PATH", "")
         env["LD_LIBRARY_PATH"] = ":".join(lib_dirs + ([old_ld] if old_ld else []))
+    return env
 
-    cmds = ["set pagination off", "set confirm off"]
-    for d in (source_dirs or []):
-        cmds.append(f"directory {d}")
-    cmds.append("run " + " ".join(str(a) for a in args))
-    cmds.append("bt 24")
-    cmds.append("info signals")
-    cmds.append("quit")
 
-    gdb_cmds = ["gdb", "-batch"]
-    for c in cmds:
-        gdb_cmds.extend(["-ex", c])
-    gdb_cmds.append(str(binary))
-
-    try:
-        result = subprocess.run(gdb_cmds, capture_output=True, text=True, errors="replace",
-                                timeout=timeout, env=env)
-        output = result.stdout + result.stderr
-    except Exception:
-        return None
-
-    # Detect crash signal — look for actual crash, not just signal table
+def _parse_crash_from_output(output):
+    """Parse ASan/GDB output into a crash dict (signal/function/file/line)."""
     crash_signal = None
     for sig in ("SIGSEGV", "SIGABRT", "SIGFPE", "SIGBUS", "SIGILL"):
-        # "Program received signal SIGSEGV, ..." or
-        # "... terminated with signal SIGSEGV, ..."
         if (f"received signal {sig}" in output or
                 f"terminated with signal {sig}" in output):
             crash_signal = sig
             break
 
-    # ASan crashes abort with exit code 1 rather than raising a signal, so GDB
-    # reports "exited with code 01" alongside an AddressSanitizer report.
-    asan_kind = None
+    # ASan crashes abort with exit code 1 rather than raising a signal.
     if not crash_signal:
         m = re.search(r'ERROR: AddressSanitizer:\s*(.+)', output)
         if m:
             _asan_line = m.group(1)
-            # Skip ASan OOM (resource exhaustion, not a memory-safety bug).
             if ('out of memory' not in _asan_line and
                     not _asan_line.startswith('allocator')):
-                asan_kind = _asan_line.split()[0]
-                crash_signal = f"ASAN:{asan_kind}"
+                crash_signal = f"ASAN:{_asan_line.split()[0]}"
 
     if not crash_signal:
         return None
 
-    # Parse the crash location. For AddressSanitizer reports, prefer the
-    # report's own backtrace (WRITE/READ) frames, skipping sanitizer/libc
-    # interceptors so the deepest *project* frame is reported. For plain
-    # signals (SIGSEGV), the GDB backtrace frame #0 is the faulting function.
     frames = []
-
-    # (1) ASan backtrace frames: "#N 0x... in <func> <file>:<line>"
-    #     (newer ASan omits the "at" between function and file; older
-    #     formats use "in <func> at <file>:<line>")
+    # (1) ASan / GDB frames: "#N 0x... in <func> [at] <file>:<line>"
     for line in output.split('\n'):
         m = re.search(
             r'#(\d+)\s+0x[0-9a-fA-F]+\s+in\s+(.+?)\s+(?:at\s+)?(\S+):(\d+)\s*$',
@@ -4805,8 +4817,7 @@ def _detect_crash_point(binary, args, lib_path, source_dirs, timeout=120):
                 "file": m.group(3),
                 "line": int(m.group(4)),
             })
-
-    # (2) ASan SUMMARY line: "SUMMARY: AddressSanitizer: <kind> <file>:<line> in <func>"
+    # (2) ASan SUMMARY
     m = re.search(
         r'SUMMARY: AddressSanitizer:\s*\S+\s+(\S+):(\d+)\s+in\s+(.+?)\s*$',
         output, re.M)
@@ -4817,8 +4828,7 @@ def _detect_crash_point(binary, args, lib_path, source_dirs, timeout=120):
             "file": m.group(1),
             "line": int(m.group(2)),
         })
-
-    # (3) GDB backtrace frames: "#N 0x... in <func> (<args>) at <file>:<line>"
+    # (3) GDB-only backtrace (no 0x address form)
     if not frames:
         for line in output.split('\n'):
             m = re.search(
@@ -4833,19 +4843,26 @@ def _detect_crash_point(binary, args, lib_path, source_dirs, timeout=120):
                 })
 
     if not frames:
-        return {"signal": crash_signal, "function": None, "file": None, "line": None}
+        return {"signal": crash_signal, "function": None, "file": None,
+                "line": None, "backtrace": []}
 
-    def _is_sanitizer(f):
+    def _skip_frame(f):
         fn = f.get("function") or ""
         fl = f.get("file") or ""
         if re.search(r'__interceptor_|__asan_|__sanitizer_|__ubsan_|__tsan_', fn):
             return True
         if re.search(r'sanitizer|libc|csu/', fl):
             return True
+        # Compiler SIMD intrinsics / system headers — not project code.
+        if re.match(r'^_mm|^_mm256|^_mm512|^__m(128|256|512)', fn):
+            return True
+        if re.search(r'emmintrin\.h|immintrin\.h|xmmintrin\.h|smmintrin\.h|'
+                     r'nmmintrin\.h|tmmintrin\.h|ammintrin\.h|'
+                     r'/usr/include/|/usr/lib/gcc/', fl):
+            return True
         return False
 
-    # Report the deepest project frame (skipping sanitizer/libc interceptors).
-    crash_frame = next((f for f in frames if not _is_sanitizer(f)), frames[0])
+    crash_frame = next((f for f in frames if not _skip_frame(f)), frames[0])
     return {
         "signal": crash_signal,
         "function": crash_frame["function"],
@@ -4853,6 +4870,82 @@ def _detect_crash_point(binary, args, lib_path, source_dirs, timeout=120):
         "line": crash_frame["line"],
         "backtrace": frames,
     }
+
+
+def _detect_crash_point(binary, args, lib_path, source_dirs, timeout=120):
+    """Detect if/where ``binary`` crashes on ``args``.
+
+    Tries a direct run first (reliable for ASan + libtool wrappers), then
+    falls back to GDB. Returns crash dict or None.
+    """
+    _count_gdb_run(binary)
+    env = _build_crash_env(binary, lib_path)
+
+    # Prefer the libtool wrapper when the caller passed a .libs ELF — the
+    # wrapper sets LD_LIBRARY_PATH to sibling library .libs dirs.
+    run_bin = str(binary)
+    bin_path = Path(binary)
+    if bin_path.parent.name == ".libs":
+        wrapper = bin_path.parent.parent / bin_path.name
+        if wrapper.is_file():
+            try:
+                with open(wrapper, "rb") as fh:
+                    head = fh.read(2)
+                if head.startswith(b"#!"):
+                    run_bin = str(wrapper)
+            except OSError:
+                pass
+
+    # --- Direct run (ASan reports are complete without GDB) ---
+    direct_out = ""
+    try:
+        cmd = [run_bin] + [str(a) for a in args]
+        result = subprocess.run(cmd, capture_output=True, text=True,
+                                errors="replace", timeout=timeout, env=env)
+        direct_out = (result.stdout or "") + (result.stderr or "")
+    except Exception:
+        direct_out = ""
+    parsed = _parse_crash_from_output(direct_out) if direct_out else None
+    if parsed and parsed.get("function"):
+        return parsed
+    # Direct run crashed but frames unparseable — still record the signal.
+    if parsed and parsed.get("signal") and not parsed.get("function"):
+        # Fall through to GDB for a backtrace when possible.
+        gdb_parsed_signal = parsed.get("signal")
+    else:
+        gdb_parsed_signal = None
+
+    # --- GDB fallback ---
+    cmds = ["set pagination off", "set confirm off"]
+    for d in (source_dirs or []):
+        cmds.append(f"directory {d}")
+    cmds.append("run " + " ".join(str(a) for a in args))
+    cmds.append("bt 24")
+    cmds.append("info signals")
+    cmds.append("quit")
+
+    gdb_cmds = ["gdb", "-batch"]
+    for c in cmds:
+        gdb_cmds.extend(["-ex", c])
+    gdb_cmds.append(run_bin)
+
+    try:
+        result = subprocess.run(gdb_cmds, capture_output=True, text=True,
+                                errors="replace", timeout=timeout, env=env)
+        output = result.stdout + result.stderr
+    except Exception:
+        if gdb_parsed_signal:
+            return {"signal": gdb_parsed_signal, "function": None,
+                    "file": None, "line": None, "backtrace": []}
+        return None
+
+    parsed = _parse_crash_from_output(output)
+    if parsed:
+        return parsed
+    if gdb_parsed_signal:
+        return {"signal": gdb_parsed_signal, "function": None,
+                "file": None, "line": None, "backtrace": []}
+    return None
 
 
 def _count_crash_point_hits(binary, args, crash_file, crash_line,
@@ -5799,6 +5892,19 @@ def _refine_target_error_fork(result, binary_b, source_dirs_b, lib_path_b,
     return result
 
 
+def _stmt_match_keys(statement_text):
+    """Return normalized forms for cross-version statement comparison.
+
+    Includes a whitespace-stripped key so ``for (i = 0; i < n; ++i)`` matches
+    ``for\t(i=0;i<n;++i)`` (tab/space layout differences across versions).
+    """
+    ws = re.sub(r'\s+', ' ', (statement_text or '').strip())
+    tight = re.sub(r'\s+', '', statement_text or '')
+    ws_n = re.sub(r'\b\d+\b', '#', ws)
+    tight_n = re.sub(r'\b\d+\b', '#', tight)
+    return ws, ws_n, tight, tight_n
+
+
 def _find_matching_line(source_file, statement_text, source_dirs):
     """Find the line in source_file whose text matches statement_text.
 
@@ -5816,17 +5922,52 @@ def _find_matching_line(source_file, statement_text, source_dirs):
             lines = f.readlines()
     except (FileNotFoundError, UnicodeDecodeError):
         return None
-    needle = re.sub(r'\s+', ' ', statement_text).strip()
-    # Normalize numeric literals so a one-number code change (e.g. 7 -> 8)
-    # still matches the corresponding statement.
-    needle_norm = re.sub(r'\b\d+\b', '#', needle)
+    keys = _stmt_match_keys(statement_text)
     for i, line in enumerate(lines, start=1):
-        norm = re.sub(r'\s+', ' ', line).strip()
-        if norm == needle:
-            return (i, line.strip())
-        if re.sub(r'\b\d+\b', '#', norm) == needle_norm:
+        lkeys = _stmt_match_keys(line)
+        if any(k and k == lk for k, lk in zip(keys, lkeys)):
             return (i, line.strip())
     return None
+
+
+def _find_matching_line_pref_func(source_file, statement_text, source_dirs,
+                                  prefer_func=None):
+    """Like _find_matching_line but prefer a hit inside ``prefer_func``.
+
+    Identical statements often appear in sibling helpers (e.g. bit_read_B
+    vs bit_read_RC).  Without this, the first textual hit lands in the wrong
+    function and the fork site is mis-attributed.
+    """
+    if not statement_text:
+        return None
+    full = _locate_source_file(source_file, source_dirs)
+    if not full:
+        return None
+    try:
+        with open(full, encoding='utf-8', errors='replace') as f:
+            lines = f.readlines()
+    except (FileNotFoundError, UnicodeDecodeError):
+        return None
+    keys = _stmt_match_keys(statement_text)
+    hits = []
+    for i, line in enumerate(lines, start=1):
+        lkeys = _stmt_match_keys(line)
+        if any(k and k == lk for k, lk in zip(keys, lkeys)):
+            hits.append((i, line.strip()))
+    if not hits:
+        return None
+    if len(hits) == 1 or not prefer_func:
+        return hits[0]
+    prefer_n = _norm_func_name(prefer_func)
+    best = None
+    for hit in hits:
+        owner = _norm_func_name(
+            _find_function_containing_line(full, hit[0], None))
+        if owner and prefer_n and owner == prefer_n:
+            return hit
+        if owner and prefer_n and (owner in prefer_n or prefer_n in owner):
+            best = hit
+    return best or hits[0]
 
 
 def _refine_fork_statement(result, source_dirs_b=None, binary_b=None,
@@ -6442,6 +6583,572 @@ def _build_result_from_backward_tracer(bt_result, func_name, a_idx, b_idx):
     return result
 
 
+def _norm_func_name(name):
+    """Normalize a C function name for cross-version comparison."""
+    f = (name or "").strip()
+    if not f:
+        return ""
+    if "::" in f:
+        f = f.split("::")[-1]
+    if "(" in f:
+        f = f.split("(", 1)[0].strip()
+    # Drop common leading return-type tokens when present.
+    parts = f.split()
+    if len(parts) > 1 and parts[-1] not in ("*", "&"):
+        # e.g. "static int foo" -> "foo", "EXPORT Dwg_Object * dwg_next_entity" -> last ident
+        f = parts[-1]
+    f = f.lstrip("*&").strip()
+    return f
+
+
+def _crash_func_set(crash_a, refactoring_map=None):
+    """Normalized function names that count as 'on the crash path'."""
+    funcs = set()
+    if not crash_a:
+        return funcs
+    names = [crash_a.get("function")]
+    for fr in (crash_a.get("backtrace") or []):
+        names.append(fr.get("function"))
+    for n in names:
+        nn = _norm_func_name(n)
+        if nn:
+            funcs.add(nn)
+            if refactoring_map:
+                # also accept either mapping direction
+                for k, v in (refactoring_map or {}).items():
+                    if _norm_func_name(k) == nn and v:
+                        funcs.add(_norm_func_name(v))
+                    if _norm_func_name(v) == nn and k:
+                        funcs.add(_norm_func_name(k))
+    return funcs
+
+
+def _fork_alignment_status(result, crash_a, refactoring_map=None):
+    """Classify selected fork against the reference crash top frame.
+
+    Returns one of:
+      - ``aligned``: fork is in the crash function or a caller on the stack
+      - ``site_after_crash``: same function as crash but ref-side fork line
+        is strictly after the crash line (site error)
+      - ``wrong_function``: fork is in an unrelated function
+    """
+    if not result or not crash_a:
+        return "aligned"
+    # Already a deliberate crash-point fork — leave it alone.
+    if result.get("crash_based") and result.get("crash_signal"):
+        return "aligned"
+    crash_func = _norm_func_name(crash_a.get("function"))
+    crash_file = os.path.basename(crash_a.get("file") or "")
+    crash_line = int(crash_a.get("line") or 0)
+    if not crash_func:
+        return "aligned"
+
+    funcs = _crash_func_set(crash_a, refactoring_map)
+    fork_func = _norm_func_name(result.get("root_cause_function"))
+    fork_file = os.path.basename(result.get("root_cause_file") or "")
+    fork_file_a = os.path.basename(result.get("root_cause_file_a") or "")
+    # Mutation-facing site (may disagree with root_cause_file — e.g. a stale
+    # fork_file pointing at an unrelated translation unit).
+    site_file = os.path.basename(
+        str(result.get("fork_file") or result.get("root_cause_file_b") or ""))
+    # Prefer the reference-side line for site comparison (same version as crash).
+    fork_line_a = result.get("root_cause_line_a")
+    try:
+        fork_line_a = int(fork_line_a) if fork_line_a not in (None, "") else None
+    except (TypeError, ValueError):
+        fork_line_a = None
+    fork_line_b = result.get("root_cause_line") or result.get("root_cause_line_b")
+    try:
+        fork_line_b = int(fork_line_b) if fork_line_b not in (None, "") else None
+    except (TypeError, ValueError):
+        fork_line_b = None
+
+    crash_files = {crash_file} | {
+        os.path.basename(fr.get("file") or "")
+        for fr in (crash_a.get("backtrace") or [])
+        if fr.get("file")
+    }
+    crash_files.discard("")
+
+    func_ok = bool(fork_func) and (
+        fork_func in funcs
+        or crash_func in fork_func
+        or fork_func in crash_func
+    )
+    # Location fallback: same source file as the crash (basename) and the
+    # reported line sits on a stack frame file — used when the step-trace
+    # tagged the wrong function name but the line is still in a caller.
+    file_ok = bool(fork_file) and (fork_file in crash_files)
+
+    # File-ownership: the site mutation will use (fork_file / root_cause_file_b)
+    # must lie on the crash path.  Function-name match alone is not enough when
+    # the target-side file is a completely unrelated TU (44840: tc-i386.c).
+    if site_file and site_file not in crash_files:
+        if file_ok or fork_file in crash_files:
+            # root_cause_file is on-path but fork_* aliases point elsewhere.
+            return "wrong_function"
+        if func_ok and fork_file and fork_file not in crash_files:
+            return "wrong_function"
+
+    if not func_ok and not (file_ok and fork_line_a):
+        # Last chance: ref-side file matches and we have no line — treat as
+        # wrong only if function is also clearly unrelated.
+        if not func_ok and fork_file_a and fork_file_a == crash_file and not fork_line_a:
+            return "aligned"
+        return "wrong_function"
+
+    # Site check: only when we can compare lines on the reference side and
+    # the fork is reported in the same file as the crash.
+    ref_file = fork_file_a or fork_file
+    if (fork_line_a is not None and crash_line
+            and ref_file == crash_file
+            and (func_ok or fork_file == crash_file)):
+        # If the function differs, a later line in the same file may still be
+        # a valid caller-side site — only flag when functions match.
+        if func_ok and fork_line_a > crash_line:
+            return "site_after_crash"
+    return "aligned"
+
+
+def _find_function_containing_line(source_file, line, source_dirs=None):
+    """Return the function name whose body contains ``line`` (best effort)."""
+    full = _locate_source_file(source_file, source_dirs) if source_dirs else (
+        source_file if source_file and os.path.isfile(str(source_file)) else None)
+    if not full or not line:
+        return None
+    try:
+        import backward_tracer as _bt
+        return _bt._find_function_containing_line(full, int(line))
+    except Exception:
+        return None
+
+
+def _snap_fork_site_to_crash(result, crash_a, source_dirs_a=None,
+                             source_dirs_b=None, refactoring_map=None):
+    """Move a same-function fork that sits after the crash line back onto
+    the nearest enclosing decision at/before the crash (mapped to target)."""
+    if not result or not crash_a:
+        return result
+    crash_file = crash_a.get("file")
+    crash_line = int(crash_a.get("line") or 0)
+    if not crash_file or not crash_line:
+        return result
+    crash_func = _norm_func_name(crash_a.get("function"))
+    fork_func = _norm_func_name(result.get("root_cause_function"))
+    if fork_func and crash_func and fork_func not in (
+            crash_func,) and crash_func not in fork_func and fork_func not in (
+            _crash_func_set(crash_a, refactoring_map)):
+        # Not a same-function site error — reselect path handles this.
+        return result
+
+    decisions = _find_enclosing_decisions(
+        crash_file, crash_line, source_dirs_a, max_back=80, max_levels=6)
+    # Restrict to the crash function's body: stop walking if we leave it.
+    crash_func_norm = crash_func
+    filtered = []
+    for dec_line, dec_stmt in decisions:
+        owner = _find_function_containing_line(crash_file, dec_line, source_dirs_a)
+        owner_n = _norm_func_name(owner)
+        if owner_n and crash_func_norm and owner_n != crash_func_norm:
+            continue
+        filtered.append((dec_line, dec_stmt))
+    decisions = filtered
+
+    for ref_line, ref_stmt in decisions:
+        mapped = _find_matching_line_pref_func(
+            os.path.basename(crash_file) or crash_file, ref_stmt,
+            source_dirs_b, prefer_func=crash_func)
+        if not mapped:
+            continue
+        tgt_line, tgt_stmt = mapped
+        new = dict(result)
+        actual_func = _find_function_containing_line(
+            os.path.basename(crash_file) or crash_file, tgt_line,
+            source_dirs_b)
+        new["root_cause_function"] = (
+            actual_func
+            or (refactoring_map.get(crash_func, crash_func)
+                if refactoring_map and crash_func in (refactoring_map or {})
+                else (result.get("root_cause_function") or crash_func)))
+        new["root_cause_file"] = os.path.basename(crash_file)
+        new["root_cause_line"] = tgt_line
+        new["root_cause_file_a"] = crash_file
+        new["root_cause_line_a"] = ref_line
+        new["root_cause_statement_a"] = ref_stmt
+        new["root_cause_statement_b"] = tgt_stmt
+        new["site_snapped_to_crash"] = True
+        new["fork_site_note"] = (
+            f"snapped after-crash fork to enclosing decision "
+            f"{os.path.basename(crash_file)}:{ref_line} (target {tgt_line})")
+        # Refresh fork_* aliases used by some consumers.
+        new["fork_file"] = new["root_cause_file"]
+        new["fork_line"] = tgt_line
+        new["fork_statement"] = tgt_stmt
+        vars_ = (_extract_variables_from_expression(tgt_stmt)
+                 or _extract_variables_from_expression(ref_stmt) or [])
+        if vars_:
+            new["variables"] = vars_
+        print(f"  [fork-site] {new['fork_site_note']}")
+        return new
+
+    # No enclosing decision — fall back to the crash statement itself.
+    ref_stmt = _read_source_line(crash_file, crash_line, source_dirs_a)
+    tgt_line, tgt_stmt = None, None
+    ref_base = os.path.basename(crash_file) or crash_file
+    full_tgt = None
+    if ref_stmt:
+        mapped = _find_matching_line_pref_func(
+            ref_base, ref_stmt, source_dirs_b, prefer_func=crash_func)
+        if mapped:
+            tgt_line, tgt_stmt = mapped
+    if tgt_line is None:
+        # Statement text differs across versions — never reuse the reference
+        # line number on the target (line numbers shift).  Anchor inside the
+        # same-named function in the target source instead.
+        full_tgt = _locate_source_file(ref_base, source_dirs_b)
+        if full_tgt:
+            try:
+                with open(full_tgt, encoding='utf-8', errors='replace') as fh:
+                    tlines = fh.readlines()
+            except Exception:
+                tlines = []
+            pat = re.compile(r'^' + re.escape(crash_func) + r'\s*\(')
+            for idx, tl in enumerate(tlines, start=1):
+                if pat.match(tl):
+                    tgt_line = idx
+                    for k in range(idx, min(idx + 40, len(tlines))):
+                        s = tlines[k].strip()
+                        if _DECISION_STMT_RE.match(s):
+                            tgt_line = k + 1
+                            tgt_stmt = s
+                            break
+                    if tgt_stmt is None:
+                        for k in range(idx, min(idx + 40, len(tlines))):
+                            s = tlines[k].strip()
+                            if s and s not in ('{', '}'):
+                                tgt_stmt = s
+                                tgt_line = k + 1
+                                break
+                        if tgt_stmt is None:
+                            tgt_stmt = (tlines[idx - 1].strip()
+                                        if idx <= len(tlines) else '')
+                    break
+        if tgt_line is None:
+            # Cannot resolve a safe target site — leave the fork alone.
+            return result
+    if not ref_stmt and not tgt_stmt:
+        return result
+    new = dict(result)
+    # Prefer the actual owner of the mapped target line.
+    actual_func = _find_function_containing_line(ref_base, tgt_line, source_dirs_b)
+    new["root_cause_function"] = (
+        actual_func
+        or (refactoring_map.get(crash_func, crash_func)
+            if refactoring_map and crash_func in (refactoring_map or {})
+            else (result.get("root_cause_function") or crash_func)))
+    new["root_cause_file"] = ref_base
+    new["root_cause_line"] = tgt_line
+    new["root_cause_file_a"] = crash_file
+    new["root_cause_line_a"] = crash_line
+    new["root_cause_statement_a"] = ref_stmt or ""
+    new["root_cause_statement_b"] = tgt_stmt or ""
+    new["site_snapped_to_crash"] = True
+    new["fork_site_note"] = (
+        f"snapped after-crash fork to crash statement "
+        f"{ref_base}:{crash_line} (target {tgt_line})")
+    new["fork_file"] = new["root_cause_file"]
+    new["fork_line"] = tgt_line
+    new["fork_statement"] = tgt_stmt or ""
+    print(f"  [fork-site] {new['fork_site_note']}")
+    return new
+
+
+def _reselect_fork_from_crash(crash_a, crash_b, binary_a, binary_b,
+                              source_dirs_a, source_dirs_b,
+                              lib_path_a, lib_path_b, args_a, args_b,
+                              refactoring_map, gdb_timeout,
+                              func_name=None, a_idx=None, b_idx=None,
+                              input_file=None):
+    """Rebuild a fork result anchored on the reference crash top frame.
+
+    Prefer the nearest enclosing decision of the crash line that maps into
+    the target source; otherwise use the crash statement itself (Case A).
+    """
+    if not crash_a or not crash_a.get("function"):
+        return None
+
+    # Walk past non-project top frames (SIMD intrinsics, interceptors) to the
+    # deepest *project* frame, then keep the rest of the backtrace as fallback
+    # anchors when the leaf helper has no mappable enclosing decision.
+    def _is_non_project(fn, fl):
+        fn = fn or ""
+        fl = fl or ""
+        if re.search(r'__interceptor_|__asan_|__sanitizer_|__ubsan_|__tsan_', fn):
+            return True
+        if re.match(r'^_mm|^_mm256|^_mm512|^__m(128|256|512)', fn):
+            return True
+        if re.search(r'emmintrin\.h|immintrin\.h|xmmintrin\.h|smmintrin\.h|'
+                     r'nmmintrin\.h|tmmintrin\.h|ammintrin\.h|'
+                     r'/usr/include/|/usr/lib/gcc/|sanitizer|libc|csu/', fl):
+            return True
+        return False
+
+    anchors = []
+    top_fn = crash_a.get("function")
+    top_fl = crash_a.get("file")
+    top_ln = int(crash_a.get("line") or 0)
+    if top_fn and top_fl and top_ln and not _is_non_project(top_fn, top_fl):
+        anchors.append((top_fn, top_fl, top_ln, "crash top frame"))
+    for fr in (crash_a.get("backtrace") or []):
+        fn, fl, ln = fr.get("function"), fr.get("file"), int(fr.get("line") or 0)
+        if not (fn and fl and ln):
+            continue
+        if _is_non_project(fn, fl):
+            continue
+        # Skip allocation interceptors stacks that are not the WRITE/READ site.
+        if fn.startswith("__interceptor_"):
+            continue
+        reason = ("project frame after non-project crash site"
+                  if not anchors else "backtrace fallback")
+        anchors.append((fn, fl, ln, reason))
+        if len(anchors) >= 8:
+            break
+    if not anchors:
+        return None
+
+    def _try_anchor(crash_func, crash_file, crash_line, how):
+        ref_file_base = os.path.basename(crash_file) or crash_file
+        tgt_func = (refactoring_map.get(crash_func, crash_func)
+                    if refactoring_map else crash_func)
+
+        def _mk(ref_line, ref_stmt, tgt_line, tgt_stmt, reason):
+            # Prefer the actual function that owns the mapped target line —
+            # cross-version renames (bit_convert_TU vs bit_embed_TU) otherwise
+            # mislabel the fork.  Resolve via the FULL ref path first so
+            # openjp2/cio.c does not collapse to basename → openmj2/cio.c.
+            # Only fall back to basename when the full-path lookup fails —
+            # never overwrite a successful hit just because it equals tgt_func.
+            actual_tgt_func = _find_function_containing_line(
+                crash_file, tgt_line, source_dirs_b)
+            if not actual_tgt_func:
+                actual_tgt_func = _find_function_containing_line(
+                    ref_file_base, tgt_line, source_dirs_b)
+            if not actual_tgt_func:
+                actual_tgt_func = tgt_func
+            result = {
+                "divergence_function": func_name,
+                "trace_a_index": a_idx,
+                "trace_b_index": b_idx,
+                "root_cause_function": actual_tgt_func,
+                "root_cause_file": ref_file_base,
+                "root_cause_line": tgt_line,
+                "root_cause_file_a": crash_file,
+                "root_cause_line_a": ref_line,
+                "root_cause_statement_a": (ref_stmt or "").strip(),
+                "root_cause_statement_b": (tgt_stmt or "").strip(),
+                "crash_based": True,
+                "crash_signal": crash_a.get("signal"),
+                "fork_reselected_from_crash": True,
+                "fork_reselect_reason": reason,
+                "fork_file": ref_file_base,
+                "fork_line": tgt_line,
+                "fork_statement": (tgt_stmt or ref_stmt or "").strip(),
+                "variables": (
+                    _extract_variables_from_expression(tgt_stmt or "")
+                    or _extract_variables_from_expression(ref_stmt or "")
+                    or []),
+                "description": (
+                    f"Fork re-selected from reference crash top frame.\n"
+                    f"  Reference: {crash_func} at {crash_file}:{crash_line} "
+                    f"({crash_a.get('signal')})\n"
+                    f"  Target:    {actual_tgt_func} at {ref_file_base}:{tgt_line}\n"
+                    f"  Statement: {(tgt_stmt or ref_stmt or '').strip()}\n"
+                    f"  Reason: {reason}"
+                ),
+            }
+            if input_file:
+                result["input_file"] = str(input_file)
+            return result
+
+        def _map_decision(ref_line, ref_stmt):
+            # Pass the FULL ref path so _locate_source_file keeps directory
+            # hints (openjp2 vs openmj2, openjp2 vs openmj2, …).
+            expected = (refactoring_map.get(crash_func, crash_func)
+                        if refactoring_map else crash_func)
+            return _find_matching_line_pref_func(
+                crash_file, ref_stmt, source_dirs_b, prefer_func=expected)
+
+        # 1) Nearest enclosing decision of the crash line, mapped to target.
+        for ref_line, ref_stmt in _find_enclosing_decisions(
+                crash_file, crash_line, source_dirs_a,
+                max_back=100, max_levels=8):
+            owner = _find_function_containing_line(crash_file, ref_line, source_dirs_a)
+            owner_n = _norm_func_name(owner)
+            crash_n = _norm_func_name(crash_func)
+            if owner_n and crash_n and owner_n != crash_n:
+                continue
+            mapped = _map_decision(ref_line, ref_stmt)
+            if not mapped:
+                continue
+            tgt_line, tgt_stmt = mapped
+            # Prefer a decision whose operands actually differ when GDB can say so.
+            exprs = [e for e in _extract_variables_from_expression(ref_stmt)
+                     if re.fullmatch(r"[A-Za-z_]\w*", e)][:4]
+            if exprs:
+                vals_a = _eval_condition_operands(
+                    binary_a, source_dirs_a, lib_path_a, crash_file,
+                    ref_line, exprs, args_a, gdb_timeout)
+                vals_b = _eval_condition_operands(
+                    binary_b, source_dirs_b, lib_path_b, crash_file,
+                    tgt_line, exprs, args_b, gdb_timeout)
+                if vals_a and vals_b:
+                    diffs = {e: (vals_a[e], vals_b[e]) for e in exprs
+                             if e in vals_a and e in vals_b and vals_a[e] != vals_b[e]}
+                    if not diffs:
+                        continue  # same operands — not the deciding fork
+            return _mk(ref_line, ref_stmt, tgt_line, tgt_stmt,
+                       f"{how}: enclosing decision {ref_file_base}:{crash_line}")
+
+        # 2) Crash statement itself, mapped to target.
+        ref_stmt = _read_source_line(crash_file, crash_line, source_dirs_a)
+        tgt_line, tgt_stmt = None, None
+        if ref_stmt:
+            mapped = _find_matching_line_pref_func(
+                crash_file, ref_stmt, source_dirs_b, prefer_func=crash_func)
+            if mapped:
+                tgt_line, tgt_stmt = mapped
+                return _mk(crash_line, ref_stmt, tgt_line, tgt_stmt,
+                           f"{how}: crash statement (mapped to target)")
+        # 3) Anchor inside the same-named function in the target.
+        tgt_func_guess = tgt_func
+        full_tgt = _locate_source_file(crash_file, source_dirs_b)
+        if full_tgt:
+            try:
+                with open(full_tgt, encoding='utf-8', errors='replace') as fh:
+                    tlines = fh.readlines()
+            except Exception:
+                tlines = []
+            pat = re.compile(r'^' + re.escape(tgt_func_guess) + r'\s*\(')
+            pat2 = re.compile(r'^' + re.escape(crash_func) + r'\s*\(')
+            for idx, tl in enumerate(tlines, start=1):
+                if pat.match(tl) or pat2.match(tl):
+                    tgt_line = idx
+                    for k in range(idx, min(idx + 40, len(tlines))):
+                        s = tlines[k].strip()
+                        if _DECISION_STMT_RE.match(s):
+                            tgt_line = k + 1
+                            tgt_stmt = s
+                            break
+                    if tgt_stmt is None:
+                        for k in range(idx, min(idx + 40, len(tlines))):
+                            s = tlines[k].strip()
+                            if s and s not in ('{', '}'):
+                                tgt_line = k + 1
+                                tgt_stmt = s
+                                break
+                        if tgt_stmt is None:
+                            tgt_stmt = (tlines[idx - 1].strip()
+                                        if idx <= len(tlines) else '')
+                    return _mk(crash_line, ref_stmt or "", tgt_line, tgt_stmt or "",
+                               f"{how}: same-named function in target")
+                    break
+        return None
+
+    for crash_func, crash_file, crash_line, how in anchors:
+        got = _try_anchor(crash_func, crash_file, crash_line, how)
+        if got:
+            return got
+    return None
+
+
+def _reconcile_fork_with_crash(result, crash_a, crash_b,
+                               binary_a, binary_b, args_a, args_b,
+                               source_dirs_a, source_dirs_b,
+                               lib_path_a, lib_path_b,
+                               refactoring_map, gdb_timeout,
+                               func_name=None, a_idx=None, b_idx=None,
+                               input_file=None, skip_polytracker=False,
+                               config=None):
+    """Fix fork选错 / 站点错误 against the reference crash top frame.
+
+    - wrong_function → re-select fork from the crash (enclosing decision
+      or crash statement, mapped to target).
+    - site_after_crash → snap back to the nearest decision at/before the
+      crash line (same function).
+    Already crash-based / Case C results pass through unchanged.
+    """
+    if not result or result.get("error") or not crash_a:
+        return result
+    # Case C: target crashed on its own — that site IS the intentional fork.
+    if crash_b and result.get("crash_signal_b"):
+        return result
+
+    status = _fork_alignment_status(result, crash_a, refactoring_map)
+    if status == "aligned":
+        return result
+
+    print(f"\n  [fork-align] status={status}: "
+          f"fork={result.get('root_cause_function')}:"
+          f"{result.get('root_cause_file')}:{result.get('root_cause_line')} "
+          f"vs crash={crash_a.get('function')}:"
+          f"{os.path.basename(str(crash_a.get('file') or ''))}:"
+          f"{crash_a.get('line')}")
+
+    if status == "site_after_crash":
+        snapped = _snap_fork_site_to_crash(
+            result, crash_a, source_dirs_a, source_dirs_b, refactoring_map)
+        if snapped is not result:
+            if not skip_polytracker:
+                try:
+                    snapped = _polytracker_locate_input_offsets(
+                        snapped, config=config,
+                        binary_b=binary_b, binary_a=binary_a)
+                except Exception as e:
+                    print(f"  [PolyTracker] Analysis failed: {e}")
+                    snapped["polytracker_offsets"] = {
+                        "status": "error", "error": str(e)}
+            return snapped
+        # Fall through to full reselect if snap failed.
+        status = "wrong_function"
+
+    if status == "wrong_function":
+        reselected = _reselect_fork_from_crash(
+            crash_a, crash_b, binary_a, binary_b,
+            source_dirs_a, source_dirs_b,
+            lib_path_a, lib_path_b, args_a, args_b,
+            refactoring_map, gdb_timeout,
+            func_name=func_name, a_idx=a_idx, b_idx=b_idx,
+            input_file=input_file)
+        if reselected:
+            print(f"  [fork-align] re-selected -> "
+                  f"{reselected.get('root_cause_function')}:"
+                  f"{reselected.get('root_cause_file')}:"
+                  f"{reselected.get('root_cause_line')} "
+                  f"({reselected.get('fork_reselect_reason')})")
+            # Carry forward useful fields from the original locator.
+            for key in ("fork_chain", "dynamic_fork", "poly_track_function",
+                        "poly_track_file", "poly_track_line",
+                        "poly_track_statement", "enclosing_decision_fork",
+                        "semantic_fork", "step_trace_split"):
+                if key in result and key not in reselected:
+                    reselected[key] = result[key]
+            if input_file:
+                reselected.setdefault("input_file", str(input_file))
+            if not skip_polytracker:
+                try:
+                    reselected = _polytracker_locate_input_offsets(
+                        reselected, config=config,
+                        binary_b=binary_b, binary_a=binary_a)
+                except Exception as e:
+                    print(f"  [PolyTracker] Analysis failed: {e}")
+                    reselected["polytracker_offsets"] = {
+                        "status": "error", "error": str(e)}
+            return reselected
+        print("  [fork-align] reselect failed — keeping original fork")
+
+    return result
+
+
 def analyze_lcs_result(result_json_path, binary_a, binary_b,
                        args_a=None, args_b=None, input_file=None,
                        gdb_timeout=120, refactoring_map=None, config=None,
@@ -6553,6 +7260,25 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
     reference_crashed = bool(crash_a and not crash_b)
     fork_meta = None
 
+    def _finalize(fork_result):
+        """Reconcile the selected fork with the reference crash top frame.
+
+        Applied at every locator return so step-trace / dynamic / gap
+        forks in unrelated functions (fork选错) or after the crash line
+        (站点错误) are corrected before the result leaves this function.
+        """
+        if not fork_result or fork_result.get("error"):
+            return fork_result
+        return _reconcile_fork_with_crash(
+            fork_result, crash_a, crash_b,
+            binary_a, binary_b, args_a, args_b,
+            source_dirs_a, source_dirs_b,
+            lib_path_a, lib_path_b,
+            refactoring_map, gdb_timeout,
+            func_name=func_name, a_idx=a_idx, b_idx=b_idx,
+            input_file=input_file, skip_polytracker=skip_polytracker,
+            config=config)
+
     # Case C: target crashes BEFORE the reference's vulnerability crash point.
     # Both versions crash and the target crashed before reaching the (mapped)
     # reference crash point — the target's crash point (triggered by the PoC)
@@ -6634,15 +7360,16 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                          "before the crash; origin tracing anchors at this "
                          "invocation"),
             }
-        if input_file:
-            result["input_file"] = str(input_file)
-        if not skip_polytracker:
-            try:
-                result = _polytracker_locate_input_offsets(result, config=config, binary_b=binary_b, binary_a=binary_a)
-            except Exception as e:
-                print(f"  [PolyTracker] Analysis failed: {e}")
-                result["polytracker_offsets"] = {"status": "error", "error": str(e)}
-        return result
+            if input_file:
+                result["input_file"] = str(input_file)
+            if not skip_polytracker:
+                try:
+                    result = _polytracker_locate_input_offsets(result, config=config, binary_b=binary_b, binary_a=binary_a)
+                except Exception as e:
+                    print(f"  [PolyTracker] Analysis failed: {e}")
+                    result["polytracker_offsets"] = {"status": "error", "error": str(e)}
+            # Case C: target's own crash is the intentional fork — skip reconcile.
+            return result
 
     # ========================================================
     # PRIMARY: last common function call -> permanent-split fork
@@ -6688,7 +7415,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
               f"{ancestor_result.get('root_cause_function')}() at "
               f"{ancestor_result.get('root_cause_file')}:"
               f"{ancestor_result.get('root_cause_line')}")
-        return ancestor_result
+        return _finalize(ancestor_result)
 
     # ========================================================
     # SECOND locator (reference crashes, target does not): the
@@ -6727,7 +7454,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 print(f"  [PolyTracker] Analysis failed: {e}")
                 result["polytracker_offsets"] = {
                     "status": "error", "error": str(e)}
-        return result
+        return _finalize(result)
     else:
         print(f"  [Backward tracer] no fork statement found — "
               f"falling back to the crash-point analysis.")
@@ -6821,7 +7548,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 except Exception as e:
                     print(f"  [PolyTracker] Analysis failed: {e}")
                     result["polytracker_offsets"] = {"status": "error", "error": str(e)}
-            return result
+            return _finalize(result)
         else:
             # Reachability-aware step: the crash statement may be skipped by
             # the target while the DECISION guarding it is evaluated by both
@@ -6834,7 +7561,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                     gdb_timeout, func_name, a_idx, b_idx, input_file,
                     skip_polytracker, config)
                 if _encl_result:
-                    return _encl_result
+                    return _finalize(_encl_result)
             # Case B: the target did not reach the crash point (it diverged
             # earlier).  Prefer the crash-anchored reverse fork chain: walk the
             # reference trace backward from the crash and take the boundary
@@ -6910,7 +7637,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                                 print(f"  [PolyTracker] Analysis failed: {e}")
                                 result["polytracker_offsets"] = {
                                     "status": "error", "error": str(e)}
-                        return result
+                        return _finalize(result)
                     else:
                         print(f"  [unified-dynamic] no fork found "
                               f"({dyn.get('status')}: {dyn.get('reason', '')}) "
@@ -7098,7 +7825,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                         result["polytracker_offsets"] = {"status": "error", "error": str(e)}
                 if fork_meta:
                     result["fork_chain"] = fork_meta
-                return result
+                return _finalize(result)
             else:
                 print("  [step-into] no divergence pinpointed — falling back.")
 
@@ -7246,7 +7973,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                     result["polytracker_offsets"] = {"status": "error", "error": str(e)}
             if fork_meta:
                 result["fork_chain"] = fork_meta
-            return result
+            return _finalize(result)
 
     # ========================================================
     # PRIMARY: Gap-based divergence tracing (backtrace walk-up)
@@ -7408,7 +8135,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 result["polytracker_offsets"] = {"status": "error", "error": str(e)}
         if fork_meta:
             result["fork_chain"] = fork_meta
-        return result
+        return _finalize(result)
 
     # ========================================================
     # (Former FALLBACK 1 — _trace_from_common_ancestor: last
@@ -7436,7 +8163,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 sub_result["trace_b_index"] = b_idx
                 print(f"\n  Sub-function divergence in {cand_name}(): "
                       f"{sub_result.get('root_cause_file')}:{sub_result.get('root_cause_line')}")
-                return sub_result
+                return _finalize(sub_result)
 
     # Run divergence analysis
     print(f"\nRunning GDB analysis on {func_name}()...")
@@ -7729,7 +8456,7 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                 print(f"  [PolyTracker] Analysis failed: {e}")
                 result["polytracker_offsets"] = {"status": "error", "error": str(e)}
 
-    return result
+    return _finalize(result)
 
 
 def _find_pattern_in_source(func_name_a, func_name_b, ops_a, ops_b,
@@ -8578,7 +9305,7 @@ def _polytracker_locate_input_offsets(result, config=None, binary_b=None, binary
     # Build the full argument list from command_format, substituting the
     # placeholders (program_path is dropped; binary is argv[0]).
     full_args = []
-    for arg in (command_format or '').split():
+    for arg in shlex.split(command_format or ''):
         if arg == '{program_path}' or '{program_name}' in arg:
             continue
         if '{input_file}' in arg:
