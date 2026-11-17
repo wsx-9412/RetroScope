@@ -103,3 +103,4 @@ python3 -m pytest test_format_profiles.py test_crash_equivalence.py
   (`BASE_DIR`); no machine-specific absolute paths are required for the main
   pipeline.
 - Experiment narrative and per-CVE tables: see `poc_run_commands.md`.
+# sync test 1794882472
