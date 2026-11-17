@@ -62,13 +62,13 @@ CONFIG_MODULE="$PROJECT_CONFIG"
 case "$PROJECT_NAME" in
     "libtiff")
         REFERENCE_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.0.7"
-        TARGET_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.0.6"
+        TARGET_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.0.0"
         DEFAULT_INPUT="$INPUT_FILE_DIR/libtiff/CVE-2025-8177.tif"
         EXTRA_ARGS=(--include-exits)
         ;;
 "lame")
         REFERENCE_VERSION_PATH="$BASE_DIR/lame-versions/lame-3.99.5"
-        TARGET_VERSION_PATH="$BASE_DIR/lame-versions/lame-3.98.2"
+        TARGET_VERSION_PATH="$BASE_DIR/lame-versions/lame-3.98.4"
         DEFAULT_INPUT="$INPUT_FILE_DIR/CVE-2017-15045"
         # lame 3.98 -> 3.99 restructured the frontend (main -> c_main ->
         # lame_main); full call-path matching never aligns, so match by
@@ -142,27 +142,39 @@ case "$PROJECT_NAME" in
         DEFAULT_INPUT="$INPUT_FILE_DIR/libarchive/CVE-2025-5915/official_2565.rar"
         EXTRA_ARGS=(--include-exits)
         ;;
+    "sqlite3")
+        REFERENCE_VERSION_PATH="/home/ws/Desktop/sqlite-versions/sqlite3-3.39.2"
+        TARGET_VERSION_PATH="/home/ws/Desktop/sqlite-versions/sqlite3-3.34.1"
+        DEFAULT_INPUT="$INPUT_FILE_DIR/sqlite3/CVE-2025-7458.sql"
+        EXTRA_ARGS=(--include-exits)
+        ;;
     "openexr")
-        REFERENCE_VERSION_PATH="$BASE_DIR/openexr-versions/openexr-3.3.2"
-        TARGET_VERSION_PATH="$BASE_DIR/openexr-versions/openexr-3.2.12"
+        REFERENCE_VERSION_PATH="/home/ws/Desktop/openexr-versions/openexr-3.3.2"
+        TARGET_VERSION_PATH="/home/ws/Desktop/openexr-versions/openexr-3.2.12"
         DEFAULT_INPUT="$INPUT_FILE_DIR/openexr/CVE-2025-48071-heap_overflow.exr"
         EXTRA_ARGS=(--include-exits)
         ;;
     "exiv2")
-        REFERENCE_VERSION_PATH="$BASE_DIR/exiv2-versions/exiv2-0.28.4"
-        TARGET_VERSION_PATH="$BASE_DIR/exiv2-versions/exiv2-0.27.7"
+        REFERENCE_VERSION_PATH="/home/ws/Desktop/exiv2-versions/exiv2-0.28.4"
+        TARGET_VERSION_PATH="/home/ws/Desktop/exiv2-versions/exiv2-0.27.7"
         DEFAULT_INPUT="$INPUT_FILE_DIR/exiv2/CVE-2025-26623-poc.tiff"
         EXTRA_ARGS=(--include-exits)
         ;;
+    "libheif")
+        REFERENCE_VERSION_PATH="/home/ws/Desktop/libheif-versions/libheif-1.21.0"
+        TARGET_VERSION_PATH="/home/ws/Desktop/libheif-versions/libheif-1.20.0"
+        DEFAULT_INPUT="$INPUT_FILE_DIR/libheif/CVE-2026-84450-clap_oversized_ispe_width.avif"
+        EXTRA_ARGS=(--include-exits)
+        ;;
     "pcre2")
-        REFERENCE_VERSION_PATH="$BASE_DIR/pcre2-versions/pcre2-pcre2-10.34"
-        TARGET_VERSION_PATH="$BASE_DIR/pcre2-versions/pcre2-pcre2-10.30"
+        REFERENCE_VERSION_PATH="/home/ws/Desktop/pcre2-versions/pcre2-pcre2-10.34"
+        TARGET_VERSION_PATH="/home/ws/Desktop/pcre2-versions/pcre2-pcre2-10.30"
         DEFAULT_INPUT="$INPUT_FILE_DIR/pcre2/CVE-2026-86145.txt"
         EXTRA_ARGS=(--include-exits)
         ;;
     *)
         echo "Error: unknown project '$PROJECT_NAME'"
-        echo "Available: libtiff, lame, audiofile, jasper, libxml2, giflib, binutils, freetype, openjpeg, libredwg, libsndfile, libarchive, openexr, exiv2, pcre2"
+        echo "Available: libtiff, lame, audiofile, jasper, libxml2, giflib, binutils, freetype, openjpeg, libredwg, libsndfile, libarchive, sqlite3, openexr, exiv2, libheif, pcre2"
         exit 1
         ;;
 esac
@@ -243,6 +255,9 @@ DIVERGE_JSON="results/${CVE_ID}.diverge.json"
 
 # Always regenerate - delete old diverge JSON
 rm -f "$DIVERGE_JSON"
+# Fork-flip iteration status is per-run; stale chains must not leak into
+# the final summary of a later run.
+rm -f "results/${CVE_ID}_fork_flip_chain.json"
 # The dynamic stage's single-byte results are only meaningful for THIS
 # target run; delete any stale copy (written by the previous target) so
 # the legacy stage below never consumes another version's classification.
@@ -372,6 +387,42 @@ DYN_MUT_PY
         else
             echo "GDB trace failed!"
             exit 1
+        fi
+
+        # ================================================================
+        # Fork-flip iteration: ONLY when every mutation stage above found
+        # no match (no mutation reproduced the reference crash).  Mutations
+        # that flipped the fork guard become the next round's base input
+        # and the localization + mutation pipeline is re-run on them, so
+        # serial guard chains can be crossed one fork at a time.
+        # ================================================================
+        TRACE_RESULT_JSON="$(dirname "$INPUT_FILE")/fork_trace_result.json"
+        FLIP_MATCH=0
+        if [ -f "$TRACE_RESULT_JSON" ]; then
+            FLIP_MATCH=$(python3 -c "import json;print(1 if json.load(open('$TRACE_RESULT_JSON')).get('mutation_any_match') else 0)" 2>/dev/null || echo 0)
+        fi
+        if [ "$FLIP_MATCH" = "0" ] && [ "${SKIP_LEGACY:-0}" != "1" ]; then
+            echo ""
+            echo "=== Fork-flip iteration (mutation stages found no match) ==="
+            python3 -u fork_flip_iter.py \
+                --config "$CONFIG_MODULE" \
+                --ref "$REFERENCE_VERSION_PATH" \
+                --target "$TARGET_VERSION_PATH" \
+                --input "$INPUT_FILE" \
+                --trace-json "$DIVERGE_JSON" \
+                --max-rounds 3 \
+                "${EXTRA_ARGS[@]}" \
+                && FLIP_ITER_OK=1 || FLIP_ITER_OK=0
+            if [ "$FLIP_ITER_OK" = "0" ]; then
+                echo ""
+                echo "=== Format-field mutation (Step 6h, final resort) ==="
+                python3 -u trace_fork_offsets.py \
+                    --trace-json "$DIVERGE_JSON" \
+                    --only-format-fields \
+                    --timeout 60 || true
+            fi
+        else
+            echo "[*] Mutation stages matched the reference crash; fork-flip iteration skipped."
         fi
     fi
 fi
@@ -506,6 +557,80 @@ if [ -f "$FINAL_DIVERGE_JSON" ]; then
 fi
 
 echo -e "\n=== Analysis completed ==="
+echo ""
+
+# ================================================================
+# Mutation result summary: report whether any mutation stage (or the
+# fork-flip iteration) reproduced the reference crash on the target.
+# ================================================================
+echo "=== Mutation result summary ==="
+TRACE_RESULT_JSON="$(dirname "$INPUT_FILE")/fork_trace_result.json"
+CHAIN_JSON="results/${CVE_ID}_fork_flip_chain.json"
+SUMMARY_PY=$(cat <<'SUMMARY_EOF'
+import json, os, sys
+tj = os.environ['TRACE_RESULT_JSON']
+chain_path = os.environ.get('CHAIN_JSON', '')
+chain_success = False
+if chain_path and os.path.isfile(chain_path):
+    try:
+        chain_success = (json.load(open(chain_path)).get('status') == 'success')
+    except Exception:
+        pass
+if not os.path.isfile(tj):
+    print('  no fork_trace_result.json — the mutation stages did not run')
+    sys.exit(0)
+d = json.load(open(tj))
+m = bool(d.get('mutation_any_match')) or chain_success
+print('  reproduced the reference crash on the target: %s'
+      % ('YES' if m else 'no')
+      + ('  (via fork-flip iteration)' if (chain_success
+          and not d.get('mutation_any_match')) else ''))
+fc = d.get('field_combo_results') or {}
+ff = d.get('format_field_results') or {}
+print('  matches per stage:')
+print('    single-byte (Step 6):  %d' % sum(
+    len((i.get('matches') or {})) for i in (d.get('crash_results') or {}).values()
+    if isinstance(i, dict)))
+print('    pairwise   (Step 6b):  %d' % sum(
+    len((i.get('matches') or {})) for i in (d.get('pairwise_results') or {}).values()
+    if isinstance(i, dict)))
+print('    field-combo (Step 6g, fork-variable fields): %d' % len(fc.get('matches') or []))
+print('    k-combo    (Step 6e):  %d' % sum(
+    len((i.get('matches') or {})) for i in (d.get('multi_combo_results') or {}).values()
+    if isinstance(i, dict)))
+print('    format fields (Step 6h, final resort):       %d' % len(ff.get('matches') or []))
+flips = len((fc.get('flips') or [])) + len((ff.get('flips') or []))
+if flips:
+    print('  fork flips recorded: %d' % flips)
+SUMMARY_EOF
+)
+TRACE_RESULT_JSON="$TRACE_RESULT_JSON" CHAIN_JSON="$CHAIN_JSON" python3 -c "$SUMMARY_PY"
+
+if [ -f "$CHAIN_JSON" ]; then
+    python3 -c "
+import json
+d = json.load(open('$CHAIN_JSON'))
+if d.get('status') == 'success':
+    print('  fork-flip iteration: SUCCESS')
+    for s in d.get('chain') or []:
+        if s.get('source') == 'format-fields':
+            print('    round %d format-fields resort -> %s' % (s['round'], s['input']))
+            continue
+        desc = ' '.join('0x%x->0x%02x' % (o, v) for o, v in s.get('changes') or [])
+        mch = s.get('match_changes')
+        if mch:
+            mdesc = ' '.join('0x%x->0x%02x' % (o, v) for o, v in mch)
+            print('    round %d cand %d: flip %s; match %s [%s] -> %s' % (
+                s['round'], s['candidate'], desc, mdesc, s.get('match_stage'), s['input']))
+        else:
+            print('    round %d cand %d: flip %s -> %s' % (
+                s['round'], s['candidate'], desc, s['input']))
+else:
+    print('  fork-flip iteration: %s (%s)' % (d.get('status'), d.get('note', '')))
+"
+else
+    echo "  fork-flip iteration: not attempted"
+fi
 echo ""
 echo "=== Timing summary (since compilation finished) ==="
 python3 -c "

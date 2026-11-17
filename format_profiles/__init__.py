@@ -38,14 +38,30 @@ from .j2k import J2kProfile
 from .tiff import TiffProfile
 from .woff import FontProfile
 from .xml import XmlProfile
+from .wav import WavProfile
+from .aiff import AiffProfile
+from .png import PngProfile
+from .elf import ElfProfile
+from .zip import ZipProfile
+from .rar import RarProfile
+from .exr import ExrProfile
+from .mp4 import Mp4Profile
 
 # Detection order: magic-strict formats first, tolerant scanners last.
 PROFILES = (
     TiffProfile,   # II*/MM*
     GifProfile,    # GIF87a/89a
+    PngProfile,    # \x89PNG
     FontProfile,   # sfnt/ttcf/wOFF/wOF2
     J2kProfile,    # FF4F / JP2 box
     DwgProfile,    # AC10xx
+    ElfProfile,    # \x7fELF
+    ZipProfile,    # PK\x03\x04 / PK\x05\x06
+    RarProfile,    # Rar!\x1a\x07\x00
+    ExrProfile,    # \x76\x2f\x31\x01
+    WavProfile,    # RIFF....WAVE
+    AiffProfile,   # FORM....AIFF/AIFC
+    Mp4Profile,    # ....ftyp
     XmlProfile,    # leading '<' (tolerant — keep last)
 )
 
@@ -122,8 +138,10 @@ def structure_only(data: bytes) -> Optional[Dict[str, Any]]:
 __all__ = [
     'FIELD_CAP', 'FormatProfile', 'MB_VALUES', 'PROBE_DEFAULT',
     'PROBE_KINDS', 'PROFILES',
-    'DwgProfile', 'FontProfile', 'GifProfile', 'J2kProfile',
-    'TiffProfile', 'XmlProfile',
+    'AiffProfile', 'DwgProfile', 'ElfProfile', 'ExrProfile',
+    'FontProfile', 'GifProfile', 'J2kProfile', 'Mp4Profile',
+    'PngProfile', 'RarProfile', 'TiffProfile', 'WavProfile',
+    'XmlProfile', 'ZipProfile',
     'cand', 'detect_profile', 'detect_profile_by_name', 'mutate_bytes',
     'mutate_int', 'pack_region', 'parse_bytes', 'profile_candidates',
     'read_int', 'sniff', 'structure_only', 'write_int',

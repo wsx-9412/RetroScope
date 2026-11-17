@@ -119,6 +119,46 @@ def _mutation_env(binary):
     return env
 
 
+_DIAG_LINE_RE = re.compile(
+    r'(error|warning|fatal|invalid|unsupported|corrupt|failed|failure|'
+    r'only\s+[\d,]|illegal|unknown|can\'t|cannot|too\s+\w+|no\s+such|'
+    r'overflow|denied|assert)', re.I)
+
+
+def _behavior_signature(output, input_path=None):
+    """Normalized behavioral signature of a non-crashing program run.
+
+    Program diagnostics (error/warning lines) after normalizing the input
+    path and hex addresses.  Two runs with the same signature are
+    behaviorally identical; a different signature means the mutation changed
+    how the target handled the input (fork flip) even when the exit code is
+    unchanged (e.g. two different error messages both exiting with rc=1).
+    """
+    if not output:
+        return ''
+    sig_lines = []
+    for raw in output.splitlines():
+        s = raw.strip()
+        if not s:
+            continue
+        if (s.startswith('=') or s.startswith('SUMMARY:')
+                or s.startswith('ABORTING') or 'AddressSanitizer' in s
+                or re.match(r'^#\d+\s', s)):
+            continue
+        if input_path:
+            s = s.replace(input_path, '<input>')
+        # Collapse mutation temp-file paths to the SAME token as the real
+        # input path so "Can't read <input>" matches across runs.
+        s = re.sub(r'/tmp/[A-Za-z0-9_]+/mutate_[A-Za-z0-9]+', '<input>', s)
+        s = re.sub(r'/tmp/mutate_[A-Za-z0-9]+', '<input>', s)
+        s = re.sub(r'0x[0-9a-fA-F]{6,}', '0xX', s)
+        s = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', s)
+        s = s.strip()
+        if s and _DIAG_LINE_RE.search(s):
+            sig_lines.append(s)
+    return '\n'.join(sig_lines)
+
+
 def _strip_c_comments(text):
     """Remove C block/line comments and string/char literals from source text.
 
@@ -492,6 +532,36 @@ def read_trace_json(json_path):
     root_cause_file = div.get('root_cause_file_b') or div.get('root_cause_file')
     root_cause_line = div.get('root_cause_line_b') or div.get('root_cause_line')
     root_cause_stmt = div.get('root_cause_statement_b', '')
+
+    # Cross-function line defense: root_cause_line_b can point at a
+    # same-text statement in a sibling function (jas_matrix_divpow2 vs
+    # jas_matrix_asl) while root_cause_function / fork_line name the right
+    # one.  Prefer a candidate that actually lives inside the named function.
+    _func = (div.get('root_cause_function') or '').strip()
+    if _func and root_cause_line and root_cause_file:
+        try:
+            from divergence_analyzer import (
+                _find_function_containing_line as _fcl,
+                _norm_func_name as _nfn)
+            _owner = _fcl(root_cause_file, int(root_cause_line), None)
+            if _owner and _nfn(_owner) != _nfn(_func):
+                for _cand_key in ('fork_line', 'root_cause_line'):
+                    _cand = div.get(_cand_key)
+                    try:
+                        _cand = int(_cand) if _cand is not None else None
+                    except (TypeError, ValueError):
+                        continue
+                    if not _cand:
+                        continue
+                    _oc = _fcl(root_cause_file, _cand, None)
+                    if _oc and _nfn(_oc) == _nfn(_func):
+                        print(f"  [read_trace_json] root_cause_line_b="
+                              f"{root_cause_line} is in {_owner}() not "
+                              f"{_func}() — using {_cand_key}={_cand}")
+                        root_cause_line = _cand
+                        break
+        except Exception:
+            pass
 
     if not root_cause_file or not root_cause_line:
         return None
@@ -6000,6 +6070,293 @@ def _reset_mutation_out_dir(input_file, version, out_root=None):
     return path
 
 
+# ---------------------------------------------------------------------------
+# Step 6g: field-level mutation — whole multi-byte fields are rewritten to
+# semantic value sets (channels ∈ {1,2}, bits ∈ {8,16,24,32}, ...) instead of
+# single bytes.  Byte-level sweeps cannot flip a guard that requires a whole
+# 16/32-bit field to take a specific magic value, and two such fields often
+# must change together (coordinated cross-field fix).  Field definitions come
+# from the format_profiles package (WAV/PNG/ELF/ZIP/RAR/EXR/MP4/GIF/TIFF/...);
+# fork-variable fields discovered by the offset trace are added on top.
+# ---------------------------------------------------------------------------
+
+_WIDTH_GENERIC_VALUES = {
+    1: [0x01, 0x02, 0x04, 0x08, 0x10, 0x18, 0x20, 0x00],
+    2: [0x0001, 0x0002, 0x0004, 0x0008, 0x0010, 0x0018, 0x0020, 0x0000],
+    4: [0x00000001, 0x00000002, 0x00000004, 0x00000008,
+        0x00000010, 0x00000020, 0x00000000],
+}
+
+
+def _field_combo_fields(input_file, var_offsets, source='dynamic'):
+    """Build the field list for the field-level mutation stages.
+
+    ``source='dynamic'``  — fork-variable fields discovered by the offset
+                            trace only (Step 6g, fork-driven).
+    ``source='format'``   — format-profile fields only (Step 6h, the final
+                            resort after the fork-flip chain stalls).
+    ``source='both'``     — profile fields first, dynamic appended (legacy).
+
+    Profile fields use the semantic value sets from the profile's
+    ``COMBO_DOMAINS``; fields without a semantic domain are used only when
+    the profile defines none (a generic ``value_domain`` fallback, capped).
+    Dynamic fields are skipped when they overlap a profile field.
+    Returns ``[{'offset', 'length', 'name', 'values', 'little'}]``.
+    """
+    fields = []
+    seen_ranges = []  # (start, end) byte ranges already covered
+    data = b''
+    try:
+        with open(input_file, 'rb') as f:
+            data = f.read()
+    except Exception:
+        pass
+
+    def _overlaps(off, size):
+        return any(off < end and start < off + size
+                   for start, end in seen_ranges)
+
+    profile_fields = []
+    generic_fields = []
+    if source in ('format', 'both'):
+        try:
+            from format_profiles import detect_profile
+            prof = detect_profile(data) if data else None
+            if prof:
+                structure = prof.parse(data) or {}
+                domains = dict(getattr(prof, 'COMBO_DOMAINS', {}) or {})
+                for f in structure.get('fields') or []:
+                    name = f.get('name')
+                    off = f.get('offset')
+                    size = int(f.get('size') or 1)
+                    if not name or not isinstance(off, int) or off < 0 \
+                            or f.get('kind') == 'magic':
+                        continue
+                    entry = {'offset': off, 'length': size, 'name': name,
+                             'little': bool(f.get('little', True))}
+                    if name in domains:
+                        entry['values'] = domains[name]
+                        profile_fields.append(entry)
+                    else:
+                        try:
+                            vals = list(prof.value_domain(f))[:8]
+                        except Exception:
+                            vals = None
+                        if vals:
+                            entry['values'] = vals
+                            generic_fields.append(entry)
+        except Exception:
+            pass
+        # Semantic domain fields win; generic fallback only when the
+        # profile defines no domain at all (avoid burning the combo
+        # budget on format_tag/sample_rate-style header plumbing).
+        chosen = profile_fields if profile_fields else generic_fields
+        for f in chosen:
+            if _overlaps(f['offset'], f['length']):
+                continue
+            seen_ranges.append((f['offset'], f['offset'] + f['length']))
+            fields.append(f)
+
+    if source in ('dynamic', 'both'):
+        used_names = {f['name'] for f in fields}
+        for vname, hits in (var_offsets or {}).items():
+            for h in hits:
+                off = h.get('offset')
+                ln = h.get('length') or 1
+                if off is None or _overlaps(off, ln):
+                    continue
+                seen_ranges.append((off, off + ln))
+                values = _WIDTH_GENERIC_VALUES.get(ln)
+                if not values:
+                    continue
+                name = vname
+                if name in used_names:
+                    name = f'{vname}@0x{off:x}'
+                used_names.add(name)
+                fields.append({'offset': off, 'length': ln, 'name': name,
+                               'values': values, 'little': True})
+    return fields
+
+
+def _apply_field_changes(data, fields, chosen):
+    """Write whole-field values for the chosen fields (per-field endianness)."""
+    out = bytearray(data)
+    for idx, val in chosen.items():
+        f = fields[idx]
+        little = bool(f.get('little', True))
+        for k in range(f['length']):
+            shift = 8 * k if little else 8 * (f['length'] - 1 - k)
+            b = (val >> shift) & 0xff
+            pos = f['offset'] + k
+            if 0 <= pos < len(out):
+                out[pos] = b
+    return bytes(out)
+
+
+def run_field_combo_stage(binary, binary_ref, input_file, program_args,
+                          fields, timeout, version=None, max_combos=512,
+                          max_fields=None, label='field-combo'):
+    """Whole-field semantic-value mutation (single fields, then cross-field
+    combinations).  Returns ``{'matches': [...], 'flips': [...]}`` where each
+    entry is ``{'changes': [(offset, value_bytes...)], 'values': {name: val}}``.
+
+    ``label`` names the stage in prints and stage_timing records.
+    """
+    results = {'matches': [], 'flips': []}
+    if not (fields and binary and binary_ref and input_file
+            and os.path.isfile(input_file)):
+        return results
+
+    with open(input_file, 'rb') as f:
+        original_data = f.read()
+
+    real_target = resolve_binary(binary)
+    real_ref = resolve_binary(binary_ref)
+    if not (real_target and real_ref
+            and os.path.isfile(real_target) and os.path.isfile(real_ref)):
+        print(f'  [!] {label} stage: binary not found '
+              f'(target={binary} ref={binary_ref})')
+        return results
+
+    def _run(bin_path, data):
+        fd, tmp_path = tempfile.mkstemp(
+            suffix=os.path.splitext(input_file)[1] or '.bin', prefix='mutate_')
+        os.close(fd)
+        try:
+            with open(tmp_path, 'wb') as f:
+                f.write(data)
+            cmd = [bin_path] + [_replace_input_arg(a, tmp_path, input_file)
+                                for a in program_args]
+            proc = subprocess.run(cmd, capture_output=True, text=True,
+                                  errors="replace", timeout=timeout,
+                                  env=_mutation_env(bin_path))
+            return proc.stdout + proc.stderr, proc.returncode
+        except subprocess.TimeoutExpired:
+            return '', -1
+        except Exception:
+            return '', -2
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+
+    ref_out, _ = _run(real_ref, original_data)
+    ref_sig = extract_crash_signature(ref_out)
+    if ref_sig is None:
+        print(f'  [!] {label} stage: reference binary produced no crash '
+              'signature; skipping.')
+        return results
+    ref_crash = ref_sig["crash_frames"][0] if ref_sig["crash_frames"] else {}
+    print(f'  Reference crash: {ref_sig["type"]} in '
+          f'{ref_crash.get("function")} '
+          f'({_path_basename(ref_crash.get("file"))}:'
+          f'{ref_crash.get("line")})')
+
+    base_out, base_rc = _run(real_target, original_data)
+    base_beh = _behavior_signature(base_out, input_file)
+
+    out_dir = _mutation_out_dir(input_file, version)
+    _mutation_clock_start()
+
+    def _classify(chosen, data, name_hint):
+        out, rc = _run(real_target, data)
+        sig = extract_crash_signature(out)
+        _attach_crash_statement(sig, real_target)
+        entry = {
+            'values': {fields[i]['name']: v for i, v in chosen.items()},
+            'changes': [(fields[i]['offset'] + k,
+                         ((v >> (8 * k if fields[i].get('little', True)
+                                 else 8 * (fields[i]['length'] - 1 - k)))
+                          & 0xff))
+                        for i, v in chosen.items()
+                        for k in range(fields[i]['length'])],
+        }
+        if sig is not None:
+            verdict, _ = compare_crash_signatures(ref_sig, sig)
+            crash = sig["crash_frames"][0] if sig["crash_frames"] else {}
+            if verdict in ('same_func', 'same_site'):
+                entry['crash'] = {
+                    'type': sig['type'],
+                    'function': crash.get('function'),
+                    'file': _path_basename(crash.get('file')),
+                    'line': crash.get('line'),
+                    'verdict': verdict,
+                }
+                try:
+                    import stage_timing
+                    stage_timing.record(
+                        f"mutation succeeded {label} {name_hint} "
+                        + ' '.join(f'0x{o:x}->0x{v:02x}'
+                                   for o, v in entry['changes']),
+                        _mutation_elapsed())
+                except Exception:
+                    pass
+                results['matches'].append(entry)
+                _save_mutation_artifact(
+                    out_dir, f'field:{name_hint}:time:0', original_data,
+                    entry['changes'])
+                print(f'    MATCH {label} {name_hint}: {entry["values"]} '
+                      f'-> {entry["crash"]["type"]} in '
+                      f'{entry["crash"]["function"]}')
+                return True
+            return False
+        if _behavior_signature(out) != base_beh or rc != base_rc:
+            results['flips'].append(entry)
+            print(f'    flip {name_hint}: {entry["values"]} '
+                  f'(behavior changed, no crash)')
+            return False
+        return False
+
+    if max_fields is None:
+        max_fields = max(1, min(len(fields), 4))
+    fields = fields[:max_fields]
+
+    tested = set()
+    runs = 0
+
+    def _test(chosen, name_hint):
+        nonlocal runs
+        key = frozenset(chosen.items())
+        if key in tested:
+            return False
+        tested.add(key)
+        data = _apply_field_changes(original_data, fields, chosen)
+        runs += 1
+        return _classify(chosen, data, name_hint)
+
+    # Single-field value tests first (cheap, yields per-field flips).
+    for i, f in enumerate(fields):
+        if runs >= max_combos:
+            break
+        for v in f['values']:
+            if runs >= max_combos:
+                break
+            _test({i: v}, f'{f["name"]}={v}')
+
+    # Cross-field cartesian product, capped.
+    import itertools
+    idx_list = list(range(len(fields)))
+    for r in range(2, len(fields) + 1):
+        if runs >= max_combos:
+            break
+        for combo_idx in itertools.combinations(idx_list, r):
+            if runs >= max_combos:
+                break
+            pools = [fields[i]['values'] for i in combo_idx]
+            for combo_vals in itertools.product(*pools):
+                if runs >= max_combos:
+                    break
+                chosen = dict(zip(combo_idx, combo_vals))
+                _test(chosen, 'x'.join(
+                    f'{fields[i]["name"]}={v}'
+                    for i, v in sorted(chosen.items())))
+    print(f'  {label} stage: {runs} combination(s) tested, '
+          f'{len(results["matches"])} match(es), '
+          f'{len(results["flips"])} flip(s)')
+    return results
+
+
 def run_byte_mutation_stage(binary, binary_ref, input_file, program_args,
                             offsets, timeout, title='Byte mutation crash testing',
                             version=None):
@@ -6455,6 +6812,11 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
     # fork-flipping mutations are indistinguishable from no-op mutations.
     base_tgt_out, base_tgt_rc = _run(real_target, original_data)
     base_tgt_sig = extract_crash_signature(base_tgt_out)
+    # Behavior signature: normalized program diagnostics.  Two runs that end
+    # in DIFFERENT error messages (or an error message vs clean encoding) are
+    # behaviorally different even when their exit codes match (e.g. two
+    # guards both exiting with rc=1) — such mutations are fork flips.
+    base_tgt_beh = _behavior_signature(base_tgt_out, input_file)
     print(f'  Target baseline (original file): rc={base_tgt_rc}'
           + (f', crash={base_tgt_sig["type"]}'
              if base_tgt_sig else ', no crash (unchanged if rc matches)'))
@@ -6516,7 +6878,10 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
                 sig = extract_crash_signature(out)
                 _attach_crash_statement(sig, real_target)
                 if sig is None:
-                    if base_tgt_rc is not None and rc != base_tgt_rc:
+                    _beh = _behavior_signature(out)
+                    _flip = ((base_tgt_rc is not None and rc != base_tgt_rc)
+                             or (_beh != base_tgt_beh))
+                    if _flip:
                         results[offset]['fork_flip'].append(byte_val)
                     else:
                         results[offset]['no_crash'].append(byte_val)
@@ -7512,6 +7877,100 @@ def _combinations_count(n, k):
 # CLI
 # ---------------------------------------------------------------------------
 
+def _run_format_fields_only(a, t_start):
+    """Step 6h final resort: format-profile field mutation, nothing else.
+
+    The fork-driven stages (single-byte/pairwise/combo/field 6g) and the
+    fork-flip iteration all failed to reproduce the reference crash — the
+    last resort rewrites whole format header fields to their semantic value
+    sets.  No GDB tracing; results are merged into the existing
+    fork_trace_result.json (previous stage results are preserved).
+    """
+    print('\n' + '=' * 60)
+    print('  Step 6h: Format-profile field mutation (final resort)')
+    print('=' * 60)
+    raw = {}
+    if a.trace_json and os.path.isfile(a.trace_json):
+        try:
+            with open(a.trace_json) as f:
+                raw = json.load(f) or {}
+        except Exception as e:
+            print(f'  [!] trace json unreadable: {e}')
+
+    binary = raw.get('binary_b') or a.binary
+    binary_ref = raw.get('binary_a') or a.binary_ref
+    input_file = raw.get('input_file') or a.input
+    program_args = raw.get('args_b') or a.args or []
+    version = raw.get('version_b')
+    if not (binary and binary_ref and input_file
+            and os.path.isfile(input_file)):
+        print('  [!] Step 6h: binary/ref/input missing from the trace json')
+        sys.exit(1)
+
+    fmt_results = {'matches': [], 'flips': []}
+    any_match = False
+    ff_fields = _field_combo_fields(input_file, {}, source='format')
+    if ff_fields:
+        print('  Fields: ' + str(
+            [(f['offset'], f['length'], f['name']) for f in ff_fields]))
+        fmt_results = run_field_combo_stage(
+            binary, binary_ref, input_file, program_args, ff_fields,
+            a.timeout, version=version,
+            max_combos=int(os.environ.get('RETROSCOPE_FIELD_COMBO_MAX',
+                                          '512')),
+            label='format-field')
+        any_match = bool(fmt_results.get('matches'))
+    else:
+        print('  No format profile fields for this input.')
+
+    # Merge into the existing fork_trace_result.json (preserve the earlier
+    # stages' results and only update the format-field key + match flag).
+    out_path = os.path.join(
+        os.path.dirname(os.path.abspath(input_file)) or '.',
+        'fork_trace_result.json')
+    saved = {}
+    if os.path.isfile(out_path):
+        try:
+            with open(out_path) as f:
+                saved = json.load(f) or {}
+        except Exception:
+            saved = {}
+    saved['format_field_results'] = fmt_results
+    saved['mutation_any_match'] = bool(saved.get('mutation_any_match')
+                                       or any_match)
+    with open(out_path, 'w') as f:
+        json.dump(saved, f, indent=2, default=str)
+    print(f'\n  Results saved to: {out_path}')
+
+    try:
+        import stage_timing
+        stage_timing.record('Step 6h format-field mutation (final resort)',
+                            time.time() - t_start)
+    except Exception:
+        pass
+
+    # NO_CRASH_MATCH marker bookkeeping (mirrors the end of main()).
+    try:
+        out_dir = _mutation_out_dir(input_file, version)
+        marker = os.path.join(out_dir, 'NO_CRASH_MATCH.txt')
+        if any_match and os.path.isfile(marker):
+            os.unlink(marker)
+        if not any_match and not os.path.isdir(out_dir):
+            os.makedirs(out_dir, exist_ok=True)
+            with open(marker, 'w') as f:
+                f.write('No mutation reproduced the reference crash.\n')
+    except Exception as e:
+        print(f'[!] could not update no-match marker: {e}')
+
+    if any_match:
+        print('\n  [*] Step 6h: format-field mutation reproduced the '
+              'reference crash')
+        sys.exit(0)
+    print('\n  [*] Step 6h: no format-field mutation reproduced the '
+          'reference crash')
+    sys.exit(1)
+
+
 def main():
     ap = argparse.ArgumentParser(
         description='GDB dynamic tracing: fork-statement variables → input file offsets')
@@ -7545,6 +8004,11 @@ def main():
                          'dynamic stage: its active/inert single-byte '
                          'results extend the two-offset pool, supply the '
                          'interaction pairs and the per-offset value hints')
+    ap.add_argument('--only-format-fields', action='store_true',
+                    help='run ONLY the format-profile field stage (Step 6h), '
+                         'the final resort after the fork-driven chain and '
+                         'the fork-flip iteration stalled; no GDB tracing, '
+                         'no other mutation stages')
     ap.add_argument('--args', nargs=argparse.REMAINDER, default=[],
                     help='program args (must be last)')
 
@@ -7552,6 +8016,10 @@ def main():
 
     import stage_timing
     _t_main_start = time.time()
+
+    if a.only_format_fields:
+        _run_format_fields_only(a, _t_main_start)
+        return
 
     config = {}
     if a.trace_json:
@@ -8547,8 +9015,12 @@ def main():
     print("  2. pairwise over the dynamic offset pool (Step 6b)")
     print("  3. directed structural fields from dynamic context (Step 6a)")
     print("  4. k-offset uniform combinations, dynamic pool (Step 6e)")
-    print("  5. P0 generic extended mutation, dynamic offsets first (Step 6f)")
-    print("  6. static-analysis offsets, single then pairwise (Steps 6c/6d)")
+    print("  5. field-level values + combos over FORK-VARIABLE fields (Step 6g)")
+    print("  6. P0 generic extended mutation, dynamic offsets first (Step 6f)")
+    print("  7. static-analysis offsets, single then pairwise (Steps 6c/6d)")
+    print("  after no match: fork-flip iteration (fork_flip_iter.py);")
+    print("  final resort:    format-profile fields only (Step 6h, "
+          "--only-format-fields)")
     # Step 6b: two-offset combined mutation — single-byte sweeps miss
     # interactions that need TWO bytes changed (e.g. the sign byte AND the
     # low byte of a corrupt sample-rate field).  The pool covers every
@@ -8626,6 +9098,34 @@ def main():
                 single_results=crash_results, value_hints=_value_hints)
         if _combo_match:
             any_match = True
+
+    # Step 6g: field-level mutation — whole multi-byte fields derived from
+    # the FORK-VARIABLE trace are rewritten to semantic-ish value sets,
+    # including the cross-field cartesian product.  Byte/pair/combo stages
+    # cannot hit a coordinated multi-field magic-value fix, and the flips
+    # produced here (mutations that crossed the fork guard) feed the
+    # fork-flip iteration.  Format-profile fields are deliberately NOT part
+    # of this stage: they are the final resort (Step 6h) after the
+    # fork-driven chain stalls.  Runs only when no earlier stage matched.
+    field_combo_results = {'matches': [], 'flips': []}
+    if not any_match:
+        _fc_fields = _field_combo_fields(input_file, var_offsets,
+                                         source='dynamic')
+        if _fc_fields:
+            print(f'\n{"="*60}')
+            print(f'  Step 6g: Field-level mutation (fork-variable fields='
+                  f'{[(f["offset"], f["length"], f["name"]) for f in _fc_fields]})')
+            print(f'{"="*60}')
+            try:
+                field_combo_results = run_field_combo_stage(
+                    binary, binary_ref, input_file, program_args,
+                    _fc_fields, a.timeout, version=config.get('version_b'),
+                    max_combos=int(os.environ.get(
+                        'RETROSCOPE_FIELD_COMBO_MAX', '512')))
+                if field_combo_results.get('matches'):
+                    any_match = True
+            except Exception as _fe:
+                print(f'  [!] Step 6g field-level mutation failed: {_fe}')
 
     # Step 6f: generic extended mutation (P0).  Runs only when every
     # existing stage failed to reproduce the reference crash.  The exact
@@ -8762,6 +9262,7 @@ def main():
         'crash_results': crash_results,
         'pairwise_results': pairwise_results,
         'multi_combo_results': multi_combo_results,
+        'field_combo_results': field_combo_results,
         'extended_mutation_results': extended_results,
         'mutation_any_match': any_match,
     }

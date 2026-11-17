@@ -1,6 +1,6 @@
 # config_libtiff.py
-CVE_ID = "CVE-2016-10269"
-INPUT_FILE = "in/libtiff/asarubbo/00071-libtiff-heapoverflow-_TIFFmemcpy"
+CVE_ID = "CVE-2016-10270"
+INPUT_FILE = "in/libtiff/asarubbo/00074-libtiff-heapoverflow-TIFFFillStrip"
 OUTPUT_FILE = "/tmp/foo"
 COMMAND_FORMAT = "{program_path} -i {input_file} {output_file}"
 

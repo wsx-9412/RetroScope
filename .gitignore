@@ -49,3 +49,6 @@ out/
 *~
 *.swp
 .DS_Store
+
+auto_sync.sh
+sync.log

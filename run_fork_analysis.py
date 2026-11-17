@@ -150,6 +150,26 @@ def build_args_template(exec_config: dict, output_file: str) -> str:
     return " ".join(args.split())
 
 
+def _copy2_tolerant(src, dst, *, follow_symlinks=True):
+    """copy2 that survives broken symlinks and files vanishing mid-copy.
+
+    Some version trees contain dangling symlinks (e.g. pcre2's
+    src/pcre2_chartables.c -> a pre-move absolute path).  Recreate broken
+    symlinks as-is (the build regenerates them) and skip vanished files
+    instead of aborting the whole copytree.
+    """
+    if os.path.islink(src) and not os.path.exists(src):
+        if os.path.lexists(dst):
+            os.unlink(dst)
+        os.symlink(os.readlink(src), dst)
+        return dst
+    try:
+        return shutil.copy2(src, dst, follow_symlinks=follow_symlinks)
+    except FileNotFoundError:
+        print(f"  [copy] skipping missing file: {src}")
+        return dst
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--config", required=True)
@@ -215,9 +235,9 @@ def main():
         ref_build = work / "ref"
         tgt_build = work / "target"
         print(f"Copying reference -> {ref_build}")
-        shutil.copytree(ref_dir, ref_build)
+        shutil.copytree(ref_dir, ref_build, copy_function=_copy2_tolerant)
         print(f"Copying target -> {tgt_build}")
-        shutil.copytree(tgt_dir, tgt_build)
+        shutil.copytree(tgt_dir, tgt_build, copy_function=_copy2_tolerant)
 
         print(f"Compiling reference version ...")
         if not run_build(ref_build, "reference", compile_cmds.get("reference", {})):

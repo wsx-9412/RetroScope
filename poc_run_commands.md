@@ -68,6 +68,10 @@ ASAN_OPTIONS=detect_leaks=0:allocator_may_return_null=1 \
 |-----|-------------|---------------|------|
 | CVE-2022-28506 | 5.1.1-5.2.1 | 4.1.6 | `gif2rgb in/CVE-2022-28506` |
 
+> **2026-11-12 新管道复测**: CVE-2022-28506（5.1.1→4.1.6）由 no-match 转为 **可变异**（NOW_MATCH，Step 6d 静态 pairwise，`0x454+0x456:-0x03-0x01`）。
+> 目标 4.1.6 在变异样本上复现 `DumpScreen2RGB` heap-buffer-overflow（`util/gif2rgb.c:296`），与参考 5.1.1（`gif2rgb.c:305`）同函数同型。
+> 样本: `out/CVE-2022-28506-4-1-6/0x454+0x456:-0x03-0x01:time:1255`。
+
 ---
 
 ## freetype (2 个)
@@ -1274,3 +1278,26 @@ MATCH 明细：4.0.3 `b@0xe=0x15`（单字节）→ `_TIFFmemcpy` tif_unix.c:284
 - `ASAN_OPTIONS=detect_leaks=0:halt_on_error=1:allocator_may_return_null=1:hard_rss_limit_mb=512`。
 - 累计 recorded elapsed ≈ 4.0 h（不含 baseline/启动开销）。
 
+
+---
+
+## 新管道全量复测（fork-flip + 字段级变异，2026-11-12 起）
+
+管道新增能力（相对上一轮"38 no-match 全版本复测"）:
+1. **终止型分叉定位**（target 在最后共同调用后立即 exit → fork 定位到该 exit 及其 guard 变量）
+2. **行为签名 flip 检测**（stderr 诊断差异，不再只看 rc）
+3. **Step 6g** 字段级变异（仅 fork 变量字段，跨字段笛卡尔积）
+4. **fork-flip 迭代**（no match 时：GDB 验证哪些变异越过 fork 点 → 以翻转基输入重跑定位+变异，轮次上限 3 + 循环检测）
+5. **Step 6h** 格式字段兜底（format_profiles：wav/aiff/png/elf/zip/rar/exr/mp4 等，仅在 fork 驱动链停滞时触发）
+
+驱动: `retest_nomatch.py`（顺序、低优先级、单变异 worker，与模糊测试共存）。
+输入: 145 个 NO_MATCH pair（来自 `results/allver_mut/_summary_cat1.json` + `_summary_cat2-3-4-5.json`）。
+结果: `results/nomatch_retest/`（逐 pair json + `_summary.json` + `logs/`）。
+
+### 结果（更新中）
+
+| CVE | 参考→target | 结果 | 命中阶段 | 样本 |
+|-----|------------|------|---------|------|
+| **CVE-2022-28506** | giflib 5.1.1→4.1.6 | **NOW_MATCH** | Step 6d 静态 pairwise（0x454+0x456:-0x03-0x01） | `out/CVE-2022-28506-4-1-6/0x454+0x456:-0x03-0x01:time:1255` |
+
+> 表中逐 pair 状态见 `results/nomatch_retest/_summary.json`（随批次推进自动更新）。

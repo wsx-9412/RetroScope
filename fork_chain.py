@@ -220,8 +220,11 @@ def compute_fork_chain(trace_a, trace_b, matches, gaps, crash_a,
         "a_event": (a_event or {}).get("name"),
         "b_event": (b_event or {}).get("name"),
         "innermost_common_function": innermost,
+        # Call-chain (outermost -> innermost) still on the stack when the
+        # traces split; the target-termination fork lives in one of these.
+        "path_a": (a_event or {}).get("path") or [],
+        "path_b": (b_event or {}).get("path") or [],
     }
-
     # First divergent activity on each side (first enter events inside the gap).
     first_a = first_b = None
     for i in range(a_start, min(a_stop, len(trace_a))):
@@ -255,6 +258,12 @@ def compute_fork_chain(trace_a, trace_b, matches, gaps, crash_a,
     # segment after the fork.)
     later_matches = [m for m in ms if (m.get("a_range") or [0, 0])[0] > a_start]
     b_after = max(0, len(trace_b) - b_stop) if b_stop else 0
+    # Target-termination detection: when the target has NO events after the
+    # fork gap, its trace ends right at the last common call — the target
+    # terminated (exit/abort/error-return) inside one of the boundary-path
+    # functions while the reference kept running toward the crash.  The fork
+    # is that termination statement, not an unrelated crash-anchor function.
+    target_terminated = bool(b_stop and b_after == 0 and len(trace_b) > 0)
     # How much of the B-side post-gap segment does the crash region overlap?
     result.update({
         "classified": True,
@@ -275,7 +284,14 @@ def compute_fork_chain(trace_a, trace_b, matches, gaps, crash_a,
         "rejoin_detected": bool(later_matches),
         "later_matches_after_fork": len(later_matches),
         "b_events_after_fork_gap": b_after,
+        "target_terminated_at_boundary": target_terminated,
     })
+
+    if target_terminated:
+        result["notes"].append(
+            "target has no events after the fork gap — the target terminated "
+            "right after the last common call; the fork is the target's "
+            "termination statement in one of the boundary-path functions")
 
     if later_matches:
         result["notes"].append(

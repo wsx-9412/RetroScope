@@ -211,11 +211,20 @@ def _normalize_statement_text(text):
     return re.sub(r'\s+', ' ', (text or '').strip())
 
 
-def _find_statement_source(statement, source_dirs, line_hint=None):
-    """Locate a statement in the target source tree and return (path, line)."""
+def _find_statement_source(statement, source_dirs, line_hint=None,
+                           func_hint=None):
+    """Locate a statement in the target source tree and return (path, line).
+
+    When ``line_hint`` is given, ALL matches are scored by distance to the
+    hint — a single file often contains the same loop header in several
+    functions (e.g. jas_matrix_divpow2 / asl), and taking the first hit
+    silently forks the wrong function.  When ``func_hint`` is also given,
+    matches inside that function's body win outright.
+    """
     needle = _normalize_statement_text(statement)
     if not needle:
         return None
+    func_norm = _norm_func_name(func_hint) if func_hint else ""
     best = None
     seen = set()
     for source_dir in source_dirs or []:
@@ -235,12 +244,24 @@ def _find_statement_source(statement, source_dirs, line_hint=None):
             except OSError:
                 continue
             for lineno, line in enumerate(lines, 1):
-                if _normalize_statement_text(line).startswith(needle):
-                    distance = (abs(lineno - int(line_hint))
-                                if line_hint else lineno)
-                    if best is None or distance < best[0]:
-                        best = (distance, str(path), lineno)
-                    break
+                if not _normalize_statement_text(line).startswith(needle):
+                    continue
+                in_func = False
+                if func_norm:
+                    owner = _find_function_containing_line(
+                        str(path), lineno, None)
+                    if owner and _norm_func_name(owner) == func_norm:
+                        in_func = True
+                if line_hint:
+                    distance = abs(lineno - int(line_hint))
+                    # Same-function hits get a large bonus so a nearby
+                    # duplicate in another function never wins.
+                    if in_func:
+                        distance -= 10000
+                else:
+                    distance = 0 if in_func else lineno
+                if best is None or distance < best[0]:
+                    best = (distance, str(path), lineno)
     if best:
         return best[1], best[2]
     return None
@@ -249,29 +270,96 @@ def _find_statement_source(statement, source_dirs, line_hint=None):
 def resolve_missing_divergence_source(div, binary_b=None,
                                       source_dirs_b=None):
     """Fill a missing target source location from the fork statement text."""
-    if not isinstance(div, dict) or div.get('root_cause_file_b'):
+    if not isinstance(div, dict):
         return div
     statement = (div.get('root_cause_statement_b')
                  or div.get('fork_statement') or '')
     line_hint = div.get('root_cause_line') or div.get('fork_statement_line')
+    func_hint = div.get('root_cause_function')
     if source_dirs_b is None and binary_b:
         source_dirs_b = find_source_dirs(binary_b)
-    resolved = _find_statement_source(statement, source_dirs_b, line_hint)
-    if not resolved:
+    if not div.get('root_cause_file_b'):
+        resolved = _find_statement_source(statement, source_dirs_b, line_hint,
+                                          func_hint=func_hint)
+        if resolved:
+            file_name, line = resolved
+            div['root_cause_file_b'] = file_name
+            div['root_cause_line_b'] = line
+            if not div.get('root_cause_file'):
+                div['root_cause_file'] = file_name
+            if not div.get('root_cause_line'):
+                div['root_cause_line'] = line
+            if not div.get('root_cause_statement_b'):
+                div['root_cause_statement_b'] = statement.strip()
+            if not div.get('fork_file'):
+                div['fork_file'] = file_name
+            if not div.get('fork_line'):
+                div['fork_line'] = line
+    # Defense: root_cause_line_b must live inside root_cause_function when
+    # both are known — statement-text search can land on a same-text loop
+    # in a sibling function (jas_matrix_divpow2 vs jas_matrix_asl).
+    _harmonize_root_cause_location(div, source_dirs_b=source_dirs_b)
+    return div
+
+
+def _harmonize_root_cause_location(div, binary_b=None, source_dirs_b=None):
+    """Force root_cause_line_b to sit inside root_cause_function when known.
+
+    Reselect / gap / value-origin paths can leave root_cause_line_b pointing
+    at a same-text statement in a different function while
+    root_cause_function (and fork_line / root_cause_line) name the right
+    one.  Downstream GDB traces read root_cause_line_b first, so a stale
+    cross-function line silently becomes fork_not_reached.
+    """
+    if not isinstance(div, dict):
         return div
-    file_name, line = resolved
-    div['root_cause_file_b'] = file_name
-    div['root_cause_line_b'] = line
-    if not div.get('root_cause_file'):
-        div['root_cause_file'] = file_name
-    if not div.get('root_cause_line'):
-        div['root_cause_line'] = line
-    if not div.get('root_cause_statement_b'):
-        div['root_cause_statement_b'] = statement.strip()
-    if not div.get('fork_file'):
-        div['fork_file'] = file_name
-    if not div.get('fork_line'):
-        div['fork_line'] = line
+    func = _norm_func_name(div.get('root_cause_function'))
+    line_b = div.get('root_cause_line_b')
+    file_b = div.get('root_cause_file_b') or div.get('root_cause_file')
+    if not (func and line_b and file_b):
+        return div
+    if source_dirs_b is None and binary_b:
+        source_dirs_b = find_source_dirs(binary_b)
+    try:
+        line_b = int(line_b)
+    except (TypeError, ValueError):
+        return div
+    owner = _find_function_containing_line(file_b, line_b, source_dirs_b)
+    if owner and _norm_func_name(owner) == func:
+        return div  # already correct
+    # Wrong function — prefer fork_line / root_cause_line if they are inside.
+    for cand_key in ('fork_line', 'root_cause_line'):
+        cand = div.get(cand_key)
+        try:
+            cand = int(cand) if cand is not None else None
+        except (TypeError, ValueError):
+            continue
+        if not cand:
+            continue
+        owner_c = _find_function_containing_line(file_b, cand, source_dirs_b)
+        if owner_c and _norm_func_name(owner_c) == func:
+            div['root_cause_line_b'] = cand
+            print(f"  [harmonize] root_cause_line_b {line_b} was in "
+                  f"{owner or '?'}() — moved to {cand} inside {func}()")
+            return div
+    # Last resort: re-locate the statement constrained to the function body.
+    body = _find_function_body_range(file_b, func, source_dirs_b)
+    if body:
+        resolved = _find_statement_source(
+            div.get('root_cause_statement_b') or div.get('fork_statement') or '',
+            [str(Path(_locate_source_file(file_b, source_dirs_b) or file_b).parent)]
+            if _locate_source_file(file_b, source_dirs_b) else source_dirs_b,
+            line_hint=(body[0] + body[1]) // 2,
+            func_hint=func)
+        if resolved:
+            div['root_cause_file_b'] = resolved[0]
+            div['root_cause_line_b'] = resolved[1]
+            print(f"  [harmonize] root_cause_line_b {line_b} was in "
+                  f"{owner or '?'}() — re-located to {resolved[0]}:"
+                  f"{resolved[1]} inside {func}()")
+            return div
+    print(f"  [harmonize] WARNING: root_cause_line_b={line_b} not in "
+          f"{func}() (owner={owner}) and no better candidate found")
     return div
 
 
@@ -6390,6 +6478,9 @@ def _try_enclosing_decision_fork(crash_a, binary_a, binary_b, source_dirs_a,
             "root_cause_function": tgt_func,
             "root_cause_file": ref_file_base,
             "root_cause_line": tgt_dec_line,
+            "root_cause_file_b": (_locate_source_file(crash_file, source_dirs_b)
+                                  or crash_file),
+            "root_cause_line_b": tgt_dec_line,
             "root_cause_file_a": crash_file,
             "root_cause_line_a": ref_dec_line,
             "root_cause_statement_a": ref_dec_stmt,
@@ -6636,6 +6727,11 @@ def _fork_alignment_status(result, crash_a, refactoring_map=None):
         return "aligned"
     # Already a deliberate crash-point fork — leave it alone.
     if result.get("crash_based") and result.get("crash_signal"):
+        return "aligned"
+    # Target-termination forks live in the function that terminated the
+    # target (exit/abort after the last common call) — never in the crash
+    # function; the reconcile must not reselect them from the crash.
+    if result.get("target_termination_fork"):
         return "aligned"
     crash_func = _norm_func_name(crash_a.get("function"))
     crash_file = os.path.basename(crash_a.get("file") or "")
@@ -6935,6 +7031,12 @@ def _reselect_fork_from_crash(crash_a, crash_b, binary_a, binary_b,
                     ref_file_base, tgt_line, source_dirs_b)
             if not actual_tgt_func:
                 actual_tgt_func = tgt_func
+            # Absolute target path for root_cause_file_b — resolve_missing
+            # would otherwise re-search by statement text and can land on a
+            # same-text loop in a sibling function.
+            tgt_abs = _locate_source_file(crash_file, source_dirs_b) \
+                or _locate_source_file(ref_file_base, source_dirs_b) \
+                or crash_file
             result = {
                 "divergence_function": func_name,
                 "trace_a_index": a_idx,
@@ -6942,6 +7044,8 @@ def _reselect_fork_from_crash(crash_a, crash_b, binary_a, binary_b,
                 "root_cause_function": actual_tgt_func,
                 "root_cause_file": ref_file_base,
                 "root_cause_line": tgt_line,
+                "root_cause_file_b": tgt_abs,
+                "root_cause_line_b": tgt_line,
                 "root_cause_file_a": crash_file,
                 "root_cause_line_a": ref_line,
                 "root_cause_statement_a": (ref_stmt or "").strip(),
@@ -7058,6 +7162,325 @@ def _reselect_fork_from_crash(crash_a, crash_b, binary_a, binary_b,
         got = _try_anchor(crash_func, crash_file, crash_line, how)
         if got:
             return got
+    return None
+
+
+def _find_termination_statements(src_file, func_name, binary=None):
+    """Locate exit()/abort() calls inside ``func_name``'s body in ``src_file``.
+
+    Returns a list of candidate dicts (each with the termination line and the
+    best enclosing guard statement whose variables steer it), ordered by
+    preference (struct/global-variable guards first, then any-variable guards,
+    then source order).  Lines inside ``#if 0`` blocks (compiled-out code) are
+    excluded, and when ``binary`` is given candidate lines are additionally
+    verified against the binary's debug info (``info line``) so a dead-code
+    exit is never reported as the fork.
+    """
+    if not src_file or not os.path.isfile(src_file):
+        return []
+    try:
+        with open(src_file, 'r', errors='replace') as f:
+            lines = f.readlines()
+    except Exception:
+        return []
+
+    # Lines inside #if 0 ... #endif (nested) are compiled out.
+    inactive = set()
+    if_stack = []
+    for i, ln in enumerate(lines):
+        if re.match(r'^\s*#\s*if\s+0\b', ln):
+            if_stack.append(i)
+        elif re.match(r'^\s*#\s*endif\b', ln):
+            if if_stack:
+                s = if_stack.pop()
+                inactive.update(range(s, i + 1))
+    # Any #if 0 whose #endif never appears (file tail) is dead too.
+    for s in if_stack:
+        inactive.update(range(s, len(lines)))
+
+    def _maps_to_code(line_no):
+        if not binary:
+            return True
+        try:
+            out = subprocess.run(
+                ['gdb', '-batch', '-nx', '-q', str(binary),
+                 '-ex', f'info line {src_file}:{line_no}'],
+                capture_output=True, text=True, errors='replace', timeout=60)
+            text = (out.stdout or '') + (out.stderr or '')
+            if ('no line number' in text.lower() or 'not found' in text.lower()
+                    or text.strip().lower().startswith('error')):
+                return False
+            return re.search(r'Line \d+', text) is not None
+        except Exception:
+            return True
+
+    # Scan the WHOLE file (a function may have several definitions — e.g.
+    # one per #ifdef branch); containment is decided per line by the
+    # function-containment helper, so the active definition's exits are
+    # found even when a compiled-out copy comes first.
+    _TERM_RE = re.compile(r'\b(exit|abort)\s*\(')
+    _GUARD_RE = re.compile(r'\b(if|switch|while|for)\s*\(')
+    _DEF_RE = re.compile(rf'(?:static\s+)?(?:\w+\s+)*\b{re.escape(func_name)}'
+                         rf'\s*\([^)]*\)\s*\{{')
+    _SIG_RE = re.compile(rf'\b{re.escape(func_name)}\s*\([^)]*\)\s*$')
+
+    # File-level brace depth BEFORE each line (bodies are self-contained).
+    depth_before = []
+    d = 0
+    for ln in lines:
+        depth_before.append(d)
+        d += ln.count('{') - ln.count('}')
+        d = max(0, d)
+
+    def _nearest_def_line(term_idx):
+        """Line index of func_name's definition governing ``term_idx``."""
+        for j in range(term_idx, -1, -1):
+            if _DEF_RE.search(lines[j]) or _SIG_RE.search(lines[j]):
+                # A signature without braces on this line counts only when
+                # its body opens a few lines below.
+                if _DEF_RE.search(lines[j]):
+                    return j
+                for k in range(j + 1, min(j + 4, len(lines))):
+                    if '{' in lines[k]:
+                        return j
+        return None
+
+    try:
+        import backward_tracer as _bt_mod
+        _containing_func = _bt_mod._find_function_containing_line
+    except Exception:
+        _containing_func = None
+
+    candidates = []
+    for t, ln in enumerate(lines):
+        if t in inactive:
+            continue
+        if _containing_func and _containing_func(src_file, t + 1) != func_name:
+            continue
+        cleaned = ln
+        if '/*' in cleaned:
+            cleaned = cleaned[:cleaned.index('/*')]
+        cleaned = re.sub(r'//.*', '', cleaned)
+        cleaned = re.sub(r'"[^"]*"', '', cleaned)
+        if not _TERM_RE.search(cleaned):
+            continue
+        if not _maps_to_code(t + 1):
+            continue
+        def_line = _nearest_def_line(t)
+        if def_line is None:
+            continue
+        t_depth = depth_before[t]
+        # Collect every guard line that encloses the termination (same
+        # function), innermost first.
+        guards = []
+        for j in range(t - 1, def_line, -1):
+            if _containing_func and \
+                    _containing_func(src_file, j + 1) != func_name:
+                break
+            gd = depth_before[j]
+            encloses = (gd < t_depth) or (
+                gd == t_depth
+                and all(depth_before[k] >= t_depth
+                        for k in range(j + 1, t)))
+            if not encloses:
+                continue
+            gclean = re.sub(r'/\*.*?\*/', '', lines[j])
+            gclean = re.sub(r'//.*', '', gclean)
+            if _GUARD_RE.search(gclean):
+                guards.append(j)
+        if not guards:
+            continue
+        # Rank enclosing guards: struct/global var guards, then any-var
+        # guards, else the innermost.
+        ranked = []
+        for g in guards:
+            gtext = lines[g].strip()
+            gvars = [v for v in _extract_variables_from_expression(gtext)
+                     if v]
+            rank = 0 if any(('.' in v or '->' in v) for v in gvars) \
+                else (1 if gvars else 2)
+            ranked.append((rank, g, gtext, gvars))
+        ranked.sort(key=lambda r: (r[0], -r[1]))
+        _, g, guard_text, guard_vars = ranked[0]
+        candidates.append({
+            'exit_line': t + 1,
+            'exit_text': ln.strip(),
+            'guard_line': g + 1,
+            'guard_text': guard_text,
+            'guard_vars': guard_vars,
+        })
+
+    if not candidates:
+        return []
+    # Prefer terminations whose guard carries struct/global expressions
+    # (value-traceable input fields), then any guard with a variable, then
+    # the earliest termination in the source.
+    dotted = [c for c in candidates
+              if any(('.' in v or '->' in v) for v in c['guard_vars'])]
+    with_vars = [c for c in candidates
+                 if c not in dotted and c['guard_vars']]
+    rest = [c for c in candidates
+            if c not in dotted and c not in with_vars]
+    return dotted + with_vars + rest
+
+
+def _first_termination_hit(binary, src_file, cands, args):
+    """Run the target once with a breakpoint on every candidate termination
+    line; return the candidate whose breakpoint is hit FIRST (the exit the
+    target actually executes for this input), or None."""
+    if not binary or not cands:
+        return None
+    try:
+        cmd = ['gdb', '-batch', '-nx', '-q', str(binary)]
+        for c in cands:
+            cmd += ['-ex', f'break {src_file}:{c["exit_line"]}']
+        # Program arguments must live INSIDE the run command: bare argv
+        # entries after -ex would be parsed as gdb options (e.g. '-V 9').
+        run_cmd = 'run ' + ' '.join(
+            shlex.quote(str(a)) for a in (args or []))
+        cmd += ['-ex', run_cmd]
+        out = subprocess.run(cmd, capture_output=True, text=True,
+                             errors='replace', timeout=120)
+        text = (out.stdout or '') + (out.stderr or '')
+        base = os.path.basename(src_file)
+        # Hit lines look like "Breakpoint 2, read_samples_pcm (...) at
+        # get_audio.c:1018"; setup lines ("Breakpoint 1 at 0x..: file
+        # get_audio.c, line 993.") never contain "at FILE:LINE".
+        hit_re = re.compile(
+            r'Breakpoint\s+(\d+),.*?\bat\s+'
+            rf'(?:{re.escape(src_file)}|{re.escape(base)}):(\d+)',
+            re.S)
+        first = hit_re.search(text)
+        if first:
+            bp_no = int(first.group(1)) - 1  # breakpoints numbered in order
+            if 0 <= bp_no < len(cands):
+                return cands[bp_no]
+    except Exception:
+        pass
+    return None
+
+
+def _locate_termination_fork(fork_meta, source_dirs_b, source_dirs_a,
+                             refactoring_map, func_name, a_idx, b_idx,
+                             binary_b=None, args_b=None):
+    """Locate the fork when the TARGET terminated right after the last
+    common call (its trace has no events after the fork gap).
+
+    Walks the boundary call path (innermost first) for the first function
+    whose target-side source contains an exit()/abort() call — the statement
+    the target executed where the reference kept running — and reports its
+    enclosing guard as the fork statement.  When several termination
+    candidates exist in the same function, the one the target actually
+    executed is determined with a GDB breakpoint run.  Returns a result dict
+    or None.
+    """
+    if not fork_meta or not fork_meta.get("target_terminated_at_boundary"):
+        return None
+    boundary = fork_meta.get("fork_boundary") or {}
+    path = boundary.get("path_b") or boundary.get("path_a") or []
+    if not path:
+        return None
+    rmap = refactoring_map or {}
+
+    for func in reversed([p for p in path if isinstance(p, str) and p]):
+        tgt_func = rmap.get(func, func)
+        tgt_src = _find_function_source(tgt_func, source_dirs_b)
+        if not tgt_src:
+            tgt_src = _find_function_source(func, source_dirs_b)
+            if tgt_src:
+                tgt_func = func
+        if not tgt_src:
+            continue
+        cands = _find_termination_statements(tgt_src, tgt_func,
+                                             binary=binary_b)
+        if not cands:
+            continue
+
+        term = None
+        if len(cands) > 1 and binary_b:
+            # Multiple exits in this function: pick the one the target
+            # actually executes for this input (first breakpoint hit).
+            term = _first_termination_hit(binary_b, tgt_src, cands, args_b)
+            if term:
+                print(f"  [termination-fork] executed termination: "
+                      f"{tgt_func}() {os.path.basename(tgt_src)}:"
+                      f"{term['exit_line']}")
+        if term is None:
+            term = cands[0]
+
+        # Reference-side counterpart of the guard statement.
+        ref_func = None
+        for old_name, new_name in rmap.items():
+            if new_name == tgt_func:
+                ref_func = old_name
+                break
+        ref_func = ref_func or func
+        ref_src = _find_function_source(ref_func, source_dirs_a)
+        ref_line = ref_text = None
+        if ref_src:
+            try:
+                with open(ref_src, 'r', errors='replace') as f:
+                    ref_lines = f.readlines()
+                # Match the FULL variable expression first (e.g.
+                # 'global.pcmbitwidth'), falling back to its root ('global').
+                probes = list(term['guard_vars'])
+                probes += [v.split('.')[0].split('->')[0]
+                           for v in term['guard_vars']]
+                for probe in probes:
+                    found = False
+                    for i, ln in enumerate(ref_lines):
+                        if probe and probe in ln and re.search(
+                                r'\b(if|switch|while|for)\s*\(', ln):
+                            ref_line, ref_text = i + 1, ln.strip()
+                            found = True
+                            break
+                    if found:
+                        break
+            except Exception:
+                pass
+        if ref_line is None:
+            ref_line = term['guard_line']
+            ref_text = term['guard_text']
+            ref_src = tgt_src
+
+        print(f"\n  [termination-fork] target terminated in "
+              f"{tgt_func}() ({os.path.basename(tgt_src)}:"
+              f"{term['exit_line']}): {term['exit_text']}")
+        print(f"  [termination-fork] enclosing guard "
+              f"({os.path.basename(tgt_src)}:{term['guard_line']}): "
+              f"{term['guard_text']}")
+        print(f"  [termination-fork] steering variables: {term['guard_vars']}")
+
+        return {
+            "divergence_function": func_name,
+            "trace_a_index": a_idx,
+            "trace_b_index": b_idx,
+            "root_cause_function": tgt_func,
+            "root_cause_file": tgt_src,
+            "root_cause_line": term['exit_line'],
+            "root_cause_file_a": ref_src,
+            "root_cause_line_a": ref_line,
+            "root_cause_file_b": tgt_src,
+            "root_cause_line_b": term['exit_line'],
+            "root_cause_statement_a": ref_text,
+            "root_cause_statement_b": term['exit_text'],
+            "statement_b_synthetic": True,
+            "fork_statement": term['guard_text'],
+            "fork_statement_line": term['guard_line'],
+            "fork_statement_file": tgt_src,
+            "variables": term['guard_vars'],
+            "target_termination_fork": True,
+            "fork_chain": fork_meta,
+            "description": (
+                f"Target-termination fork: the target terminated in "
+                f"{tgt_func}() right after the last common call while the "
+                f"reference continued toward the crash.\n"
+                f"  Termination: {tgt_func}() {os.path.basename(tgt_src)}:"
+                f"{term['exit_line']}: {term['exit_text']}\n"
+                f"  Guard:       {term['guard_text']} "
+                f"({os.path.basename(tgt_src)}:{term['guard_line']})"
+            ),
+        }
     return None
 
 
@@ -7192,18 +7615,24 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
     trace_b = data.get("trace_B", [])
 
     if not gaps:
-        return {"error": "No gaps found in LCS result; traces are identical."}
-
-    # Identify the divergence function
-    func_name, a_idx, b_idx = identify_divergence_function(
-        matches, gaps, trace_a, trace_b
-    )
-    if func_name is None:
-        return {"error": "Could not identify divergence function."}
-
-    print(f"Divergence function: {func_name}")
-    print(f"  Trace A position: {a_idx}")
-    print(f"  Trace B position: {b_idx}")
+        # Identical function-level traces still hide data-dependent forks
+        # (e.g. both versions crash with different overflow types in the
+        # same call path).  Fall through to crash-strategy selection with
+        # no gap-derived function; Case C / crash reselect can still build
+        # a fork from the ASan crash points alone.
+        print("  [no-gaps] LCS traces are identical — "
+              "falling back to crash-based fork selection.")
+        func_name, a_idx, b_idx = None, None, None
+    else:
+        # Identify the divergence function
+        func_name, a_idx, b_idx = identify_divergence_function(
+            matches, gaps, trace_a, trace_b
+        )
+        if func_name is None:
+            return {"error": "Could not identify divergence function."}
+        print(f"Divergence function: {func_name}")
+        print(f"  Trace A position: {a_idx}")
+        print(f"  Trace B position: {b_idx}")
 
     # Find library paths (project-agnostic: DT_NEEDED + .libs discovery)
     lib_path_a = find_library_path(str(binary_a))
@@ -7360,16 +7789,109 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                          "before the crash; origin tracing anchors at this "
                          "invocation"),
             }
+        if input_file:
+            result["input_file"] = str(input_file)
+        if not skip_polytracker:
+            try:
+                result = _polytracker_locate_input_offsets(result, config=config, binary_b=binary_b, binary_a=binary_a)
+            except Exception as e:
+                print(f"  [PolyTracker] Analysis failed: {e}")
+                result["polytracker_offsets"] = {"status": "error", "error": str(e)}
+        # Case C: target's own crash is the intentional fork — skip reconcile.
+        return result
+
+    # ========================================================
+    # No LCS gaps (identical function traces): the gap-based
+    # locators below cannot run.  If a crash is available, reselect
+    # the fork from the crash top frame; otherwise report the
+    # original no-gaps error.
+    # ========================================================
+    if not gaps:
+        # Target-only crash with identical traces: the target's crash
+        # site is still a usable fork for mutation (it is reachable).
+        if crash_b and not crash_a:
+            print("\n  [no-gaps] target-only crash — using target crash "
+                  "point as fork.")
+            source_line = _read_source_line(
+                crash_b["file"], crash_b["line"],
+                find_source_dirs(str(binary_b)))
+            crash_stmt = ""
+            crash_stmt_line = crash_b["line"] or 0
+            for cand_line in (crash_b["line"], (crash_b["line"] or 1) - 1):
+                stmt, start, _end = _get_complete_fork_statement(
+                    crash_b["file"], cand_line, find_source_dirs(str(binary_b)))
+                if stmt:
+                    crash_stmt = stmt
+                    crash_stmt_line = start
+                    if '=' in stmt and not stmt.lstrip().startswith('('):
+                        break
+            result = {
+                "divergence_function": func_name,
+                "trace_a_index": a_idx,
+                "trace_b_index": b_idx,
+                "root_cause_function": crash_b["function"],
+                "root_cause_file": crash_b["file"],
+                "root_cause_line": crash_b["line"],
+                "root_cause_file_b": crash_b["file"],
+                "root_cause_line_b": crash_b["line"],
+                "root_cause_statement_b": source_line,
+                "crash_based": True,
+                "crash_signal_b": crash_b["signal"],
+                "fork_statement": crash_stmt,
+                "fork_statement_line": crash_stmt_line,
+                "fork_statement_file": crash_b["file"],
+                "variables": _extract_variables_from_expression(crash_stmt),
+                "description": (
+                    "No LCS gaps (identical traces); target crashes on its "
+                    "own — target crash point is the fork.\n"
+                    f"  Target: {crash_b['function']} at "
+                    f"{crash_b['file']}:{crash_b['line']} "
+                    f"({crash_b['signal']})"
+                ),
+            }
             if input_file:
                 result["input_file"] = str(input_file)
             if not skip_polytracker:
                 try:
-                    result = _polytracker_locate_input_offsets(result, config=config, binary_b=binary_b, binary_a=binary_a)
+                    result = _polytracker_locate_input_offsets(
+                        result, config=config,
+                        binary_b=binary_b, binary_a=binary_a)
                 except Exception as e:
                     print(f"  [PolyTracker] Analysis failed: {e}")
-                    result["polytracker_offsets"] = {"status": "error", "error": str(e)}
-            # Case C: target's own crash is the intentional fork — skip reconcile.
-            return result
+                    result["polytracker_offsets"] = {
+                        "status": "error", "error": str(e)}
+            return _finalize(result)
+        if crash_a or crash_b:
+            print("\n  [no-gaps] attempting crash-based fork reselect...")
+            try:
+                reselected = _reselect_fork_from_crash(
+                    crash_a, crash_b, binary_a, binary_b,
+                    source_dirs_a, source_dirs_b,
+                    lib_path_a, lib_path_b, args_a, args_b,
+                    refactoring_map, gdb_timeout,
+                    func_name=func_name, a_idx=a_idx, b_idx=b_idx,
+                    input_file=input_file)
+            except Exception as e:
+                print(f"  [no-gaps] crash reselect failed: {e}")
+                reselected = None
+            if reselected:
+                print(f"  [no-gaps] re-selected -> "
+                      f"{reselected.get('root_cause_function')}:"
+                      f"{reselected.get('root_cause_file')}:"
+                      f"{reselected.get('root_cause_line')}")
+                if input_file:
+                    reselected.setdefault("input_file", str(input_file))
+                if not skip_polytracker:
+                    try:
+                        reselected = _polytracker_locate_input_offsets(
+                            reselected, config=config,
+                            binary_b=binary_b, binary_a=binary_a)
+                    except Exception as e:
+                        print(f"  [PolyTracker] Analysis failed: {e}")
+                        reselected["polytracker_offsets"] = {
+                            "status": "error", "error": str(e)}
+                return _finalize(reselected)
+        return {"error": "No gaps found in LCS result; traces are identical."}
 
     # ========================================================
     # PRIMARY: last common function call -> permanent-split fork
@@ -7591,6 +8113,26 @@ def analyze_lcs_result(result_json_path, binary_a, binary_b,
                         pass
                 func_name, a_idx, b_idx = anchor_func, anchor_a, anchor_b
                 print(f"  Crash-anchored divergence function: {func_name}")
+
+                # Target-termination fork: when the target's trace ends
+                # right after the last common call (target terminated while
+                # the reference kept running toward the crash), the fork is
+                # the target's exit/abort statement reached from the
+                # boundary path — NOT the crash-anchor function.  Locate it
+                # directly; only fall through to the dynamic locators when
+                # no termination statement is found.
+                if fork_meta and fork_meta.get("target_terminated_at_boundary"):
+                    _term = _locate_termination_fork(
+                        fork_meta, source_dirs_b, source_dirs_a,
+                        refactoring_map, func_name, a_idx, b_idx,
+                        binary_b=binary_b, args_b=args_b)
+                    if _term:
+                        if input_file:
+                            _term["input_file"] = str(input_file)
+                        return _finalize(_term)
+                    print("  [termination-fork] no termination statement "
+                          "located in the boundary path — continuing with "
+                          "the dynamic locator.")
 
                 # ==========================================================
                 # PRIMARY (unified dynamic fork locator): run BOTH versions
