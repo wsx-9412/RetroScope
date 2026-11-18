@@ -33,6 +33,66 @@ import shutil
 from pathlib import Path
 
 
+_REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+_SCRATCH_DIR = None
+
+
+def _scratch_dir():
+    """Directory for short-lived mutant input files.
+
+    ``tempfile.mkstemp`` without ``dir=`` resolves TMPDIR -> /tmp -> cwd.
+    When the launching shell left TMPDIR pointing at this repository (or at
+    ``.``), the mutation stages wrote thousands of ``mutate_*.dxf`` files
+    into the project root, where ``auto_sync.sh``'s ``git add -A`` committed
+    them.  Always return a directory provably outside the tree.
+    """
+    global _SCRATCH_DIR
+    if _SCRATCH_DIR is not None:
+        return _SCRATCH_DIR
+    candidates = []
+    for name in ('TMPDIR', 'TEMP', 'TMP'):
+        value = os.environ.get(name)
+        if value:
+            candidates.append(os.path.abspath(value))
+    candidates += ['/tmp', '/var/tmp']
+    chosen = None
+    for directory in candidates:
+        if directory == _REPO_ROOT or directory.startswith(_REPO_ROOT + os.sep):
+            continue
+        try:
+            os.makedirs(directory, exist_ok=True)
+        except OSError:
+            continue
+        if os.access(directory, os.W_OK):
+            chosen = directory
+            break
+    if chosen is None:
+        # Even /tmp is unusable: park the junk under the already-ignored out/
+        # instead of the project root.
+        chosen = os.path.join(_REPO_ROOT, 'out', '.scratch')
+        os.makedirs(chosen, exist_ok=True)
+    _SCRATCH_DIR = chosen
+    return chosen
+
+
+def _pin_tempfile_dir():
+    """Point ``tempfile`` outside the repo when its default lands inside it."""
+    try:
+        current = tempfile.gettempdir()
+    except (OSError, FileNotFoundError):
+        current = None
+    if current:
+        current = os.path.abspath(current)
+        if current != _REPO_ROOT and not current.startswith(_REPO_ROOT + os.sep):
+            return current
+    safe = _scratch_dir()
+    tempfile.tempdir = safe
+    return safe
+
+
+_pin_tempfile_dir()
+
+
 def resolve_binary(binary):
     if os.path.isfile(binary):
         with open(binary, 'rb') as f:
