@@ -45,6 +45,34 @@ objs/
 out/
 .instr-build/
 
+# ---- scratch temp files (tempfile.mkstemp/mkdtemp from the tracers) ----
+# Short-lived mutant inputs written while a target runs; they must never be
+# committed (auto_sync.sh does `git add -A`).  Anchored to the repo root:
+# the tracers only leak them there, and unanchored patterns would swallow
+# real PoCs under in/ (e.g. in/*/crash_*).
+/mutate_*
+/flipchk_*
+/gdb_trace_*
+/gdb_chain_*
+/gdb_watch_*
+/gdb_func_chain_*
+/gdb_callsite_a_*
+/gdb_callsite_b_*
+/gdb_wchain_*
+/gdb_addr_*
+/gdb_tag_*
+/gdb_taint_*
+/diverge_gdb_*
+/rscp_count_*
+/fcov_*
+/p0_*
+/probe_*
+/valmut_*
+/combo_*
+/crash_*
+/byte_*
+/mut_*
+
 # editor / OS junk
 *~
 *.swp
