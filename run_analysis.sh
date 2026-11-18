@@ -54,6 +54,21 @@ done
 BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$BASE_DIR"
 
+# tempfile.mkstemp() resolves TMPDIR -> /tmp -> the current directory.  A
+# launch shell with TMPDIR set to this repo (or to ".") made the mutation
+# stages drop thousands of mutate_*.dxf scratch inputs into the project root,
+# where auto_sync.sh's `git add -A` committed them (2.7 GB, commit 5a465e07a).
+# Force a real system temp dir so no stage can write scratch files here.
+if [ -z "${TMPDIR:-}" ] || [ ! -d "${TMPDIR:-}" ] || [ -z "$(cd "${TMPDIR:-}" 2>/dev/null && pwd)" ]; then
+    export TMPDIR=/tmp
+else
+    _TMPDIR_ABS="$(cd "$TMPDIR" && pwd)"
+    case "$_TMPDIR_ABS" in
+        "$BASE_DIR"|"$BASE_DIR"/*) export TMPDIR=/tmp ;;
+    esac
+    unset _TMPDIR_ABS
+fi
+
 PROJECT_NAME=$(basename "$PROJECT_CONFIG" .py | sed 's/config_//')
 INPUT_FILE_DIR="$BASE_DIR/in"
 CONFIG_MODULE="$PROJECT_CONFIG"

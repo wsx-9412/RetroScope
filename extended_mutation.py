@@ -827,7 +827,9 @@ def _fork_coverage_probe(real_target, fork_file, fork_line, data,
     except Exception:
         return None
     ext = os.path.splitext(input_file)[1] if input_file else '.bin'
-    fd, tmp_path = tempfile.mkstemp(suffix=ext, prefix='fcov_')
+    from trace_fork_offsets import _scratch_dir
+    fd, tmp_path = tempfile.mkstemp(suffix=ext, prefix='fcov_',
+                                    dir=_scratch_dir())
     os.close(fd)
     try:
         with open(tmp_path, 'wb') as f:
@@ -916,7 +918,9 @@ def _classify_death_mode(rec):
 def _run_once(real_binary, data, program_args, input_file, timeout,
               mutation_env, replace_input_arg):
     ext = os.path.splitext(input_file)[1] if input_file else '.bin'
-    fd, tmp_path = tempfile.mkstemp(suffix=ext, prefix='p0_')
+    from trace_fork_offsets import _scratch_dir
+    fd, tmp_path = tempfile.mkstemp(suffix=ext, prefix='p0_',
+                                    dir=_scratch_dir())
     os.close(fd)
     try:
         with open(tmp_path, 'wb') as f:

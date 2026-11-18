@@ -123,8 +123,10 @@ def _verify_fork_crossing(div, cur_input, changes, workdir, timeout=120):
     for off, val in changes:
         if 0 <= off < len(data):
             data[off] = int(val) & 0xff
+    from trace_fork_offsets import _scratch_dir
     fd, tmp_path = tempfile.mkstemp(
-        suffix=os.path.splitext(cur_input)[1] or '.bin', prefix='flipchk_')
+        suffix=os.path.splitext(cur_input)[1] or '.bin', prefix='flipchk_',
+        dir=_scratch_dir())
     os.close(fd)
     try:
         with open(tmp_path, 'wb') as f:

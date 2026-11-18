@@ -6280,7 +6280,8 @@ def run_field_combo_stage(binary, binary_ref, input_file, program_args,
 
     def _run(bin_path, data):
         fd, tmp_path = tempfile.mkstemp(
-            suffix=os.path.splitext(input_file)[1] or '.bin', prefix='mutate_')
+            suffix=os.path.splitext(input_file)[1] or '.bin', prefix='mutate_',
+            dir=_scratch_dir())
         os.close(fd)
         try:
             with open(tmp_path, 'wb') as f:
@@ -6667,7 +6668,8 @@ def _run_mutation_worker(task):
     """
     binary, data, program_args, input_file, timeout = task
     _ext = os.path.splitext(input_file)[1] if input_file else '.bin'
-    fd, tmp_path = tempfile.mkstemp(suffix=_ext, prefix='mutate_')
+    fd, tmp_path = tempfile.mkstemp(suffix=_ext, prefix='mutate_',
+                                    dir=_scratch_dir())
     os.close(fd)
     _t0 = time.time()
     try:
@@ -6818,7 +6820,8 @@ def test_byte_mutations_compare(binary_target, binary_ref, input_file,
 
     def _run(binary, data):
         _ext = os.path.splitext(input_file)[1] if input_file else '.bin'
-        fd, tmp_path = tempfile.mkstemp(suffix=_ext, prefix='mutate_')
+        fd, tmp_path = tempfile.mkstemp(suffix=_ext, prefix='mutate_',
+                                        dir=_scratch_dir())
         os.close(fd)
         try:
             with open(tmp_path, 'wb') as f:
