@@ -237,7 +237,7 @@ def parse_ref_crash_str(s: str) -> dict | None:
     m = re.search(
         r"(?:ASAN:)?([\w:-]+)\s+in\s+(\S+)\s+at\s+(.+?):(\d+)\s*$", s
     )
-    if m and "/" in m.group(3) or (m and "." in os.path.basename(m.group(3))):
+    if m:
         return {
             "signal": m.group(1),
             "function": m.group(2),
