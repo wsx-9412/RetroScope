@@ -421,6 +421,7 @@ def _upstream_operand_variables(file_b, line_b, func_b, stmt_a, stmt_b,
     lo = max(0, start - 1)
     hi = min(len(src_lines), line_b - 1)
     assign = None
+    lhs_name = None
     for i in range(hi - 1, max(lo, hi - max_scan) - 1, -1):
         text = src_lines[i] if i < len(src_lines) else ''
         for op in operands:
@@ -433,12 +434,16 @@ def _upstream_operand_variables(file_b, line_b, func_b, stmt_a, stmt_b,
                 j += 1
                 stmt += ' ' + src_lines[j]
             assign = stmt
+            lhs_name = op
             break
         if assign:
             break
     if not assign:
         return []
-    return extract_variables_from_statement(assign)
+    produced = extract_variables_from_statement(assign)
+    if lhs_name and lhs_name not in produced:
+        produced.insert(0, lhs_name)
+    return produced
 
 
 def build_dynamic_result(res, boundary_func, source_root_a, source_root_b,
