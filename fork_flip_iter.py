@@ -642,7 +642,10 @@ def main():
             flipped = os.path.join(out_root, name)
             _apply_changes(cur_input, flip['changes'], flipped)
 
-            out_json = str(BASE / 'results' / (
+            _chain_dir = os.path.dirname(
+                os.environ.get('RETRO_CHAIN_JSON')
+                or str(BASE / 'results'))
+            out_json = os.path.join(_chain_dir, (
                 f'{os.path.splitext(os.path.basename(base_input))[0]}'
                 f'_flip_r{round_no}c{cand_no}.json'))
             diverge_json = run_round(
