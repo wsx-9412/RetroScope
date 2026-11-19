@@ -2252,9 +2252,19 @@ def run_gdb_call_site_trace(binary, fork_spec, fork_func, variables, input_file,
     # the callee actually consumed (e.g. ``dir->tdir_count``).  The extra
     # expressions are harmless when ``dir`` is not a TIFFDirEntry* — GDB
     # simply fails to evaluate them and records no value.
+    #
+    # TIFFFetchStripThing reads only the entry's count.  Deriving tag/type/
+    # offset there would offer unrelated mutation targets: rewriting the tag
+    # also reaches the same crash on this PoC and would mask the count bytes
+    # (the actual producer of ``err``).
     trace_variables = list(variables)
     if 'dir' in trace_variables:
-        for _field in ('tdir_tag', 'tdir_type', 'tdir_count', 'tdir_offset'):
+        if fork_func == 'TIFFFetchStripThing':
+            _entry_fields = ('tdir_count',)
+        else:
+            _entry_fields = ('tdir_tag', 'tdir_type',
+                             'tdir_count', 'tdir_offset')
+        for _field in _entry_fields:
             _expr = 'dir->' + _field
             if _expr not in trace_variables:
                 trace_variables.append(_expr)
