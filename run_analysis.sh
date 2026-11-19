@@ -76,8 +76,8 @@ CONFIG_MODULE="$PROJECT_CONFIG"
 # Per-project: reference/target version paths + default input file
 case "$PROJECT_NAME" in
     "libtiff")
-        REFERENCE_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.0.7"
-        TARGET_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.0.0"
+        REFERENCE_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.4.0"
+        TARGET_VERSION_PATH="$BASE_DIR/tiff-versions/tiff-4.0.8"
         DEFAULT_INPUT="$INPUT_FILE_DIR/libtiff/CVE-2025-8177.tif"
         EXTRA_ARGS=(--include-exits)
         ;;
