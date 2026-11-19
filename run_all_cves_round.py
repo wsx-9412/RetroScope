@@ -415,7 +415,7 @@ def prepare(sp, tag):
     return sp, None
 
 
-def run_one(sp, tag, timeout):
+def run_one(sp, tag, timeout, log_suffix=""):
     log = RESULTS / sp["cve"] / f"{sp['label']}.log"
     log.parent.mkdir(parents=True, exist_ok=True)
     spool = sp["artifact"] / "driver_stdout.tmp"
@@ -431,7 +431,7 @@ def run_one(sp, tag, timeout):
         "RETRO_ARTIFACT_DIR": str(sp["artifact"]),
         "RETRO_OUT_SUFFIX": f"-{tag}",
         "RETRO_LOG_NAME": sp["label"],
-        "RETRO_LOG_SUFFIX": "",
+        "RETRO_LOG_SUFFIX": log_suffix,
         "RETROSCOPE_MUTATION_WORKERS": "1",
         "ASAN_OPTIONS": ("detect_leaks=0:halt_on_error=1:"
                          "allocator_may_return_null=1:hard_rss_limit_mb=512"),
@@ -498,6 +498,9 @@ def main():
     ap.add_argument("--round-tag", default="r1",
                     help="suffix for out/ and artifact dirs (default: r1)")
     ap.add_argument("--workers", type=int, default=2)
+    ap.add_argument("--log-suffix", default="",
+                    help="suffix for results/<CVE>/<version><suffix>.log "
+                         "(e.g. _run2 for a later round)")
     ap.add_argument("--timeout", type=int, default=6 * 3600,
                     help="per-pair timeout seconds (default 21600)")
     ap.add_argument("--clear-results", action="store_true",
@@ -553,7 +556,7 @@ def main():
         with lock:
             print(f"[{t}] START {sp['cve']} ({sp['label']})", flush=True)
         try:
-            r = run_one(sp, args.round_tag, args.timeout)
+            r = run_one(sp, args.round_tag, args.timeout, args.log_suffix)
         except Exception as e:
             r = {"cve": sp["cve"], "label": sp["label"],
                  "status": "DRIVER_ERROR", "error": repr(e),
