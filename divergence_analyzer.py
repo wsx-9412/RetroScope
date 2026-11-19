@@ -6733,6 +6733,17 @@ def _fork_alignment_status(result, crash_a, refactoring_map=None):
     # function; the reconcile must not reselect them from the crash.
     if result.get("target_termination_fork"):
         return "aligned"
+    # A strong dynamic decision fork IS the guard whose outcome split the
+    # executions.  The crash top frame is often a downstream consumer (e.g.
+    # _TIFFmemcpy) that is not on the reference crash path in the target;
+    # reselecting it throws away the real fork and its producer variables.
+    # Keep the dynamic decision fork even when it lives in a different
+    # function than the reference crash frame.
+    _dyn = result.get("dynamic_fork") or {}
+    if (_dyn.get("status") == "decision_fork"
+            and (_dyn.get("diff") or {}).get("strong")
+            and not _dyn.get("weak")):
+        return "aligned"
     crash_func = _norm_func_name(crash_a.get("function"))
     crash_file = os.path.basename(crash_a.get("file") or "")
     crash_line = int(crash_a.get("line") or 0)

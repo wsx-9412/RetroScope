@@ -685,19 +685,19 @@ def read_trace_json(json_path):
             print(f'  [*] Read full fork statement from source: {source_file}:{root_cause_line}')
             print(f'  [*] Extracted {len(variables)} variables from all branches')
 
+    # The divergence analyzer may already have resolved the fork variables
+    # (e.g. the one-hop producer fallback supplies the RHS variables of the
+    # assignment that produced a status-code operand like ``err``).  Always
+    # keep them: the source scan can return only an enum constant from the
+    # guard (``TIFFReadDirEntryErrOk``) and would otherwise hide the real
+    # input-derived producers.
+    for v in (div.get('variables') or []):
+        if isinstance(v, str) and v and v not in variables:
+            variables.append(v)
+
     # Fallback: extract from the JSON's fork statement
     if not variables:
-        # The divergence analyzer may already have resolved the fork
-        # variables (e.g. the one-hop producer fallback supplies the RHS
-        # variables of the assignment that produced a status-code operand
-        # like ``err``).  Prefer those over re-extracting, which filters
-        # exactly the operands that fallback supplied.
-        div_vars = div.get('variables') or []
-        for v in div_vars:
-            if v and v not in variables:
-                variables.append(v)
-
-        if not variables and 'polytracker_offsets' in div:
+        if 'polytracker_offsets' in div:
             pt = div['polytracker_offsets']
             fork_stmt = pt.get('fork_statement', root_cause_stmt)
             if fork_stmt:
