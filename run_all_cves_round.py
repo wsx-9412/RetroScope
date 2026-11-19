@@ -419,6 +419,11 @@ def run_one(sp, tag, timeout):
     log = RESULTS / sp["cve"] / f"{sp['label']}.log"
     log.parent.mkdir(parents=True, exist_ok=True)
     spool = sp["artifact"] / "driver_stdout.tmp"
+    # Per-pair TMPDIR: run_fork_analysis builds both version trees under it
+    # and the rr/dynamic traces keep their workspaces there.  Removing it
+    # after the run keeps /tmp from filling up over 57 pairs.
+    tmpdir = Path("/tmp") / f"retro_{sp['cve']}_{tag}_{os.getpid()}_{int(time.time())}"
+    tmpdir.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
     env.update({
         "RETRO_REF": str(sp["ref_abs"]),
@@ -430,7 +435,7 @@ def run_one(sp, tag, timeout):
         "RETROSCOPE_MUTATION_WORKERS": "1",
         "ASAN_OPTIONS": ("detect_leaks=0:halt_on_error=1:"
                          "allocator_may_return_null=1:hard_rss_limit_mb=512"),
-        "TMPDIR": "/tmp",
+        "TMPDIR": str(tmpdir),
     })
     t0 = time.time()
     out_f = open(spool, "w", errors="replace")
@@ -453,6 +458,7 @@ def run_one(sp, tag, timeout):
             rc = p.wait()
     finally:
         out_f.close()
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
     # run_analysis.sh tees its terminal output into the log itself.  If it
     # died before that (bad config/path), keep the captured stdout instead.

@@ -2,9 +2,9 @@
  {
   "cve": "CVE-2026-15520",
   "label": "0.13.3",
-  "status": "ERROR",
-  "rc": 1,
-  "elapsed": 143.9,
+  "status": "NO_MATCH",
+  "rc": 0,
+  "elapsed": 70.7,
   "log": "/home/ws/Desktop/RetroScope/results/CVE-2026-15520/0.13.3.log"
  }
 ]
