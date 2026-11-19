@@ -1,8 +1,8 @@
 # config_libtiff.py
-CVE_ID = "CVE-2016-10270"
-INPUT_FILE = "in/libtiff/asarubbo/00074-libtiff-heapoverflow-TIFFFillStrip"
+CVE_ID = "CVE-2022-3627"
+INPUT_FILE = "in/CVE-2022-3627"
 OUTPUT_FILE = "/tmp/foo"
-COMMAND_FORMAT = "{program_path} -i {input_file} {output_file}"
+COMMAND_FORMAT = "{program_path} -Z 1:4,3:3 -R 90 -H 300 -i  {input_file} {output_file}"
 
 COMPILE_COMMANDS = {
     "reference": {
@@ -34,7 +34,7 @@ COMPILE_COMMANDS = {
 }
 
 EXECUTION_CONFIG = {
-    "program_name": "tiffcp",
+    "program_name": "tiffcrop",
     "timeout": 120,
     "exec_subdir": "/tools",
     "command_format": COMMAND_FORMAT,
