@@ -477,8 +477,14 @@ def run_one(sp, tag, timeout):
     completed = "Analysis completed" in text
     m = re.search(r"reproduced the reference crash on the target: (YES|no)", text)
     reproduced = bool(m and m.group(1) == "YES")
+    partial_match = ("MATCHES ref crash" in text
+                     or "mutation succeeded" in text
+                     or "matching value(s)" in text and "1 matching" in text)
     if not completed:
-        status = "TIMEOUT" if timed_out else "ERROR"
+        if partial_match and timed_out:
+            status = "MATCH_PARTIAL"
+        else:
+            status = "TIMEOUT" if timed_out else "ERROR"
     elif reproduced:
         status = "MATCH"
     else:
