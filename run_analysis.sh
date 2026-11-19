@@ -422,11 +422,21 @@ DYN_MUT_PY
             --trace-json "$DIVERGE_JSON" \
             ${ORIGIN_MUT_ARGS[@]+"${ORIGIN_MUT_ARGS[@]}"} \
             --timeout 60
-        if [ $? -eq 0 ]; then
+        TRACE_RC=$?
+        FALLBACK_ONLY=0
+        if [ $TRACE_RC -eq 0 ]; then
             echo -e "\n=== GDB trace completed ==="
         else
-            echo "GDB trace failed!"
-            exit 1
+            # Some target versions reject the input before the reference
+            # crash-site line, so the GDB fork trace is impossible.  Do not
+            # abort the whole analysis: fall back to the fork-independent
+            # format-field mutation and still emit a NO_CRASH_MATCH artifact.
+            echo "[!] GDB trace failed (rc=$TRACE_RC); falling back to format-field mutation only."
+            FALLBACK_ONLY=1
+            python3 -u trace_fork_offsets.py \
+                --trace-json "$DIVERGE_JSON" \
+                --only-format-fields \
+                --timeout 60 || true
         fi
 
         # ================================================================
@@ -441,7 +451,7 @@ DYN_MUT_PY
         if [ -f "$TRACE_RESULT_JSON" ]; then
             FLIP_MATCH=$(python3 -c "import json;print(1 if json.load(open('$TRACE_RESULT_JSON')).get('mutation_any_match') else 0)" 2>/dev/null || echo 0)
         fi
-        if [ "$FLIP_MATCH" = "0" ] && [ "${SKIP_LEGACY:-0}" != "1" ]; then
+        if [ "$FLIP_MATCH" = "0" ] && [ "${SKIP_LEGACY:-0}" != "1" ] && [ "${FALLBACK_ONLY:-0}" != "1" ]; then
             echo ""
             echo "=== Fork-flip iteration (mutation stages found no match) ==="
             python3 -u fork_flip_iter.py \
@@ -461,6 +471,8 @@ DYN_MUT_PY
                     --only-format-fields \
                     --timeout 60 || true
             fi
+        elif [ "${FALLBACK_ONLY:-0}" = "1" ]; then
+            echo "[*] Fork-flip iteration skipped (GDB fork trace unavailable)."
         else
             echo "[*] Mutation stages matched the reference crash; fork-flip iteration skipped."
         fi
