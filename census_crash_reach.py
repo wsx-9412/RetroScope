@@ -665,13 +665,17 @@ def resolve_ref_binary(job) -> str | None:
 
 
 def probe_pair(job, timeout) -> dict:
+    # Resolve target binary: log path -> version tree
     bin_t = job.get("bin_t")
-    if not bin_t or not os.path.isfile(bin_t):
-        # try resolve
+    if bin_t and not os.path.isfile(bin_t):
+        bin_t = None
+    if not bin_t:
+        bin_t = resolve_bin_from_log(
+            job.get("log_bin_t"), job.get("proj"), job.get("ver")
+        )
+    if not bin_t:
         try:
-            from audit_crash_line_reach import (
-                resolve_version_dir, locate_binary, resolve_pair_binaries,
-            )
+            from audit_crash_line_reach import resolve_pair_binaries
             resolved = resolve_pair_binaries(job)
             bin_t = resolved.get("bin_t")
             if resolved.get("bin_r"):
@@ -680,9 +684,19 @@ def probe_pair(job, timeout) -> dict:
             pass
     if not bin_t or not os.path.isfile(bin_t):
         return {"reach": None, "status": "skip_no_binary"}
+    job["bin_t"] = bin_t
     real = resolve_binary(bin_t)
     if not real or not os.path.isfile(real):
         return {"reach": None, "status": "skip_no_binary"}
+
+    # If pipeline recorded that ref does not crash on original PoC, there is
+    # no reference crash line to reach — mark explicitly (not a probe miss).
+    if job.get("ref_no_crash"):
+        return {
+            "reach": None,
+            "status": "skip_ref_no_crash",
+            "note": "reference did not crash on original PoC in analysis log",
+        }
 
     ref = parse_ref_crash_str(job.get("ref_crash_str") or "")
     site = None
@@ -717,9 +731,27 @@ def probe_pair(job, timeout) -> dict:
             "reach": None,
             "status": "skip_no_crash_site",
             "ref_crash_str": job.get("ref_crash_str"),
+            "ref": ref,
         }
 
     inp = job.get("input")
+    if not inp or not os.path.isfile(inp):
+        # try common in/ locations
+        cve = job.get("cve") or ""
+        for cand in (
+            BASE / "in" / cve,
+            BASE / "in" / "libtiff" / cve,
+            BASE / "in" / "lame" / cve,
+            BASE / "in" / "openjpeg" / (cve + ".tif"),
+            BASE / "in" / "binutils" / cve,
+            BASE / "in" / "libredwg" / (cve + ".dwg"),
+            BASE / "in" / "libsndfile" / cve,
+            BASE / "in" / "jasper" / cve,
+        ):
+            if cand.is_file():
+                inp = str(cand)
+                job["input"] = inp
+                break
     if not inp or not os.path.isfile(inp):
         return {"reach": None, "status": "skip_no_input", "site": site}
 
@@ -735,6 +767,17 @@ def probe_pair(job, timeout) -> dict:
             run_args.append(_replace_input_arg(a, inp, inp))
     if not run_args:
         run_args = [inp]
+    # If args already contain resolved input path, keep as-is
+    if not any(
+        str(a) == inp or (
+            os.path.isabs(str(a)) and os.path.abspath(str(a)) == os.path.abspath(inp)
+        )
+        for a in run_args
+    ):
+        # template may have been resolved already with a different path — if any
+        # arg looks like a file that exists under in/, leave it; else append inp
+        if not any(os.path.isfile(str(a)) for a in run_args):
+            run_args = run_args + [inp]
 
     specs = [
         "%s:%d" % (site["file"], site["line"]),
