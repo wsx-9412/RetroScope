@@ -8788,6 +8788,8 @@ def main():
         for _vname, _info in chain_trace_results['var_mappings'].items():
             if _info.get('file_offset') is not None:
                 mapped_offsets.add(_info['file_offset'])
+            for _bo in (_info.get('byte_offsets') or []):
+                mapped_offsets.add(_bo)
 
     # 5. Fork-variable -> input file offset mapping (dynamic, generic).
     # Every fork variable captured at the breakpoint (value/address) is
@@ -8863,6 +8865,9 @@ def main():
             if _info.get('file_offset') is not None:
                 mapped_offsets.add(_info['file_offset'])
                 _add_tier('A_dynamic_callsite', _info['file_offset'])
+            for _bo in (_info.get('byte_offsets') or []):
+                mapped_offsets.add(_bo)
+                _add_tier('A_dynamic_callsite', _bo)
 
     # 5.1. IFD region offsets (dynamic): the fork decision executes inside
     # TIFFReadDirectory's IFD-entry loop, so the whole directory that the
