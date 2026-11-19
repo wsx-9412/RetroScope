@@ -279,20 +279,20 @@ fi
 # ============================================================================
 # Step 1: Compile + LCS trace + Divergence analysis
 # ============================================================================
-DIVERGE_JSON="results/${CVE_ID}.diverge.json"
+DIVERGE_JSON="$ARTIFACT_DIR/${CVE_ID}.diverge.json"
 
 # Always regenerate - delete old diverge JSON
 rm -f "$DIVERGE_JSON"
 # Fork-flip iteration status is per-run; stale chains must not leak into
 # the final summary of a later run.
-rm -f "results/${CVE_ID}_fork_flip_chain.json"
+rm -f "$RETRO_CHAIN_JSON"
 # The dynamic stage's single-byte results are only meaningful for THIS
 # target run; delete any stale copy (written by the previous target) so
 # the legacy stage below never consumes another version's classification.
-rm -f "results/${CVE_ID}_origin_mutation.json"
+rm -f "$ARTIFACT_DIR/${CVE_ID}_origin_mutation.json"
 
 mkdir -p results
-POLYTRACKER_OUTPUT="results/${CVE_ID}.json"
+POLYTRACKER_OUTPUT="$ARTIFACT_DIR/${CVE_ID}.json"
 
 # Build extra arguments
 EXTRA_ARGS_STEP1=("${EXTRA_ARGS[@]}")
@@ -327,8 +327,8 @@ python3 -u run_fork_analysis.py \
 if [ "$POLYTRACKER_MODE" = false ]; then
     echo ""
     echo "=== GDB dynamic origin trace (record/replay, fork variables -> input offsets) ==="
-    DIVERGE_JSON="results/${CVE_ID}.diverge.json"
-    ORIGIN_JSON="results/${CVE_ID}_origin.json"
+    DIVERGE_JSON="$ARTIFACT_DIR/${CVE_ID}.diverge.json"
+    ORIGIN_JSON="$ARTIFACT_DIR/${CVE_ID}_origin.json"
     if [ ! -f "$DIVERGE_JSON" ]; then
         echo "Error: $DIVERGE_JSON not found"
         exit 1
@@ -365,7 +365,7 @@ if [ "$POLYTRACKER_MODE" = false ]; then
         # does, the legacy offset+search stage is not needed.
         echo ""
         echo "=== mutation testing on dynamic origin-trace offsets ==="
-        python3 -u - "$DIVERGE_JSON" "$ORIGIN_JSON" "results/${CVE_ID}_origin_mutation.json" <<'DYN_MUT_PY'
+        python3 -u - "$DIVERGE_JSON" "$ORIGIN_JSON" "$ARTIFACT_DIR/${CVE_ID}_origin_mutation.json" <<'DYN_MUT_PY'
 import json, sys
 sys.path.insert(0, '.')
 from trace_fork_offsets import test_byte_mutations_compare
@@ -415,8 +415,8 @@ DYN_MUT_PY
         # offsets extend the two-offset mutation pool and define the
         # interaction pairs.
         ORIGIN_MUT_ARGS=()
-        if [ -f "results/${CVE_ID}_origin_mutation.json" ]; then
-            ORIGIN_MUT_ARGS=(--origin-mutation "results/${CVE_ID}_origin_mutation.json")
+        if [ -f "$ARTIFACT_DIR/${CVE_ID}_origin_mutation.json" ]; then
+            ORIGIN_MUT_ARGS=(--origin-mutation "$ARTIFACT_DIR/${CVE_ID}_origin_mutation.json")
         fi
         python3 -u trace_fork_offsets.py \
             --trace-json "$DIVERGE_JSON" \
@@ -473,7 +473,7 @@ fi
 if [ "$POLYTRACKER_MODE" = true ] || [ "$FULL_MODE" = true ]; then
     echo ""
     echo "=== PolyTracker taint analysis ==="
-    DIVERGE_JSON="results/${CVE_ID}.diverge.json"
+    DIVERGE_JSON="$ARTIFACT_DIR/${CVE_ID}.diverge.json"
     if [ ! -f "$DIVERGE_JSON" ]; then
         echo "Error: $DIVERGE_JSON not found"
         exit 1
@@ -529,7 +529,7 @@ try:
 except Exception:
     print(f'[time] locate input-file offsets for variables at the fork statement (PolyTracker): took {_t_loc:.3f}s')
 
-output_path = 'results/${CVE_ID}_polytracker_offsets.json'
+output_path = '$ARTIFACT_DIR/${CVE_ID}_polytracker_offsets.json'
 
 # Save the PolyTracker result first (before the slow mutation test), so the
 # offsets are persisted even if the mutation test is interrupted.
@@ -586,13 +586,13 @@ fi
 # statement, does the fork condition now evaluate to the reference side, and
 # does the reference-compatible crash occur after the fork?
 # ============================================================================
-FINAL_DIVERGE_JSON="results/${CVE_ID}.diverge.json"
+FINAL_DIVERGE_JSON="$ARTIFACT_DIR/${CVE_ID}.diverge.json"
 if [ -f "$FINAL_DIVERGE_JSON" ]; then
     echo ""
     echo "=== Fork-path verification of generated PoCs (post-hoc) ==="
     python3 -u verify_fork_path.py \
         --trace-json "$FINAL_DIVERGE_JSON" \
-        --output "results/${CVE_ID}_fork_path_verification.json" \
+        --output "$ARTIFACT_DIR/${CVE_ID}_fork_path_verification.json" \
         --limit 32 --timeout 60 || true
 fi
 
@@ -605,7 +605,7 @@ echo ""
 # ================================================================
 echo "=== Mutation result summary ==="
 TRACE_RESULT_JSON="$(dirname "$INPUT_FILE")/fork_trace_result.json"
-CHAIN_JSON="results/${CVE_ID}_fork_flip_chain.json"
+CHAIN_JSON="$RETRO_CHAIN_JSON"
 SUMMARY_PY=$(cat <<'SUMMARY_EOF'
 import json, os, sys
 tj = os.environ['TRACE_RESULT_JSON']

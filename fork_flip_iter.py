@@ -376,6 +376,9 @@ def _matched_changes(trace_json_path, round_input):
 
 
 def _chain_json_path(input_file):
+    override = os.environ.get('RETRO_CHAIN_JSON')
+    if override:
+        return override
     return os.path.join(
         str(BASE), 'results',
         f'{os.path.basename(input_file)}_fork_flip_chain.json')
@@ -455,8 +458,11 @@ def main():
     a.extra_args = unknown
 
     base_input = os.path.abspath(a.input)
+    suffix = os.environ.get('RETRO_OUT_SUFFIX', '').strip()
+    if suffix:
+        suffix = re.sub(r'[^A-Za-z0-9._-]', '_', suffix)
     out_root = a.out_dir or os.path.join(
-        str(BASE), 'out', f'{os.path.basename(base_input)}-flips')
+        str(BASE), 'out', f'{os.path.basename(base_input)}-flips{suffix}')
     os.makedirs(out_root, exist_ok=True)
 
     print('=' * 60)

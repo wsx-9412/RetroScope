@@ -6153,7 +6153,12 @@ def _mutation_out_dir(input_file, version, out_root=None):
             ver = m.group(1).replace('.', '-')
     root = out_root or os.path.join(
         os.path.dirname(os.path.abspath(__file__)), 'out')
-    return os.path.join(root, f'{base}-{ver}')
+    # Optional per-run suffix (e.g. '-r1') so repeated experiments keep every
+    # round's successful mutants instead of resetting the same directory.
+    suffix = os.environ.get('RETRO_OUT_SUFFIX', '').strip()
+    if suffix:
+        suffix = re.sub(r'[^A-Za-z0-9._-]', '_', suffix)
+    return os.path.join(root, f'{base}-{ver}{suffix}')
 
 
 def _save_mutation_artifact(out_dir, name, original_data, changes):
