@@ -222,16 +222,29 @@ else
     INPUT_FILE="$DEFAULT_INPUT"
 fi
 
-RESULT_FILE="results/${PROJECT_NAME}_fork_result.json"
-mkdir -p results
-export RETRO_TIMINGS="results/${CVE_ID}_timings.json"
-
-# Version-swap log: group by CVE, name by version pair
+# Intermediate analysis artifacts (diverge/origin/timings JSONs) are NOT
+# written into results/ any more: results/ holds only the terminal log of
+# each run, grouped as results/<CVE>/<target-version>.log.  Everything else
+# goes to a per-run artifact directory (hidden from the repo root).
 REF_BASENAME=$(basename "$REFERENCE_VERSION_PATH")
 TGT_BASENAME=$(basename "$TARGET_VERSION_PATH")
-LOG_DIR="results/version_sweep/${CVE_ID}"
+
+# Target version label used for the log file name (driver may override).
+TGT_VERSION_LABEL="${RETRO_LOG_NAME:-$TGT_BASENAME}"
+TGT_VERSION_LABEL=$(printf '%s' "$TGT_VERSION_LABEL" | sed -E 's/^(libredwg-|libxml2-|libsndfile-|audiofile-|giflib-|binutils-|jasper-version-|lame-|tiff-|freetype-|libarchive-v|exiv2-|openexr-|pcre2-pcre2-|openjpeg-|version\.|v)//')
+
+ARTIFACT_DIR="${RETRO_ARTIFACT_DIR:-$BASE_DIR/.retro_artifacts/${CVE_ID}/${TGT_VERSION_LABEL}}"
+mkdir -p "$ARTIFACT_DIR"
+RESULT_FILE="$ARTIFACT_DIR/${PROJECT_NAME}_fork_result.json"
+export RETRO_TIMINGS="$ARTIFACT_DIR/${CVE_ID}_timings.json"
+
+# Per-run fork-flip chain JSON (kept out of results/).
+export RETRO_CHAIN_JSON="$ARTIFACT_DIR/${CVE_ID}_fork_flip_chain.json"
+
+# Log: results/<CVE>/<target-version>.log (optional suffix for repeated runs)
+LOG_DIR="$BASE_DIR/results/${CVE_ID}"
 mkdir -p "$LOG_DIR"
-LOG_FILE="${LOG_DIR}/${TGT_BASENAME}.log"
+LOG_FILE="${LOG_DIR}/${TGT_VERSION_LABEL}${RETRO_LOG_SUFFIX:-}.log"
 
 # Tee all output to the log file while keeping terminal output
 exec > >(tee "$LOG_FILE") 2>&1
