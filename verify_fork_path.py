@@ -127,6 +127,20 @@ def build_hint(div, binary_target, fork_file=None, fork_line=None,
     b = diff.get("b") or {}
     f_file = fork_file or div.get("root_cause_file_b") or div.get("root_cause_file")
     f_line = fork_line or div.get("root_cause_line_b") or div.get("root_cause_line")
+    # Keep location and condition from the SAME fork specification.  When a
+    # strong dynamic decision fork exists, its file/line is the authoritative
+    # site even if the top-level fields were re-selected from the crash leaf.
+    # The old mixed-source behaviour audited line 348 (crash statement) with
+    # the dynamic fork's ``err`` condition from line 5433.
+    if fork_file is None and fork_line is None:
+        _dyn_strong = (dyn.get("status") == "decision_fork"
+                       and (dyn.get("diff") or {}).get("strong")
+                       and not dyn.get("weak"))
+        _dyn_file = dyn.get("file_b")
+        _dyn_line = b.get("line")
+        if _dyn_strong and _dyn_file and _dyn_line:
+            f_file = _dyn_file
+            f_line = _dyn_line
     if not f_file or not f_line:
         return None
     # crash_point_hits anchors carry the line the breakpoint really resolved
