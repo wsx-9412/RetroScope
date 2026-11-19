@@ -388,6 +388,10 @@ DYN_MUT_PY
         else
             echo "[*] dynamic single-byte sweep did not reproduce the crash; continuing with dynamic pairwise -> directed fields -> combo -> P0 -> static."
         fi
+    elif [ "${DYN_OFFSETS:-0}" != "0" ] && [ "$_DYN_STRONG" = "1" ]; then
+        echo ""
+        echo "[*] Strong dynamic decision fork: coarse dynamic-origin offsets are not mutated;"
+        echo "    running the legacy call-site stage to map the exact fork-variable field."
     fi
 
     if [ "${SKIP_LEGACY:-0}" != "1" ]; then
