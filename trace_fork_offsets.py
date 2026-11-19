@@ -9073,15 +9073,18 @@ def main():
     stage_timing.record("locate input-file offsets for variables at the fork statement",
                         time.time() - _t_main_start)
 
-    # Test the EXACT fork-variable offsets first (A_dynamic_callsite: the
-    # entry/field bytes derived from the fork-point context), then the
-    # value-pattern origins.  The exact set contains the field the guard's
-    # producer actually consumed (e.g. dir->tdir_count -> bytes 0xec..0xef)
-    # and finds the crashing byte without first walking thousands of noisy
-    # value-pattern offsets.  Earlier versions swept all offsets in sorted
-    # order, so the exact IFD field bytes were reached only after the noise.
+    # Test the EXACT fork-variable offsets first: the IFD field bytes the
+    # fork producer actually consumed (e.g. dir->tdir_count -> 0xec..0xef).
+    # Fall back to the entry-base/pointer tier only when no field was
+    # derived.  Value-pattern origins run afterwards only if the exact
+    # field sweep found nothing.  Earlier versions swept all offsets in
+    # sorted order, so the exact IFD field bytes were reached only after
+    # thousands of noisy value-pattern candidates.
+    _exact_tier = 'A_dynamic_callsite_field'
+    if not candidate_tiers.get(_exact_tier):
+        _exact_tier = 'A_dynamic_callsite_entry'
     _exact_stage1 = sorted(
-        set(candidate_tiers.get('A_dynamic_callsite') or []) & stage1_offsets)
+        set(candidate_tiers.get(_exact_tier) or []) & stage1_offsets)
     _weak_stage1 = sorted(stage1_offsets - set(_exact_stage1))
     crash_results = {}
     any_match = False
