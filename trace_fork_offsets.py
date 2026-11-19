@@ -593,6 +593,19 @@ def read_trace_json(json_path):
     root_cause_line = div.get('root_cause_line_b') or div.get('root_cause_line')
     root_cause_stmt = div.get('root_cause_statement_b', '')
 
+    # A "site_after_crash" pair was snapped from the real divergent guard to
+    # the enclosing decision at the reference crash statement.  That snap is
+    # useful for reporting, but the target does not crash and therefore never
+    # reaches the crash-site line; tracing it yields fork_not_reached.  Use
+    # the pre-snap target-side fork (fork_*_b) for the GDB trace instead.
+    if div.get('site_snapped_to_crash') and div.get('fork_line_b'):
+        root_cause_file = (div.get('fork_file_b') or div.get('fork_file')
+                           or root_cause_file)
+        root_cause_line = div.get('fork_line_b')
+        root_cause_stmt = (div.get('fork_statement_b') or root_cause_stmt)
+        print(f"  [read_trace_json] site_snapped_to_crash: tracing original "
+              f"target fork {root_cause_file}:{root_cause_line}")
+
     # Cross-function line defense: root_cause_line_b can point at a
     # same-text statement in a sibling function (jas_matrix_divpow2 vs
     # jas_matrix_asl) while root_cause_function / fork_line name the right
