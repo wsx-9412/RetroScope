@@ -224,11 +224,28 @@ def parse_vsweep_log(path: Path) -> dict:
 
 
 def parse_ref_crash_str(s: str) -> dict | None:
-    """Parse 'ASAN:SEGV in foo at /path/file.c:123' or 'SIGSEGV in foo at file.c:123'."""
+    """Parse several ref-crash string formats from logs."""
     if not s:
         return None
+    s = s.strip()
+    # Strip trailing ", rc=1)" style noise: "heap-buffer-overflow in foo (bar.c:12, rc=1)"
+    # Formats:
+    #   ASAN:SEGV in foo at /path/file.c:123
+    #   SIGSEGV in foo at file.c:123
+    #   SEGV in foo (file.c:123, rc=1)
+    #   heap-buffer-overflow in foo (file.c:123, rc=1)
     m = re.search(
-        r"(?:ASAN:)?(\w[\w:-]*)\s+in\s+(\S+)\s+at\s+(.+?):(\d+)\s*$", s
+        r"(?:ASAN:)?([\w:-]+)\s+in\s+(\S+)\s+at\s+(.+?):(\d+)\s*$", s
+    )
+    if m and "/" in m.group(3) or (m and "." in os.path.basename(m.group(3))):
+        return {
+            "signal": m.group(1),
+            "function": m.group(2),
+            "file": m.group(3),
+            "line": int(m.group(4)),
+        }
+    m = re.search(
+        r"([\w:-]+)\s+in\s+(\S+)\s+\((.+?):(\d+)(?:,[^)]*)?\)", s
     )
     if m:
         return {
@@ -245,7 +262,94 @@ def parse_ref_crash_str(s: str) -> dict | None:
             "file": m.group(2),
             "line": int(m.group(3)),
         }
+    m = re.search(r"in\s+(\S+)\s+\((.+?):(\d+)", s)
+    if m:
+        return {
+            "signal": None,
+            "function": m.group(1),
+            "file": m.group(2),
+            "line": int(m.group(3)),
+        }
     return None
+
+
+def infer_proj_from_text(*texts):
+    blob = " ".join(str(x or "") for x in texts).lower()
+    rules = [
+        ("tiff", "tiff"), ("libtiff", "tiff"),
+        ("lame", "lame"),
+        ("binutils", "binutils"), ("objdump", "binutils"),
+        ("readelf", "binutils"), ("nm-new", "binutils"),
+        ("giflib", "giflib"), ("gif2rgb", "giflib"),
+        ("audiofile", "audiofile"),
+        ("jasper", "jasper"),
+        ("libredwg", "libredwg"), ("dwg2dxf", "libredwg"),
+        ("openjpeg", "openjpeg"), ("opj_compress", "openjpeg"),
+        ("openjp2", "openjpeg"),
+        ("libxml", "libxml2"), ("xmllint", "libxml2"),
+        ("pcre", "pcre2"), ("pcre2test", "pcre2"),
+        ("exiv2", "exiv2"),
+        ("freetype", "freetype"),
+        ("libsndfile", "libsndfile"), ("sndfile-convert", "libsndfile"),
+        ("libarchive", "libarchive"), ("bsdtar", "libarchive"),
+        ("openexr", "openexr"), ("exrcheck", "openexr"),
+        ("expat", "expat"), ("xmlwf", "expat"),
+        ("libpng", "libpng"), ("pngfix", "libpng"),
+        ("sqlite", "sqlite"),
+    ]
+    for needle, proj in rules:
+        if needle in blob:
+            return proj
+    return None
+
+
+def resolve_bin_from_log(path_or_none, proj, ver, prefer_prog=None):
+    """Resolve a binary path; try log path first, then version tree."""
+    if path_or_none and os.path.isfile(path_or_none):
+        # skip /tmp/fork_analysis_* which is gone
+        p = path_or_none
+        if not p.startswith("/tmp/fork_analysis"):
+            return p
+    if not proj or not ver:
+        return None
+    try:
+        from audit_crash_line_reach import (
+            resolve_version_dir, locate_binary, PROJECTS,
+        )
+    except Exception:
+        return None
+    vdir = resolve_version_dir(proj, ver)
+    if not vdir:
+        return None
+    if prefer_prog:
+        b = locate_binary(vdir, prefer_prog)
+        if b:
+            return b
+    # walk for common program names
+    want = {
+        "tiff": ["tiffcp", "tiffcrop", "tiff2rgba", "tiffinfo", "tiffset"],
+        "lame": ["lame"],
+        "binutils": ["objdump", "readelf", "nm", "nm-new", "objcopy", "ld"],
+        "giflib": ["gif2rgb", "giftext"],
+        "openjpeg": ["opj_compress", "opj_decompress", "opj_dump"],
+        "libxml2": ["xmllint"],
+        "pcre2": ["pcre2test"],
+        "exiv2": ["exiv2"],
+        "jasper": ["imginfo", "jasper"],
+        "libredwg": ["dwg2dxf", "dwgread"],
+        "audiofile": ["sfconvert", "sfedit"],
+        "libsndfile": ["sndfile-convert"],
+        "libarchive": ["bsdtar"],
+        "openexr": ["exrcheck"],
+        "freetype": ["fttest"],
+        "expat": ["xmlwf"],
+        "libpng": ["pngfix"],
+    }.get(proj, [])
+    for prog in want:
+        b = locate_binary(vdir, prog)
+        if b:
+            return b
+    return locate_binary(vdir, prefer_prog) if prefer_prog else None
 
 
 def collect_pairs():
