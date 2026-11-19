@@ -3195,16 +3195,28 @@ def _first_differing_enter(gap):
 def _read_source_line(source_file, line_num, source_dirs):
     """Return the text of a single source line, or None if it can't be located."""
     full_path = None
-    for d in source_dirs:
-        candidate = os.path.join(d, source_file)
-        if os.path.exists(candidate):
-            full_path = candidate
-            break
+    if os.path.isabs(source_file) and os.path.exists(source_file):
+        full_path = source_file
     if not full_path:
-        for d in source_dirs:
-            for path in Path(d).rglob(source_file):
-                full_path = str(path)
+        for d in source_dirs or []:
+            if not d:
+                continue
+            candidate = os.path.join(d, source_file)
+            if os.path.exists(candidate):
+                full_path = candidate
                 break
+    if not full_path:
+        pattern = (os.path.basename(source_file)
+                   if os.path.isabs(source_file) else source_file)
+        for d in source_dirs or []:
+            if not d or not os.path.isdir(d):
+                continue
+            try:
+                for path in Path(d).rglob(pattern):
+                    full_path = str(path)
+                    break
+            except (NotImplementedError, ValueError):
+                pass
             if full_path:
                 break
     if not full_path:

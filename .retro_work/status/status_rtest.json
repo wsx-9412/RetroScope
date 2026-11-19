@@ -1,10 +1,10 @@
 [
  {
-  "cve": "CVE-2022-28506",
-  "label": "4.1.6",
-  "status": "MATCH",
-  "rc": 0,
-  "elapsed": 99.8,
-  "log": "/home/ws/Desktop/RetroScope/results/CVE-2022-28506/4.1.6.log"
+  "cve": "CVE-2026-15520",
+  "label": "0.13.3",
+  "status": "ERROR",
+  "rc": 1,
+  "elapsed": 24.9,
+  "log": "/home/ws/Desktop/RetroScope/results/CVE-2026-15520/0.13.3.log"
  }
 ]

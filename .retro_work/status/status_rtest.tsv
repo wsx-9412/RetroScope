@@ -1,2 +1,2 @@
 cve	label	status	rc	elapsed_s	log
-CVE-2022-28506	4.1.6	MATCH	0	99.8	/home/ws/Desktop/RetroScope/results/CVE-2022-28506/4.1.6.log
+CVE-2026-15520	0.13.3	ERROR	1	24.9	/home/ws/Desktop/RetroScope/results/CVE-2026-15520/0.13.3.log
