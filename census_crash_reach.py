@@ -383,22 +383,32 @@ def collect_pairs():
                     "log": str(lg.relative_to(BASE)),
                     "case": info["case"],
                     "ref_crash_str": info["ref_crash"],
+                    "ref_no_crash": info.get("ref_no_crash"),
                     "vs_match": info["vs_match"],
                     "backward_found": info["backward_found"],
                     "line_no_msg": info["line_no_msg"],
+                    "log_input": info.get("log_input"),
+                    "log_args": info.get("log_args"),
+                    "log_bin_t": info.get("log_bin_t"),
+                    "log_bin_r": info.get("log_bin_r"),
                     "allver_status": (av or {}).get("status"),
                     "allver_matched": (av or {}).get("matched"),
                     "allver_baseline_triggers": (av or {}).get(
                         "baseline_triggers"
                     ),
-                    "bin_t": (av or {}).get("bin_t"),
-                    "input": (av or {}).get("input"),
+                    "bin_t": (av or {}).get("bin_t") or info.get("log_bin_t"),
+                    "bin_r": (av or {}).get("bin_r") or info.get("log_bin_r"),
+                    "input": (av or {}).get("input") or info.get("log_input"),
                     "args": (av or {}).get("args_resolved")
-                    or (av or {}).get("args"),
+                    or (av or {}).get("args")
+                    or info.get("log_args"),
                     "fork_file": (av or {}).get("fork_file"),
                     "fork_line": (av or {}).get("fork_line"),
                     "ref": (av or {}).get("ref"),
-                    "proj": (av or {}).get("proj"),
+                    "proj": (av or {}).get("proj") or infer_proj_from_text(
+                        info.get("log_bin_t"), info.get("log_bin_r"),
+                        info.get("ref_path"), ver_raw, cve, lg.name,
+                    ),
                 }
                 # Prefer existing record; keep first Case marker if re-run
                 if k in pairs:
