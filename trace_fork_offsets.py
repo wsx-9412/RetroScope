@@ -8869,15 +8869,18 @@ def main():
         for _tagid, _info in chain_trace_results['tag_mappings'].items():
             if _info.get('file_offset') is not None:
                 mapped_offsets.add(_info['file_offset'])
-                _add_tier('A_dynamic_callsite', _info['file_offset'])
+                _add_tier('A_dynamic_callsite_field', _info['file_offset'])
     if chain_trace_results and chain_trace_results.get('var_mappings'):
         for _vname, _info in chain_trace_results['var_mappings'].items():
+            _tier = ('A_dynamic_callsite_field'
+                     if _info.get('kind') == 'ifd_entry_field'
+                     else 'A_dynamic_callsite_entry')
             if _info.get('file_offset') is not None:
                 mapped_offsets.add(_info['file_offset'])
-                _add_tier('A_dynamic_callsite', _info['file_offset'])
+                _add_tier(_tier, _info['file_offset'])
             for _bo in (_info.get('byte_offsets') or []):
                 mapped_offsets.add(_bo)
-                _add_tier('A_dynamic_callsite', _bo)
+                _add_tier(_tier, _bo)
 
     # 5.1. IFD region offsets (dynamic): the fork decision executes inside
     # TIFFReadDirectory's IFD-entry loop, so the whole directory that the
@@ -8947,14 +8950,16 @@ def main():
     if candidate_tiers:
         print(f'\n  5.2. Candidate offsets by confidence tier:')
         _TIER_ORDER = (
-            'A_direct_pointer', 'A_dynamic_callsite', 'A_deep_open_critical',
+            'A_direct_pointer', 'A_dynamic_callsite_field',
+            'A_dynamic_callsite_entry', 'A_deep_open_critical',
             'A_deep_open_read', 'B_value_field', 'B_arithmetic_tag',
             'C_value_pattern', 'C_open_read_fallback',
             'S_structural_ifd_region', 'S_structural_format',
         )
         _TIER_DESC = {
             'A_direct_pointer': 'pointer value inside a recorded read buffer (exact)',
-            'A_dynamic_callsite': 'IFD entry/dir/dp arithmetic at the fork point (exact)',
+            'A_dynamic_callsite_field': 'IFD entry field consumed by the fork producer (exact)',
+            'A_dynamic_callsite_entry': 'IFD entry/dir/dp arithmetic at the fork point (structural)',
             'A_deep_open_critical': 'beyond-file read inside the open function (failure cause)',
             'A_deep_open_read': 'read performed inside the open function',
             'B_value_field': 'unique multi-byte value field verified in read regions',
