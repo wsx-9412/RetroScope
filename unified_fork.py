@@ -381,15 +381,18 @@ def _fork_operand_names(stmt_a, stmt_b):
 
 def _upstream_operand_variables(file_b, line_b, func_b, stmt_a, stmt_b,
                                 max_scan=60):
-    """One-hop dataflow fallback: variables that PRODUCE the decision operand.
+    """One-hop dataflow fallback: the decision operand and its producers.
 
     Runs ONLY when the regular operand extraction returned nothing (typically
     because the differing operand is a status-code variable like ``err`` that
     the extractor blacklists).  It walks the target function upward from the
     fork statement to the assignment that produces the operand
-    (``err=TIFFReadDirEntryLong8Array(tif,dir,&data);``) and extracts the RHS
-    variables — the values that actually carry input bytes (GDB later
-    dereferences struct pointers like ``dir`` into their scalar fields).
+    (``err=TIFFReadDirEntryLong8Array(tif,dir,&data);``) and returns the
+    produced operand plus the RHS variables — the values that actually carry
+    input bytes (GDB later dereferences struct pointers like ``dir`` into
+    their scalar fields).  Keeping the operand itself lets the fork-point
+    invocation be selected by its value (the call-site trace otherwise
+    cannot tell the failing call from an earlier successful one).
 
     The fallback never runs for samples whose operands extract normally, so
     their variable sets (and downstream accuracy) are unchanged.
