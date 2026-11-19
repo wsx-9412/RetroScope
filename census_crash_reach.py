@@ -637,14 +637,17 @@ def run_ref_crash(job, timeout) -> dict | None:
 
 def resolve_ref_binary(job) -> str | None:
     from trace_fork_offsets import resolve_binary as rb
-    # try common locations from pair record
-    for key in ("bin_r", "ref_bin"):
+    for key in ("bin_r", "ref_bin", "log_bin_r"):
         v = job.get(key)
-        if v and os.path.isfile(v):
+        if v and os.path.isfile(v) and not str(v).startswith("/tmp/fork_analysis"):
             return rb(v)
-    # version tree fallback using audit helpers
+    prog = None
+    bt = job.get("bin_t") or job.get("log_bin_t") or ""
+    if bt:
+        prog = os.path.basename(bt)
+    # version tree
     try:
-        from audit_crash_line_reach import resolve_version_dir, locate_binary, PROJECTS
+        from audit_crash_line_reach import resolve_version_dir, locate_binary
     except Exception:
         return None
     proj = job.get("proj")
@@ -654,14 +657,11 @@ def resolve_ref_binary(job) -> str | None:
     vdir = resolve_version_dir(proj, ref)
     if not vdir:
         return None
-    # program from fork/bin
-    prog = None
-    bt = job.get("bin_t") or ""
-    if bt:
-        prog = os.path.basename(bt)
-    if not prog:
-        return None
-    return locate_binary(vdir, prog)
+    if prog:
+        b = locate_binary(vdir, prog)
+        if b:
+            return b
+    return resolve_bin_from_log(None, proj, ref, prefer_prog=prog)
 
 
 def probe_pair(job, timeout) -> dict:
