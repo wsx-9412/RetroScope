@@ -966,6 +966,10 @@ def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     def bucket(p):
+        # BASELINE_TRIGGERS: original PoC already reproduces the same-site
+        # crash on the target — that means it REACHES the crash point.
+        if (p.get("allver_status") or "").upper() == "BASELINE_TRIGGERS":
+            return "reached_baseline_same_site"
         r = p.get("reach")
         if r is True or r == "reached_no_crash":
             return "reached"
@@ -977,8 +981,11 @@ def main():
                 return "not_reached_early_crash"
             return "not_reached"
         if r is None:
+            # skip_ref_no_crash: no reference crash line exists
+            pr = p.get("probe") or {}
+            if pr.get("status") == "skip_ref_no_crash" or p.get("ref_no_crash"):
+                return "no_ref_crash_line"
             return "unknown"
-        # unexpected string
         return "unknown"
 
     for p in pairs:
