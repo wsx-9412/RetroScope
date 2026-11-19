@@ -674,13 +674,15 @@ def probe_target(job, binaries, site, timeout):
                  "file": _path_basename(fr.get("file")), "line": fr.get("line")}
 
     exited = None
-    m = re.search(r"Program exited(?: normally)? with code (\d+)", out)
+    # GDB 8: "Program exited normally" / "Program exited with code N"
+    # GDB 12: "[Inferior 1 (process N) exited normally]" / "... exited with code N"
+    m = re.search(r"exited with code\s+0*(\d+)", out)
     if m:
-        exited = int(m.group(1))
-    elif re.search(r"Program exited normally", out):
+        exited = int(m.group(1), 10)
+    elif re.search(r"exited normally", out):
         exited = 0
     signaled = None
-    m = re.search(r"Program terminated with signal (\w+)", out)
+    m = re.search(r"(?:terminated|received) signal (\w+)", out)
     if m:
         signaled = m.group(1)
 
