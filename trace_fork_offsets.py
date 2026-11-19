@@ -2412,8 +2412,8 @@ run {run_args}
         return _call_site_trace_case_a(
             real_binary, fork_spec, fork_func, run_args, env,
             fork_points, timeout), None
-    return _call_site_trace_case_b(fork_points, variables, clauses,
-                                   input_file), None
+    return _call_site_trace_case_b(fork_points, trace_variables, clauses,
+                                   input_file, fork_func), None
 
 
 def _call_site_trace_case_a(real_binary, fork_spec, fork_func, run_args, env,
@@ -2575,17 +2575,19 @@ run {run_args}
 
 
 def _call_site_trace_case_b(fork_points, variables, clauses=None,
-                            input_file=None):
+                            input_file=None, fork_func=None):
     """Generic path: map fork variables from the fork-point context.
 
     The diverging fork point is selected by matching the divergence
     clauses' lhs/rhs operand values against the recorded variable values
-    (fallback: the LAST recorded fork point).  Variables are then mapped:
+    (lhs is the changed operand, so it outranks the constant rhs; fallback:
+    the LAST recorded fork point).  Variables are then mapped:
 
       * a variable equal to the IFD buffer base (``dir``) or an entry
         pointer (``dp``/``direntry``) -> the buffer/entry file offset;
-      * a variable that is an IFD entry field (e.g. ``dp->tdir_tag``) or a
-        scalar derived from the current entry (e.g. ``fii``, driven by
+      * an entry field expression (e.g. ``dir->tdir_count``) -> that field's
+        byte range inside the current entry's on-disk record;
+      * a scalar derived from the current entry (e.g. ``fii``, driven by
         ``dp->tdir_tag``) -> the current entry's file offset, computed from
         the fork-point context (``dp``-``dir`` + ``tif_diroff``).
     """
@@ -2598,15 +2600,26 @@ def _call_site_trace_case_b(fork_points, variables, clauses=None,
         }
 
     # Select the diverging fork point via the clauses' operand values.
+    # The lhs is the runtime value of the changed operand (e.g. ``err``);
+    # matching it is stronger than matching the constant rhs (often 0),
+    # which would select an earlier, non-diverging invocation (e.g. the
+    # successful StripOffsets read instead of the failing StripByteCounts
+    # read in the same function).
     fp = None
     if clauses:
-        target_vals = [v for v in (clauses.get('lhs'), clauses.get('rhs'))
-                       if isinstance(v, int)]
+        lhs = clauses.get('lhs')
+        rhs = clauses.get('rhs')
+        best_score = 0
         for cand in fork_points:
             vals = cand.get('varvals') or {}
-            if any(val in target_vals for val in vals.values()):
+            score = 0
+            if isinstance(lhs, int) and lhs in vals.values():
+                score += 2
+            if isinstance(rhs, int) and rhs in vals.values():
+                score += 1
+            if score and score >= best_score:
                 fp = cand
-                break
+                best_score = score
     if fp is None:
         fp = fork_points[-1]
 
@@ -2618,6 +2631,7 @@ def _call_site_trace_case_b(fork_points, variables, clauses=None,
     esz = fp.get('entsize') or 12
     dp = fp.get('dp')
     dir_base = fp.get('dir')
+    frame_dir = fp.get('frame_dir')
 
     def _entry_offset(entry_ptr, base=None):
         base = base if base is not None else dir_base
@@ -2628,8 +2642,16 @@ def _call_site_trace_case_b(fork_points, variables, clauses=None,
         return diroff + count_size + idx * disk_esz, idx
 
     # Entry pointer of the current iteration: prefer dp (in scope at the
-    # fork point inside TIFFReadDirectory's loop).
+    # fork point inside TIFFReadDirectory's loop).  In TIFFFetchStripThing
+    # the parameter ``dir`` is already the current entry pointer, while the
+    # caller frame's ``dir`` is the IFD base.
     entry_ptr = dp
+    entry_base = dir_base
+    if (frame_dir is not None and dir_base is not None
+            and dir_base > frame_dir):
+        entry_base = frame_dir
+        if entry_ptr is None:
+            entry_ptr = dir_base
 
     for v in variables:
         val = fp['varvals'].get(v)
@@ -2644,10 +2666,9 @@ def _call_site_trace_case_b(fork_points, variables, clauses=None,
             # entry pointer (TIFFFetchStripThing's parameter).  When the
             # caller frame's dir (FRAME_DIR) differs and lies below it, the
             # fork-point 'dir' is an ENTRY pointer -> map to the entry offset.
-            base = fp.get('frame_dir')
-            if (base is not None and dir_base is not None
-                    and dir_base > base and low == 'dir'):
-                off, idx = _entry_offset(dir_base, base)
+            if (frame_dir is not None and dir_base is not None
+                    and dir_base > frame_dir and low == 'dir'):
+                off, idx = _entry_offset(dir_base, frame_dir)
                 if off is not None:
                     mapping['file_offset'] = off
                     mapping['kind'] = 'ifd_entry'
@@ -2658,17 +2679,39 @@ def _call_site_trace_case_b(fork_points, variables, clauses=None,
             continue
         if low in ('dp', 'direntry') or (isinstance(val, int)
                                          and val == entry_ptr):
-            off, idx = _entry_offset(val if isinstance(val, int) else entry_ptr)
+            off, idx = _entry_offset(
+                val if isinstance(val, int) else entry_ptr, entry_base)
             if off is not None:
                 mapping['file_offset'] = off
                 mapping['kind'] = 'ifd_entry'
             continue
-        # IFD entry field expression (e.g. dp->tdir_tag) or a scalar whose
-        # value is driven by the current entry (fii, tdir_*): map to the
-        # current entry's file offset.
+
+        # IFD entry field expression (e.g. dir->tdir_count): map to the
+        # exact field bytes, not just the entry base.  The field width in
+        # the on-disk record depends on classic vs BigTIFF.
+        _root, _fields, _ = parse_var_expr(v)
+        _field = _fields[-1] if _fields else None
+        if _field in TIFF_DIRENTRY_FILE_FIELD and entry_ptr is not None:
+            off, idx = _entry_offset(entry_ptr, entry_base)
+            if off is not None:
+                _fo = TIFF_DIRENTRY_FILE_FIELD[_field]
+                _fs = TIFF_DIRENTRY_FILE_FIELD_SIZE.get(_field, 1)
+                if bigtiff and _field in ('tdir_count', 'tdir_offset'):
+                    _fs = 8
+                mapping['file_offset'] = off + _fo
+                mapping['kind'] = 'ifd_entry_field'
+                mapping['entry_index'] = idx
+                mapping['field'] = _field
+                mapping['field_size'] = _fs
+                mapping['byte_offsets'] = list(
+                    range(off + _fo, off + _fo + _fs))
+                continue
+
+        # A scalar whose value is driven by the current entry (fii, tdir_*,
+        # err, tagid): map to the current entry's file offset.
         if ('tdir_' in v or 'tdir' in low or low in ('fii', 'err', 'tagid')) \
                 and entry_ptr is not None:
-            off, idx = _entry_offset(entry_ptr)
+            off, idx = _entry_offset(entry_ptr, entry_base)
             if off is not None:
                 mapping['file_offset'] = off
                 mapping['kind'] = 'ifd_entry'
