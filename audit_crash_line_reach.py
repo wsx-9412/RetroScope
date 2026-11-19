@@ -507,20 +507,33 @@ def decide_probe_site(job, binaries, timeout, probe_mode):
         if ref_sig:
             fr0 = (ref_sig.get("crash_frames") or [{}])[0]
             summ = ref_sig.get("summary") or {}
+            # Prefer the innermost project frame (crash_frames[0]) over the
+            # ASan SUMMARY line, which often points at a sanitizer interceptor.
             site["ref_crash"] = {
                 "type": ref_sig.get("type"),
-                "file": summ.get("file") or fr0.get("file"),
-                "line": summ.get("line") or fr0.get("line"),
-                "function": summ.get("function") or fr0.get("function"),
+                "file": fr0.get("file") or summ.get("file"),
+                "line": fr0.get("line") or summ.get("line"),
+                "function": fr0.get("function") or summ.get("function"),
                 "statement": fr0.get("statement"),
             }
 
     if ref_sig and probe_mode in ("auto", "ref_crash"):
         fr = (ref_sig.get("crash_frames") or [{}])[0]
+        summ = ref_sig.get("summary") or {}
         stmt = fr.get("statement") or ""
-        rfile = fr.get("file") or (ref_sig.get("summary") or {}).get("file")
-        if stmt and rfile and binaries.get("bin_t"):
-            tfile, tline, how = map_statement_to_target(stmt, rfile, binaries["bin_t"])
+        rfile = fr.get("file") or summ.get("file")
+        # skip sanitizer interceptor paths — map by statement only
+        if rfile and ("sanitizer" in str(rfile) or "interceptor" in str(rfile)):
+            rfile = summ.get("file") if summ.get("file") and \
+                "sanitizer" not in str(summ.get("file")) else rfile
+        if stmt and binaries.get("bin_t"):
+            # If rfile is still an interceptor path, use known_file basename
+            map_base = rfile
+            if map_base and ("sanitizer" in str(map_base) or
+                             "interceptor" in str(map_base)):
+                map_base = known_file or map_base
+            tfile, tline, how = map_statement_to_target(
+                stmt, map_base or "", binaries["bin_t"])
             if tfile and tline:
                 site.update(mode="ref_crash", file=tfile, line=tline,
                             stmt=stmt, how="ref_stmt_mapped")
@@ -530,6 +543,20 @@ def decide_probe_site(job, binaries, timeout, probe_mode):
                 site.update(mode="ref_crash", file=tfile, line=int(known_line),
                             stmt=stmt, how="ref_file_plus_known_line")
                 return site
+            # statement alone: locate file by known basename + stmt match
+            if known_file and binaries.get("bin_t"):
+                kf = resolve_known_file(job, binaries, known_file, stmt)
+                tfile2, tline2, how2 = map_statement_to_target(
+                    stmt, kf, binaries["bin_t"])
+                if tfile2 and tline2:
+                    site.update(mode="ref_crash", file=tfile2, line=tline2,
+                                stmt=stmt, how="ref_stmt_in_known_file")
+                    return site
+                if tfile2 and known_line:
+                    site.update(mode="ref_crash", file=tfile2,
+                                line=int(known_line), stmt=stmt,
+                                how="ref_stmt_file_plus_known_line")
+                    return site
         elif rfile and known_file and os.path.basename(str(rfile)) == \
                 os.path.basename(str(known_file)) and known_line:
             site.update(mode="ref_crash", file=known_file, line=int(known_line),
