@@ -2245,7 +2245,20 @@ def run_gdb_call_site_trace(binary, fork_spec, fork_func, variables, input_file,
                  for a in program_args]
     run_args = ' '.join(run_parts)
     env = build_run_env(real_binary)
-    var_reprs = ', '.join(json.dumps(str(v)) for v in variables)
+
+    # Derive the fields of a TIFFDirEntry* argument when the fork is a
+    # status-code guard: the guard operand (``err``) is the return value of
+    # a reader, and the input bytes that produced it are the entry fields
+    # the callee actually consumed (e.g. ``dir->tdir_count``).  The extra
+    # expressions are harmless when ``dir`` is not a TIFFDirEntry* — GDB
+    # simply fails to evaluate them and records no value.
+    trace_variables = list(variables)
+    if 'dir' in trace_variables:
+        for _field in ('tdir_tag', 'tdir_type', 'tdir_count', 'tdir_offset'):
+            _expr = 'dir->' + _field
+            if _expr not in trace_variables:
+                trace_variables.append(_expr)
+    var_reprs = ', '.join(json.dumps(str(v)) for v in trace_variables)
 
     # ------------------------------------------------------------------
     # Phase A: record every fork-point execution (all variables + context)
