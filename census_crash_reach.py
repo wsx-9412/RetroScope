@@ -115,8 +115,74 @@ def parse_vsweep_log(path: Path) -> dict:
     else:
         case = None
 
-    ref = re.search(r"Reference CRASH:\s*(.+)", t)
-    ref_crash = ref.group(1).strip() if ref else None
+    ref_crash = None
+    for pat in (
+        r"Reference CRASH:\s*(.+)",
+        r"^\s*Reference crash:\s*(.+)",
+        r"^\s*\[\*\] reference crash:\s*(.+)",
+        r"Reference CRASH:\s*(.+)",
+    ):
+        m = re.search(pat, t, re.M)
+        if m:
+            ref_crash = m.group(1).strip()
+            break
+    # Fallback: first ASAN/SIG line with "in <func> at <file>:<line>"
+    if not ref_crash:
+        m = re.search(
+            r"(ASAN:[\w:-]+\s+in\s+\S+\s+at\s+\S+:\d+"
+            r"|SIG\w+\s+in\s+\S+\s+at\s+\S+:\d+"
+            r"|heap-buffer-overflow in \S+ \([^)]+:\d+"
+            r"|SEGV in \S+ \([^)]+:\d+)",
+            t,
+        )
+        if m:
+            ref_crash = m.group(1).strip()
+
+    ref_no_crash = bool(
+        re.search(r"Reference:\s*no crash", t)
+        or re.search(r"Reference binary did not produce an ASan crash", t)
+    )
+
+    # Recover runtime metadata from log header when allver is missing
+    def _log_field(*pats):
+        for p in pats:
+            m = re.search(p, t, re.M)
+            if m:
+                return m.group(1).strip()
+        return None
+
+    log_input = _log_field(
+        r"^Input:\s+(.+)$",
+        r"^\[\*\]\s+input\s*:\s*(\S+)",
+        r"^Input file:\s*(\S+)",
+    )
+    log_args = _log_field(
+        r"^Arguments template:\s*(.+)$",
+        r"^\[\*\]\s+args\s*:\s*(.+)$",
+    )
+    log_bin_t = _log_field(
+        r"^Target binary:\s*(.+)$",
+        r"^\[\*\]\s+Target binary:\s*(.+)$",
+        r"^binary B:\s*(.+)$",
+    )
+    log_bin_r = _log_field(
+        r"^Reference binary:\s*(.+)$",
+        r"^\[\*\]\s+Reference binary:\s*(.+)$",
+        r"^binary A:\s*(.+)$",
+    )
+    log_args = _log_field(
+        r"^Arguments template:\s*(.+)$",
+        r"^\[\*\]\s+args\s*:\s*(.+)$",
+    )
+    # Prefer fully-resolved args line over template with {input}
+    m = re.search(r"^\[\*\]\s+args\s*:\s*(.+)$", t, re.M)
+    if m:
+        log_args = m.group(1).strip()
+    else:
+        m = re.search(r"^Arguments template:\s*(.+)$", t, re.M)
+        if m:
+            log_args = m.group(1).strip()
+
     m = re.search(
         r"reproduced the reference crash on the target:\s*(YES|no)",
         t, re.I,
@@ -131,6 +197,11 @@ def parse_vsweep_log(path: Path) -> dict:
     tgt = re.search(r"Target:\s*(.+)", t)
     tgt_line = tgt.group(1).strip() if tgt else None
 
+    # Infer project/version from header paths
+    log_proj = None
+    m = re.search(r"^Reference:\s+(.+)$", t, re.M)
+    ref_path = m.group(1).strip() if m else None
+
     return {
         "case": case,
         "has_A": has_A,
@@ -138,8 +209,14 @@ def parse_vsweep_log(path: Path) -> dict:
         "has_C": has_C,
         "line_no_msg": has_line_no,
         "ref_crash": ref_crash,
+        "ref_no_crash": ref_no_crash,
         "vs_match": vs_match,
         "tgt_line": tgt_line,
+        "log_input": log_input,
+        "log_args": log_args,
+        "log_bin_t": log_bin_t,
+        "log_bin_r": log_bin_r,
+        "ref_path": ref_path,
         "backward_found": (
             "Backward tracer located the fork statement" in t
         ),
