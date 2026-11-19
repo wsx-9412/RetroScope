@@ -201,6 +201,21 @@ def parse_vsweep_log(path: Path) -> dict:
     log_proj = None
     m = re.search(r"^Reference:\s+(.+)$", t, re.M)
     ref_path = m.group(1).strip() if m else None
+    # Parse ref_path into job.ref (version string) when it is a version dir
+    ref_ver = None
+    if ref_path:
+        base = os.path.basename(ref_path.rstrip("/"))
+        # tiff-4.4.0 / binutils-2.26 / version.2.1 / 1.0.25
+        m2 = re.search(
+            r"(?:tiff|lame|binutils|giflib|audiofile|exiv2|freetype|"
+            r"jasper-version|libredwg|openjpeg|libxml2|pcre2|libpng|"
+            r"expat|openexr|libarchive|libsndfile|sqlite)[_-]?(.+)$",
+            base,
+        )
+        if m2:
+            ref_ver = m2.group(1)
+        else:
+            ref_ver = base
 
     return {
         "case": case,
@@ -217,6 +232,7 @@ def parse_vsweep_log(path: Path) -> dict:
         "log_bin_t": log_bin_t,
         "log_bin_r": log_bin_r,
         "ref_path": ref_path,
+        "ref_ver": ref_ver,
         "backward_found": (
             "Backward tracer located the fork statement" in t
         ),
@@ -391,6 +407,8 @@ def collect_pairs():
                     "log_args": info.get("log_args"),
                     "log_bin_t": info.get("log_bin_t"),
                     "log_bin_r": info.get("log_bin_r"),
+                    "ref_path": info.get("ref_path"),
+                    "ref": (av or {}).get("ref") or info.get("ref_ver"),
                     "allver_status": (av or {}).get("status"),
                     "allver_matched": (av or {}).get("matched"),
                     "allver_baseline_triggers": (av or {}).get(
@@ -404,7 +422,6 @@ def collect_pairs():
                     or info.get("log_args"),
                     "fork_file": (av or {}).get("fork_file"),
                     "fork_line": (av or {}).get("fork_line"),
-                    "ref": (av or {}).get("ref"),
                     "proj": (av or {}).get("proj") or infer_proj_from_text(
                         info.get("log_bin_t"), info.get("log_bin_r"),
                         info.get("ref_path"), ver_raw, cve, lg.name,
@@ -412,20 +429,38 @@ def collect_pairs():
                 }
                 # Prefer existing record; keep first Case marker if re-run
                 if k in pairs:
-                    if pairs[k]["case"] is None and rec["case"]:
-                        pairs[k].update(
-                            case=rec["case"],
-                            ref_crash_str=rec["ref_crash_str"]
-                            or pairs[k]["ref_crash_str"],
+                    old = pairs[k]
+                    # Prefer a record that has a Case marker
+                    if old.get("case") is None and rec.get("case"):
+                        old["case"] = rec["case"]
+                        old["ref_crash_str"] = (
+                            rec.get("ref_crash_str") or old.get("ref_crash_str")
                         )
-                    if not pairs[k].get("allver_status") and rec["allver_status"]:
-                        pairs[k].update(
+                        old["ref_no_crash"] = rec.get("ref_no_crash")
+                        old["log"] = rec.get("log") or old.get("log")
+                        old["source"] = "version_sweep"
+                    elif old.get("case") and rec.get("case") and \
+                            old["case"] != rec["case"]:
+                        # multi-pass: keep first Case (pipeline order)
+                        pass
+                    if not old.get("allver_status") and rec.get("allver_status"):
+                        old.update(
                             allver_status=rec["allver_status"],
                             allver_matched=rec["allver_matched"],
-                            bin_t=rec["bin_t"] or pairs[k]["bin_t"],
-                            input=rec["input"] or pairs[k]["input"],
-                            args=rec["args"] or pairs[k]["args"],
+                            bin_t=rec.get("bin_t") or old.get("bin_t"),
+                            input=rec.get("input") or old.get("input"),
+                            args=rec.get("args") or old.get("args"),
+                            proj=rec.get("proj") or old.get("proj"),
+                            ref=rec.get("ref") or old.get("ref"),
                         )
+                    # fill missing metadata from newer rec
+                    for key in ("log_bin_t", "log_bin_r", "log_input",
+                                "log_args", "ref_no_crash", "proj", "ref",
+                                "bin_r"):
+                        if not old.get(key) and rec.get(key):
+                            old[key] = rec[key]
+                    if not old.get("ref_crash_str") and rec.get("ref_crash_str"):
+                        old["ref_crash_str"] = rec["ref_crash_str"]
                     continue
                 pairs[k] = rec
 
@@ -603,10 +638,7 @@ def map_ref_crash_to_target(ref: dict, bin_t: str) -> dict | None:
 
 def run_ref_crash(job, timeout) -> dict | None:
     from divergence_analyzer import _detect_crash_point, find_source_dirs
-    bin_r = job.get("bin_r")
-    # resolve via version tree if missing
-    if not bin_r or not os.path.isfile(bin_r):
-        bin_r = resolve_ref_binary(job)
+    bin_r = resolve_ref_binary(job)
     if not bin_r or not os.path.isfile(bin_r):
         return None
     inp = job.get("input")
@@ -620,11 +652,16 @@ def run_ref_crash(job, timeout) -> dict | None:
             resolved.append(inp)
         else:
             resolved.append(_replace_input_arg(a, inp or a, inp or a))
-    if not any(str(a) == inp for a in resolved) and inp:
-        # try input as first arg if not present
-        if not any(os.path.basename(str(a)) == os.path.basename(inp or "")
-                   for a in resolved):
-            resolved = [inp] + resolved
+    if inp and not any(
+        str(a) == inp or (
+            os.path.isabs(str(a))
+            and os.path.abspath(str(a)) == os.path.abspath(inp)
+        )
+        for a in resolved
+    ):
+        # keep template-resolved args; only prepend if input never appears
+        if not any(os.path.isfile(str(a)) for a in resolved if a != inp):
+            resolved = resolved + [inp]
     try:
         sig = _detect_crash_point(
             bin_r, resolved, build_run_env(bin_r),
@@ -641,20 +678,38 @@ def resolve_ref_binary(job) -> str | None:
         v = job.get(key)
         if v and os.path.isfile(v) and not str(v).startswith("/tmp/fork_analysis"):
             return rb(v)
+    # From log header "Reference: /path/to/version-dir"
+    ref_path = job.get("ref_path")
+    if ref_path and os.path.isdir(ref_path):
+        prog = None
+        bt = job.get("bin_t") or job.get("log_bin_t") or ""
+        if bt:
+            prog = os.path.basename(bt)
+        if prog:
+            from audit_crash_line_reach import locate_binary
+            b = locate_binary(ref_path, prog)
+            if b:
+                return b
+        # try common programs
+        return resolve_bin_from_log(None, job.get("proj"),
+                                    os.path.basename(ref_path.rstrip("/")),
+                                    prefer_prog=prog)
     prog = None
     bt = job.get("bin_t") or job.get("log_bin_t") or ""
     if bt:
         prog = os.path.basename(bt)
-    # version tree
     try:
         from audit_crash_line_reach import resolve_version_dir, locate_binary
     except Exception:
         return None
     proj = job.get("proj")
     ref = job.get("ref")
+    # Also try extracting ref version from ref_path
+    if (not ref) and ref_path:
+        ref = os.path.basename(str(ref_path).rstrip("/"))
     if not proj or not ref:
         return None
-    vdir = resolve_version_dir(proj, ref)
+    vdir = resolve_version_dir(proj, ref) or resolve_version_dir(proj, norm_ver(ref))
     if not vdir:
         return None
     if prog:
@@ -706,25 +761,51 @@ def probe_pair(job, timeout) -> dict:
         if site:
             how = "ref_crash_mapped"
     if site is None:
-        # run ref crash detection
+        # run ref crash detection (needs resolved ref binary)
         sig = run_ref_crash(job, timeout)
         if sig:
-            fr = (sig.get("crash_frames") or [{}])[0]
+            # _detect_crash_point returns top-level file/line/function;
+            # extract_crash_signature style uses crash_frames/summary.
+            fr = (sig.get("crash_frames") or [{}])[0] if sig.get("crash_frames") else {}
             summ = sig.get("summary") or {}
             ref2 = {
-                "file": fr.get("file") or summ.get("file"),
-                "line": fr.get("line") or summ.get("line"),
-                "function": fr.get("function") or summ.get("function"),
+                "file": sig.get("file") or fr.get("file") or summ.get("file"),
+                "line": sig.get("line") or fr.get("line") or summ.get("line"),
+                "function": sig.get("function") or fr.get("function")
+                or summ.get("function"),
             }
-            if ref2["file"] and "sanitizer" not in str(ref2["file"]):
+            # Prefer a project frame over sanitizer/libc when top-level is junk
+            if ref2["file"] and re.search(
+                r"sanitizer|interceptor|libc|ld-linux|raise\.c|abort\.c",
+                str(ref2["file"]),
+            ):
+                for f in (sig.get("backtrace") or []):
+                    fl = str(f.get("file") or "")
+                    fn = str(f.get("function") or "")
+                    if re.search(r"sanitizer|interceptor|__asan|__ubsan", fn + fl):
+                        continue
+                    if re.search(r"libc|ld-linux|raise\.c|abort\.c|pthread", fn + fl):
+                        continue
+                    if f.get("file") and f.get("line"):
+                        ref2 = {
+                            "file": f.get("file"),
+                            "line": f.get("line"),
+                            "function": f.get("function"),
+                        }
+                        break
+            if ref2["file"] and ref2["line"] and not re.search(
+                r"sanitizer|interceptor", str(ref2["file"])
+            ):
                 site = map_ref_crash_to_target(ref2, real)
                 if site:
                     how = "ref_run_then_map"
                     job["ref_crash_str"] = (
                         "%s in %s at %s:%s"
-                        % (sig.get("type") or "", ref2.get("function") or "",
+                        % (sig.get("signal") or sig.get("type") or "",
+                           ref2.get("function") or "",
                            ref2.get("file"), ref2.get("line"))
                     )
+                    job["ref_crash_parsed"] = ref2
     if site is None:
         # NEVER fall back to fork line — that was the bug
         return {
