@@ -1300,4 +1300,31 @@ MATCH 明细：4.0.3 `b@0xe=0x15`（单字节）→ `_TIFFmemcpy` tif_unix.c:284
 |-----|------------|------|---------|------|
 | **CVE-2022-28506** | giflib 5.1.1→4.1.6 | **NOW_MATCH** | Step 6d 静态 pairwise（0x454+0x456:-0x03-0x01） | `out/CVE-2022-28506-4-1-6/0x454+0x456:-0x03-0x01:time:1255` |
 
+mutate success
+CVE              参考                  target         命令
+CVE-2016-10092  4.0.7    3.9.3-3.9.6  # tiffcrop -i $FILE /tmp/foo
+CVE-2016-10269  4.0.7    4.0.0-4.0.6   tiffcp -i   /tmp/foo
+CVE-2022-2953   4.4.0    3.9.3-4.3.0 /tiffcrop -Z 1:4,3:3 -R 90 -H 300  -S 2:2  -i poc /tmp/foo
+CVE-2022-3627   4.4.0    4.0.0-4.0.8 /tiffcrop -Z 1:4,3:3 -R 90 -H 300 -i poc2 /tmp/foo
+CVE-2023-25435  4.5.0    3.9.6-4.3.0 /tiffcrop -E l -Z 12:50,12:99 -e divided  -R 270  poc  /dev/null
+CVE-2022-3598   4.4.0    4.0.0-4.0.8  tiffcrop -Z 1:4,3:3 poc /tmp/foo
+CVE-2022-3597   4.4.0    4.0.0-4.0.8 tiffcrop -Z 1:4,3:3 -R 90 -H 300 -i poc /tmp/foo
+CVE-2022-0891   4.3.0    3.9.3-4.0.4beta ./tiffcrop -i -E l -H 10 -V 10 -S 8:4 -R 270  
+CVE-2020-19144  4.0.10   3.9.3-4.0.8 ./tiffcp -i poc /tmp/foo  
+CVE-2023-0800   4.4.0    3.9.3-4.3.0  tiffcrop -E right -z 1,1,2048,2048:1,2049,2048,4097 -i	 poc /tmp/foo 
+CVE-2023-30775  4.4.0    4.0.7-4.0.8  tiffcrop -i  poc /tmp/foo   
+
+待定
+CVE              崩溃版本                         命令
+CVE-2022-1354    4.0.9-4.3.0   tiffinfo -D -i  -r poc
+CVE-2022-3570  4.0.0-4.4.0    ./tiffcrop -i -E l -H 10 -V 10 -S 8:4 -R 270 poc.tif a.tif
+CVE-2022-2519   4.0.9-4.4.0    /tiffcrop -Z 1:4,3:3 -R 90 -H 300 -S 2:2 -i poc2 /tmp/foo
+CVE-2022-3626    4.0.9-4.4.0     tiffcrop -X 1 -Y 2 -R 180 -H 300 -V 300 -i poc /tmp/foo
+CVE-2022-3627    4.0.9-4.4.0     /tiffcrop -Z 1:4,3:3 -R 90 -H 300 -i poc2 /tmp/foo
+CVE-2022-4645     4.1.0-4.4.0   tiffcp poc /tmp/foo
+CVE-2022-48281   4.0.9-4.5.0  tiffcrop -Z 1:3,2:4 -e divided /tmp/foo
+CVE-2023-25435    4.4.0-4.5.0    /tiffcrop -E l -Z 12:50,12:99 -e divided  -R 270  poc  /dev/null
+CVE-2023-3618    buff-overflow 4.1.0和之前的不能触发  ./tools/tiffcrop -Z 12:50,12:99 -R 270 poc /dev/null
+
+
 > 表中逐 pair 状态见 `results/nomatch_retest/_summary.json`（随批次推进自动更新）。
