@@ -9058,15 +9058,34 @@ def main():
     stage_timing.record("locate input-file offsets for variables at the fork statement",
                         time.time() - _t_main_start)
 
+    # Test the EXACT fork-variable offsets first (A_dynamic_callsite: the
+    # entry/field bytes derived from the fork-point context), then the
+    # value-pattern origins.  The exact set contains the field the guard's
+    # producer actually consumed (e.g. dir->tdir_count -> bytes 0xec..0xef)
+    # and finds the crashing byte without first walking thousands of noisy
+    # value-pattern offsets.  Earlier versions swept all offsets in sorted
+    # order, so the exact IFD field bytes were reached only after the noise.
+    _exact_stage1 = sorted(
+        set(candidate_tiers.get('A_dynamic_callsite') or []) & stage1_offsets)
+    _weak_stage1 = sorted(stage1_offsets - set(_exact_stage1))
     crash_results = {}
     any_match = False
-    if stage1_offsets:
+    if _exact_stage1:
         crash_results, any_match = run_byte_mutation_stage(
             binary, binary_ref, input_file, program_args,
-            sorted(stage1_offsets), a.timeout,
+            _exact_stage1, a.timeout,
             title='Step 6: Byte mutation crash testing '
-                  '(fork-variable offsets)',
+                  '(fork-variable IFD fields, exact)',
             version=config.get('version_b'))
+    if not any_match and _weak_stage1:
+        _weak_crash, _weak_match = run_byte_mutation_stage(
+            binary, binary_ref, input_file, program_args,
+            _weak_stage1, a.timeout,
+            title='Step 6: Byte mutation crash testing '
+                  '(fork-variable value origins)',
+            version=config.get('version_b'))
+        crash_results.update(_weak_crash)
+        any_match = _weak_match
 
     # Mutation ordering (dynamic first, static last):
     #   Step 6   — single-byte sweep over the GDB-discovered fork-variable
