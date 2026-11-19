@@ -9185,7 +9185,7 @@ def main():
               f'{", ".join(f"0x{o:x}" for o in sorted(_active_offs))}')
         print(f'  Pairwise inert pool: {len(_inert_offs)} offset(s); '
               f'interaction pairs: {len(_interaction_pairs)}')
-    if len(_pair_pool) >= 2:
+    if not any_match and len(_pair_pool) >= 2:
         _var_spans = {v: [h['offset'] for h in hits]
                       for v, hits in (var_offsets or {}).items()}
         pairwise_results = run_pairwise_mutation_stage(
@@ -9203,12 +9203,15 @@ def main():
 
     ifd_crash_results = {}
     # Step 6a: dynamic-context structure fields (still "GDB-discovered").
+    # Skip once the exact fork-variable field sweep already reproduced the
+    # reference crash: further directed structural probes are redundant.
     _dyn_probe_offsets = list(_ifd_probe_offsets) if _ifd_from_dynamic \
         else []
-    ifd_crash_results, ifd_any_match = _directed_structural_stage(
-        _dyn_probe_offsets, 'Step 6a')
-    if ifd_any_match:
-        any_match = True
+    if not any_match:
+        ifd_crash_results, ifd_any_match = _directed_structural_stage(
+            _dyn_probe_offsets, 'Step 6a')
+        if ifd_any_match:
+            any_match = True
 
     # Step 6c/6d: STATIC-analysis offsets — the on-disk structure fields
     # from the static format parse (ELF/GIF/XML/font headers, or the TIFF
