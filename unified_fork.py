@@ -494,28 +494,36 @@ def build_dynamic_result(res, boundary_func, source_root_a, source_root_b,
                 if va.get(side) != vb.get(side) and expr not in variables:
                     variables.append(expr)
         if not exprs:
-            # Extract full member-access chains (e.g.
-            # ``tif->tif_fields[mb]->field_tag``) rather than splitting them
-            # into individual identifiers: struct members like ``field_tag``
-            # are not standalone lvalues and cannot be instrumented.
-            for text in (a.get('text', ''), b.get('text', '')):
-                for v in extract_variables_from_statement(text):
-                    if v not in variables:
-                        variables.append(v)
-        if not variables:
             # One-hop dataflow fallback: the decision operands were all
             # filtered out (e.g. ``err`` — a status code, not an input byte).
             # Walk up to the assignment that produces the differing operand
             # (``err=TIFFReadDirEntryLong8Array(tif,dir,&data);``) and take
-            # its RHS variables — the real input-derived producers.  Gated
-            # on an EMPTY result, so samples whose operands extract normally
-            # keep their exact variable set (no behavior change).
+            # its RHS variables — the real input-derived producers.  This
+            # must run BEFORE the raw statement scan: the scan can keep a
+            # CamelCase enum constant (e.g. ``TIFFReadDirEntryErrOk``) and
+            # would otherwise suppress the producer variables entirely.
             for v in _upstream_operand_variables(
                     file_b, b.get('line'), fb,
                     a.get('text', ''), b.get('text', '')):
                 if v not in variables:
                     variables.append(v)
+            if not variables:
+                # Extract full member-access chains (e.g.
+                # ``tif->tif_fields[mb]->field_tag``) rather than splitting
+                # them into individual identifiers: struct members like
+                # ``field_tag`` are not standalone lvalues and cannot be
+                # instrumented.
+                for text in (a.get('text', ''), b.get('text', '')):
+                    for v in extract_variables_from_statement(text):
+                        if v not in variables:
+                            variables.append(v)
         out['variables'] = variables
+        # Keep the resolved producer variables attached to the dynamic fork
+        # as well: consumers that only inspect ``dynamic_fork`` (origin
+        # tracing, verification) must see the same provenance as the
+        # top-level result.
+        out['dynamic_fork'] = dict(res)
+        out['dynamic_fork']['variables'] = list(variables)
         verdict = 'weak' if res.get('weak') else 'strong'
         if res.get('absorbed'):
             verdict += ', ABSORBED (may not be causal — reported as fallback)'
