@@ -338,7 +338,15 @@ if [ "$POLYTRACKER_MODE" = false ]; then
     echo "Dynamic origin trace input offsets: ${DYN_OFFSETS}"
 
     SKIP_LEGACY=0
+    _DYN_STRONG=0
     if [ "${DYN_OFFSETS:-0}" != "0" ]; then
+        # A strong dynamic decision fork is the guard whose outcome split the
+        # runs.  Its origin trace can be coarser than the exact IFD field
+        # (e.g. it maps the whole mmap/IFD range, not dir->tdir_count), so we
+        # keep the legacy call-site stage to map the exact producer field.
+        _DYN_STRONG=$(python3 -c "import json,sys;d=json.load(open(sys.argv[1]));f=d.get('dynamic_fork') or {};print('1' if f.get('status')=='decision_fork' and not f.get('weak') and (f.get('diff') or {}).get('strong') else '0')" "$DIVERGE_JSON" 2>/dev/null || echo 0)
+    fi
+    if [ "${DYN_OFFSETS:-0}" != "0" ] && [ "$_DYN_STRONG" != "1" ]; then
         # Validate the dynamically derived offsets by mutating them and
         # checking whether the target reproduces the reference crash.  If it
         # does, the legacy offset+search stage is not needed.
