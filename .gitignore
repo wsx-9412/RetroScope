@@ -80,3 +80,6 @@ out/
 
 auto_sync.sh
 sync.log
+
+# per-run intermediate artifacts (configs, isolated inputs, JSONs)
+.retro_work/
