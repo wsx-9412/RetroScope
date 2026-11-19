@@ -1,0 +1,10 @@
+[
+ {
+  "cve": "CVE-2022-28506",
+  "label": "4.1.6",
+  "status": "ERROR",
+  "rc": 1,
+  "elapsed": 23.3,
+  "log": "/home/ws/Desktop/RetroScope/results/CVE-2022-28506/4.1.6.log"
+ }
+]
