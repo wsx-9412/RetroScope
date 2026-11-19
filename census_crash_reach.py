@@ -733,14 +733,18 @@ def main():
 
     def bucket(p):
         r = p.get("reach")
-        if r is True:
+        if r is True or r == "reached_no_crash":
             return "reached"
-        if r is False:
-            # distinguish early crash vs not
+        if r is False or r in ("not_reached", "not_reached_early_crash"):
+            if r == "not_reached_early_crash" or p.get("case") == "C":
+                return "not_reached_early_crash"
             cls = (p.get("probe") or {}).get("classification") or ""
-            if p.get("case") == "C" or cls.startswith("C_"):
+            if cls.startswith("C_"):
                 return "not_reached_early_crash"
             return "not_reached"
+        if r is None:
+            return "unknown"
+        # unexpected string
         return "unknown"
 
     for p in pairs:
