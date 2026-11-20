@@ -460,7 +460,8 @@ DYN_MUT_PY
                 --target "$TARGET_VERSION_PATH" \
                 --input "$INPUT_FILE" \
                 --trace-json "$DIVERGE_JSON" \
-                --max-rounds 3 \
+                --max-rounds 2 \
+                --max-candidates 24 \
                 "${EXTRA_ARGS[@]}" \
                 && FLIP_ITER_OK=1 || FLIP_ITER_OK=0
             if [ "$FLIP_ITER_OK" = "0" ]; then

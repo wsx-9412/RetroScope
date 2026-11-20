@@ -116,11 +116,25 @@ def find_binary(build_dir: Path, exec_config: dict) -> Path:
         build_dir / subdir / ".libs" / program,     # e.g. tools/.libs/tiffcrop
         build_dir / program,
     ]
+
+    def _ok(c: Path) -> bool:
+        return c.exists() and os.access(c, os.X_OK)
+
+    # Prefer an instrumented candidate: libtool wrapper scripts sit at the
+    # non-.libs path and are not ELF, so they fail the functracer check even
+    # when the real binary in .libs is instrumented.  Picking the wrapper
+    # blindly made every run rebuild the tree in a temp copy.
     for c in candidates:
-        if c.exists() and os.access(c, os.X_OK):
+        if _ok(c) and has_function_instrumentation(c):
+            return c
+    for c in candidates:
+        if _ok(c):
             return c
     for c in build_dir.rglob(program):
-        if os.access(c, os.X_OK):
+        if _ok(c) and has_function_instrumentation(c):
+            return c
+    for c in build_dir.rglob(program):
+        if _ok(c):
             return c
     return None
 
