@@ -305,6 +305,178 @@ SPECS = [
                       "{output_file}"], output="/dev/null"),
 ]
 
+
+# ---------------------------------------------------------------------------
+# Full target-version sets per CVE ("all qualifying older versions").
+# A base spec's single target is replaced by this list when its CVE appears
+# here.  Lists are the documented non-crashing ranges, restricted to version
+# trees that exist locally.  Ref versions and versions known to trigger the
+# original PoC are excluded.
+# ---------------------------------------------------------------------------
+def _bu(*v):
+    return [f"binutils-versions/binutils-{x}" for x in v]
+
+
+def _lx(*v):
+    return [f"libxml2-versions/libxml2-{x}" for x in v]
+
+
+def _ft(*v):
+    return [f"freetype-versions/freetype-{x}" for x in v]
+
+
+def _oj(*v):
+    return [f"openjpeg-versions/{x}" for x in v]
+
+
+def _la(*v):
+    return [f"libarchive-versions/v{x}" for x in v]
+
+
+def _tf(*v):
+    return [f"tiff-versions/tiff-{x}" for x in v]
+
+
+def _lr(*v):
+    return [f"libredwg-versions/libredwg-{x}" for x in v]
+
+
+def _af(*v):
+    return [f"audiofile-versions/audiofile-{x}" for x in v]
+
+
+def _lm(*v):
+    return [f"lame-versions/lame-{x}" for x in v]
+
+
+def _js(*v):
+    return [f"jasper-versions/jasper-version-{x}" for x in v]
+
+
+def _pe(*v):
+    return [f"pcre2-versions/pcre2-pcre2-{x}" for x in v]
+
+
+_T39 = ["3.9.3", "3.9.4", "3.9.5", "3.9.6"]
+_T40 = ["4.0.0", "4.0.1", "4.0.2", "4.0.3", "4.0.4", "4.0.4beta",
+        "4.0.5", "4.0.6", "4.0.7", "4.0.8", "4.0.9", "4.0.10"]
+_T40_06 = _T40[:8]
+_T40_08 = _T40[:10]
+_T40_09 = _T40[:11]
+_T41_43 = ["4.1.0", "4.2.0", "4.3.0"]
+
+ALL_TARGETS = {
+    # binutils
+    "CVE-2022-44840": _bu("2.24", "2.25", "2.26", "2.27", "2.28", "2.29",
+                          "2.30", "2.31", "2.31.1", "2.32", "2.34", "2.35",
+                          "2.35.1", "2.36"),
+    "CVE-2023-1972": _bu("2.25", "2.26", "2.27", "2.28", "2.29", "2.30",
+                         "2.31", "2.31.1", "2.32", "2.34", "2.35", "2.35.1",
+                         "2.36", "2.38"),
+    "CVE-2019-9074": _bu("2.25"),
+    "CVE-2017-9750": _bu("2.25"),
+    "CVE-2017-14939": _bu("2.26"),
+    # libxml2
+    "CVE-2024-34459": _lx("2.9.0", "2.9.1", "2.9.2", "2.9.4"),
+    # freetype
+    "CVE-2026-23865": _ft("2.11.1", "2.12.1", "2.13.0"),
+    "CVE-2026-50811": _ft("2.11.1", "2.12.1", "2.13.0", "2.13.1",
+                          "2.13.2", "2.13.3"),
+    # openjpeg
+    "CVE-2016-9572": _oj("version.2.0"),
+    "issue908": _oj("version.2.0"),
+    "CVE-2018-18088": _oj("version.2.0", "version.2.0.1", "version.2.1",
+                          "version.2.1.1", "version.2.1.2", "version.2.2.0"),
+    "CVE-2021-3575": _oj("v2.3.0"),
+    "issue1620": _oj("version.2.0", "version.2.0.1", "version.2.1",
+                     "version.2.1.1", "version.2.1.2", "version.2.2.0",
+                     "v2.3.0", "v2.3.1", "v2.4.0", "v2.5.0", "v2.5.1",
+                     "v2.5.2"),
+    "CVE-2017-14151": _oj("version.2.0", "version.2.0.1", "version.2.1"),
+    "CVE-2017-14152": _oj("version.2.0", "version.2.0.1", "version.2.1"),
+    "CVE-2017-14164": _oj("version.2.0", "version.2.0.1", "version.2.1"),
+    "CVE-2017-14039": _oj("version.2.1"),
+    # libarchive
+    "CVE-2025-5915": _la("3.4.0", "3.4.3", "3.5.0", "3.5.3"),
+    # libtiff main table
+    "CVE-2025-8176": _tf("4.1.0", "4.2.0", "4.3.0", "4.4.0", "4.5.0",
+                         "4.5.1"),
+    "CVE-2025-8177": _tf("3.9.3", "3.9.4", "3.9.5", "4.0.10", "4.1.0"),
+    "CVE-2016-10268": _tf(*(_T39 + _T40_06 + ["4.0.8", "4.0.9", "4.0.10",
+                                              "4.1.0"])),
+    "CVE-2016-10269": _tf(*_T39),
+    "CVE-2016-10270": _tf(*_T39),
+    "CVE-2017-7597": _tf(*(_T39 + _T40_06)),
+    "CVE-2022-0891": _tf(*(_T39 + ["4.0.0", "4.0.1", "4.0.2", "4.0.3",
+                                    "4.0.4beta"])),
+    # libredwg
+    "CVE-2022-33034": _lr("0.12.4"),
+    "CVE-2026-9500": _lr("0.12.4", "0.12.5", "0.13", "0.13.3", "0.13.4"),
+    "CVE-2026-9502": _lr("0.12.4", "0.12.5", "0.13", "0.13.3"),
+    "CVE-2026-9503": _lr("0.12.4", "0.12.5"),
+    "CVE-2026-9504": _lr("0.12.4", "0.12.5", "0.13", "0.13.3"),
+    "CVE-2026-9605": _lr("0.12.4", "0.12.5", "0.13", "0.13.3"),
+    "CVE-2026-15184": _lr("0.12.4", "0.12.5"),
+    "CVE-2026-15520": _lr("0.12.4", "0.12.5", "0.13", "0.13.3"),
+    # audiofile
+    "CVE-2019-13147": _af("0.3.0", "0.3.1", "0.3.2", "0.3.3", "0.3.4"),
+    # lame
+    "CVE-2015-9101": _lm("3.98.2", "3.98.4"),
+    "CVE-2017-9872": _lm("3.98.2", "3.98.4"),
+    # jasper
+    "CVE-2017-5505": _js(*[f"1.900.{i}" for i in range(8, 25)]),
+    "CVE-2017-6851": _js(*[f"1.900.{i}" for i in range(8, 25)]),
+    # pcre2
+    "CVE-2026-86145": _pe("10.00", "10.20", "10.30"),
+    # libtiff tail (mutate-success list)
+    "CVE-2016-10092": _tf(*_T39),
+    "CVE-2022-2953": _tf(*(_T39 + _T40 + _T41_43)),
+    "CVE-2022-3627": _tf(*(_T40_08)),
+    "CVE-2023-25435": _tf(*(_T39[3:] + _T40 + _T41_43)),
+    "CVE-2022-3598": _tf(*_T40_08),
+    "CVE-2022-3597": _tf(*_T40_08),
+    "CVE-2020-19144": _tf(*(_T39 + _T40_08)),
+    "CVE-2023-0800": _tf(*(_T39 + _T40 + _T41_43)),
+    "CVE-2023-30775": _tf("4.0.7", "4.0.8"),
+    # libtiff tail (pending, verified non-crashing targets)
+    "CVE-2022-1354": _tf(*(_T39 + _T40_08)),
+    "CVE-2022-2519": _tf(*(_T39 + _T40_08)),
+    "CVE-2022-3626": _tf(*(_T39 + _T40_08)),
+    "CVE-2022-4645": _tf(*(_T39 + _T40_09)),
+    "CVE-2022-48281": _tf(*(_T39 + _T40_08)),
+    "CVE-2023-3618": _tf(*(_T39 + _T40 + ["4.1.0"])),
+}
+
+
+def _version_label(path):
+    b = os.path.basename(str(path).rstrip("/"))
+    return re.sub(
+        r"^(libredwg-|libxml2-|libsndfile-|audiofile-|giflib-|binutils-|"
+        r"jasper-version-|lame-|tiff-|freetype-|libarchive-v|exiv2-|"
+        r"openexr-|pcre2-pcre2-|openjpeg-|version\.|v)", "", b)
+
+
+_expanded = []
+_missing_targets = []
+for _sp in SPECS:
+    _dirs = ALL_TARGETS.get(_sp["cve"])
+    if not _dirs:
+        _expanded.append(_sp)
+        continue
+    _seen = set()
+    for _d in _dirs:
+        if _d in _seen:
+            continue
+        _seen.add(_d)
+        if not (BASE / _d).is_dir():
+            _missing_targets.append(_d)
+            continue
+        _x = dict(_sp)
+        _x["tgt"] = _d
+        _x["label"] = _version_label(_d)
+        _expanded.append(_x)
+SPECS = _expanded
+
 # Per-project EXECUTION_CONFIG values used by the generated configs.
 EXEC = {
     "binutils":   ("/build-asan/binutils", 120),
