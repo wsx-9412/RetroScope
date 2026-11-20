@@ -570,13 +570,16 @@ def prepare(sp, tag):
         return None, f"ref dir missing: {ref}"
     if not tgt.is_dir():
         return None, f"target dir missing: {tgt}"
-    # isolated input copy (fork_trace_result.json lives next to the input)
-    idir = WORK / "inputs" / sp["cve"]
+    # isolated input copy (fork_trace_result.json lives next to the input).
+    # Include the target label so two concurrent targets of the same CVE do
+    # not share fork_trace_result.json.
+    idir = WORK / "inputs" / sp["cve"] / sp["label"]
     idir.mkdir(parents=True, exist_ok=True)
     icopy = idir / inp.name
     shutil.copy2(inp, icopy)
     sp["input_abs"] = icopy.resolve()
-    cfg = WORK / "configs" / sp["cve"] / f"config_{sp['project']}.py"
+    cfg = (WORK / "configs" / sp["cve"] / sp["label"] /
+           f"config_{sp['project']}.py")
     make_config(sp, cfg)
     sp["cfg"] = cfg
     sp["ref_abs"] = ref.resolve()
