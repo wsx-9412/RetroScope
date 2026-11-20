@@ -454,6 +454,8 @@ DYN_MUT_PY
         if [ "$FLIP_MATCH" = "0" ] && [ "${SKIP_LEGACY:-0}" != "1" ] && [ "${FALLBACK_ONLY:-0}" != "1" ]; then
             echo ""
             echo "=== Fork-flip iteration (mutation stages found no match) ==="
+            FLIP_MAX_CANDIDATES=8
+            if [ "$PROJECT_NAME" = "freetype" ]; then FLIP_MAX_CANDIDATES=4; fi
             python3 -u fork_flip_iter.py \
                 --config "$CONFIG_MODULE" \
                 --ref "$REFERENCE_VERSION_PATH" \
@@ -461,7 +463,7 @@ DYN_MUT_PY
                 --input "$INPUT_FILE" \
                 --trace-json "$DIVERGE_JSON" \
                 --max-rounds 2 \
-                --max-candidates 24 \
+                --max-candidates "$FLIP_MAX_CANDIDATES" \
                 "${EXTRA_ARGS[@]}" \
                 && FLIP_ITER_OK=1 || FLIP_ITER_OK=0
             if [ "$FLIP_ITER_OK" = "0" ]; then
