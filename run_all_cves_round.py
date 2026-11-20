@@ -738,11 +738,12 @@ def main():
     statuses = []
     if args.resume and status_path.is_file():
         try:
-            statuses = json.load(open(status_path))
+            _old = json.load(open(status_path))
+            statuses = [r for r in _old if r.get("status") in
+                        ("MATCH", "NO_MATCH", "MATCH_PARTIAL")]
         except Exception:
             statuses = []
-    done = {(r.get("cve"), r.get("label")) for r in statuses
-            if r.get("status") in ("MATCH", "NO_MATCH", "MATCH_PARTIAL")}
+    done = {(r.get("cve"), r.get("label")) for r in statuses}
     if done:
         before = len(prepared)
         prepared = [sp for sp in prepared
