@@ -615,6 +615,10 @@ def run_one(sp, tag, timeout, log_suffix=""):
                          "allocator_may_return_null=1:hard_rss_limit_mb=512"),
         "TMPDIR": str(tmpdir),
     })
+    free = shutil.disk_usage("/").free
+    if free < 3 * 1024 ** 3:
+        return {"cve": sp["cve"], "label": sp["label"], "status": "DISK_FULL",
+                "rc": -1, "elapsed": 0, "log": str(log)}
     t0 = time.time()
     out_f = open(spool, "w", errors="replace")
     try:
@@ -683,6 +687,12 @@ def main():
                     help="per-pair timeout seconds (default 21600)")
     ap.add_argument("--clear-results", action="store_true",
                     help="archive text/log summaries and empty results/ first")
+    ap.add_argument("--breadth-first", action="store_true",
+                    help="interleave targets across CVEs: one target per CVE, "
+                         "then the next target per CVE, ...")
+    ap.add_argument("--resume", action="store_true",
+                    help="skip pairs already MATCH/NO_MATCH in the round's "
+                         "status json; retry ERROR/TIMEOUT pairs")
     ap.add_argument("--only", action="append", default=[],
                     help="run only these CVE ids (repeatable)")
     ap.add_argument("--dry-run", action="store_true")
@@ -724,9 +734,39 @@ def main():
             print(f"[setup-error] {sp['cve']}: {err}")
         else:
             prepared.append(s)
-    print(f"[*] prepared {len(prepared)} pairs")
-
+    status_path = WORK / "status" / f"status_{args.round_tag}.json"
     statuses = []
+    if args.resume and status_path.is_file():
+        try:
+            statuses = json.load(open(status_path))
+        except Exception:
+            statuses = []
+    done = {(r.get("cve"), r.get("label")) for r in statuses
+            if r.get("status") in ("MATCH", "NO_MATCH", "MATCH_PARTIAL")}
+    if done:
+        before = len(prepared)
+        prepared = [sp for sp in prepared
+                    if (sp["cve"], sp["label"]) not in done]
+        print(f"[*] resume: skipped {before - len(prepared)} completed pairs")
+
+    if args.breadth_first:
+        from collections import OrderedDict
+        groups = OrderedDict()
+        for sp in prepared:
+            groups.setdefault(sp["cve"], []).append(sp)
+        inter = []
+        while True:
+            progressed = False
+            for cve in list(groups):
+                if groups[cve]:
+                    inter.append(groups[cve].pop(0))
+                    progressed = True
+            if not progressed:
+                break
+        prepared = inter
+
+    print(f"[*] prepared {len(prepared)} pairs to run")
+
     lock = __import__("threading").Lock()
 
     def _work(sp):
@@ -743,9 +783,7 @@ def main():
             statuses.append(r)
             print(f"[{time.strftime('%F %T')}] DONE  {r['cve']} "
                   f"{r.get('status')} ({r.get('elapsed')}s)", flush=True)
-            json.dump(statuses, open(WORK / "status" /
-                                     f"status_{args.round_tag}.json", "w"),
-                      indent=1)
+            json.dump(statuses, open(status_path, "w"), indent=1)
         return r
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as ex:
