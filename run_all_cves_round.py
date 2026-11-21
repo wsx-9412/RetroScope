@@ -596,10 +596,15 @@ def prepare(sp, tag):
 def run_one(sp, tag, timeout, log_suffix=""):
     log = RESULTS / sp["cve"] / f"{sp['label']}.log"
     log.parent.mkdir(parents=True, exist_ok=True)
+    free = shutil.disk_usage("/").free
+    if free < 5 * 1024 ** 3:
+        shutil.rmtree(sp["artifact"], ignore_errors=True)
+        return {"cve": sp["cve"], "label": sp["label"], "status": "DISK_FULL",
+                "rc": -1, "elapsed": 0, "log": str(log)}
     spool = sp["artifact"] / "driver_stdout.tmp"
     # Per-pair TMPDIR: run_fork_analysis builds both version trees under it
     # and the rr/dynamic traces keep their workspaces there.  Removing it
-    # after the run keeps /tmp from filling up over 57 pairs.
+    # after the run keeps /tmp from filling up.
     tmpdir = Path("/tmp") / f"retro_{sp['cve']}_{tag}_{os.getpid()}_{int(time.time())}"
     tmpdir.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
@@ -615,10 +620,6 @@ def run_one(sp, tag, timeout, log_suffix=""):
                          "allocator_may_return_null=1:hard_rss_limit_mb=512"),
         "TMPDIR": str(tmpdir),
     })
-    free = shutil.disk_usage("/").free
-    if free < 3 * 1024 ** 3:
-        return {"cve": sp["cve"], "label": sp["label"], "status": "DISK_FULL",
-                "rc": -1, "elapsed": 0, "log": str(log)}
     t0 = time.time()
     out_f = open(spool, "w", errors="replace")
     try:
@@ -671,6 +672,9 @@ def run_one(sp, tag, timeout, log_suffix=""):
         status = "MATCH"
     else:
         status = "NO_MATCH"
+    # Intermediate JSONs are not part of the requested results layout and
+    # can be several GB per long pair; drop them once the log is final.
+    shutil.rmtree(sp["artifact"], ignore_errors=True)
     return {"cve": sp["cve"], "label": sp["label"], "status": status,
             "rc": rc, "elapsed": round(elapsed, 1), "log": str(log)}
 
