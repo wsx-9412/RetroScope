@@ -1,6 +1,6 @@
 # RetroScope 两轮 no-match CVE 分析（r1 + r3）
 
-生成时间：2026-11-25 00:13  
+生成时间：2026-11-25 00:14  
 状态快照：`status_r3.json` 最后更新 2026-11-25 00:09（后台批次仍在运行，部分 CVE 仍有版本未跑完）
 
 ## 0. 范围与口径
@@ -31,7 +31,6 @@
 | CVE-2023-1972 | 14 | 2.32 | ASAN:heap-buffer-overflow _bfd_elf_print_private_bfd_data (elf.c:1844) | **2a** | 1 | 目标 2.38 仍拒绝 `hdr->sh_info==0` 并保留 `bfd_alloc/amt` 检查；参考 2.40 |
 | CVE-2023-3618 | 11 | 3.9.5 | ASAN:SEGV _TIFFmemcpy (tif_unix.c:345) | **2a** | 2b | `Fax3Encode` 在 3.9.5/4.1.0 等目标存在；完整阶段约 2.3 万候选，只有 no_crash/f |
 | CVE-2025-48071 | 1 | 3.2.12 | ASAN:heap-buffer-overflow interleave (internal_zip.c:166) | **2a** | 1 | 源码层面：3.2.12 要求 `actual_out_bytes == uncompressed_size`，3.3.0 |
-| CVE-2025-5915 | 4 | 3.4.3 | ASAN:heap-buffer-overflow copy_from_lzss_window (archive_read_support_format_rar.c:3069) | **2a** | 3 | 目标 3.5.3 的 `copy_from_lzss_window` 签名/实现与 3.6.0 不同（`const vo |
 | CVE-2026-15520 | 4 | 0.12.5 | ASAN:heap-buffer-overflow decompress_R2004_section (decode.c:1313) | **2a** | 3 | 目标 0.12.x/0.13.3：0.12.5 在 `decompress_R2004_section` 前拒绝/边界返 |
 | CVE-2026-86145 | 3 | 10.30 | ASAN:heap-buffer-overflow internal_dfa_match (pcre2_dfa_match.c:677) | **2a** | 3 | 目标 10.30 对递归 DFA 报 `error -52: nested recursion...`，在到达 `int |
 | CVE-2026-9500 | 4 | 0.13 | ASAN:SEGV read_2004_compressed_section (decode.c:2181) | **2a** | 3 | 参考崩溃只在 6d6a339；目标 0.12.4-0.13.4 的 `read_2004_compressed_sect |
@@ -39,6 +38,7 @@
 | CVE-2021-3575 | 7 | 2.3.0 | ASAN:heap-buffer-overflow sycc420_to_rgb (color.c:379) | **2b** | 1 | 完整阶段约 8 千候选，`sycc420_to_rgb` 在目标存在；fork 在 `opj_j2k_exec`，得到  |
 | CVE-2023-30775 | 11 | 4.0.4beta | ASAN:heap-buffer-overflow extractContigSamples32bits (tiffcrop.c:3196) | **2b** | 2a | `extractContigSamples32bits` 在目标 4.0.6 存在；完整阶段约 5.5 万候选，出现 s |
 | CVE-2024-34459 | 4 | 2.9.4 | ASAN:heap-buffer-overflow xmlHTMLPrintFileContext (xmllint.c:614) | **2b** | 2a | `xmlHTMLPrintFileContext` 在 2.9.4 存在；完整阶段约 2 万候选，全部 no_crash |
+| CVE-2025-5915 | 4 | 3.4.3 | ASAN:heap-buffer-overflow copy_from_lzss_window (archive_read_support_format_rar.c:3069) | **2b** | 3 | 目标 3.5.3 的 `copy_from_lzss_window` 签名/实现与 3.6.0 不同（`const vo |
 | CVE-2026-23865 | 6 | 2.8.1 | ASAN:SEGV tt_var_get_item_delta (ttgxvar.c:1053) | **2b** | 2a | 完整阶段约 10 万候选，freetype GX 路径存在，fork 在 `ft_var_load_mvar`，只得到  |
 | CVE-2026-50811 | 8 | 2.13.3 | ASAN:heap-buffer-overflow TT_Get_Var_Design (ttgxvar.c:3502) | **2b** | 2a | 完整阶段约 16 万候选，目标 2.8.1-2.13.3 均无 same_func；freetype 设计空间/状态组合 |
 | CVE-2026-9605 | 4 | 0.12.4 | ASAN:heap-buffer-overflow bit_read_RC (bits.c:282) | **2b** | 2a | 目标 0.12.4-0.13.3 的 `bit_read_RC` 存在，但完整阶段约 5 万候选无 same_func； |
@@ -55,8 +55,8 @@
 ### 归类统计
 
 - **1**（8）：CVE-2016-10268、CVE-2016-10270、CVE-2016-9572、CVE-2017-14939、CVE-2017-7597、CVE-2025-8177、issue1620、issue908
-- **2a**（13）：CVE-2017-14152、CVE-2017-14164、CVE-2018-18088、CVE-2022-33034、CVE-2022-44840、CVE-2023-1972、CVE-2023-3618、CVE-2025-48071、CVE-2025-5915、CVE-2026-15520、CVE-2026-86145、CVE-2026-9500、CVE-2026-9502
-- **2b**（6）：CVE-2021-3575、CVE-2023-30775、CVE-2024-34459、CVE-2026-23865、CVE-2026-50811、CVE-2026-9605
+- **2a**（12）：CVE-2017-14152、CVE-2017-14164、CVE-2018-18088、CVE-2022-33034、CVE-2022-44840、CVE-2023-1972、CVE-2023-3618、CVE-2025-48071、CVE-2026-15520、CVE-2026-86145、CVE-2026-9500、CVE-2026-9502
+- **2b**（7）：CVE-2021-3575、CVE-2023-30775、CVE-2024-34459、CVE-2025-5915、CVE-2026-23865、CVE-2026-50811、CVE-2026-9605
 - **3**（9）：CVE-2016-10269、CVE-2017-14151、CVE-2017-5505、CVE-2017-6851、CVE-2025-26623、CVE-2025-8176、CVE-2026-15184、CVE-2026-9503、CVE-2026-9504
 
 > 1 = 方法/流程/搜索能力不足（含 GDB 回退、候选未覆盖、预算不足）；2a = 能到崩溃行但目标守卫/条件冲突；2b = 到崩溃行但偏移/状态组合不足；3 = 目标版本缺少完整漏洞路径（旧实现、函数/分支缺失、早期拒绝、bug 未引入）。
@@ -279,20 +279,6 @@
 - **原因**：源码层面：3.2.12 要求 `actual_out_bytes == uncompressed_size`，3.3.0 放宽为 `comp_buf_size > actual_out_bytes`，目标严格检查会拒绝；本轮 GDB 回退、仅格式字段，未完成全搜索。
 - **备注/置信度**：条件冲突明确，但流水线未完整执行。
 
-### CVE-2025-5915
-
-- **目标版本（no-match）**：3.4.0, 3.4.3, 3.5.0, 3.5.3
-- **参考崩溃**：Reference CRASH: ASAN:heap-buffer-overflow in copy_from_lzss_window at /home/ws/Desktop/RetroScope/libarchive-versions/v3.6.0/libarchive/archive_read_support_format_rar.c:3069
-- **目标基线**：Target:    no crash
-- **定位到的 fork**：[*] Fork: /home/ws/Desktop/RetroScope/libarchive-versions/v3.4.3/libarchive/archive_read.c:1115
-- **fork 变量**：[*] Variables: ['a->bidders[i].free', 'a->bidders[i]', 'i']
-- **根因函数**：Root cause function: _archive_read_free
-- **变异证据（代表版本 3.4.3）**：阶段 {'b': 1, 'e': 1, 'g': 1, 'f': 4, 'h': 4}，候选约 14577；no_crash=13456、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=0、code_change=0
-- **最后位置**：[*] Testing pair 0x24+0xd1 (original=00,40)...
-- **归类：2a（次要 3）**
-- **原因**：目标 3.5.3 的 `copy_from_lzss_window` 签名/实现与 3.6.0 不同（`const void **` vs `void *`），RAR 解码路径已变化；完整阶段约 1.5 万候选无 same_func。
-- **备注/置信度**：旧实现的路径/条件不同，偏向路径差异。
-
 ### CVE-2026-15520
 
 - **目标版本（no-match）**：0.12.4, 0.12.5, 0.13, 0.13.3
@@ -389,6 +375,20 @@
 - **归类：2b（次要 2a）**
 - **原因**：`xmlHTMLPrintFileContext` 在 2.9.4 存在；完整阶段约 2 万候选，全部 no_crash；需要更精确的 HTML 上下文字段/行状态。
 - **备注/置信度**：路径存在，偏移/条件不足。
+
+### CVE-2025-5915
+
+- **目标版本（no-match）**：3.4.0, 3.4.3, 3.5.0, 3.5.3
+- **参考崩溃**：Reference CRASH: ASAN:heap-buffer-overflow in copy_from_lzss_window at /home/ws/Desktop/RetroScope/libarchive-versions/v3.6.0/libarchive/archive_read_support_format_rar.c:3069
+- **目标基线**：Target:    no crash
+- **定位到的 fork**：[*] Fork: /home/ws/Desktop/RetroScope/libarchive-versions/v3.4.3/libarchive/archive_read.c:1115
+- **fork 变量**：[*] Variables: ['a->bidders[i].free', 'a->bidders[i]', 'i']
+- **根因函数**：Root cause function: _archive_read_free
+- **变异证据（代表版本 3.4.3）**：阶段 {'b': 1, 'e': 1, 'g': 1, 'f': 4, 'h': 4}，候选约 14577；no_crash=13456、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=0、code_change=0
+- **最后位置**：[*] Testing pair 0x24+0xd1 (original=00,40)...
+- **归类：2b（次要 3）**
+- **原因**：目标 3.5.3 的 `copy_from_lzss_window` 签名/实现与 3.6.0 不同（`const void **` vs `void *`），RAR 解码路径已变化；完整阶段约 1.5 万候选无 same_func。
+- **备注/置信度**：旧实现的路径/条件不同；偏移/状态覆盖不足为主，路径差异为辅。
 
 ### CVE-2026-23865
 
@@ -555,7 +555,28 @@
 - **原因**：目标 0.12.x/0.13.3 没有 `bit_convert_TU` 的完整触发路径（该函数到 6d6a339 才在 LTYPE 路径触发）；本轮 GDB 还回退到格式字段，0 动态候选。
 - **备注/置信度**：路径不完整 + 流水线回退。
 
-## 3. 重点结论与后续建议
+## 3. 关键源码/文档证据
+
+- **CVE-2022-33034**：文档已给出代码级证明：参考 0.12.5 的 `read_file_header` 向 `copy_bytes` 传入 `sizeof(r2007_file_header)+1`（273 字节），目标 0.12.4 传 `0x110`（272 字节，恰为对象大小），`dst + length > dst_end` 守卫必然拒绝；两版 `copy_bytes` 函数体与守卫完全相同。因此目标 0.12.4 的 no-match 不是搜索问题，而是条件冲突（2a）。
+- **CVE-2022-44840**：文档记录目标 2.36 有 "Section is too small for 208 slots" 检查；参考 2.38 的 `process_cu_tu_index` 改用 `_mul_overflow(nslots,12,&total)` 回归。路径存在但检查条件不同（2a）。
+- **CVE-2023-1972**：文档记录目标 2.38 仍拒绝 `hdr->sh_info==0` 并保留 `bfd_alloc/amt` 检查；2.40 改成 `bfd_zalloc`（2a）。
+- **CVE-2025-48071**：源码对比：3.2.12 的 `undo_zip_impl` 要求 `actual_out_bytes == uncompressed_size`；3.3.0 放宽为 `comp_buf_size > actual_out_bytes`；3.3.3 补回 `actual_out_bytes > uncompressed_size`。目标 3.2.12 的严格检查会拒绝原 PoC（2a）。
+- **CVE-2025-8176**：源码对比：4.7.0 的 `tiffmedian.c` 在 `quant_fsdither`/`create_colorcell` 增加了 `_TIFFfree(cell)`（4.7.0 第 831 行）以及 `ColorCells`/`cell` 的释放（第 274/326 行），4.5.1 没有这些释放。目标 3.9.3-4.5.1 虽然保留 `quant_fsdither` 崩溃行，但 UAF 所需的“释放后再次使用”生命周期不存在（3）。
+- **CVE-2017-5505 / CVE-2017-6851**：文档记录两个漏洞实际在 JasPer 1.900.25 才引入；目标 1.900.8-1.900.24 中 `jas_matrix_asl`/`jas_matrix_bindsub` 函数本身存在，但触发漏洞的行为/路径不存在（3）。
+- **CVE-2025-26623**：NVD 明确 `<0.28.0`（如 0.27.7）不受影响；0.28.0 的 TIFF composite 重写引入 UAF，目标 0.27.7 缺少该实现路径（3）。
+- **CVE-2016-10269 / CVE-2016-10270**：文档记录 3.9.x 缺 PixarLog 时原 PoC 返回 rc=1；3.9.x 在 `TIFFFillStrip` 前报 `MissingRequired: TileOffsets`。目标函数存在但完整解码/写路径不完整（10269→3，10270 更偏门禁→1/3）。
+- **CVE-2026-15184 / CVE-2026-9503**：文档版本扫描显示 0.13-0.13.4 触发，0.12.x 不触发；`dwg_next_entity` 在 0.12.5 存在但崩溃行为/路径未引入（3）。
+- **CVE-2026-9504**：文档记录 9504 样本直到 6d6a339 才在 `bit_convert_TU` 触发；0.13.3/0.12.x 不触发该函数路径（3），且本轮 GDB 回退（1）。
+
+## 4. 日志判读说明
+
+- `no_crash(unchanged)`：目标行为与基线一致，变异没有改变目标执行结果。
+- `fork_flip(behavior changed)`：变异改变了目标行为，但没有造成与参考同函数/同类型的崩溃；说明变异能影响 fork/状态，但还差最后的触发条件。
+- `same_type`：目标在**其他位置**崩了，类型与参考相同但函数/语句不同；不计为 same_func，因此仍是 no-match（典型如 CVE-2022-33034 的 226 条 SEGV @ dxfb_header_write）。
+- `gdb_fail/fallback`：GDB fork 未定位，流程只跑 Step 6h 格式字段；这类 no-match 不是“搜索过但失败”，而是“流程没完整跑完”，应优先复测。
+- `code_change`：参考与目标的 fork 位置是代码变更点（函数/分支/语句不同），此时输入变异很难对齐，优先按条件/路径差异分析。
+
+## 5. 重点结论与后续建议
 
 - **条件冲突（2a）证据最硬**：CVE-2022-33034（守卫数学）、CVE-2022-44840（Section slots 检查）、CVE-2023-1972（sh_info/bfd_alloc）、CVE-2025-48071（严格解压大小检查）、CVE-2026-86145（递归 DFA 门禁）。这些不是“没搜到”，而是目标版本在到达崩溃点前/处必然拒绝。
 - **路径不完整（3）**：CVE-2016-10269/10270（PixarLog/TileOffsets）、CVE-2017-5505/6851（1.900.25 才引入）、CVE-2017-14151（缺 allocate_data）、CVE-2025-26623（0.28 重写才引入）、CVE-2025-8176（4.7.0 才加入 free/UAF 路径）、CVE-2026-9503/15184（0.13 才引入）、CVE-2026-9504（6d6a339 的 bit_convert_TU 路径）。
