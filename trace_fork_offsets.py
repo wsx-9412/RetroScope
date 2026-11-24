@@ -6153,6 +6153,14 @@ def _fork_condition_expr(stmt_text):
 def _mutation_out_dir(input_file, version, out_root=None):
     """Directory for successfully mutated inputs: ``out/<name>-<version>/``.
 
+    ``RETRO_OUT_DIR`` overrides the layout entirely (the driver uses
+    ``out/round_<tag>/<CVE>/<version>``); all mutation writers share this
+    function, so the override applies consistently.
+    """
+    explicit = os.environ.get('RETRO_OUT_DIR')
+    if explicit:
+        return explicit
+
     One folder per input file (CVE) + target version, e.g.
     ``out/CVE-2022-3627-4-0-8/`` for ``in/CVE-2022-3627`` against tiff-4.0.8.
     The directory is created lazily by ``_save_mutation_artifact`` (only when

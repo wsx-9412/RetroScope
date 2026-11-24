@@ -291,6 +291,12 @@ def verify_one(binary, hint, mutant_path, program_args, original_input,
 def default_mutants_dir(input_file, version=None):
     """out/<input-basename>-<version-numeric> produced by the mutation stage.
 
+    ``RETRO_OUT_DIR`` (set by the round driver) takes precedence.
+    """
+    explicit = os.environ.get('RETRO_OUT_DIR')
+    if explicit and os.path.isdir(explicit):
+        return explicit
+
     When the target version is known (e.g. ``tiff-4.0.7``) the exact directory
     is required: a missing directory means this target produced no PoCs, and
     falling back to another version's directory would audit the wrong files.

@@ -461,8 +461,9 @@ def main():
     suffix = os.environ.get('RETRO_OUT_SUFFIX', '').strip()
     if suffix:
         suffix = re.sub(r'[^A-Za-z0-9._-]', '_', suffix)
-    out_root = a.out_dir or os.path.join(
-        str(BASE), 'out', f'{os.path.basename(base_input)}-flips{suffix}')
+    out_root = (a.out_dir or os.environ.get('RETRO_FLIP_DIR')
+                or os.path.join(str(BASE), 'out',
+                                f'{os.path.basename(base_input)}-flips{suffix}'))
     os.makedirs(out_root, exist_ok=True)
 
     print('=' * 60)
