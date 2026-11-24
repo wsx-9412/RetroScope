@@ -635,8 +635,8 @@ def run_one(sp, tag, timeout, log_suffix=""):
         "RETRO_OUT_SUFFIX": f"-{tag}",
         "RETRO_OUT_DIR": str(BASE / "out" / f"round_{tag}" /
                               sp["cve"] / sp["label"]),
-        "RETRO_FLIP_DIR": str(BASE / "out" / f"round_{tag}" / "_fork_flips" /
-                               sp["cve"] / sp["label"]),
+        "RETRO_FLIP_DIR": str(BASE / "out" / f"round_{tag}" /
+                               sp["cve"] / sp["label"] / "_fork_flips"),
         "RETRO_LOG_NAME": sp["label"],
         "RETRO_LOG_SUFFIX": log_suffix,
         "RETROSCOPE_MUTATION_WORKERS": "1",
