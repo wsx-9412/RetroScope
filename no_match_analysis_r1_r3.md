@@ -91,7 +91,7 @@
 - **变异证据（代表版本 2.25）**：阶段 {'b': 1, 'e': 1, 'g': 1, 'f': 3, 'c': 1, 'd': 1, 'h': 4}，候选约 51764；no_crash=50564、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=0、code_change=0
 - **最后位置**：[*] Testing pair 0x7480+0x7488 (original=f8,08)...
 - **归类：1（次要 2b）**
-- **源码核对**：`read_1_byte` 在 2.27 与参考 2.29 完全相同（diff 0）；2.24 少一个上界检查。路径存在，no-match 来自搜索/状态。
+- **源码核对**：`read_1_byte` 在 2.27 与参考 2.29 完全相同（diff 0），2.24 少一个上界检查；但目标 2.24-2.27 的 nm-new 不支持流水线使用的 --with-symbol-versions，原命令直接退出，no-match 无效。
 - **动态核对（GDB）**：目标 2.24-2.27 的 nm-new 不支持 --with-symbol-versions，流水线命令直接打印 help 退出；修正命令后 GDB 显示 2.24 命中 read_1_byte、2.27 在 print_symbol 触发另一个 SEGV。
 - **原因**：动态核对发现命令不兼容：目标 2.24-2.27 的 nm-new 不支持 --with-symbol-versions（只有 2.29+ 支持），流水线带该参数时目标直接打印 help 退出，no-match 无效。去掉该选项后 GDB：2.24 命中 read_1_byte，2.27 在 print_symbol 触发另一个 SEGV。需用兼容参数重跑。
 - **备注/置信度**：结果无效；主因是方法/命令。
@@ -123,7 +123,7 @@
 - **变异证据（代表版本 4.0.4beta）**：阶段 {'b': 2, 'e': 2, 'g': 2, 'f': 4, 'c': 2, 'd': 2, 'h': 4}，候选约 54958；no_crash=41168、fork_flip=816、same_type=385、different_type=11389；gdb_fail=0、fallback=0、not_reached=0、code_change=3
 - **最后位置**：[*] Testing pair 0x158+0x15a (original=2a,a0)...
 - **归类：1（次要 2b）**
-- **源码核对**：`extractContigSamples32bits` 在 4.0.5/3.9.3 存在，函数体差 35-39 行；路径存在，偏移/状态覆盖不足。
+- **源码核对**：`extractContigSamples32bits` 在 4.0.5/3.9.3 存在，函数体差 35-39 行；但 GDB 显示原 PoC 在 StripByteCounts/TIFFReadDirectory 阶段失败、未进入该函数，属读取门禁/状态问题。
 - **动态核对（GDB）**：GDB 在 4.0.5 未命中 extractContigSamples32bits；目标 StripByteCounts/TIFFReadDirectory 失败。
 - **原因**：GDB：4.0.5 未命中 extractContigSamples32bits；目标在 StripByteCounts/TIFFReadDirectory 阶段失败；函数存在但原 PoC 过不了读取门禁。
 - **备注/置信度**：格式门禁/搜索（1/2b）。
@@ -499,7 +499,7 @@
 - **根因函数**：Root cause function: main
 - **变异证据（代表版本 2.1.1）**：阶段 {'f': 3, 'h': 4}，候选约 1021；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=0、code_change=3
 - **归类：3（次要 1）**
-- **源码核对**：`imagetopnm` 在 2.2.0 与参考 2.3.0 完全相同（diff 0），2.0 才差 630 行；最近目标的 no-match 更可能是搜索/偏移。
+- **源码核对**：`imagetopnm` 在 2.2.0 与参考 2.3.0 完全相同（diff 0）；但 GDB 显示原 PoC 在 2.2.0 上 decode 失败、未进入 imagetopnm，说明门禁在解码阶段而不是函数体。
 - **动态核对（GDB）**：GDB 在 2.2.0 未命中 imagetopnm；原 PoC（含改名 .j2k）仍 decode 失败。
 - **原因**：GDB：2.2.0 未命中 imagetopnm；原 PoC（含改扩展名 .j2k）仍 decode 失败；2.0 函数差异更大。
 - **备注/置信度**：目标解码/格式路径不完整（3/1）。
@@ -515,7 +515,7 @@
 - **变异证据（代表版本 2.3.0）**：阶段 {'b': 1, 'e': 1, 'g': 1, 'f': 3, 'h': 4}，候选约 7956；no_crash=6756、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=1、code_change=0
 - **最后位置**：[*] Testing pair 0x38c+0x38d (original=00,02)...
 - **归类：3（次要 1）**
-- **源码核对**：`sycc420_to_rgb` 在 2.3.0 与参考 2.3.1 完全相同（diff 0），2.0 差 179 行；最近目标 no-match 是搜索/状态。
+- **源码核对**：`sycc420_to_rgb` 在 2.3.0 与参考 2.3.1 完全相同（diff 0）；但 GDB 显示原 PoC 在 marker handler 阶段失败、未进入 sycc420_to_rgb，问题在解码门禁。
 - **动态核对（GDB）**：GDB 在 2.3.0 未命中 sycc420_to_rgb；目标 marker handler failed。
 - **原因**：GDB：2.3.0 未命中 sycc420_to_rgb；目标报 marker handler failed，未进入颜色转换。
 - **备注/置信度**：路径/解码门禁。
