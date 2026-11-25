@@ -17,48 +17,48 @@
 | CVE | no-match 版本数 | 代表版本 | 参考崩溃 | 主要归类 | 次要 | 一句话原因 |
 |---|---:|---|---|---|---|---|
 | CVE-2016-10270 | 4 | 3.9.5 | ASAN:heap-buffer-overflow TIFFFillStrip (tif_read.c:523) | **1** | 3 | 目标 3.9.x 在 `TIFFFillStrip` 之前报 `MissingRequired: TileOffsets |
-| CVE-2016-9572 | 1 | 2.0 | ASAN:SEGV imagetopnm (convert.c:2075) | **1** | 3 | GDB fork 追踪失败（fork_not_reached），流程回退到仅格式字段变异（Step 6h），0 个动态候 |
-| CVE-2017-14939 | 4 | 2.25 | ASAN:heap-buffer-overflow read_1_byte (dwarf2.c:593) | **1** | 2b | 文档将其归为搜索预算/反馈类；完整阶段约 5.2 万候选，目标 2.24-2.27 均含 `read_1_byte`，但 |
+| CVE-2017-14939 | 4 | 2.25 | ASAN:heap-buffer-overflow read_1_byte (dwarf2.c:593) | **1** | 2b | 动态核对发现命令不兼容：目标 2.24-2.27 的 nm-new 不支持 --with-symbol-versions |
 | CVE-2017-7597 | 11 | 4.0.4beta | ASAN:heap-buffer-overflow TIFFReverseBits (tif_swab.c:296) | **1** | 2b | 文档将其归为格式/解析门禁卡死（G_early_reject 主导）；本轮完整阶段约 11.3 万候选仍无 same_f |
-| CVE-2025-8177 | 6 | 4.0.10 | ASAN:global-buffer-overflow setrow (thumbnail.c:623) | **1** | 2b | GDB fork 追踪失败，流程回退到仅格式字段（0 候选）；`setrow` 在 4.1.0 存在，目标基线不崩，但本 |
-| CVE-2026-9504 | 4 | 0.12.5 | ASAN:heap-buffer-overflow bit_convert_TU (bits.c:2830) | **1** | 3 | 源码核对：目标 0.13.3 的 `bit_convert_TU` 与参考 6d6a339 仅差 2 行（基本相同），0 |
+| CVE-2023-30775 | 11 | 4.0.4beta | ASAN:heap-buffer-overflow extractContigSamples32bits (tiffcrop.c:3196) | **1** | 2b | GDB：4.0.5 未命中 extractContigSamples32bits；目标在 StripByteCounts |
+| CVE-2023-3618 | 11 | 3.9.5 | ASAN:SEGV _TIFFmemcpy (tif_unix.c:345) | **1** | 3 | GDB：4.0.5/4.1.0 均未命中 Fax3Encode；原 PoC 在 loadImage/tile 读取阶段失 |
+| CVE-2025-8177 | 6 | 4.0.10 | ASAN:global-buffer-overflow setrow (thumbnail.c:623) | **1** | 2b | GDB：4.1.0 命中 setrow（setImage1 调用），目标能到达；本轮 no-match 主因是 GDB  |
 | issue1620 | 12 | 2.3.0 | ASAN:heap-buffer-overflow opj_j2k_read_sod (j2k.c:5086) | **1** | 2b | 仅执行到 Step 6f/6h，约 1.1 千候选；目标 2.0-2.5.2 的 `opj_j2k_read_sod`  |
 | issue908 | 1 | 2.0 | ASAN:SEGV imagetopnm (convert.c:2167) | **1** | 3 | GDB fork 追踪失败，回退到仅格式字段（0 候选）；目标 2.0 的 `imagetopnm` 存在，但本轮没有真 |
 | CVE-2017-14152 | 3 | 2.0.1 | ASAN:heap-buffer-overflow opj_write_bytes_LE (cio.c:67) | **2a** | 1 | 目标 2.0/2.0.1/2.1 的 `opj_start_compress`/`opj_write_bytes_LE` |
-| CVE-2017-14164 | 3 | 2.0.1 | ASAN:heap-buffer-overflow opj_write_bytes_LE (cio.c:67) | **2a** | 2b | 完整阶段约 3.2 万候选，fork 在 `opj_start_compress`，目标 2.0/2.0.1/2.1 的 |
 | CVE-2022-33034 | 1 | 0.12.4 | ASAN:stack-buffer-overflow copy_bytes (decode_r2007.c:228) | **2a** | 3 | 文档已证明：参考 0.12.5 `read_file_header` 传入 `sizeof+1`，目标 0.12.4 传 |
 | CVE-2022-44840 | 14 | 2.29 | ASAN:heap-buffer-overflow find_section_in_set (readelf.c:1001) | **2a** | 1 | 目标 2.36 有 "Section is too small for 208 slots" 检查；参考 2.38 的  |
 | CVE-2023-1972 | 14 | 2.32 | ASAN:heap-buffer-overflow _bfd_elf_print_private_bfd_data (elf.c:1844) | **2a** | 1 | 目标 2.38 仍拒绝 `hdr->sh_info==0` 并保留 `bfd_alloc/amt` 检查；参考 2.40 |
-| CVE-2023-3618 | 11 | 3.9.5 | ASAN:SEGV _TIFFmemcpy (tif_unix.c:345) | **2a** | 2b | `Fax3Encode` 在 3.9.5/4.1.0 等目标存在；完整阶段约 2.3 万候选，只有 no_crash/f |
-| CVE-2025-48071 | 1 | 3.2.12 | ASAN:heap-buffer-overflow interleave (internal_zip.c:166) | **2a** | 1 | 源码层面：3.2.12 要求 `actual_out_bytes == uncompressed_size`，3.3.0 |
+| CVE-2025-48071 | 1 | 3.2.12 | ASAN:heap-buffer-overflow interleave (internal_zip.c:166) | **2a** | 1 | GDB：3.2.12 未命中 interleave；exrcheck 报 file bad，源码显示严格 actual_ |
 | CVE-2026-15520 | 4 | 0.12.5 | ASAN:heap-buffer-overflow decompress_R2004_section (decode.c:1313) | **2a** | 3 | 目标 0.12.x/0.13.3：0.12.5 在 `decompress_R2004_section` 前拒绝/边界返 |
 | CVE-2026-86145 | 3 | 10.30 | ASAN:heap-buffer-overflow internal_dfa_match (pcre2_dfa_match.c:677) | **2a** | 3 | 目标 10.30 对递归 DFA 报 `error -52: nested recursion...`，在到达 `int |
 | CVE-2026-9500 | 4 | 0.13 | ASAN:SEGV read_2004_compressed_section (decode.c:2181) | **2a** | 3 | 参考崩溃只在 6d6a339；目标 0.12.4-0.13.4 的 `read_2004_compressed_sect |
 | CVE-2026-9502 | 4 | 0.12.5 | ASAN:heap-buffer-overflow decompress_R2004_section (decode.c:1313) | **2a** | 3 | 目标 0.12.4/0.12.5/0.13/0.13.3：0.12.5 更早拒绝，`decompress_R2004_s |
-| CVE-2018-18088 | 6 | 2.1.1 | ASAN:SEGV imagetopnm (convert.c:2243) | **2b** | 1 | 源码核对：最近目标 2.2.0 的 `imagetopnm` 与参考 2.3.0 完全相同（diff 0），2.0 才相 |
-| CVE-2021-3575 | 7 | 2.3.0 | ASAN:heap-buffer-overflow sycc420_to_rgb (color.c:379) | **2b** | 1 | 完整阶段约 8 千候选，`sycc420_to_rgb` 在目标存在；fork 在 `opj_j2k_exec`，得到  |
-| CVE-2023-30775 | 11 | 4.0.4beta | ASAN:heap-buffer-overflow extractContigSamples32bits (tiffcrop.c:3196) | **2b** | 2a | `extractContigSamples32bits` 在目标 4.0.6 存在；完整阶段约 5.5 万候选，出现 s |
 | CVE-2024-34459 | 4 | 2.9.4 | ASAN:heap-buffer-overflow xmlHTMLPrintFileContext (xmllint.c:614) | **2b** | 1 | 源码核对：`xmlHTMLPrintFileContext` 在 2.9.4/2.9.0 与参考 2.9.5 完全相同（ |
-| CVE-2025-5915 | 4 | 3.4.3 | ASAN:heap-buffer-overflow copy_from_lzss_window (archive_read_support_format_rar.c:3069) | **2b** | 3 | 目标 3.5.3 的 `copy_from_lzss_window` 签名/实现与 3.6.0 不同（`const vo |
 | CVE-2026-23865 | 6 | 2.8.1 | ASAN:SEGV tt_var_get_item_delta (ttgxvar.c:1053) | **2b** | 3 | 源码核对：`tt_var_get_item_delta` 在目标 2.8.1 未找到（该版本路径不存在），2.13.0  |
 | CVE-2026-50811 | 8 | 2.13.3 | ASAN:heap-buffer-overflow TT_Get_Var_Design (ttgxvar.c:3502) | **2b** | 2a | 完整阶段约 16 万候选，目标 2.8.1-2.13.3 均无 same_func；freetype 设计空间/状态组合 |
 | CVE-2026-9605 | 4 | 0.12.4 | ASAN:heap-buffer-overflow bit_read_RC (bits.c:282) | **2b** | 1 | 源码核对：目标 0.13.3 的 `bit_read_RC` 与参考 0.13.4 完全相同（diff 0），0.12. |
-| CVE-2016-10268 | 4 | 4.0.3 | ASAN:heap-buffer-overflow _tiffWriteProc (tif_unix.c:115) | **3** | 1 | 源码核对：目标 3.9.3/4.0.3/4.0.4/4.0.4beta 的 `_tiffWriteProc` 是单次 w |
-| CVE-2016-10269 | 4 | 3.9.6 | ASAN:heap-buffer-overflow _TIFFmemcpy (tif_unix.c:340) | **3** | 2b | 目标 3.9.3-3.9.6 缺少 PixarLog 解码→写路径（文档记录：缺 PixarLog 时原 PoC 返回  |
+| CVE-2016-10268 | 4 | 4.0.3 | ASAN:heap-buffer-overflow _tiffWriteProc (tif_unix.c:115) | **3** | 1 | GDB：4.0.4beta 命中 _tiffWriteProc，但目标函数是单次 write，参考 4.0.7 的循环  |
+| CVE-2016-10269 | 4 | 3.9.6 | ASAN:heap-buffer-overflow _TIFFmemcpy (tif_unix.c:340) | **3** | 2b | GDB：3.9.6 命中 _TIFFmemcpy（首个通用调用，不一定是 PixarLog 路径）；源码/文档显示 3. |
+| CVE-2016-9572 | 1 | 2.0 | ASAN:SEGV imagetopnm (convert.c:2075) | **3** | 1 | GDB：2.0 未命中 imagetopnm；原 PoC 解码失败（改扩展名后仍失败），目标解码路径不完整。 |
 | CVE-2017-14151 | 3 | 2.0.1 | ASAN:heap-buffer-overflow opj_mqc_byteout (mqc.c:198) | **3** | 1 | 目标 2.0/2.0.1/2.1 不含 `opj_tcd_code_block_enc_allocate_data`，参 |
+| CVE-2017-14164 | 3 | 2.0.1 | ASAN:heap-buffer-overflow opj_write_bytes_LE (cio.c:67) | **3** | 1 | GDB：2.1 未命中 opj_write_bytes_LE；原 PoC 在 TIFF 读取/opj_start_com |
 | CVE-2017-5505 | 12 | 1.900.8 | ASAN:SEGV jas_matrix_asl (jas_seq.c:376) | **3** | 2a | `jas_matrix_asl` 在 1.900.24 已存在，但负 ROI shift 的漏洞行为实际在 1.900. |
-| CVE-2017-6851 | 12 | 1.900.13 | ASAN:SEGV jas_matrix_bindsub (jas_seq.c:254) | **3** | 2a | `jas_matrix_bindsub` 在目标 1.900.8-1.900.24 已存在，但漏洞行为在 1.900.2 |
-| CVE-2025-26623 | 1 | 0.27.7 | ASAN:heap-use-after-free Exiv2::Internal::TiffComponent::accept (tiffcomposite_int.cpp:622) | **3** | 2a | 0.27.7 早于 0.28 的 TIFF composite 重写；NVD 明确 <0.28.0 不受影响，目标缺少  |
-| CVE-2025-8176 | 16 | 3.9.3 | ASAN:heap-use-after-free quant_fsdither (tiffmedian.c:952) | **3** | 2b | 源码对比：4.7.0 在 `quant_fsdither`/`create_colorcell` 增加了 `_TIFFf |
+| CVE-2017-6851 | 12 | 1.900.13 | ASAN:SEGV jas_matrix_bindsub (jas_seq.c:254) | **3** | 1 | GDB：1.900.19 未命中 jas_matrix_bindsub；imginfo 报 cannot decode  |
+| CVE-2018-18088 | 6 | 2.1.1 | ASAN:SEGV imagetopnm (convert.c:2243) | **3** | 1 | GDB：2.2.0 未命中 imagetopnm；原 PoC（含改扩展名 .j2k）仍 decode 失败；2.0 函数 |
+| CVE-2021-3575 | 7 | 2.3.0 | ASAN:heap-buffer-overflow sycc420_to_rgb (color.c:379) | **3** | 1 | GDB：2.3.0 未命中 sycc420_to_rgb；目标报 marker handler failed，未进入颜色 |
+| CVE-2025-26623 | 1 | 0.27.7 | ASAN:heap-use-after-free Exiv2::Internal::TiffComponent::accept (tiffcomposite_int.cpp:622) | **3** | 2a | GDB：0.27.7 命中 TiffComponent::accept，但 UAF 依赖 0.28 的 TiffSubI |
+| CVE-2025-5915 | 4 | 3.4.3 | ASAN:heap-buffer-overflow copy_from_lzss_window (archive_read_support_format_rar.c:3069) | **3** | 1 | GDB：3.5.3 未命中 copy_from_lzss_window；bsdtar 报 RAR Parsing fil |
+| CVE-2025-8176 | 16 | 3.9.3 | ASAN:heap-use-after-free quant_fsdither (tiffmedian.c:952) | **3** | 2b | GDB：4.0.10 命中 quant_fsdither；目标能进入该函数；源码显示 4.7.0 才加入 _TIFFfr |
 | CVE-2026-15184 | 2 | 0.12.5 | ASAN:SEGV dwg_next_entity (dwg.c:1233) | **3** | 2b | 目标 0.12.5 早于 0.13 的 `dwg_next_entity` 崩溃路径/行为；完整阶段约 4 千候选无 s |
 | CVE-2026-9503 | 1 | 0.12.5 | ASAN:SEGV dwg_next_entity (dwg.c:1233) | **3** | 2b | 目标 0.12.4/0.12.5 早于 0.13 的 `dwg_next_entity` 崩溃行为；完整阶段仅约 2.6 |
+| CVE-2026-9504 | 4 | 0.12.5 | ASAN:heap-buffer-overflow bit_convert_TU (bits.c:2830) | **3** | 1 | GDB：0.13.3 未命中 bit_convert_TU；目标 DWG read error 0x477，未进入 LT |
 
 ### 归类统计
 
-- **1**（8）：CVE-2016-10270、CVE-2016-9572、CVE-2017-14939、CVE-2017-7597、CVE-2025-8177、CVE-2026-9504、issue1620、issue908
-- **2a**（11）：CVE-2017-14152、CVE-2017-14164、CVE-2022-33034、CVE-2022-44840、CVE-2023-1972、CVE-2023-3618、CVE-2025-48071、CVE-2026-15520、CVE-2026-86145、CVE-2026-9500、CVE-2026-9502
-- **2b**（8）：CVE-2018-18088、CVE-2021-3575、CVE-2023-30775、CVE-2024-34459、CVE-2025-5915、CVE-2026-23865、CVE-2026-50811、CVE-2026-9605
-- **3**（9）：CVE-2016-10268、CVE-2016-10269、CVE-2017-14151、CVE-2017-5505、CVE-2017-6851、CVE-2025-26623、CVE-2025-8176、CVE-2026-15184、CVE-2026-9503
+- **1**（8）：CVE-2016-10270、CVE-2017-14939、CVE-2017-7597、CVE-2023-30775、CVE-2023-3618、CVE-2025-8177、issue1620、issue908
+- **2a**（9）：CVE-2017-14152、CVE-2022-33034、CVE-2022-44840、CVE-2023-1972、CVE-2025-48071、CVE-2026-15520、CVE-2026-86145、CVE-2026-9500、CVE-2026-9502
+- **2b**（4）：CVE-2024-34459、CVE-2026-23865、CVE-2026-50811、CVE-2026-9605
+- **3**（15）：CVE-2016-10268、CVE-2016-10269、CVE-2016-9572、CVE-2017-14151、CVE-2017-14164、CVE-2017-5505、CVE-2017-6851、CVE-2018-18088、CVE-2021-3575、CVE-2025-26623、CVE-2025-5915、CVE-2025-8176、CVE-2026-15184、CVE-2026-9503、CVE-2026-9504
 
 > 1 = 方法/流程/搜索能力不足（含 GDB 回退、候选未覆盖、预算不足）；2a = 能到崩溃行但目标守卫/条件冲突；2b = 到崩溃行但偏移/状态组合不足；3 = 目标版本缺少完整漏洞路径（旧实现、函数/分支缺失、早期拒绝、bug 未引入）。
 
@@ -80,21 +80,6 @@
 - **原因**：目标 3.9.x 在 `TIFFFillStrip` 之前报 `MissingRequired: TileOffsets` 并干净退出；崩溃函数存在，但格式门禁使变异输入无法到达崩溃行（文档将该 CVE 归为格式门禁类）。
 - **备注/置信度**：不是代码路径缺失，而是结构保持/门禁穿越能力不足。
 
-### CVE-2016-9572
-
-- **目标版本（no-match）**：2.0
-- **参考崩溃**：Reference CRASH: ASAN:SEGV in imagetopnm at /home/ws/Desktop/RetroScope/openjpeg-versions/version.2.0.1/src/bin/jp2/convert.c:2075
-- **目标基线**：Target:    no crash
-- **定位到的 fork**：[*] Fork: /home/ws/Desktop/RetroScope/openjpeg-versions/version.2.0/src/bin/jp2/convert.c:1943
-- **fork 变量**：[*] Variables: ['has_alpha']
-- **根因函数**：Root cause function: imagetopnm
-- **变异证据（代表版本 2.0）**：阶段 {'h': 2}，候选约 0；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=2、fallback=1、not_reached=1、code_change=0
-- **归类：1（次要 3）**
-- **源码核对**：`imagetopnm` 2.0 与 2.0.1 相差 592 行；本轮 GDB 回退，未完成搜索。
-- **动态核对（GDB）**：GDB 在 2.0 未命中 imagetopnm；原 PoC（含改名 .j2k）仍 decode 失败。
-- **原因**：GDB fork 追踪失败（fork_not_reached），流程回退到仅格式字段变异（Step 6h），0 个动态候选；no-match 不具结论性。
-- **备注/置信度**：需要修复/手工指定 fork 后复测；目标 2.0 的 `imagetopnm` 仍存在。
-
 ### CVE-2017-14939
 
 - **目标版本（no-match）**：2.24, 2.25, 2.26, 2.27
@@ -108,8 +93,8 @@
 - **归类：1（次要 2b）**
 - **源码核对**：`read_1_byte` 在 2.27 与参考 2.29 完全相同（diff 0）；2.24 少一个上界检查。路径存在，no-match 来自搜索/状态。
 - **动态核对（GDB）**：目标 2.24-2.27 的 nm-new 不支持 --with-symbol-versions，流水线命令直接打印 help 退出；修正命令后 GDB 显示 2.24 命中 read_1_byte、2.27 在 print_symbol 触发另一个 SEGV。
-- **原因**：文档将其归为搜索预算/反馈类；完整阶段约 5.2 万候选，目标 2.24-2.27 均含 `read_1_byte`，但没有 same_func。
-- **备注/置信度**：不是路径缺失，而是搜索/偏移覆盖不足。
+- **原因**：动态核对发现命令不兼容：目标 2.24-2.27 的 nm-new 不支持 --with-symbol-versions（只有 2.29+ 支持），流水线带该参数时目标直接打印 help 退出，no-match 无效。去掉该选项后 GDB：2.24 命中 read_1_byte，2.27 在 print_symbol 触发另一个 SEGV。需用兼容参数重跑。
+- **备注/置信度**：结果无效；主因是方法/命令。
 
 ### CVE-2017-7597
 
@@ -127,6 +112,38 @@
 - **原因**：文档将其归为格式/解析门禁卡死（G_early_reject 主导）；本轮完整阶段约 11.3 万候选仍无 same_func，说明结构保持/门禁穿越算子不足。
 - **备注/置信度**：目标 `TIFFReverseBits` 存在；主因是门禁与搜索方法。
 
+### CVE-2023-30775
+
+- **目标版本（no-match）**：3.9.3, 3.9.4, 3.9.5, 3.9.6, 4.0.0, 4.0.1, 4.0.2, 4.0.3, 4.0.4, 4.0.4beta, 4.0.5
+- **参考崩溃**：Reference CRASH: ASAN:heap-buffer-overflow in extractContigSamples32bits at /home/ws/Desktop/RetroScope/tiff-versions/tiff-4.4.0/tools/tiffcrop.c:3196
+- **目标基线**：Target:    no crash
+- **定位到的 fork**：[*] Fork: /home/ws/Desktop/RetroScope/tiff-versions/tiff-4.0.4beta/libtiff/tif_dirread.c:3423
+- **fork 变量**：[*] Variables: ['tif', 'image.width', 'image.length', 'image.bps', 'image.spp', 'image.compression', 'image.photometric', 'image.orientation', 'image.planar', 'image.res_unit', 'crop.combined_width', 'crop.combined_length', 'crop.bufftotal', 'crop.zones', 'crop.selections', 'crop.edge_ref', 'crop.crop_mode']
+- **根因函数**：Root cause function: TIFFReadDirectory
+- **变异证据（代表版本 4.0.4beta）**：阶段 {'b': 2, 'e': 2, 'g': 2, 'f': 4, 'c': 2, 'd': 2, 'h': 4}，候选约 54958；no_crash=41168、fork_flip=816、same_type=385、different_type=11389；gdb_fail=0、fallback=0、not_reached=0、code_change=3
+- **最后位置**：[*] Testing pair 0x158+0x15a (original=2a,a0)...
+- **归类：1（次要 2b）**
+- **源码核对**：`extractContigSamples32bits` 在 4.0.5/3.9.3 存在，函数体差 35-39 行；路径存在，偏移/状态覆盖不足。
+- **动态核对（GDB）**：GDB 在 4.0.5 未命中 extractContigSamples32bits；目标 StripByteCounts/TIFFReadDirectory 失败。
+- **原因**：GDB：4.0.5 未命中 extractContigSamples32bits；目标在 StripByteCounts/TIFFReadDirectory 阶段失败；函数存在但原 PoC 过不了读取门禁。
+- **备注/置信度**：格式门禁/搜索（1/2b）。
+
+### CVE-2023-3618
+
+- **目标版本（no-match）**：3.9.3, 3.9.4, 3.9.5, 3.9.6, 4.0.0, 4.0.1, 4.0.2, 4.0.3, 4.0.4, 4.0.4beta, 4.0.5
+- **参考崩溃**：Reference CRASH: ASAN:SEGV in _TIFFmemcpy at /home/ws/Desktop/RetroScope/tiff-versions/tiff-4.5.0/libtiff/tif_unix.c:345
+- **目标基线**：Target:    no crash
+- **定位到的 fork**：[*] Fork: /home/ws/Desktop/RetroScope/tiff-versions/tiff-3.9.5/tools/tiffcrop.c:2020
+- **fork 变量**：[*] Variables: ['opt_ptr', 'i', 'opt_offset']
+- **根因函数**：Root cause function: N/A
+- **变异证据（代表版本 3.9.5）**：阶段 {'b': 1, 'e': 1, 'g': 1, 'f': 2, 'c': 1, 'd': 1, 'h': 4}，候选约 22595；no_crash=21357、fork_flip=38、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=0、code_change=0
+- **最后位置**：[*] Testing pair 0x338+0x33c (original=01,30)...
+- **归类：1（次要 3）**
+- **源码核对**：`_TIFFmemcpy` 在 4.0.5/3.9.3 与参考仅格式差异；`Fax3Encode` 存在，崩溃依赖 tile/refline 状态。
+- **动态核对（GDB）**：GDB 在 4.0.5/4.1.0 均未命中 Fax3Encode；原 PoC 在 loadImage/tile 读取阶段失败。
+- **原因**：GDB：4.0.5/4.1.0 均未命中 Fax3Encode；原 PoC 在 loadImage/tile 读取阶段失败（StripOffsets/Photometric 等），目标到不了编码器。
+- **备注/置信度**：输入/加载门禁为主（1/3）。
+
 ### CVE-2025-8177
 
 - **目标版本（no-match）**：3.9.3, 3.9.4, 3.9.5, 3.9.6, 4.0.10, 4.1.0
@@ -139,21 +156,8 @@
 - **归类：1（次要 2b）**
 - **源码核对**：`setrow` 在 4.1.0/3.9.3 存在，函数体差 74 行；本轮 GDB 回退，未真正搜索。
 - **动态核对（GDB）**：GDB 在 target 4.1.0 命中 setrow（setImage1 调用），目标可进入该函数；未崩溃，属于后续状态/搜索问题。
-- **原因**：GDB fork 追踪失败，流程回退到仅格式字段（0 候选）；`setrow` 在 4.1.0 存在，目标基线不崩，但本轮没有真正搜索到偏移。
-- **备注/置信度**：no-match 不具结论性，需要修复 fork 后复测。
-
-### CVE-2026-9504
-
-- **目标版本（no-match）**：0.12.4, 0.12.5, 0.13, 0.13.3
-- **参考崩溃**：Reference CRASH: ASAN:heap-buffer-overflow in bit_convert_TU at /home/ws/Desktop/libredwg-versions/libredwg-6d6a339/src/bits.c:2830
-- **目标基线**：Target:    no crash
-- **根因函数**：Root cause function: bit_read_RC
-- **变异证据（代表版本 0.12.5）**：阶段 {'h': 2}，候选约 0；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=1、fallback=1、not_reached=0、code_change=0
-- **归类：1（次要 3）**
-- **源码核对**：`bit_convert_TU` 在 0.13.3 与参考差 2 行（基本相同），0.12.4 差 103 行；0.13.3 的 no-match 不能用函数缺失解释，本轮还 GDB 回退。
-- **动态核对（GDB）**：GDB 在 0.13.3 未命中 bit_convert_TU；目标 DWG read error 0x477。
-- **原因**：源码核对：目标 0.13.3 的 `bit_convert_TU` 与参考 6d6a339 仅差 2 行（基本相同），0.12.4 才差 103 行；0.13.3 的 no-match 不能用“函数缺失”解释，更可能是本轮 GDB 回退/搜索未执行。0.12.x 另有路径差异。
-- **备注/置信度**：版本相关；首要问题是流程回退（1），不是已证明的路径缺失。
+- **原因**：GDB：4.1.0 命中 setrow（setImage1 调用），目标能到达；本轮 no-match 主因是 GDB 回退/未完整搜索，另有函数差异/状态覆盖问题。
+- **备注/置信度**：先修复回退再复测。
 
 ### issue1620
 
@@ -199,22 +203,6 @@
 - **动态核对（GDB）**：target 2.1 命中 opj_write_bytes_LE；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：目标 2.0/2.0.1/2.1 的 `opj_start_compress`/`opj_write_bytes_LE` 路径存在，但参考→目标的编码器分支/条件不一致；只有约 436 候选，未覆盖到同型崩溃。
 - **备注/置信度**：文档归类为参考→目标 offset/branch 不一致。
-
-### CVE-2017-14164
-
-- **目标版本（no-match）**：2.0, 2.0.1, 2.1
-- **参考崩溃**：Reference CRASH: ASAN:heap-buffer-overflow in opj_write_bytes_LE at /home/ws/Desktop/RetroScope/openjpeg-versions/version.2.2.0/src/lib/openjp2/cio.c:67
-- **目标基线**：Target:    no crash
-- **定位到的 fork**：[*] Fork: /home/ws/Desktop/RetroScope/openjpeg-versions/version.2.0.1/src/lib/openjp2/openjpeg.c:723
-- **fork 变量**：[*] Variables: ['l_codec->is_decompressor']
-- **根因函数**：Root cause function: opj_start_compress
-- **变异证据（代表版本 2.0.1）**：阶段 {'f': 3, 'c': 1, 'd': 1, 'h': 4}，候选约 32164；no_crash=30968、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=0、code_change=0
-- **最后位置**：[*] Testing pair 0xdc+0xe0 (original=3b,3b)...
-- **归类：2a（次要 2b）**
-- **源码核对**：`opj_write_bytes_LE` 在 2.0/2.1 存在；源码/调用链与 2.2.0 有差异，需条件/偏移对齐。
-- **动态核对（GDB）**：GDB 在 2.1 未命中 opj_write_bytes_LE；目标在 TIFF 读取/opj_start_compress 失败。
-- **原因**：完整阶段约 3.2 万候选，fork 在 `opj_start_compress`，目标 2.0/2.0.1/2.1 的编码路径存在但条件/分支不同；没有 same_func。
-- **备注/置信度**：偏移/条件不一致。
 
 ### CVE-2022-33034
 
@@ -263,22 +251,6 @@
 - **原因**：目标 2.38 仍拒绝 `hdr->sh_info==0` 并保留 `bfd_alloc/amt` 检查；参考 2.40 改为 `bfd_zalloc`。14 个目标版本 no-match。
 - **备注/置信度**：文档：路径存在但条件不同。
 
-### CVE-2023-3618
-
-- **目标版本（no-match）**：3.9.3, 3.9.4, 3.9.5, 3.9.6, 4.0.0, 4.0.1, 4.0.2, 4.0.3, 4.0.4, 4.0.4beta, 4.0.5
-- **参考崩溃**：Reference CRASH: ASAN:SEGV in _TIFFmemcpy at /home/ws/Desktop/RetroScope/tiff-versions/tiff-4.5.0/libtiff/tif_unix.c:345
-- **目标基线**：Target:    no crash
-- **定位到的 fork**：[*] Fork: /home/ws/Desktop/RetroScope/tiff-versions/tiff-3.9.5/tools/tiffcrop.c:2020
-- **fork 变量**：[*] Variables: ['opt_ptr', 'i', 'opt_offset']
-- **根因函数**：Root cause function: N/A
-- **变异证据（代表版本 3.9.5）**：阶段 {'b': 1, 'e': 1, 'g': 1, 'f': 2, 'c': 1, 'd': 1, 'h': 4}，候选约 22595；no_crash=21357、fork_flip=38、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=0、code_change=0
-- **最后位置**：[*] Testing pair 0x338+0x33c (original=01,30)...
-- **归类：2a（次要 2b）**
-- **源码核对**：`_TIFFmemcpy` 在 4.0.5/3.9.3 与参考仅格式差异；`Fax3Encode` 存在，崩溃依赖 tile/refline 状态。
-- **动态核对（GDB）**：GDB 在 4.0.5/4.1.0 均未命中 Fax3Encode；原 PoC 在 loadImage/tile 读取阶段失败。
-- **原因**：`Fax3Encode` 在 3.9.5/4.1.0 等目标存在；完整阶段约 2.3 万候选，只有 no_crash/fork_flip；崩溃需要输出/瓦片写入的特定状态（原 issue 用 `/dev/null`），目标条件未满足。
-- **备注/置信度**：函数存在，条件/状态不满足为主。
-
 ### CVE-2025-48071
 
 - **目标版本（no-match）**：3.2.12
@@ -291,8 +263,8 @@
 - **归类：2a（次要 1）**
 - **源码核对**：`interleave` 在 3.2.12 与参考 3.3.2 完全相同（diff 0）；条件在 `undo_zip_impl` 的严格/宽松大小检查。
 - **动态核对（GDB）**：GDB 在 3.2.12 未命中 interleave；exrcheck 报 file bad。
-- **原因**：源码层面：3.2.12 要求 `actual_out_bytes == uncompressed_size`，3.3.0 放宽为 `comp_buf_size > actual_out_bytes`，目标严格检查会拒绝；本轮 GDB 回退、仅格式字段，未完成全搜索。
-- **备注/置信度**：条件冲突明确，但流水线未完整执行。
+- **原因**：GDB：3.2.12 未命中 interleave；exrcheck 报 file bad，源码显示严格 actual_out_bytes == uncompressed_size 检查拒绝。
+- **备注/置信度**：条件冲突，GDB 回退。
 
 ### CVE-2026-15520
 
@@ -357,53 +329,6 @@
 - **原因**：目标 0.12.4/0.12.5/0.13/0.13.3：0.12.5 更早拒绝，`decompress_R2004_section` 存在但边界条件不同；完整阶段约 11 万候选无 same_func。
 - **备注/置信度**：条件冲突/旧版本路径差异。
 
-### CVE-2018-18088
-
-- **目标版本（no-match）**：2.0, 2.0.1, 2.1, 2.1.1, 2.1.2, 2.2.0
-- **参考崩溃**：Reference CRASH: ASAN:SEGV in imagetopnm at /home/ws/Desktop/RetroScope/openjpeg-versions/v2.3.0/src/bin/jp2/convert.c:2243
-- **目标基线**：Target:    no crash
-- **定位到的 fork**：[*] Fork: /home/ws/Desktop/RetroScope/openjpeg-versions/version.2.1.1/src/bin/jp2/opj_decompress.c:1322
-- **fork 变量**：[*] Variables: ['l_codec', 'image', 'parameters.DA_x0', 'parameters.DA_y0', 'parameters.DA_x1', 'parameters.DA_y1']
-- **根因函数**：Root cause function: main
-- **变异证据（代表版本 2.1.1）**：阶段 {'f': 3, 'h': 4}，候选约 1021；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=0、code_change=3
-- **归类：2b（次要 1）**
-- **源码核对**：`imagetopnm` 在 2.2.0 与参考 2.3.0 完全相同（diff 0），2.0 才差 630 行；最近目标的 no-match 更可能是搜索/偏移。
-- **动态核对（GDB）**：GDB 在 2.2.0 未命中 imagetopnm；原 PoC（含改名 .j2k）仍 decode 失败。
-- **原因**：源码核对：最近目标 2.2.0 的 `imagetopnm` 与参考 2.3.0 完全相同（diff 0），2.0 才相差 630 行；因此 2.2.0 的 no-match 不是代码条件冲突，更可能是搜索/偏移未覆盖；2.0 另有路径差异。
-- **备注/置信度**：版本相关；日志的 code_change 不能代表 2.2.0 的代码差异。
-
-### CVE-2021-3575
-
-- **目标版本（no-match）**：2.0, 2.0.1, 2.1, 2.1.1, 2.1.2, 2.2.0, 2.3.0
-- **参考崩溃**：Reference CRASH: ASAN:heap-buffer-overflow in sycc420_to_rgb at /home/ws/Desktop/RetroScope/openjpeg-versions/v2.3.1/src/bin/common/color.c:379
-- **目标基线**：Target:    no crash
-- **定位到的 fork**：[*] Fork: /home/ws/Desktop/RetroScope/openjpeg-versions/v2.3.0/src/lib/openjp2/function_list.c:105
-- **fork 变量**：[*] Variables: ['p_validation_list->m_nb_procedures']
-- **根因函数**：Root cause function: opj_j2k_exec
-- **变异证据（代表版本 2.3.0）**：阶段 {'b': 1, 'e': 1, 'g': 1, 'f': 3, 'h': 4}，候选约 7956；no_crash=6756、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=1、code_change=0
-- **最后位置**：[*] Testing pair 0x38c+0x38d (original=00,02)...
-- **归类：2b（次要 1）**
-- **源码核对**：`sycc420_to_rgb` 在 2.3.0 与参考 2.3.1 完全相同（diff 0），2.0 差 179 行；最近目标 no-match 是搜索/状态。
-- **动态核对（GDB）**：GDB 在 2.3.0 未命中 sycc420_to_rgb；目标 marker handler failed。
-- **原因**：完整阶段约 8 千候选，`sycc420_to_rgb` 在目标存在；fork 在 `opj_j2k_exec`，得到 no_crash/fork_flip，没有 same_func；需要更精确的组件/采样状态。
-- **备注/置信度**：偏移/状态覆盖不足。
-
-### CVE-2023-30775
-
-- **目标版本（no-match）**：3.9.3, 3.9.4, 3.9.5, 3.9.6, 4.0.0, 4.0.1, 4.0.2, 4.0.3, 4.0.4, 4.0.4beta, 4.0.5
-- **参考崩溃**：Reference CRASH: ASAN:heap-buffer-overflow in extractContigSamples32bits at /home/ws/Desktop/RetroScope/tiff-versions/tiff-4.4.0/tools/tiffcrop.c:3196
-- **目标基线**：Target:    no crash
-- **定位到的 fork**：[*] Fork: /home/ws/Desktop/RetroScope/tiff-versions/tiff-4.0.4beta/libtiff/tif_dirread.c:3423
-- **fork 变量**：[*] Variables: ['tif', 'image.width', 'image.length', 'image.bps', 'image.spp', 'image.compression', 'image.photometric', 'image.orientation', 'image.planar', 'image.res_unit', 'crop.combined_width', 'crop.combined_length', 'crop.bufftotal', 'crop.zones', 'crop.selections', 'crop.edge_ref', 'crop.crop_mode']
-- **根因函数**：Root cause function: TIFFReadDirectory
-- **变异证据（代表版本 4.0.4beta）**：阶段 {'b': 2, 'e': 2, 'g': 2, 'f': 4, 'c': 2, 'd': 2, 'h': 4}，候选约 54958；no_crash=41168、fork_flip=816、same_type=385、different_type=11389；gdb_fail=0、fallback=0、not_reached=0、code_change=3
-- **最后位置**：[*] Testing pair 0x158+0x15a (original=2a,a0)...
-- **归类：2b（次要 2a）**
-- **源码核对**：`extractContigSamples32bits` 在 4.0.5/3.9.3 存在，函数体差 35-39 行；路径存在，偏移/状态覆盖不足。
-- **动态核对（GDB）**：GDB 在 4.0.5 未命中 extractContigSamples32bits；目标 StripByteCounts/TIFFReadDirectory 失败。
-- **原因**：`extractContigSamples32bits` 在目标 4.0.6 存在；完整阶段约 5.5 万候选，出现 same_type/different_type 但没有 same_func；目标路径存在，偏移/状态组合不足。
-- **备注/置信度**：TBD CVE，尚无更细文档结论。
-
 ### CVE-2024-34459
 
 - **目标版本（no-match）**：2.9.0, 2.9.1, 2.9.2, 2.9.4
@@ -419,22 +344,6 @@
 - **动态核对（GDB）**：target 2.9.4 命中 xmlHTMLPrintFileContext；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：源码核对：`xmlHTMLPrintFileContext` 在 2.9.4/2.9.0 与参考 2.9.5 完全相同（diff 0）；no-match 不是函数/条件差异，而是搜索/状态未覆盖。
 - **备注/置信度**：路径与崩溃函数相同，优先归 2b/1。
-
-### CVE-2025-5915
-
-- **目标版本（no-match）**：3.4.0, 3.4.3, 3.5.0, 3.5.3
-- **参考崩溃**：Reference CRASH: ASAN:heap-buffer-overflow in copy_from_lzss_window at /home/ws/Desktop/RetroScope/libarchive-versions/v3.6.0/libarchive/archive_read_support_format_rar.c:3069
-- **目标基线**：Target:    no crash
-- **定位到的 fork**：[*] Fork: /home/ws/Desktop/RetroScope/libarchive-versions/v3.4.3/libarchive/archive_read.c:1115
-- **fork 变量**：[*] Variables: ['a->bidders[i].free', 'a->bidders[i]', 'i']
-- **根因函数**：Root cause function: _archive_read_free
-- **变异证据（代表版本 3.4.3）**：阶段 {'b': 1, 'e': 1, 'g': 1, 'f': 4, 'h': 4}，候选约 14577；no_crash=13456、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=0、code_change=0
-- **最后位置**：[*] Testing pair 0x24+0xd1 (original=00,40)...
-- **归类：2b（次要 3）**
-- **源码核对**：`copy_from_lzss_window` 在 3.5.3 与参考 3.6.0 差 53 行（签名从 const void** 到 void*，实现变化）。
-- **动态核对（GDB）**：GDB 在 3.5.3 未命中 copy_from_lzss_window；bsdtar 报 RAR Parsing filters is unsupported。
-- **原因**：目标 3.5.3 的 `copy_from_lzss_window` 签名/实现与 3.6.0 不同（`const void **` vs `void *`），RAR 解码路径已变化；完整阶段约 1.5 万候选无 same_func。
-- **备注/置信度**：旧实现的路径/条件不同；偏移/状态覆盖不足为主，路径差异为辅。
 
 ### CVE-2026-23865
 
@@ -498,8 +407,8 @@
 - **归类：3（次要 1）**
 - **源码核对**：目标 3.9.3/4.0.3/4.0.4/4.0.4beta 的 `_tiffWriteProc` 为单次 write（无循环）；参考 4.0.7 为循环 write，崩溃行 115 在循环内。4.0.6 已有循环但本轮超时。
 - **动态核对（GDB）**：target 4.0.4beta 命中 _tiffWriteProc；目标能进入该函数，原 PoC 未产生参考崩溃。
-- **原因**：源码核对：目标 3.9.3/4.0.3/4.0.4/4.0.4beta 的 `_tiffWriteProc` 是单次 write，没有参考 4.0.7 的 `for (bytes_written...)` 循环写入；参考崩溃行 115 位于该循环内。no-match 的这几个目标缺少该循环（3）；4.0.6 已有循环但本轮超时，未计入 no-match。
-- **备注/置信度**：版本相关：不能把 10268 统一归为“搜索问题”。
+- **原因**：GDB：4.0.4beta 命中 _tiffWriteProc，但目标函数是单次 write，参考 4.0.7 的循环 write/崩溃行不存在；4.0.6 有循环但本轮超时。
+- **备注/置信度**：版本相关，路径/代码差异。
 
 ### CVE-2016-10269
 
@@ -514,8 +423,23 @@
 - **归类：3（次要 2b）**
 - **源码核对**：`_TIFFmemcpy` 在 3.9.6/3.9.3 与参考基本一致（diff 2 行）；问题在 PixarLog/压缩解码路径，不在 memcpy 实现。
 - **动态核对（GDB）**：target 3.9.6 命中 _TIFFmemcpy；目标能进入该函数，原 PoC 未产生参考崩溃。
-- **原因**：目标 3.9.3-3.9.6 缺少 PixarLog 解码→写路径（文档记录：缺 PixarLog 时原 PoC 返回 rc=1），`_TIFFmemcpy` 虽存在但完整漏洞路径不完整；4.0.0-4.0.6 会 baseline 触发，未作为 no-match 目标。
-- **备注/置信度**：路径不完整为主，变异搜索为辅。
+- **原因**：GDB：3.9.6 命中 _TIFFmemcpy（首个通用调用，不一定是 PixarLog 路径）；源码/文档显示 3.9.x 缺 PixarLog 解码→写路径。
+- **备注/置信度**：路径不完整为主。
+
+### CVE-2016-9572
+
+- **目标版本（no-match）**：2.0
+- **参考崩溃**：Reference CRASH: ASAN:SEGV in imagetopnm at /home/ws/Desktop/RetroScope/openjpeg-versions/version.2.0.1/src/bin/jp2/convert.c:2075
+- **目标基线**：Target:    no crash
+- **定位到的 fork**：[*] Fork: /home/ws/Desktop/RetroScope/openjpeg-versions/version.2.0/src/bin/jp2/convert.c:1943
+- **fork 变量**：[*] Variables: ['has_alpha']
+- **根因函数**：Root cause function: imagetopnm
+- **变异证据（代表版本 2.0）**：阶段 {'h': 2}，候选约 0；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=2、fallback=1、not_reached=1、code_change=0
+- **归类：3（次要 1）**
+- **源码核对**：`imagetopnm` 2.0 与 2.0.1 相差 592 行；本轮 GDB 回退，未完成搜索。
+- **动态核对（GDB）**：GDB 在 2.0 未命中 imagetopnm；原 PoC（含改名 .j2k）仍 decode 失败。
+- **原因**：GDB：2.0 未命中 imagetopnm；原 PoC 解码失败（改扩展名后仍失败），目标解码路径不完整。
+- **备注/置信度**：解码/格式门禁（3/1）。
 
 ### CVE-2017-14151
 
@@ -531,6 +455,22 @@
 - **动态核对（GDB）**：GDB 在 2.1 未命中 opj_mqc_byteout；目标报 unknown BMP header size 124，BMP 加载失败。
 - **原因**：目标 2.0/2.0.1/2.1 不含 `opj_tcd_code_block_enc_allocate_data`，参考 2.2.0 的 `opj_mqc_byteout` 溢出调用链在目标不完整；日志只有 315 候选、code_change fork。
 - **备注/置信度**：文档归为格式门禁，但源码显示完整漏洞链在目标不成立；原 PoC 在 2.0/2.1 更早失败。
+
+### CVE-2017-14164
+
+- **目标版本（no-match）**：2.0, 2.0.1, 2.1
+- **参考崩溃**：Reference CRASH: ASAN:heap-buffer-overflow in opj_write_bytes_LE at /home/ws/Desktop/RetroScope/openjpeg-versions/version.2.2.0/src/lib/openjp2/cio.c:67
+- **目标基线**：Target:    no crash
+- **定位到的 fork**：[*] Fork: /home/ws/Desktop/RetroScope/openjpeg-versions/version.2.0.1/src/lib/openjp2/openjpeg.c:723
+- **fork 变量**：[*] Variables: ['l_codec->is_decompressor']
+- **根因函数**：Root cause function: opj_start_compress
+- **变异证据（代表版本 2.0.1）**：阶段 {'f': 3, 'c': 1, 'd': 1, 'h': 4}，候选约 32164；no_crash=30968、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=0、code_change=0
+- **最后位置**：[*] Testing pair 0xdc+0xe0 (original=3b,3b)...
+- **归类：3（次要 1）**
+- **源码核对**：`opj_write_bytes_LE` 在 2.0/2.1 存在；源码/调用链与 2.2.0 有差异，需条件/偏移对齐。
+- **动态核对（GDB）**：GDB 在 2.1 未命中 opj_write_bytes_LE；目标在 TIFF 读取/opj_start_compress 失败。
+- **原因**：GDB：2.1 未命中 opj_write_bytes_LE；原 PoC 在 TIFF 读取/opj_start_compress 失败，编码器路径未进入。
+- **备注/置信度**：路径/格式门禁。
 
 ### CVE-2017-5505
 
@@ -558,11 +498,42 @@
 - **根因函数**：Root cause function: jpc_dec_decode
 - **变异证据（代表版本 1.900.13）**：阶段 {'b': 1, 'e': 1, 'g': 1, 'f': 3, 'h': 4}，候选约 9195；no_crash=7995、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=0、code_change=0
 - **最后位置**：[*] Testing pair 0x141+0x142 (original=ff,ff)...
-- **归类：3（次要 2a）**
+- **归类：3（次要 1）**
 - **源码核对**：`jas_matrix_bindsub` 在 1.900.8/1.900.19 与参考差 6 行；文档确认漏洞行为 1.900.25 才引入。
 - **动态核对（GDB）**：GDB 在 1.900.19 未命中 jas_matrix_bindsub；目标报 cannot decode code stream。
-- **原因**：`jas_matrix_bindsub` 在目标 1.900.8-1.900.24 已存在，但漏洞行为在 1.900.25 才引入；目标版本完整路径不存在。
-- **备注/置信度**：文档：引入版本 1.900.25。
+- **原因**：GDB：1.900.19 未命中 jas_matrix_bindsub；imginfo 报 cannot decode code stream。
+- **备注/置信度**：解码/路径门禁。
+
+### CVE-2018-18088
+
+- **目标版本（no-match）**：2.0, 2.0.1, 2.1, 2.1.1, 2.1.2, 2.2.0
+- **参考崩溃**：Reference CRASH: ASAN:SEGV in imagetopnm at /home/ws/Desktop/RetroScope/openjpeg-versions/v2.3.0/src/bin/jp2/convert.c:2243
+- **目标基线**：Target:    no crash
+- **定位到的 fork**：[*] Fork: /home/ws/Desktop/RetroScope/openjpeg-versions/version.2.1.1/src/bin/jp2/opj_decompress.c:1322
+- **fork 变量**：[*] Variables: ['l_codec', 'image', 'parameters.DA_x0', 'parameters.DA_y0', 'parameters.DA_x1', 'parameters.DA_y1']
+- **根因函数**：Root cause function: main
+- **变异证据（代表版本 2.1.1）**：阶段 {'f': 3, 'h': 4}，候选约 1021；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=0、code_change=3
+- **归类：3（次要 1）**
+- **源码核对**：`imagetopnm` 在 2.2.0 与参考 2.3.0 完全相同（diff 0），2.0 才差 630 行；最近目标的 no-match 更可能是搜索/偏移。
+- **动态核对（GDB）**：GDB 在 2.2.0 未命中 imagetopnm；原 PoC（含改名 .j2k）仍 decode 失败。
+- **原因**：GDB：2.2.0 未命中 imagetopnm；原 PoC（含改扩展名 .j2k）仍 decode 失败；2.0 函数差异更大。
+- **备注/置信度**：目标解码/格式路径不完整（3/1）。
+
+### CVE-2021-3575
+
+- **目标版本（no-match）**：2.0, 2.0.1, 2.1, 2.1.1, 2.1.2, 2.2.0, 2.3.0
+- **参考崩溃**：Reference CRASH: ASAN:heap-buffer-overflow in sycc420_to_rgb at /home/ws/Desktop/RetroScope/openjpeg-versions/v2.3.1/src/bin/common/color.c:379
+- **目标基线**：Target:    no crash
+- **定位到的 fork**：[*] Fork: /home/ws/Desktop/RetroScope/openjpeg-versions/v2.3.0/src/lib/openjp2/function_list.c:105
+- **fork 变量**：[*] Variables: ['p_validation_list->m_nb_procedures']
+- **根因函数**：Root cause function: opj_j2k_exec
+- **变异证据（代表版本 2.3.0）**：阶段 {'b': 1, 'e': 1, 'g': 1, 'f': 3, 'h': 4}，候选约 7956；no_crash=6756、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=1、code_change=0
+- **最后位置**：[*] Testing pair 0x38c+0x38d (original=00,02)...
+- **归类：3（次要 1）**
+- **源码核对**：`sycc420_to_rgb` 在 2.3.0 与参考 2.3.1 完全相同（diff 0），2.0 差 179 行；最近目标 no-match 是搜索/状态。
+- **动态核对（GDB）**：GDB 在 2.3.0 未命中 sycc420_to_rgb；目标 marker handler failed。
+- **原因**：GDB：2.3.0 未命中 sycc420_to_rgb；目标报 marker handler failed，未进入颜色转换。
+- **备注/置信度**：路径/解码门禁。
 
 ### CVE-2025-26623
 
@@ -577,8 +548,24 @@
 - **归类：3（次要 2a）**
 - **源码核对**：`TiffComponent::accept` 在 0.27.7 与 0.28.4 仅格式差异；UAF 来自 0.28 的 composite/TiffSubIfd 重写，需查 doAccept/析构路径；NVD 明确 <0.28 不受影响。
 - **动态核对（GDB）**：target 0.27.7 命中 Exiv2::Internal::TiffComponent::accept；目标能进入该函数，原 PoC 未产生参考崩溃。
-- **原因**：0.27.7 早于 0.28 的 TIFF composite 重写；NVD 明确 <0.28.0 不受影响，目标缺少 UAF 的完整实现路径。
-- **备注/置信度**：文档：0.28.0 引入，0.27.7 不触发。
+- **原因**：GDB：0.27.7 命中 TiffComponent::accept，但 UAF 依赖 0.28 的 TiffSubIfd/composite 重写；NVD 明确 <0.28 不受影响。
+- **备注/置信度**：路径/实现差异；动态只证明函数可达。
+
+### CVE-2025-5915
+
+- **目标版本（no-match）**：3.4.0, 3.4.3, 3.5.0, 3.5.3
+- **参考崩溃**：Reference CRASH: ASAN:heap-buffer-overflow in copy_from_lzss_window at /home/ws/Desktop/RetroScope/libarchive-versions/v3.6.0/libarchive/archive_read_support_format_rar.c:3069
+- **目标基线**：Target:    no crash
+- **定位到的 fork**：[*] Fork: /home/ws/Desktop/RetroScope/libarchive-versions/v3.4.3/libarchive/archive_read.c:1115
+- **fork 变量**：[*] Variables: ['a->bidders[i].free', 'a->bidders[i]', 'i']
+- **根因函数**：Root cause function: _archive_read_free
+- **变异证据（代表版本 3.4.3）**：阶段 {'b': 1, 'e': 1, 'g': 1, 'f': 4, 'h': 4}，候选约 14577；no_crash=13456、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=0、code_change=0
+- **最后位置**：[*] Testing pair 0x24+0xd1 (original=00,40)...
+- **归类：3（次要 1）**
+- **源码核对**：`copy_from_lzss_window` 在 3.5.3 与参考 3.6.0 差 53 行（签名从 const void** 到 void*，实现变化）。
+- **动态核对（GDB）**：GDB 在 3.5.3 未命中 copy_from_lzss_window；bsdtar 报 RAR Parsing filters is unsupported。
+- **原因**：GDB：3.5.3 未命中 copy_from_lzss_window；bsdtar 报 RAR Parsing filters is unsupported，目标缺少该解码路径。
+- **备注/置信度**：功能/路径缺失。
 
 ### CVE-2025-8176
 
@@ -593,8 +580,8 @@
 - **归类：3（次要 2b）**
 - **源码核对**：4.7.0 在 `create_colorcell`/`quant_fsdither` 新增 `_TIFFfree(cell)`（4.7.0:831）及 ColorCells 释放（274/326），4.5.1 没有；UAF 路径未引入。
 - **动态核对（GDB）**：GDB 在 target 4.0.10 命中 quant_fsdither（setImage 路径），目标可进入该函数；未崩溃，源码显示 UAF 释放逻辑 4.7.0 才加入。
-- **原因**：源码对比：4.7.0 在 `quant_fsdither`/`create_colorcell` 增加了 `_TIFFfree(cell)` 和 `ColorCells` 释放（4.5.1 没有），UAF 的完整路径在目标 4.5.1 及更早不存在；崩溃行虽在，释放/复用生命周期缺失。
-- **备注/置信度**：14 个目标版本全部 no-match，符合“漏洞未引入”。
+- **原因**：GDB：4.0.10 命中 quant_fsdither；目标能进入该函数；源码显示 4.7.0 才加入 _TIFFfree(cell)/ColorCells 释放，UAF 生命周期在目标不存在。
+- **备注/置信度**：动态+源码确认路径/生命周期缺失。
 
 ### CVE-2026-15184
 
@@ -627,6 +614,19 @@
 - **动态核对（GDB）**：target 0.12.5 命中 dwg_next_entity；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：目标 0.12.4/0.12.5 早于 0.13 的 `dwg_next_entity` 崩溃行为；完整阶段仅约 2.6 千候选，无 same_func。
 - **备注/置信度**：文档：0.13-0.13.4 触发。
+
+### CVE-2026-9504
+
+- **目标版本（no-match）**：0.12.4, 0.12.5, 0.13, 0.13.3
+- **参考崩溃**：Reference CRASH: ASAN:heap-buffer-overflow in bit_convert_TU at /home/ws/Desktop/libredwg-versions/libredwg-6d6a339/src/bits.c:2830
+- **目标基线**：Target:    no crash
+- **根因函数**：Root cause function: bit_read_RC
+- **变异证据（代表版本 0.12.5）**：阶段 {'h': 2}，候选约 0；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=1、fallback=1、not_reached=0、code_change=0
+- **归类：3（次要 1）**
+- **源码核对**：`bit_convert_TU` 在 0.13.3 与参考差 2 行（基本相同），0.12.4 差 103 行；0.13.3 的 no-match 不能用函数缺失解释，本轮还 GDB 回退。
+- **动态核对（GDB）**：GDB 在 0.13.3 未命中 bit_convert_TU；目标 DWG read error 0x477。
+- **原因**：GDB：0.13.3 未命中 bit_convert_TU；目标 DWG read error 0x477，未进入 LTYPE/位转换路径；0.13.3 函数本身与 ref 基本相同。
+- **备注/置信度**：先修路径门禁/流程，暂归 3/1。
 
 ## 3. 关键源码/文档证据
 
@@ -666,39 +666,39 @@
 | CVE | target | breakpoint | GDB | 备注 |
 |---|---|---|---|---|
 | CVE-2016-10270 | 3.9.6 | TIFFFillStrip | NO_BREAK | GDB 在 3.9.6 未命中 TIFFFillStrip；目标在 required tags/StripByteCounts 阶段失败。 |
-| CVE-2016-9572 | 2.0 | imagetopnm | NO_HIT | GDB 在 2.0 未命中 imagetopnm；原 PoC（含改名 .j2k）仍 decode 失败。 |
 | CVE-2017-14939 | 2.27 | read_1_byte | NO_HIT | 目标 2.24-2.27 的 nm-new 不支持 --with-symbol-versions，流水线命令直接打印 help 退出；修正命令后 GDB 显示 2.24 命中 read_1_byte、2.27 在 print_symbol 触发另一个 SEGV。 |
 | CVE-2017-7597 | 4.0.6 | TIFFReverseBits | HIT | target 4.0.6 命中 TIFFReverseBits；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2023-30775 | 4.0.5 | extractContigSamples32bits | NO_HIT | GDB 在 4.0.5 未命中 extractContigSamples32bits；目标 StripByteCounts/TIFFReadDirectory 失败。 |
+| CVE-2023-3618 | 4.0.5 | Fax3Encode | NO_BREAK | GDB 在 4.0.5/4.1.0 均未命中 Fax3Encode；原 PoC 在 loadImage/tile 读取阶段失败。 |
 | CVE-2025-8177 | 4.1.0 | setrow | HIT | GDB 在 target 4.1.0 命中 setrow（setImage1 调用），目标可进入该函数；未崩溃，属于后续状态/搜索问题。 |
-| CVE-2026-9504 | 0.13.3 | bit_convert_TU | NO_HIT | GDB 在 0.13.3 未命中 bit_convert_TU；目标 DWG read error 0x477。 |
 | issue1620 | 2.5.2 | opj_j2k_read_sod | HIT | target 2.5.2 命中 opj_j2k_read_sod；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | issue908 | 2.0 | imagetopnm | NO_HIT | target 2.0 未命中 imagetopnm；[ERROR] Failed to decode the codestream in the JP2 file。 |
 | CVE-2017-14152 | 2.1 | opj_write_bytes_LE | HIT | target 2.1 命中 opj_write_bytes_LE；目标能进入该函数，原 PoC 未产生参考崩溃。 |
-| CVE-2017-14164 | 2.1 | opj_write_bytes_LE | NO_BREAK | GDB 在 2.1 未命中 opj_write_bytes_LE；目标在 TIFF 读取/opj_start_compress 失败。 |
 | CVE-2022-33034 | 0.12.4 | copy_bytes | HIT | target 0.12.4 命中 copy_bytes；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2022-44840 | 2.36 | find_section_in_set | HIT | target 2.36 命中 find_section_in_set；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2023-1972 | 2.38 | _bfd_elf_print_private_bfd_data | HIT | target 2.38 命中 _bfd_elf_print_private_bfd_data；目标能进入该函数，原 PoC 未产生参考崩溃。 |
-| CVE-2023-3618 | 4.0.5 | Fax3Encode | NO_BREAK | GDB 在 4.0.5/4.1.0 均未命中 Fax3Encode；原 PoC 在 loadImage/tile 读取阶段失败。 |
 | CVE-2025-48071 | 3.2.12 | interleave | NO_HIT | GDB 在 3.2.12 未命中 interleave；exrcheck 报 file bad。 |
 | CVE-2026-15520 | 0.13.3 | decompress_R2004_section | HIT | target 0.13.3 命中 decompress_R2004_section；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2026-86145 | 10.30 | internal_dfa_match | HIT | target 10.30 命中 internal_dfa_match；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2026-9500 | 0.13.4 | read_2004_compressed_section | HIT | target 0.13.4 命中 read_2004_compressed_section；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2026-9502 | 0.13.3 | decompress_R2004_section | HIT | target 0.13.3 命中 decompress_R2004_section；目标能进入该函数，原 PoC 未产生参考崩溃。 |
-| CVE-2018-18088 | 2.2.0 | imagetopnm | NO_HIT | GDB 在 2.2.0 未命中 imagetopnm；原 PoC（含改名 .j2k）仍 decode 失败。 |
-| CVE-2021-3575 | 2.3.0 | sycc420_to_rgb | NO_HIT | GDB 在 2.3.0 未命中 sycc420_to_rgb；目标 marker handler failed。 |
-| CVE-2023-30775 | 4.0.5 | extractContigSamples32bits | NO_HIT | GDB 在 4.0.5 未命中 extractContigSamples32bits；目标 StripByteCounts/TIFFReadDirectory 失败。 |
 | CVE-2024-34459 | 2.9.4 | xmlHTMLPrintFileContext | HIT | target 2.9.4 命中 xmlHTMLPrintFileContext；目标能进入该函数，原 PoC 未产生参考崩溃。 |
-| CVE-2025-5915 | 3.5.3 | copy_from_lzss_window | NO_HIT | GDB 在 3.5.3 未命中 copy_from_lzss_window；bsdtar 报 RAR Parsing filters is unsupported。 |
 | CVE-2026-23865 | - | - | NO_BIN | 无可用目标 harness 二进制，GDB 未完成；本项仅源码核对。 |
 | CVE-2026-50811 | - | - | NO_BIN | 无可用目标 harness 二进制，GDB 未完成；本项仅源码核对。 |
 | CVE-2026-9605 | 0.13.3 | bit_read_RC | HIT | target 0.13.3 命中 bit_read_RC；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2016-10268 | 4.0.4beta | _tiffWriteProc | HIT | target 4.0.4beta 命中 _tiffWriteProc；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2016-10269 | 3.9.6 | _TIFFmemcpy | HIT | target 3.9.6 命中 _TIFFmemcpy；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2016-9572 | 2.0 | imagetopnm | NO_HIT | GDB 在 2.0 未命中 imagetopnm；原 PoC（含改名 .j2k）仍 decode 失败。 |
 | CVE-2017-14151 | 2.1 | opj_mqc_byteout | NO_BREAK | GDB 在 2.1 未命中 opj_mqc_byteout；目标报 unknown BMP header size 124，BMP 加载失败。 |
+| CVE-2017-14164 | 2.1 | opj_write_bytes_LE | NO_BREAK | GDB 在 2.1 未命中 opj_write_bytes_LE；目标在 TIFF 读取/opj_start_compress 失败。 |
 | CVE-2017-5505 | 1.900.19 | jas_matrix_asl | HIT | target 1.900.19 命中 jas_matrix_asl；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2017-6851 | 1.900.19 | jas_matrix_bindsub | NO_HIT | GDB 在 1.900.19 未命中 jas_matrix_bindsub；目标报 cannot decode code stream。 |
+| CVE-2018-18088 | 2.2.0 | imagetopnm | NO_HIT | GDB 在 2.2.0 未命中 imagetopnm；原 PoC（含改名 .j2k）仍 decode 失败。 |
+| CVE-2021-3575 | 2.3.0 | sycc420_to_rgb | NO_HIT | GDB 在 2.3.0 未命中 sycc420_to_rgb；目标 marker handler failed。 |
 | CVE-2025-26623 | 0.27.7 | Exiv2::Internal::TiffComponent::accept | HIT | target 0.27.7 命中 Exiv2::Internal::TiffComponent::accept；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2025-5915 | 3.5.3 | copy_from_lzss_window | NO_HIT | GDB 在 3.5.3 未命中 copy_from_lzss_window；bsdtar 报 RAR Parsing filters is unsupported。 |
 | CVE-2025-8176 | 4.0.10 | quant_fsdither | NO_HIT | GDB 在 target 4.0.10 命中 quant_fsdither（setImage 路径），目标可进入该函数；未崩溃，源码显示 UAF 释放逻辑 4.7.0 才加入。 |
 | CVE-2026-15184 | 0.12.5 | dwg_next_entity | HIT | target 0.12.5 命中 dwg_next_entity；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2026-9503 | 0.12.5 | dwg_next_entity | HIT | target 0.12.5 命中 dwg_next_entity；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2026-9504 | 0.13.3 | bit_convert_TU | NO_HIT | GDB 在 0.13.3 未命中 bit_convert_TU；目标 DWG read error 0x477。 |
 
