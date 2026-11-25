@@ -1,0 +1,177 @@
+import json, os, time, collections
+BASE='/home/ws/Desktop/RetroScope'
+EV=json.load(open('/tmp/opencode/nomatch_evidence.json'))
+status=json.load(open(f'{BASE}/.retro_work/status/status_r3.json'))
+cnt=collections.Counter(r['status'] for r in status)
+snap=time.strftime('%Y-%m-%d %H:%M', time.localtime(os.path.getmtime(f'{BASE}/.retro_work/status/status_r3.json')))
+
+# primary, secondary, cause, note
+A={
+'CVE-2016-10268':('3','1','GDB：4.0.4beta 命中 `_tiffWriteProc`，但目标函数是单次 write，参考 4.0.7 的循环 write/崩溃行不存在；4.0.6 有循环但本轮超时。','版本相关，路径/代码差异。'),
+'CVE-2016-10269':('3','2b','GDB：3.9.6 命中 `_TIFFmemcpy`（首个通用调用，不一定是 PixarLog 路径）；源码/文档显示 3.9.x 缺 PixarLog 解码→写路径。','路径不完整为主。'),
+'CVE-2016-10270':('1','3','目标 3.9.x 在 `TIFFFillStrip` 之前报 `MissingRequired: TileOffsets` 并干净退出；崩溃函数存在，但格式门禁使变异输入无法到达崩溃行（文档将该 CVE 归为格式门禁类）。','不是代码路径缺失，而是结构保持/门禁穿越能力不足。'),
+'CVE-2016-9572':('3','1','GDB：2.0 未命中 `imagetopnm`；原 PoC 解码失败（改扩展名后仍失败），目标解码路径不完整。','解码/格式门禁（3/1）。'),
+'CVE-2017-14151':('3','1','目标 2.0/2.0.1/2.1 不含 `opj_tcd_code_block_enc_allocate_data`，参考 2.2.0 的 `opj_mqc_byteout` 溢出调用链在目标不完整；日志只有 315 候选、code_change fork。','文档归为格式门禁，但源码显示完整漏洞链在目标不成立；原 PoC 在 2.0/2.1 更早失败。'),
+'CVE-2017-14152':('2a','1','目标 2.0/2.0.1/2.1 的 `opj_start_compress`/`opj_write_bytes_LE` 路径存在，但参考→目标的编码器分支/条件不一致；只有约 436 候选，未覆盖到同型崩溃。','文档归类为参考→目标 offset/branch 不一致。'),
+'CVE-2017-14164':('3','1','GDB：2.1 未命中 `opj_write_bytes_LE`；原 PoC 在 TIFF 读取/`opj_start_compress` 失败，编码器路径未进入。','路径/格式门禁。'),
+'CVE-2017-14939':('1','2b','动态核对发现命令不兼容：目标 2.24-2.27 的 nm-new 不支持 `--with-symbol-versions`（只有 2.29+ 支持），流水线带该参数时目标直接打印 help 退出，no-match 无效。去掉该选项后 GDB：2.24 命中 `read_1_byte`，2.27 在 `print_symbol` 触发另一个 SEGV。需用兼容参数重跑。','结果无效；主因是方法/命令，不是已证明的条件或路径。'),
+'CVE-2017-5505':('3','2a','`jas_matrix_asl` 在 1.900.24 已存在，但负 ROI shift 的漏洞行为实际在 1.900.25 才引入；目标 1.900.8-1.900.24 的完整触发路径不存在。','文档：引入版本 1.900.25。'),
+'CVE-2017-6851':('3','1','GDB：1.900.19 未命中 `jas_matrix_bindsub`；imginfo 报 cannot decode code stream。','解码/路径门禁。'),
+'CVE-2017-7597':('1','2b','文档将其归为格式/解析门禁卡死（G_early_reject 主导）；本轮完整阶段约 11.3 万候选仍无 same_func，说明结构保持/门禁穿越算子不足。','目标 `TIFFReverseBits` 存在；主因是门禁与搜索方法。'),
+'CVE-2018-18088':('3','1','GDB：2.2.0 未命中 `imagetopnm`；原 PoC（含改扩展名 `.j2k`）仍 decode 失败；2.0 函数差异更大。','目标解码/格式路径不完整（3/1），不是简单搜索问题。'),
+'CVE-2021-3575':('3','1','GDB：2.3.0 未命中 `sycc420_to_rgb`；目标报 marker handler failed，未进入颜色转换。','路径/解码门禁。'),
+'CVE-2022-33034':('2a','3','文档已证明：参考 0.12.5 `read_file_header` 传入 `sizeof+1`，目标 0.12.4 传入 272，`dst_end` 恰等于对象末尾，`copy_bytes` 的越界守卫必然拒绝；输入变异无解。','条件冲突的代码级证据最充分。'),
+'CVE-2022-44840':('2a','1','目标 2.36 有 "Section is too small for 208 slots" 检查；参考 2.38 的 `_mul_overflow` 路径存在但条件不同。14 个目标版本全部 no-match。','文档：路径存在但条件不同。'),
+'CVE-2023-1972':('2a','1','目标 2.38 仍拒绝 `hdr->sh_info==0` 并保留 `bfd_alloc/amt` 检查；参考 2.40 改为 `bfd_zalloc`。14 个目标版本 no-match。','文档：路径存在但条件不同。'),
+'CVE-2023-30775':('1','2b','GDB：4.0.5 未命中 `extractContigSamples32bits`；目标在 StripByteCounts/TIFFReadDirectory 阶段失败；函数存在但原 PoC 过不了读取门禁。','格式门禁/搜索（1/2b），不是已证明的路径缺失。'),
+'CVE-2023-3618':('1','3','GDB：4.0.5/4.1.0 均未命中 `Fax3Encode`；原 PoC 在 loadImage/tile 读取阶段失败（StripOffsets/Photometric 等），目标到不了编码器。','输入/加载门禁为主（1/3），不是 2a/2b。'),
+'CVE-2024-34459':('2b','1','源码核对：`xmlHTMLPrintFileContext` 在 2.9.4/2.9.0 与参考 2.9.5 完全相同（diff 0）；no-match 不是函数/条件差异，而是搜索/状态未覆盖。','路径与崩溃函数相同，优先归 2b/1。'),
+'CVE-2025-26623':('3','2a','GDB：0.27.7 命中 `TiffComponent::accept`，但 UAF 依赖 0.28 的 TiffSubIfd/composite 重写；NVD 明确 <0.28 不受影响。','路径/实现差异；动态只证明函数可达。'),
+'CVE-2025-48071':('2a','1','GDB：3.2.12 未命中 `interleave`；exrcheck 报 file bad，源码显示严格 `actual_out_bytes == uncompressed_size` 检查拒绝。','条件冲突，GDB 回退。'),
+'CVE-2025-5915':('3','1','GDB：3.5.3 未命中 `copy_from_lzss_window`；bsdtar 报 RAR Parsing filters is unsupported，目标缺少该解码路径。','功能/路径缺失。'),
+'CVE-2025-8176':('3','2b','GDB：4.0.10 命中 `quant_fsdither`；目标能进入该函数；源码显示 4.7.0 才加入 `_TIFFfree(cell)`/ColorCells 释放，UAF 生命周期在目标不存在。','动态+源码确认路径/生命周期缺失。'),
+'CVE-2025-8177':('1','2b','GDB：4.1.0 命中 `setrow`（setImage1 调用），目标能到达；本轮 no-match 主因是 GDB 回退/未完整搜索，另有函数差异/状态覆盖问题。','先修复回退再复测。'),
+'CVE-2026-15184':('3','2b','目标 0.12.5 早于 0.13 的 `dwg_next_entity` 崩溃路径/行为；完整阶段约 4 千候选无 same_func。','文档：0.13-0.13.4 触发，0.12.x 完整路径不存在。'),
+'CVE-2026-15520':('2a','3','目标 0.12.x/0.13.3：0.12.5 在 `decompress_R2004_section` 前拒绝/边界返回，0.13.3 的条件也不同；完整阶段约 11 万候选无 same_func。','路径存在但条件/状态不满足；0.12.5 更接近路径不完整。'),
+'CVE-2026-23865':('2b','3','源码核对：`tt_var_get_item_delta` 在目标 2.8.1 未找到（该版本路径不存在），2.13.0 存在且与参考差 77 行；2.13.0 的 no-match 更像多字段状态/搜索，2.8.1 偏路径缺失。','版本相关；完整阶段约 10 万候选。'),
+'CVE-2026-50811':('2b','2a','完整阶段约 16 万候选，目标 2.8.1-2.13.3 均无 same_func；freetype 设计空间/状态组合未覆盖，2.8.1 还有单独 ERROR。','多字段状态/偏移覆盖不足。'),
+'CVE-2026-86145':('2a','3','目标 10.30 对递归 DFA 报 `error -52: nested recursion...`，在到达 `internal_dfa_match` 越界写之前就拒绝；函数存在但条件冲突。日志只有 f/h 阶段、666 候选。','条件冲突/路径被门禁挡住。'),
+'CVE-2026-9500':('2a','3','参考崩溃只在 6d6a339；目标 0.12.4-0.13.4 的 `read_2004_compressed_section` 路径/条件不同。完整阶段约 15 万候选无 same_func。','偏向条件差异/旧版本路径不完整。'),
+'CVE-2026-9502':('2a','3','目标 0.12.4/0.12.5/0.13/0.13.3：0.12.5 更早拒绝，`decompress_R2004_section` 存在但边界条件不同；完整阶段约 11 万候选无 same_func。','条件冲突/旧版本路径差异。'),
+'CVE-2026-9503':('3','2b','目标 0.12.4/0.12.5 早于 0.13 的 `dwg_next_entity` 崩溃行为；完整阶段仅约 2.6 千候选，无 same_func。','文档：0.13-0.13.4 触发。'),
+'CVE-2026-9504':('3','1','GDB：0.13.3 未命中 `bit_convert_TU`；目标 DWG read error 0x477，未进入 LTYPE/位转换路径；0.13.3 函数本身与 ref 基本相同。','先修路径门禁/流程，暂归 3/1。'),
+'CVE-2026-9605':('2b','1','源码核对：目标 0.13.3 的 `bit_read_RC` 与参考 0.13.4 完全相同（diff 0），0.12.4 才差 23 行；因此 0.13.3 的 no-match 是搜索/状态（2b），不是代码条件差异。','版本相关。'),
+'issue1620':('1','2b','仅执行到 Step 6f/6h，约 1.1 千候选；目标 2.0-2.5.2 的 `opj_j2k_read_sod` 路径存在但大量输入被解析门禁拒绝，搜索未展开。','方法/预算为主。'),
+'issue908':('3','1','GDB：2.0 未命中 `imagetopnm`；failed to decode codestream。','解码/格式门禁（3/1）。'),
+}
+
+SRC={
+'CVE-2016-10268':'目标 3.9.3/4.0.3/4.0.4/4.0.4beta 的 `_tiffWriteProc` 为单次 write（无循环）；参考 4.0.7 为循环 write，崩溃行 115 在循环内。4.0.6 已有循环但本轮超时。',
+'CVE-2016-10269':'`_TIFFmemcpy` 在 3.9.6/3.9.3 与参考基本一致（diff 2 行）；问题在 PixarLog/压缩解码路径，不在 memcpy 实现。',
+'CVE-2016-10270':'`TIFFFillStrip` 目标 3.9.x 与参考 diff 109 行；目标更早的 required-tag/TileOffsets 门禁使输入到不了该函数。',
+'CVE-2016-9572':'`imagetopnm` 2.0 与 2.0.1 相差 592 行；本轮 GDB 回退，未完成搜索。',
+'CVE-2017-14151':'`opj_mqc_byteout` 在 2.0/2.1 存在（grep 确认），但目标缺 `opj_tcd_code_block_enc_allocate_data`，完整调用链不成立。',
+'CVE-2017-14152':'`opj_write_bytes_LE` 在 2.0/2.1 存在；源码/调用链与 2.2.0 有差异，需条件/偏移对齐。',
+'CVE-2017-14164':'`opj_write_bytes_LE` 在 2.0/2.1 存在；源码/调用链与 2.2.0 有差异，需条件/偏移对齐。',
+'CVE-2017-14939':'`read_1_byte` 在 2.27 与参考 2.29 完全相同（diff 0）；2.24 少一个上界检查。路径存在，no-match 来自搜索/状态。',
+'CVE-2017-5505':'`jas_matrix_asl` 在 1.900.8/1.900.19 与参考差 6-9 行；文档确认漏洞行为 1.900.25 才引入，函数存在≠漏洞路径存在。',
+'CVE-2017-6851':'`jas_matrix_bindsub` 在 1.900.8/1.900.19 与参考差 6 行；文档确认漏洞行为 1.900.25 才引入。',
+'CVE-2017-7597':'`TIFFReverseBits` 在 4.0.6/3.9.3 与参考仅 brace/loop 格式差异；路径存在，no-match 是门禁/搜索。',
+'CVE-2018-18088':'`imagetopnm` 在 2.2.0 与参考 2.3.0 完全相同（diff 0），2.0 才差 630 行；最近目标的 no-match 更可能是搜索/偏移。',
+'CVE-2021-3575':'`sycc420_to_rgb` 在 2.3.0 与参考 2.3.1 完全相同（diff 0），2.0 差 179 行；最近目标 no-match 是搜索/状态。',
+'CVE-2022-33034':'`copy_bytes` 函数体与守卫逐字相同；差异在调用者 dst_size（272 vs 273），守卫必然拒绝。',
+'CVE-2022-44840':'`find_section_in_set`/readelf.c 目标 2.36 与参考 2.38 差 5 行，目标含 Section too small 检查。',
+'CVE-2023-1972':'`elf.c` 目标 2.38 增加 `if (s->size < extdynsize) goto error_return` 等检查（与 2.40 差 13 行）；2.25 差 44 行。',
+'CVE-2023-30775':'`extractContigSamples32bits` 在 4.0.5/3.9.3 存在，函数体差 35-39 行；路径存在，偏移/状态覆盖不足。',
+'CVE-2023-3618':'`_TIFFmemcpy` 在 4.0.5/3.9.3 与参考仅格式差异；`Fax3Encode` 存在，崩溃依赖 tile/refline 状态。',
+'CVE-2024-34459':'`xmlHTMLPrintFileContext` 在 2.9.4/2.9.0 与参考 2.9.5 完全相同（diff 0）；no-match 是搜索/状态，不是代码条件差异。',
+'CVE-2025-26623':'`TiffComponent::accept` 在 0.27.7 与 0.28.4 仅格式差异；UAF 来自 0.28 的 composite/TiffSubIfd 重写，需查 doAccept/析构路径；NVD 明确 <0.28 不受影响。',
+'CVE-2025-48071':'`interleave` 在 3.2.12 与参考 3.3.2 完全相同（diff 0）；条件在 `undo_zip_impl` 的严格/宽松大小检查。',
+'CVE-2025-5915':'`copy_from_lzss_window` 在 3.5.3 与参考 3.6.0 差 53 行（签名从 const void** 到 void*，实现变化）。',
+'CVE-2025-8176':'4.7.0 在 `create_colorcell`/`quant_fsdither` 新增 `_TIFFfree(cell)`（4.7.0:831）及 ColorCells 释放（274/326），4.5.1 没有；UAF 路径未引入。',
+'CVE-2025-8177':'`setrow` 在 4.1.0/3.9.3 存在，函数体差 74 行；本轮 GDB 回退，未真正搜索。',
+'CVE-2026-15184':'`dwg_next_entity` 在 0.12.5 与参考 0.13.4 差 15 行；0.13 才引入相关崩溃行为。',
+'CVE-2026-15520':'`decompress_R2004_section` 在 0.13.3/0.12.4 与参考差 225-227 行；函数存在，条件/路径不同。',
+'CVE-2026-23865':'`tt_var_get_item_delta` 在 2.8.1 未找到（路径缺失），2.13.0 存在且差 77 行；2.13.0 更像多字段状态/搜索。',
+'CVE-2026-50811':'`TT_Get_Var_Design` 在 2.9.1/2.13.3 存在，差 24-33 行；状态/偏移覆盖不足。',
+'CVE-2026-86145':'`internal_dfa_match` 在 10.30 与参考差 485 行；目标 10.30 的递归位置检查在崩溃前拒绝。',
+'CVE-2026-9500':'`read_2004_compressed_section` 在 0.13.4/0.12.5 存在，差 47-160 行；目标路径/条件不同。',
+'CVE-2026-9502':'`decompress_R2004_section` 在 0.13.3/0.12.4 差 225-227 行；函数存在，条件/路径不同。',
+'CVE-2026-9503':'`dwg_next_entity` 0.12.5 与参考差 15 行；0.13 才引入崩溃行为。',
+'CVE-2026-9504':'`bit_convert_TU` 在 0.13.3 与参考差 2 行（基本相同），0.12.4 差 103 行；0.13.3 的 no-match 不能用函数缺失解释，本轮还 GDB 回退。',
+'CVE-2026-9605':'`bit_read_RC` 在 0.13.3 与参考完全相同（diff 0），0.12.4 差 23 行；0.13.3 的 no-match 是搜索/状态。',
+'issue1620':'`opj_j2k_read_sod` 在 2.5.2 与参考差 7 行；2.0 未找到该函数。',
+'issue908':'`imagetopnm` 2.0 与 2.0.1 差 592 行；本轮 GDB 回退。',
+}
+
+# order by primary then cve
+order={'1':0,'2a':1,'2b':2,'3':3}
+cves=sorted(EV, key=lambda c:(order.get(A.get(c,('9',))[0],9), c))
+
+lines=[]
+lines.append('# RetroScope 两轮 no-match CVE 分析（r1 + r3）\n')
+lines.append(f'生成时间：{time.strftime("%Y-%m-%d %H:%M")}  ')
+lines.append(f'状态快照：`status_r3.json` 最后更新 {snap}（后台批次仍在运行，部分 CVE 仍有版本未跑完）\n')
+lines.append('## 0. 范围与口径\n')
+lines.append('- 两轮：r1（单版本轮，结果已归档）与 r3（全版本轮，当前结果）。')
+lines.append('- 纳入：两轮都没有任何 MATCH、且 r3 至少有一个 NO_MATCH 的 CVE；排除 TIMEOUT、ERROR、MATCH_PARTIAL 以及尚未开始的 pair。')
+lines.append(f'- 快照统计：r3 记录 {len(status)} 条，其中 NO_MATCH {cnt.get("NO_MATCH",0)}、MATCH {cnt.get("MATCH",0)}、MATCH_PARTIAL {cnt.get("MATCH_PARTIAL",0)}、TIMEOUT {cnt.get("TIMEOUT",0)}、ERROR {cnt.get("ERROR",0)}。')
+lines.append(f'- 本文件分析 {len(cves)} 个 CVE；每个 CVE 的代表日志取“阶段最完整、候选最多”的 no-match 版本，版本间差异在备注中说明。')
+lines.append('- 归类采用你给的 1 / 2a / 2b / 3，并额外把“GDB 回退导致流程没真正跑完”归到 1（方法/流程限制）。')
+lines.append('- 初版主要是日志推断并沿用 poc_run_commands.md 的既有结论；本版补充逐 CVE 的源码函数体/守卫 diff，并在每节增加“源码核对”。源码核对目前是函数级，不是完整符号执行/调用图证明，2b/1 类结论仍可能随更深验证变化。\n')
+lines.append('## 1. 结论总览\n')
+def short_ref(t):
+    import re
+    m=re.search(r'Reference CRASH:\s*(ASAN:\S+)\s+in\s+(\S+)\s+at\s+(.+)',t or '')
+    if m:
+        loc=m.group(3).split('/')[-1]
+        return f'{m.group(1)} {m.group(2)} ({loc})'
+    return (t or '-')[:90]
+lines.append('| CVE | no-match 版本数 | 代表版本 | 参考崩溃 | 主要归类 | 次要 | 一句话原因 |')
+lines.append('|---|---:|---|---|---|---|---|')
+for c in cves:
+    d=EV[c]['logs'][0] if EV[c]['logs'] else {}
+    p,s,cause,_=A.get(c,('?','?','',''))
+    ref=short_ref(d.get('ref',''))
+    lines.append(f'| {c} | {len(EV[c]["r3_nomatch_labels"])} | {d.get("label","-")} | {ref} | **{p}** | {s} | {cause[:60]} |')
+lines.append('')
+lines.append('### 归类统计\n')
+by=collections.defaultdict(list)
+for c in cves: by[A.get(c,('?',))[0]].append(c)
+for k in ['1','2a','2b','3']:
+    if by[k]: lines.append(f'- **{k}**（{len(by[k])}）：' + '、'.join(by[k]))
+lines.append('')
+lines.append('> 1 = 方法/流程/搜索能力不足（含 GDB 回退、候选未覆盖、预算不足）；2a = 能到崩溃行但目标守卫/条件冲突；2b = 到崩溃行但偏移/状态组合不足；3 = 目标版本缺少完整漏洞路径（旧实现、函数/分支缺失、早期拒绝、bug 未引入）。\n')
+lines.append('## 2. 逐 CVE 分析\n')
+for c in cves:
+    d=EV[c]['logs'][0] if EV[c]['logs'] else {}
+    p,s,cause,note=A.get(c,('?','?','',''))
+    labels=EV[c]['r3_nomatch_labels']; tos=EV[c]['r3_timeout']; errs=EV[c]['r3_error']
+    lines.append(f'### {c}\n')
+    lines.append(f'- **目标版本（no-match）**：{", ".join(labels) if labels else "-"}')
+    if tos: lines.append(f'- **超时/排除**：{", ".join(tos)}')
+    if errs: lines.append(f'- **ERROR/排除**：{", ".join(errs)}')
+    lines.append(f'- **参考崩溃**：{d.get("ref","-")}')
+    if d.get('target'): lines.append(f'- **目标基线**：{d.get("target")}')
+    if d.get('fork'): lines.append(f'- **定位到的 fork**：{d.get("fork")}')
+    if d.get('variables'): lines.append(f'- **fork 变量**：{d.get("variables")}')
+    if d.get('root'): lines.append(f'- **根因函数**：{d.get("root")}')
+    lines.append(f'- **变异证据（代表版本 {d.get("label","-")}）**：阶段 {d.get("steps",{})}，候选约 {d.get("candidates",0)}；'
+                 f'no_crash={d.get("deaths",{}).get("no_crash",0)}、fork_flip={d.get("deaths",{}).get("fork_flip",0)}、'
+                 f'same_type={d.get("deaths",{}).get("same_type",0)}、different_type={d.get("deaths",{}).get("different_type",0)}；'
+                 f'gdb_fail={d.get("gdb_fail",0)}、fallback={d.get("fallback",0)}、not_reached={d.get("not_reached",0)}、code_change={d.get("code_change",0)}')
+    if d.get('last_test'): lines.append(f'- **最后位置**：{d.get("last_test")}')
+    lines.append(f'- **归类：{p}（次要 {s}）**')
+    lines.append(f'- **源码核对**：{SRC.get(c, "未完成源码核对") }')
+    lines.append(f'- **原因**：{cause}')
+    lines.append(f'- **备注/置信度**：{note}')
+    lines.append('')
+lines.append('## 3. 关键源码/文档证据\n')
+lines.append('- **CVE-2022-33034**：文档已给出代码级证明：参考 0.12.5 的 `read_file_header` 向 `copy_bytes` 传入 `sizeof(r2007_file_header)+1`（273 字节），目标 0.12.4 传 `0x110`（272 字节，恰为对象大小），`dst + length > dst_end` 守卫必然拒绝；两版 `copy_bytes` 函数体与守卫完全相同。因此目标 0.12.4 的 no-match 不是搜索问题，而是条件冲突（2a）。')
+lines.append('- **CVE-2022-44840**：文档记录目标 2.36 有 "Section is too small for 208 slots" 检查；参考 2.38 的 `process_cu_tu_index` 改用 `_mul_overflow(nslots,12,&total)` 回归。路径存在但检查条件不同（2a）。')
+lines.append('- **CVE-2023-1972**：文档记录目标 2.38 仍拒绝 `hdr->sh_info==0` 并保留 `bfd_alloc/amt` 检查；2.40 改成 `bfd_zalloc`（2a）。')
+lines.append('- **CVE-2025-48071**：源码对比：3.2.12 的 `undo_zip_impl` 要求 `actual_out_bytes == uncompressed_size`；3.3.0 放宽为 `comp_buf_size > actual_out_bytes`；3.3.3 补回 `actual_out_bytes > uncompressed_size`。目标 3.2.12 的严格检查会拒绝原 PoC（2a）。')
+lines.append('- **CVE-2025-8176**：源码对比：4.7.0 的 `tiffmedian.c` 在 `quant_fsdither`/`create_colorcell` 增加了 `_TIFFfree(cell)`（4.7.0 第 831 行）以及 `ColorCells`/`cell` 的释放（第 274/326 行），4.5.1 没有这些释放。目标 3.9.3-4.5.1 虽然保留 `quant_fsdither` 崩溃行，但 UAF 所需的“释放后再次使用”生命周期不存在（3）。')
+lines.append('- **CVE-2017-5505 / CVE-2017-6851**：文档记录两个漏洞实际在 JasPer 1.900.25 才引入；目标 1.900.8-1.900.24 中 `jas_matrix_asl`/`jas_matrix_bindsub` 函数本身存在，但触发漏洞的行为/路径不存在（3）。')
+lines.append('- **CVE-2025-26623**：NVD 明确 `<0.28.0`（如 0.27.7）不受影响；0.28.0 的 TIFF composite 重写引入 UAF，目标 0.27.7 缺少该实现路径（3）。')
+lines.append('- **CVE-2016-10269 / CVE-2016-10270**：文档记录 3.9.x 缺 PixarLog 时原 PoC 返回 rc=1；3.9.x 在 `TIFFFillStrip` 前报 `MissingRequired: TileOffsets`。目标函数存在但完整解码/写路径不完整（10269→3，10270 更偏门禁→1/3）。')
+lines.append('- **CVE-2026-15184 / CVE-2026-9503**：文档版本扫描显示 0.13-0.13.4 触发，0.12.x 不触发；`dwg_next_entity` 在 0.12.5 存在但崩溃行为/路径未引入（3）。')
+lines.append('- **CVE-2026-9504**：文档记录 9504 样本直到 6d6a339 才在 `bit_convert_TU` 触发；0.13.3/0.12.x 不触发该函数路径（3），且本轮 GDB 回退（1）。')
+lines.append('')
+lines.append('## 4. 日志判读说明\n')
+lines.append('- `no_crash(unchanged)`：目标行为与基线一致，变异没有改变目标执行结果。')
+lines.append('- `fork_flip(behavior changed)`：变异改变了目标行为，但没有造成与参考同函数/同类型的崩溃；说明变异能影响 fork/状态，但还差最后的触发条件。')
+lines.append('- `same_type`：目标在**其他位置**崩了，类型与参考相同但函数/语句不同；不计为 same_func，因此仍是 no-match（典型如 CVE-2022-33034 的 226 条 SEGV @ dxfb_header_write）。')
+lines.append('- `gdb_fail/fallback`：GDB fork 未定位，流程只跑 Step 6h 格式字段；这类 no-match 不是“搜索过但失败”，而是“流程没完整跑完”，应优先复测。')
+lines.append('- `code_change`：参考与目标的 fork 位置是代码变更点（函数/分支/语句不同），此时输入变异很难对齐，优先按条件/路径差异分析。')
+lines.append('')
+lines.append('## 5. 重点结论与后续建议\n')
+lines.append('- **条件冲突（2a）证据最硬**：CVE-2022-33034（守卫数学）、CVE-2022-44840（Section slots 检查）、CVE-2023-1972（sh_info/bfd_alloc）、CVE-2025-48071（严格解压大小检查）、CVE-2026-86145（递归 DFA 门禁）。这些不是“没搜到”，而是目标版本在到达崩溃点前/处必然拒绝。')
+lines.append('- **路径不完整/代码路径差异（3）**：CVE-2016-10268（目标 <=4.0.4beta 缺参考的循环 write）、CVE-2016-10269（PixarLog）、CVE-2017-5505/6851（1.900.25 才引入）、CVE-2017-14151（缺 allocate_data）、CVE-2025-26623（0.28 重写才引入）、CVE-2025-8176（4.7.0 才加入 free/UAF 路径）、CVE-2026-9503/15184（0.13 才引入）；CVE-2016-10270 更偏门禁（1/3）。')
+lines.append('- **搜索/覆盖不足（1/2b）**：CVE-2016-10270、CVE-2017-7597、CVE-2017-14939、CVE-2018-18088（最近目标函数与 ref 相同）、CVE-2021-3575（2.3.0 函数与 ref 相同）、CVE-2023-30775、CVE-2024-34459（函数与 ref 完全相同）、CVE-2025-5915、CVE-2026-23865（2.13.0 函数存在）、CVE-2026-50811、CVE-2026-9605（0.13.3 函数与 ref 相同）等；这些目标路径存在，但候选数很大仍无 same_func，需要更强的字段级/状态引导变异，而不是继续盲目加随机候选。')
+lines.append('- **流程回退导致 no-match 不具结论性**：CVE-2016-9572、issue908、CVE-2025-48071、CVE-2025-8177、CVE-2026-9504 的 GDB fork 未定位，只跑了 Step 6h；这些应优先修复/手工指定 fork 后复测，再判断 2a/2b/3。')
+lines.append('- **下一步**：对 2a 类不再投入无结构变异；对 2b 类优先做字段级/跨字段状态变异并限制预算；对 3 类换更老/更接近引入点的目标版本或明确标记“不可变异”；对回退类先修 GDB/rr 再跑。')
+lines.append('- 注意：本快照仍有 113 个 pair 未完成；后续若有版本转 MATCH，本文件对应条目的结论需要更新。')
+text='\n'.join(lines)+'\n'
+open(f'{BASE}/no_match_analysis_r1_r3.md','w').write(text)
+print('wrote',f'{BASE}/no_match_analysis_r1_r3.md',len(text),'bytes',len(cves),'CVEs')
