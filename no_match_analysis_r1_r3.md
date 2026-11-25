@@ -702,3 +702,28 @@
 | CVE-2026-9504 | 0.13.3 | bit_convert_TU | NO_HIT | GDB 在 0.13.3 未命中 bit_convert_TU；目标 DWG read error 0x477。 |
 | issue908 | 2.0 | imagetopnm | NO_HIT | target 2.0 未命中 imagetopnm；[ERROR] Failed to decode the codestream in the JP2 file。 |
 
+
+### 7.5 修复 diff 复核（2026-11-25，覆盖 7.2 中相应行）
+
+拉取并核对 NVD 给出的修复 commit 后，有几项存在性结论需要修正：**目标版本没有修复检查，不等于漏洞不存在；很多目标其实仍带有漏洞路径，只是本次输入没触发。**
+
+| CVE | 修复 diff 的关键变化 | 目标源码状态 | 修正后的存在性 | 归类 |
+|---|---|---|---|---|
+| CVE-2026-9502 | `decompress_R2004_section` 增加 `end > dec->size`、`comp_offset > dec->size` 等边界检查 | 0.13.3/0.12.x 没有这些检查 | **存在** | B（触发/搜索） |
+| CVE-2026-9503 | `read_2004_compressed_section` 增加 `address > max_decomp_size`、`address+size > dec.size` 检查 | 0.12.5 只有旧的 `address+size > max_decomp_size`，缺新增检查 | **存在** | B（触发/搜索） |
+| CVE-2026-9605 | 同上（同一 fix commit 8f03865） | 0.13.3 缺新增检查 | **存在** | B（触发/搜索） |
+| CVE-2026-15184 | `dwg_next_entity` 增加 `next_obj == NULL` 检查 | 0.12.5 仍是 `obj == next_obj` 直接解引用 | **存在** | B（触发/搜索） |
+| CVE-2026-15520 | 修复删除 `dec.size = dec.byte + info->max_decomp_size`，保持 dec.size 为真实分配大小 | 0.13.3 仍保留旧赋值/旧尺寸逻辑 | **存在** | B（触发/搜索） |
+| CVE-2026-9504 | `dwggrep` 的 `match_LTYPE` 从无界 `MATCH_OBJECT(LTYPE, strings_area, 3)` 改为带 `max_wchars` 的 `bit_convert_TU_len` | 0.13.3 仍是旧的 `MATCH_OBJECT (LTYPE, strings_area, 3)` | **存在** | B（触发/搜索） |
+| CVE-2026-86145 | 重写 DFA workspace 复用/堆限制（`more_workspace` 等），增加 requested/heap_limit 检查 | 10.30 没有该修复 | **存在**（NVD <10.48） | B（守卫/触发） |
+| CVE-2025-8176 | `get_histogram` 中 scanline 读失败由 `break` 改为 `exit(EXIT_FAILURE)` | 4.0.10/4.5.1 仍是 `break` | **存在** | B（触发/搜索） |
+| CVE-2025-8177 | `setrow` 的 else 分支 `row++` 改为 `*row++ = cmap[0]` | 4.1.0 仍是旧实现 | **存在** | B（触发/搜索） |
+| CVE-2022-33034 | 漏洞在 0.12.4.4608 报出；目标发行版 0.12.4 的 `read_file_header` 仍传 272，没有 +1 | 目标发行版可能早于引入 | **存在性冲突** | C（需 issue #494 的 fix/intro） |
+
+修正后的 7.3 汇总：
+
+- **A（目标早于引入/受影响版本，漏洞不存在）**：CVE-2016-10268/10269/10270、CVE-2016-9572、CVE-2017-14151/14152/14939/5505/7597、CVE-2018-18088、CVE-2025-26623/48071、CVE-2023-30775、CVE-2026-23865；CVE-2023-1972 的 2.25–2.34；issue908。
+- **B（目标仍在受影响范围，漏洞存在，但本次没触发）**：CVE-2017-14164/6851、CVE-2021-3575、CVE-2022-44840、CVE-2023-3618、CVE-2024-34459、CVE-2025-5915/8176/8177、CVE-2026-50811、CVE-2023-1972 的 2.35/2.35.1/2.36/2.38；以及 7.5 修正的 CVE-2026-9500/9502/9503/9504/9605/15184/15520/86145。
+- **C（存在性冲突/未定）**：CVE-2022-33034、issue1620（CVE-2026-9500 修复 commit 未找到，暂按 NVD 归 B）。
+
+> 因此，不能再把 7.2 中“NVD 写 up to 0.14、但本地扫描不崩”简单判成“漏洞不存在”。修复 diff 表明目标缺少对应检查，应该进入 B 类继续做守卫/触发验证，而不是停止。
