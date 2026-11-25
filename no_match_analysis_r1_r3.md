@@ -1,6 +1,6 @@
 # RetroScope 两轮 no-match CVE 分析（r1 + r3）
 
-生成时间：2026-11-25 09:41  
+生成时间：2026-11-25 09:42  
 状态快照：`status_r3.json` 最后更新 2026-11-25 09:41（后台批次仍在运行，部分 CVE 仍有版本未跑完）
 
 ## 0. 范围与口径
@@ -23,7 +23,6 @@
 | CVE-2023-3618 | 11 | 3.9.5 | ASAN:SEGV _TIFFmemcpy (tif_unix.c:345) | **1** | 3 | GDB：4.0.5/4.1.0 均未命中 Fax3Encode；原 PoC 在 loadImage/tile 读取阶段失 |
 | CVE-2025-8177 | 6 | 4.0.10 | ASAN:global-buffer-overflow setrow (thumbnail.c:623) | **1** | 2b | GDB：4.1.0 命中 setrow（setImage1 调用），目标能到达；本轮 no-match 主因是 GDB  |
 | issue1620 | 12 | 2.3.0 | ASAN:heap-buffer-overflow opj_j2k_read_sod (j2k.c:5086) | **1** | 2b | 仅执行到 Step 6f/6h，约 1.1 千候选；目标 2.0-2.5.2 的 `opj_j2k_read_sod`  |
-| issue908 | 1 | 2.0 | ASAN:SEGV imagetopnm (convert.c:2167) | **1** | 3 | GDB fork 追踪失败，回退到仅格式字段（0 候选）；目标 2.0 的 `imagetopnm` 存在，但本轮没有真 |
 | CVE-2017-14152 | 3 | 2.0.1 | ASAN:heap-buffer-overflow opj_write_bytes_LE (cio.c:67) | **2a** | 1 | 目标 2.0/2.0.1/2.1 的 `opj_start_compress`/`opj_write_bytes_LE` |
 | CVE-2022-33034 | 1 | 0.12.4 | ASAN:stack-buffer-overflow copy_bytes (decode_r2007.c:228) | **2a** | 3 | 文档已证明：参考 0.12.5 `read_file_header` 传入 `sizeof+1`，目标 0.12.4 传 |
 | CVE-2022-44840 | 14 | 2.29 | ASAN:heap-buffer-overflow find_section_in_set (readelf.c:1001) | **2a** | 1 | 目标 2.36 有 "Section is too small for 208 slots" 检查；参考 2.38 的  |
@@ -52,13 +51,14 @@
 | CVE-2026-15184 | 2 | 0.12.5 | ASAN:SEGV dwg_next_entity (dwg.c:1233) | **3** | 2b | 目标 0.12.5 早于 0.13 的 `dwg_next_entity` 崩溃路径/行为；完整阶段约 4 千候选无 s |
 | CVE-2026-9503 | 1 | 0.12.5 | ASAN:SEGV dwg_next_entity (dwg.c:1233) | **3** | 2b | 目标 0.12.4/0.12.5 早于 0.13 的 `dwg_next_entity` 崩溃行为；完整阶段仅约 2.6 |
 | CVE-2026-9504 | 4 | 0.12.5 | ASAN:heap-buffer-overflow bit_convert_TU (bits.c:2830) | **3** | 1 | GDB：0.13.3 未命中 bit_convert_TU；目标 DWG read error 0x477，未进入 LT |
+| issue908 | 1 | 2.0 | ASAN:SEGV imagetopnm (convert.c:2167) | **3** | 1 | GDB：2.0 未命中 imagetopnm；failed to decode codestream。 |
 
 ### 归类统计
 
-- **1**（8）：CVE-2016-10270、CVE-2017-14939、CVE-2017-7597、CVE-2023-30775、CVE-2023-3618、CVE-2025-8177、issue1620、issue908
+- **1**（7）：CVE-2016-10270、CVE-2017-14939、CVE-2017-7597、CVE-2023-30775、CVE-2023-3618、CVE-2025-8177、issue1620
 - **2a**（9）：CVE-2017-14152、CVE-2022-33034、CVE-2022-44840、CVE-2023-1972、CVE-2025-48071、CVE-2026-15520、CVE-2026-86145、CVE-2026-9500、CVE-2026-9502
 - **2b**（4）：CVE-2024-34459、CVE-2026-23865、CVE-2026-50811、CVE-2026-9605
-- **3**（15）：CVE-2016-10268、CVE-2016-10269、CVE-2016-9572、CVE-2017-14151、CVE-2017-14164、CVE-2017-5505、CVE-2017-6851、CVE-2018-18088、CVE-2021-3575、CVE-2025-26623、CVE-2025-5915、CVE-2025-8176、CVE-2026-15184、CVE-2026-9503、CVE-2026-9504
+- **3**（16）：CVE-2016-10268、CVE-2016-10269、CVE-2016-9572、CVE-2017-14151、CVE-2017-14164、CVE-2017-5505、CVE-2017-6851、CVE-2018-18088、CVE-2021-3575、CVE-2025-26623、CVE-2025-5915、CVE-2025-8176、CVE-2026-15184、CVE-2026-9503、CVE-2026-9504、issue908
 
 > 1 = 方法/流程/搜索能力不足（含 GDB 回退、候选未覆盖、预算不足）；2a = 能到崩溃行但目标守卫/条件冲突；2b = 到崩溃行但偏移/状态组合不足；3 = 目标版本缺少完整漏洞路径（旧实现、函数/分支缺失、早期拒绝、bug 未引入）。
 
@@ -173,21 +173,6 @@
 - **动态核对（GDB）**：target 2.5.2 命中 opj_j2k_read_sod；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：仅执行到 Step 6f/6h，约 1.1 千候选；目标 2.0-2.5.2 的 `opj_j2k_read_sod` 路径存在但大量输入被解析门禁拒绝，搜索未展开。
 - **备注/置信度**：方法/预算为主。
-
-### issue908
-
-- **目标版本（no-match）**：2.0
-- **参考崩溃**：Reference CRASH: ASAN:SEGV in imagetopnm at /home/ws/Desktop/RetroScope/openjpeg-versions/version.2.0.1/src/bin/jp2/convert.c:2167
-- **目标基线**：Target:    no crash
-- **定位到的 fork**：[*] Fork: /home/ws/Desktop/RetroScope/openjpeg-versions/version.2.0/src/bin/jp2/convert.c:1969
-- **fork 变量**：[*] Variables: ['i', 'wr', 'hr']
-- **根因函数**：Root cause function: imagetopnm
-- **变异证据（代表版本 2.0）**：阶段 {'h': 2}，候选约 0；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=2、fallback=1、not_reached=1、code_change=0
-- **归类：1（次要 3）**
-- **源码核对**：`imagetopnm` 2.0 与 2.0.1 差 592 行；本轮 GDB 回退。
-- **动态核对（GDB）**：target 2.0 未命中 imagetopnm；[ERROR] Failed to decode the codestream in the JP2 file。
-- **原因**：GDB fork 追踪失败，回退到仅格式字段（0 候选）；目标 2.0 的 `imagetopnm` 存在，但本轮没有真正搜索。
-- **备注/置信度**：no-match 不具结论性，需要修复 fork 后复测。
 
 ### CVE-2017-14152
 
@@ -628,6 +613,21 @@
 - **原因**：GDB：0.13.3 未命中 bit_convert_TU；目标 DWG read error 0x477，未进入 LTYPE/位转换路径；0.13.3 函数本身与 ref 基本相同。
 - **备注/置信度**：先修路径门禁/流程，暂归 3/1。
 
+### issue908
+
+- **目标版本（no-match）**：2.0
+- **参考崩溃**：Reference CRASH: ASAN:SEGV in imagetopnm at /home/ws/Desktop/RetroScope/openjpeg-versions/version.2.0.1/src/bin/jp2/convert.c:2167
+- **目标基线**：Target:    no crash
+- **定位到的 fork**：[*] Fork: /home/ws/Desktop/RetroScope/openjpeg-versions/version.2.0/src/bin/jp2/convert.c:1969
+- **fork 变量**：[*] Variables: ['i', 'wr', 'hr']
+- **根因函数**：Root cause function: imagetopnm
+- **变异证据（代表版本 2.0）**：阶段 {'h': 2}，候选约 0；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=2、fallback=1、not_reached=1、code_change=0
+- **归类：3（次要 1）**
+- **源码核对**：`imagetopnm` 2.0 与 2.0.1 差 592 行；本轮 GDB 回退。
+- **动态核对（GDB）**：target 2.0 未命中 imagetopnm；[ERROR] Failed to decode the codestream in the JP2 file。
+- **原因**：GDB：2.0 未命中 imagetopnm；failed to decode codestream。
+- **备注/置信度**：解码/格式门禁（3/1）。
+
 ## 3. 关键源码/文档证据
 
 - **CVE-2022-33034**：文档已给出代码级证明：参考 0.12.5 的 `read_file_header` 向 `copy_bytes` 传入 `sizeof(r2007_file_header)+1`（273 字节），目标 0.12.4 传 `0x110`（272 字节，恰为对象大小），`dst + length > dst_end` 守卫必然拒绝；两版 `copy_bytes` 函数体与守卫完全相同。因此目标 0.12.4 的 no-match 不是搜索问题，而是条件冲突（2a）。
@@ -672,7 +672,6 @@
 | CVE-2023-3618 | 4.0.5 | Fax3Encode | MISS | GDB 在 4.0.5/4.1.0 均未命中 Fax3Encode；原 PoC 在 loadImage/tile 读取阶段失败。 |
 | CVE-2025-8177 | 4.1.0 | setrow | HIT | GDB 在 target 4.1.0 命中 setrow（setImage1 调用），目标可进入该函数；未崩溃，属于后续状态/搜索问题。 |
 | issue1620 | 2.5.2 | opj_j2k_read_sod | HIT | target 2.5.2 命中 opj_j2k_read_sod；目标能进入该函数，原 PoC 未产生参考崩溃。 |
-| issue908 | 2.0 | imagetopnm | NO_HIT | target 2.0 未命中 imagetopnm；[ERROR] Failed to decode the codestream in the JP2 file。 |
 | CVE-2017-14152 | 2.1 | opj_write_bytes_LE | HIT | target 2.1 命中 opj_write_bytes_LE；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2022-33034 | 0.12.4 | copy_bytes | HIT | target 0.12.4 命中 copy_bytes；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2022-44840 | 2.36 | find_section_in_set | HIT | target 2.36 命中 find_section_in_set；目标能进入该函数，原 PoC 未产生参考崩溃。 |
@@ -701,4 +700,5 @@
 | CVE-2026-15184 | 0.12.5 | dwg_next_entity | HIT | target 0.12.5 命中 dwg_next_entity；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2026-9503 | 0.12.5 | dwg_next_entity | HIT | target 0.12.5 命中 dwg_next_entity；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2026-9504 | 0.13.3 | bit_convert_TU | NO_HIT | GDB 在 0.13.3 未命中 bit_convert_TU；目标 DWG read error 0x477。 |
+| issue908 | 2.0 | imagetopnm | NO_HIT | target 2.0 未命中 imagetopnm；[ERROR] Failed to decode the codestream in the JP2 file。 |
 
