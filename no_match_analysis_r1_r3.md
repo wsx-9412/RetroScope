@@ -652,8 +652,8 @@
 ## 5. 重点结论与后续建议
 
 - **条件冲突（2a）证据最硬**：CVE-2022-33034（守卫数学）、CVE-2022-44840（Section slots 检查）、CVE-2023-1972（sh_info/bfd_alloc）、CVE-2025-48071（严格解压大小检查）、CVE-2026-86145（递归 DFA 门禁）。这些不是“没搜到”，而是目标版本在到达崩溃点前/处必然拒绝。
-- **路径不完整/代码路径差异（3）**：CVE-2016-10268（目标 <=4.0.4beta 缺参考的循环 write）、CVE-2016-10269（PixarLog）、CVE-2017-5505/6851（1.900.25 才引入）、CVE-2017-14151（缺 allocate_data）、CVE-2025-26623（0.28 重写才引入）、CVE-2025-8176（4.7.0 才加入 free/UAF 路径）、CVE-2026-9503/15184（0.13 才引入）；CVE-2016-10270 更偏门禁（1/3）。
-- **搜索/覆盖不足（1/2b）**：CVE-2016-10270、CVE-2017-7597、CVE-2017-14939、CVE-2018-18088（最近目标函数与 ref 相同）、CVE-2021-3575（2.3.0 函数与 ref 相同）、CVE-2023-30775、CVE-2024-34459（函数与 ref 完全相同）、CVE-2025-5915、CVE-2026-23865（2.13.0 函数存在）、CVE-2026-50811、CVE-2026-9605（0.13.3 函数与 ref 相同）等；这些目标路径存在，但候选数很大仍无 same_func，需要更强的字段级/状态引导变异，而不是继续盲目加随机候选。
+- **路径/格式门禁或代码路径差异（3）**：CVE-2016-10268（目标 <=4.0.4beta 缺参考的循环 write）、CVE-2016-10269（PixarLog）、CVE-2016-9572 / issue908（目标 2.0 解码失败）、CVE-2017-14151（BMP 加载失败）、CVE-2017-14164（编码器启动失败）、CVE-2017-5505/6851（1.900.25 才引入 / 解码失败）、CVE-2018-18088（2.2.0 仍解码失败）、CVE-2021-3575（marker 解码失败）、CVE-2025-26623（0.28 重写才引入）、CVE-2025-5915（RAR filters 不支持）、CVE-2025-8176（4.7.0 才加入 free/UAF 路径）、CVE-2026-9503/15184（0.13 才引入）、CVE-2026-9504（DWG 读取门禁）；CVE-2016-10270 更偏门禁（1/3）。
+- **方法/门禁/搜索（1/2b）**：CVE-2017-14939（命令选项不兼容，no-match 无效）、CVE-2016-10270（TileOffsets 门禁）、CVE-2023-30775（StripByteCounts 门禁）、CVE-2025-8177（GDB 回退，但 GDB 已证明 setrow 可达）、CVE-2017-7597、CVE-2024-34459（函数与 ref 完全相同）、CVE-2026-23865（2.13.0 函数存在）、CVE-2026-50811、CVE-2026-9605（0.13.3 函数与 ref 相同）、issue1620；这些目标路径存在但原流程未覆盖/未完整搜索，需要字段级/状态引导变异或修正命令后复测。
 - **流程回退导致 no-match 不具结论性**：CVE-2016-9572、issue908、CVE-2025-48071、CVE-2025-8177、CVE-2026-9504 的 GDB fork 未定位，只跑了 Step 6h；这些应优先修复/手工指定 fork 后复测，再判断 2a/2b/3。
 - **下一步**：对 2a 类不再投入无结构变异；对 2b 类优先做字段级/跨字段状态变异并限制预算；对 3 类换更老/更接近引入点的目标版本或明确标记“不可变异”；对回退类先修 GDB/rr 再跑。
 - 注意：本快照仍有 113 个 pair 未完成；后续若有版本转 MATCH，本文件对应条目的结论需要更新。
@@ -665,11 +665,11 @@
 
 | CVE | target | breakpoint | GDB | 备注 |
 |---|---|---|---|---|
-| CVE-2016-10270 | 3.9.6 | TIFFFillStrip | NO_BREAK | GDB 在 3.9.6 未命中 TIFFFillStrip；目标在 required tags/StripByteCounts 阶段失败。 |
-| CVE-2017-14939 | 2.27 | read_1_byte | NO_HIT | 目标 2.24-2.27 的 nm-new 不支持 --with-symbol-versions，流水线命令直接打印 help 退出；修正命令后 GDB 显示 2.24 命中 read_1_byte、2.27 在 print_symbol 触发另一个 SEGV。 |
+| CVE-2016-10270 | 3.9.6 | TIFFFillStrip | MISS | GDB 在 3.9.6 未命中 TIFFFillStrip；目标在 required tags/StripByteCounts 阶段失败。 |
+| CVE-2017-14939 | 2.27 | read_1_byte | INVALID_CMD | 目标 2.24-2.27 的 nm-new 不支持 --with-symbol-versions，流水线命令直接打印 help 退出；修正命令后 GDB 显示 2.24 命中 read_1_byte、2.27 在 print_symbol 触发另一个 SEGV。 |
 | CVE-2017-7597 | 4.0.6 | TIFFReverseBits | HIT | target 4.0.6 命中 TIFFReverseBits；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2023-30775 | 4.0.5 | extractContigSamples32bits | NO_HIT | GDB 在 4.0.5 未命中 extractContigSamples32bits；目标 StripByteCounts/TIFFReadDirectory 失败。 |
-| CVE-2023-3618 | 4.0.5 | Fax3Encode | NO_BREAK | GDB 在 4.0.5/4.1.0 均未命中 Fax3Encode；原 PoC 在 loadImage/tile 读取阶段失败。 |
+| CVE-2023-3618 | 4.0.5 | Fax3Encode | MISS | GDB 在 4.0.5/4.1.0 均未命中 Fax3Encode；原 PoC 在 loadImage/tile 读取阶段失败。 |
 | CVE-2025-8177 | 4.1.0 | setrow | HIT | GDB 在 target 4.1.0 命中 setrow（setImage1 调用），目标可进入该函数；未崩溃，属于后续状态/搜索问题。 |
 | issue1620 | 2.5.2 | opj_j2k_read_sod | HIT | target 2.5.2 命中 opj_j2k_read_sod；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | issue908 | 2.0 | imagetopnm | NO_HIT | target 2.0 未命中 imagetopnm；[ERROR] Failed to decode the codestream in the JP2 file。 |
@@ -688,16 +688,16 @@
 | CVE-2026-9605 | 0.13.3 | bit_read_RC | HIT | target 0.13.3 命中 bit_read_RC；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2016-10268 | 4.0.4beta | _tiffWriteProc | HIT | target 4.0.4beta 命中 _tiffWriteProc；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2016-10269 | 3.9.6 | _TIFFmemcpy | HIT | target 3.9.6 命中 _TIFFmemcpy；目标能进入该函数，原 PoC 未产生参考崩溃。 |
-| CVE-2016-9572 | 2.0 | imagetopnm | NO_HIT | GDB 在 2.0 未命中 imagetopnm；原 PoC（含改名 .j2k）仍 decode 失败。 |
-| CVE-2017-14151 | 2.1 | opj_mqc_byteout | NO_BREAK | GDB 在 2.1 未命中 opj_mqc_byteout；目标报 unknown BMP header size 124，BMP 加载失败。 |
-| CVE-2017-14164 | 2.1 | opj_write_bytes_LE | NO_BREAK | GDB 在 2.1 未命中 opj_write_bytes_LE；目标在 TIFF 读取/opj_start_compress 失败。 |
+| CVE-2016-9572 | 2.0 | imagetopnm | MISS | GDB 在 2.0 未命中 imagetopnm；原 PoC（含改名 .j2k）仍 decode 失败。 |
+| CVE-2017-14151 | 2.1 | opj_mqc_byteout | MISS | GDB 在 2.1 未命中 opj_mqc_byteout；目标报 unknown BMP header size 124，BMP 加载失败。 |
+| CVE-2017-14164 | 2.1 | opj_write_bytes_LE | MISS | GDB 在 2.1 未命中 opj_write_bytes_LE；目标在 TIFF 读取/opj_start_compress 失败。 |
 | CVE-2017-5505 | 1.900.19 | jas_matrix_asl | HIT | target 1.900.19 命中 jas_matrix_asl；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2017-6851 | 1.900.19 | jas_matrix_bindsub | NO_HIT | GDB 在 1.900.19 未命中 jas_matrix_bindsub；目标报 cannot decode code stream。 |
-| CVE-2018-18088 | 2.2.0 | imagetopnm | NO_HIT | GDB 在 2.2.0 未命中 imagetopnm；原 PoC（含改名 .j2k）仍 decode 失败。 |
+| CVE-2018-18088 | 2.2.0 | imagetopnm | MISS | GDB 在 2.2.0 未命中 imagetopnm；原 PoC（含改名 .j2k）仍 decode 失败。 |
 | CVE-2021-3575 | 2.3.0 | sycc420_to_rgb | NO_HIT | GDB 在 2.3.0 未命中 sycc420_to_rgb；目标 marker handler failed。 |
 | CVE-2025-26623 | 0.27.7 | Exiv2::Internal::TiffComponent::accept | HIT | target 0.27.7 命中 Exiv2::Internal::TiffComponent::accept；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2025-5915 | 3.5.3 | copy_from_lzss_window | NO_HIT | GDB 在 3.5.3 未命中 copy_from_lzss_window；bsdtar 报 RAR Parsing filters is unsupported。 |
-| CVE-2025-8176 | 4.0.10 | quant_fsdither | NO_HIT | GDB 在 target 4.0.10 命中 quant_fsdither（setImage 路径），目标可进入该函数；未崩溃，源码显示 UAF 释放逻辑 4.7.0 才加入。 |
+| CVE-2025-8176 | 4.0.10 | quant_fsdither | HIT | GDB 在 target 4.0.10 命中 quant_fsdither（setImage 路径），目标可进入该函数；未崩溃，源码显示 UAF 释放逻辑 4.7.0 才加入。 |
 | CVE-2026-15184 | 0.12.5 | dwg_next_entity | HIT | target 0.12.5 命中 dwg_next_entity；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2026-9503 | 0.12.5 | dwg_next_entity | HIT | target 0.12.5 命中 dwg_next_entity；目标能进入该函数，原 PoC 未产生参考崩溃。 |
 | CVE-2026-9504 | 0.13.3 | bit_convert_TU | NO_HIT | GDB 在 0.13.3 未命中 bit_convert_TU；目标 DWG read error 0x477。 |
