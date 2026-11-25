@@ -1,13 +1,13 @@
 # RetroScope 两轮 no-match CVE 分析（r1 + r3）
 
-生成时间：2026-11-25 09:28  
-状态快照：`status_r3.json` 最后更新 2026-11-25 08:36（后台批次仍在运行，部分 CVE 仍有版本未跑完）
+生成时间：2026-11-25 09:41  
+状态快照：`status_r3.json` 最后更新 2026-11-25 09:41（后台批次仍在运行，部分 CVE 仍有版本未跑完）
 
 ## 0. 范围与口径
 
 - 两轮：r1（单版本轮，结果已归档）与 r3（全版本轮，当前结果）。
 - 纳入：两轮都没有任何 MATCH、且 r3 至少有一个 NO_MATCH 的 CVE；排除 TIMEOUT、ERROR、MATCH_PARTIAL 以及尚未开始的 pair。
-- 快照统计：r3 记录 375 条，其中 NO_MATCH 265、MATCH 99、MATCH_PARTIAL 1、TIMEOUT 9、ERROR 1。
+- 快照统计：r3 记录 376 条，其中 NO_MATCH 265、MATCH 99、MATCH_PARTIAL 1、TIMEOUT 10、ERROR 1。
 - 本文件分析 36 个 CVE；每个 CVE 的代表日志取“阶段最完整、候选最多”的 no-match 版本，版本间差异在备注中说明。
 - 归类采用你给的 1 / 2a / 2b / 3，并额外把“GDB 回退导致流程没真正跑完”归到 1（方法/流程限制）。
 - 初版主要是日志推断并沿用 poc_run_commands.md 的既有结论；本版补充逐 CVE 的源码函数体/守卫 diff，并在每节增加“源码核对”。源码核对目前是函数级，不是完整符号执行/调用图证明，2b/1 类结论仍可能随更深验证变化。
@@ -76,6 +76,7 @@
 - **最后位置**：[*] Testing offset 0xe2 (original=0x02)...
 - **归类：1（次要 3）**
 - **源码核对**：`TIFFFillStrip` 目标 3.9.x 与参考 diff 109 行；目标更早的 required-tag/TileOffsets 门禁使输入到不了该函数。
+- **动态核对（GDB）**：GDB 在 3.9.6 未命中 TIFFFillStrip；目标在 required tags/StripByteCounts 阶段失败。
 - **原因**：目标 3.9.x 在 `TIFFFillStrip` 之前报 `MissingRequired: TileOffsets` 并干净退出；崩溃函数存在，但格式门禁使变异输入无法到达崩溃行（文档将该 CVE 归为格式门禁类）。
 - **备注/置信度**：不是代码路径缺失，而是结构保持/门禁穿越能力不足。
 
@@ -90,6 +91,7 @@
 - **变异证据（代表版本 2.0）**：阶段 {'h': 2}，候选约 0；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=2、fallback=1、not_reached=1、code_change=0
 - **归类：1（次要 3）**
 - **源码核对**：`imagetopnm` 2.0 与 2.0.1 相差 592 行；本轮 GDB 回退，未完成搜索。
+- **动态核对（GDB）**：GDB 在 2.0 未命中 imagetopnm；原 PoC（含改名 .j2k）仍 decode 失败。
 - **原因**：GDB fork 追踪失败（fork_not_reached），流程回退到仅格式字段变异（Step 6h），0 个动态候选；no-match 不具结论性。
 - **备注/置信度**：需要修复/手工指定 fork 后复测；目标 2.0 的 `imagetopnm` 仍存在。
 
@@ -105,6 +107,7 @@
 - **最后位置**：[*] Testing pair 0x7480+0x7488 (original=f8,08)...
 - **归类：1（次要 2b）**
 - **源码核对**：`read_1_byte` 在 2.27 与参考 2.29 完全相同（diff 0）；2.24 少一个上界检查。路径存在，no-match 来自搜索/状态。
+- **动态核对（GDB）**：目标 2.24-2.27 的 nm-new 不支持 --with-symbol-versions，流水线命令直接打印 help 退出；修正命令后 GDB 显示 2.24 命中 read_1_byte、2.27 在 print_symbol 触发另一个 SEGV。
 - **原因**：文档将其归为搜索预算/反馈类；完整阶段约 5.2 万候选，目标 2.24-2.27 均含 `read_1_byte`，但没有 same_func。
 - **备注/置信度**：不是路径缺失，而是搜索/偏移覆盖不足。
 
@@ -120,6 +123,7 @@
 - **最后位置**：[*] Testing pair 0xdc+0xe0 (original=06,f8)...
 - **归类：1（次要 2b）**
 - **源码核对**：`TIFFReverseBits` 在 4.0.6/3.9.3 与参考仅 brace/loop 格式差异；路径存在，no-match 是门禁/搜索。
+- **动态核对（GDB）**：target 4.0.6 命中 TIFFReverseBits；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：文档将其归为格式/解析门禁卡死（G_early_reject 主导）；本轮完整阶段约 11.3 万候选仍无 same_func，说明结构保持/门禁穿越算子不足。
 - **备注/置信度**：目标 `TIFFReverseBits` 存在；主因是门禁与搜索方法。
 
@@ -134,6 +138,7 @@
 - **变异证据（代表版本 4.0.10）**：阶段 {'h': 2}，候选约 0；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=2、fallback=1、not_reached=1、code_change=0
 - **归类：1（次要 2b）**
 - **源码核对**：`setrow` 在 4.1.0/3.9.3 存在，函数体差 74 行；本轮 GDB 回退，未真正搜索。
+- **动态核对（GDB）**：GDB 在 target 4.1.0 命中 setrow（setImage1 调用），目标可进入该函数；未崩溃，属于后续状态/搜索问题。
 - **原因**：GDB fork 追踪失败，流程回退到仅格式字段（0 候选）；`setrow` 在 4.1.0 存在，目标基线不崩，但本轮没有真正搜索到偏移。
 - **备注/置信度**：no-match 不具结论性，需要修复 fork 后复测。
 
@@ -146,6 +151,7 @@
 - **变异证据（代表版本 0.12.5）**：阶段 {'h': 2}，候选约 0；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=1、fallback=1、not_reached=0、code_change=0
 - **归类：1（次要 3）**
 - **源码核对**：`bit_convert_TU` 在 0.13.3 与参考差 2 行（基本相同），0.12.4 差 103 行；0.13.3 的 no-match 不能用函数缺失解释，本轮还 GDB 回退。
+- **动态核对（GDB）**：GDB 在 0.13.3 未命中 bit_convert_TU；目标 DWG read error 0x477。
 - **原因**：源码核对：目标 0.13.3 的 `bit_convert_TU` 与参考 6d6a339 仅差 2 行（基本相同），0.12.4 才差 103 行；0.13.3 的 no-match 不能用“函数缺失”解释，更可能是本轮 GDB 回退/搜索未执行。0.12.x 另有路径差异。
 - **备注/置信度**：版本相关；首要问题是流程回退（1），不是已证明的路径缺失。
 
@@ -160,6 +166,7 @@
 - **变异证据（代表版本 2.3.0）**：阶段 {'f': 3, 'h': 4}，候选约 1137；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=0、code_change=0
 - **归类：1（次要 2b）**
 - **源码核对**：`opj_j2k_read_sod` 在 2.5.2 与参考差 7 行；2.0 未找到该函数。
+- **动态核对（GDB）**：target 2.5.2 命中 opj_j2k_read_sod；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：仅执行到 Step 6f/6h，约 1.1 千候选；目标 2.0-2.5.2 的 `opj_j2k_read_sod` 路径存在但大量输入被解析门禁拒绝，搜索未展开。
 - **备注/置信度**：方法/预算为主。
 
@@ -174,6 +181,7 @@
 - **变异证据（代表版本 2.0）**：阶段 {'h': 2}，候选约 0；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=2、fallback=1、not_reached=1、code_change=0
 - **归类：1（次要 3）**
 - **源码核对**：`imagetopnm` 2.0 与 2.0.1 差 592 行；本轮 GDB 回退。
+- **动态核对（GDB）**：target 2.0 未命中 imagetopnm；[ERROR] Failed to decode the codestream in the JP2 file。
 - **原因**：GDB fork 追踪失败，回退到仅格式字段（0 候选）；目标 2.0 的 `imagetopnm` 存在，但本轮没有真正搜索。
 - **备注/置信度**：no-match 不具结论性，需要修复 fork 后复测。
 
@@ -188,6 +196,7 @@
 - **变异证据（代表版本 2.0.1）**：阶段 {'f': 3, 'h': 4}，候选约 436；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=0、code_change=0
 - **归类：2a（次要 1）**
 - **源码核对**：`opj_write_bytes_LE` 在 2.0/2.1 存在；源码/调用链与 2.2.0 有差异，需条件/偏移对齐。
+- **动态核对（GDB）**：target 2.1 命中 opj_write_bytes_LE；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：目标 2.0/2.0.1/2.1 的 `opj_start_compress`/`opj_write_bytes_LE` 路径存在，但参考→目标的编码器分支/条件不一致；只有约 436 候选，未覆盖到同型崩溃。
 - **备注/置信度**：文档归类为参考→目标 offset/branch 不一致。
 
@@ -203,6 +212,7 @@
 - **最后位置**：[*] Testing pair 0xdc+0xe0 (original=3b,3b)...
 - **归类：2a（次要 2b）**
 - **源码核对**：`opj_write_bytes_LE` 在 2.0/2.1 存在；源码/调用链与 2.2.0 有差异，需条件/偏移对齐。
+- **动态核对（GDB）**：GDB 在 2.1 未命中 opj_write_bytes_LE；目标在 TIFF 读取/opj_start_compress 失败。
 - **原因**：完整阶段约 3.2 万候选，fork 在 `opj_start_compress`，目标 2.0/2.0.1/2.1 的编码路径存在但条件/分支不同；没有 same_func。
 - **备注/置信度**：偏移/条件不一致。
 
@@ -217,6 +227,7 @@
 - **变异证据（代表版本 0.12.4）**：阶段 {'f': 3, 'h': 4}，候选约 851；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=1、code_change=0
 - **归类：2a（次要 3）**
 - **源码核对**：`copy_bytes` 函数体与守卫逐字相同；差异在调用者 dst_size（272 vs 273），守卫必然拒绝。
+- **动态核对（GDB）**：target 0.12.4 命中 copy_bytes；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：文档已证明：参考 0.12.5 `read_file_header` 传入 `sizeof+1`，目标 0.12.4 传入 272，`dst_end` 恰等于对象末尾，`copy_bytes` 的越界守卫必然拒绝；输入变异无解。
 - **备注/置信度**：条件冲突的代码级证据最充分。
 
@@ -232,6 +243,7 @@
 - **最后位置**：[*] Testing pair 0x12c+0x130 (original=8c,17)...
 - **归类：2a（次要 1）**
 - **源码核对**：`find_section_in_set`/readelf.c 目标 2.36 与参考 2.38 差 5 行，目标含 Section too small 检查。
+- **动态核对（GDB）**：target 2.36 命中 find_section_in_set；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：目标 2.36 有 "Section is too small for 208 slots" 检查；参考 2.38 的 `_mul_overflow` 路径存在但条件不同。14 个目标版本全部 no-match。
 - **备注/置信度**：文档：路径存在但条件不同。
 
@@ -247,6 +259,7 @@
 - **最后位置**：[*] Testing pair 0x3e+0x4d98 (original=25,30)...
 - **归类：2a（次要 1）**
 - **源码核对**：`elf.c` 目标 2.38 增加 `if (s->size < extdynsize) goto error_return` 等检查（与 2.40 差 13 行）；2.25 差 44 行。
+- **动态核对（GDB）**：target 2.38 命中 _bfd_elf_print_private_bfd_data；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：目标 2.38 仍拒绝 `hdr->sh_info==0` 并保留 `bfd_alloc/amt` 检查；参考 2.40 改为 `bfd_zalloc`。14 个目标版本 no-match。
 - **备注/置信度**：文档：路径存在但条件不同。
 
@@ -262,6 +275,7 @@
 - **最后位置**：[*] Testing pair 0x338+0x33c (original=01,30)...
 - **归类：2a（次要 2b）**
 - **源码核对**：`_TIFFmemcpy` 在 4.0.5/3.9.3 与参考仅格式差异；`Fax3Encode` 存在，崩溃依赖 tile/refline 状态。
+- **动态核对（GDB）**：GDB 在 4.0.5/4.1.0 均未命中 Fax3Encode；原 PoC 在 loadImage/tile 读取阶段失败。
 - **原因**：`Fax3Encode` 在 3.9.5/4.1.0 等目标存在；完整阶段约 2.3 万候选，只有 no_crash/fork_flip；崩溃需要输出/瓦片写入的特定状态（原 issue 用 `/dev/null`），目标条件未满足。
 - **备注/置信度**：函数存在，条件/状态不满足为主。
 
@@ -276,6 +290,7 @@
 - **变异证据（代表版本 3.2.12）**：阶段 {'h': 2}，候选约 0；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=2、fallback=1、not_reached=1、code_change=0
 - **归类：2a（次要 1）**
 - **源码核对**：`interleave` 在 3.2.12 与参考 3.3.2 完全相同（diff 0）；条件在 `undo_zip_impl` 的严格/宽松大小检查。
+- **动态核对（GDB）**：GDB 在 3.2.12 未命中 interleave；exrcheck 报 file bad。
 - **原因**：源码层面：3.2.12 要求 `actual_out_bytes == uncompressed_size`，3.3.0 放宽为 `comp_buf_size > actual_out_bytes`，目标严格检查会拒绝；本轮 GDB 回退、仅格式字段，未完成全搜索。
 - **备注/置信度**：条件冲突明确，但流水线未完整执行。
 
@@ -291,6 +306,7 @@
 - **最后位置**：[*] Testing pair 0x4c8a+0x4c8b (original=00,00)...
 - **归类：2a（次要 3）**
 - **源码核对**：`decompress_R2004_section` 在 0.13.3/0.12.4 与参考差 225-227 行；函数存在，条件/路径不同。
+- **动态核对（GDB）**：target 0.13.3 命中 decompress_R2004_section；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：目标 0.12.x/0.13.3：0.12.5 在 `decompress_R2004_section` 前拒绝/边界返回，0.13.3 的条件也不同；完整阶段约 11 万候选无 same_func。
 - **备注/置信度**：路径存在但条件/状态不满足；0.12.5 更接近路径不完整。
 
@@ -305,6 +321,7 @@
 - **变异证据（代表版本 10.30）**：阶段 {'f': 3, 'h': 4}，候选约 666；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=0、code_change=0
 - **归类：2a（次要 3）**
 - **源码核对**：`internal_dfa_match` 在 10.30 与参考差 485 行；目标 10.30 的递归位置检查在崩溃前拒绝。
+- **动态核对（GDB）**：target 10.30 命中 internal_dfa_match；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：目标 10.30 对递归 DFA 报 `error -52: nested recursion...`，在到达 `internal_dfa_match` 越界写之前就拒绝；函数存在但条件冲突。日志只有 f/h 阶段、666 候选。
 - **备注/置信度**：条件冲突/路径被门禁挡住。
 
@@ -320,6 +337,7 @@
 - **最后位置**：[*] Testing pair 0x2db54+0x2db55 (original=00,00)...
 - **归类：2a（次要 3）**
 - **源码核对**：`read_2004_compressed_section` 在 0.13.4/0.12.5 存在，差 47-160 行；目标路径/条件不同。
+- **动态核对（GDB）**：target 0.13.4 命中 read_2004_compressed_section；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：参考崩溃只在 6d6a339；目标 0.12.4-0.13.4 的 `read_2004_compressed_section` 路径/条件不同。完整阶段约 15 万候选无 same_func。
 - **备注/置信度**：偏向条件差异/旧版本路径不完整。
 
@@ -335,6 +353,7 @@
 - **最后位置**：[*] Testing pair 0x2dcaa+0x2dcab (original=00,00)...
 - **归类：2a（次要 3）**
 - **源码核对**：`decompress_R2004_section` 在 0.13.3/0.12.4 差 225-227 行；函数存在，条件/路径不同。
+- **动态核对（GDB）**：target 0.13.3 命中 decompress_R2004_section；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：目标 0.12.4/0.12.5/0.13/0.13.3：0.12.5 更早拒绝，`decompress_R2004_section` 存在但边界条件不同；完整阶段约 11 万候选无 same_func。
 - **备注/置信度**：条件冲突/旧版本路径差异。
 
@@ -349,6 +368,7 @@
 - **变异证据（代表版本 2.1.1）**：阶段 {'f': 3, 'h': 4}，候选约 1021；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=0、code_change=3
 - **归类：2b（次要 1）**
 - **源码核对**：`imagetopnm` 在 2.2.0 与参考 2.3.0 完全相同（diff 0），2.0 才差 630 行；最近目标的 no-match 更可能是搜索/偏移。
+- **动态核对（GDB）**：GDB 在 2.2.0 未命中 imagetopnm；原 PoC（含改名 .j2k）仍 decode 失败。
 - **原因**：源码核对：最近目标 2.2.0 的 `imagetopnm` 与参考 2.3.0 完全相同（diff 0），2.0 才相差 630 行；因此 2.2.0 的 no-match 不是代码条件冲突，更可能是搜索/偏移未覆盖；2.0 另有路径差异。
 - **备注/置信度**：版本相关；日志的 code_change 不能代表 2.2.0 的代码差异。
 
@@ -364,6 +384,7 @@
 - **最后位置**：[*] Testing pair 0x38c+0x38d (original=00,02)...
 - **归类：2b（次要 1）**
 - **源码核对**：`sycc420_to_rgb` 在 2.3.0 与参考 2.3.1 完全相同（diff 0），2.0 差 179 行；最近目标 no-match 是搜索/状态。
+- **动态核对（GDB）**：GDB 在 2.3.0 未命中 sycc420_to_rgb；目标 marker handler failed。
 - **原因**：完整阶段约 8 千候选，`sycc420_to_rgb` 在目标存在；fork 在 `opj_j2k_exec`，得到 no_crash/fork_flip，没有 same_func；需要更精确的组件/采样状态。
 - **备注/置信度**：偏移/状态覆盖不足。
 
@@ -379,6 +400,7 @@
 - **最后位置**：[*] Testing pair 0x158+0x15a (original=2a,a0)...
 - **归类：2b（次要 2a）**
 - **源码核对**：`extractContigSamples32bits` 在 4.0.5/3.9.3 存在，函数体差 35-39 行；路径存在，偏移/状态覆盖不足。
+- **动态核对（GDB）**：GDB 在 4.0.5 未命中 extractContigSamples32bits；目标 StripByteCounts/TIFFReadDirectory 失败。
 - **原因**：`extractContigSamples32bits` 在目标 4.0.6 存在；完整阶段约 5.5 万候选，出现 same_type/different_type 但没有 same_func；目标路径存在，偏移/状态组合不足。
 - **备注/置信度**：TBD CVE，尚无更细文档结论。
 
@@ -394,6 +416,7 @@
 - **最后位置**：[*] Testing pair 0x11f+0x128 (original=3e,3c)...
 - **归类：2b（次要 1）**
 - **源码核对**：`xmlHTMLPrintFileContext` 在 2.9.4/2.9.0 与参考 2.9.5 完全相同（diff 0）；no-match 是搜索/状态，不是代码条件差异。
+- **动态核对（GDB）**：target 2.9.4 命中 xmlHTMLPrintFileContext；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：源码核对：`xmlHTMLPrintFileContext` 在 2.9.4/2.9.0 与参考 2.9.5 完全相同（diff 0）；no-match 不是函数/条件差异，而是搜索/状态未覆盖。
 - **备注/置信度**：路径与崩溃函数相同，优先归 2b/1。
 
@@ -409,6 +432,7 @@
 - **最后位置**：[*] Testing pair 0x24+0xd1 (original=00,40)...
 - **归类：2b（次要 3）**
 - **源码核对**：`copy_from_lzss_window` 在 3.5.3 与参考 3.6.0 差 53 行（签名从 const void** 到 void*，实现变化）。
+- **动态核对（GDB）**：GDB 在 3.5.3 未命中 copy_from_lzss_window；bsdtar 报 RAR Parsing filters is unsupported。
 - **原因**：目标 3.5.3 的 `copy_from_lzss_window` 签名/实现与 3.6.0 不同（`const void **` vs `void *`），RAR 解码路径已变化；完整阶段约 1.5 万候选无 same_func。
 - **备注/置信度**：旧实现的路径/条件不同；偏移/状态覆盖不足为主，路径差异为辅。
 
@@ -424,6 +448,7 @@
 - **最后位置**：[*] Testing pair 0x154+0x158 (original=00,00)...
 - **归类：2b（次要 3）**
 - **源码核对**：`tt_var_get_item_delta` 在 2.8.1 未找到（路径缺失），2.13.0 存在且差 77 行；2.13.0 更像多字段状态/搜索。
+- **动态核对（GDB）**：无可用目标 harness 二进制，GDB 未完成；本项仅源码核对。
 - **原因**：源码核对：`tt_var_get_item_delta` 在目标 2.8.1 未找到（该版本路径不存在），2.13.0 存在且与参考差 77 行；2.13.0 的 no-match 更像多字段状态/搜索，2.8.1 偏路径缺失。
 - **备注/置信度**：版本相关；完整阶段约 10 万候选。
 
@@ -440,6 +465,7 @@
 - **最后位置**：[*] Testing pair 0x144+0x148 (original=00,00)...
 - **归类：2b（次要 2a）**
 - **源码核对**：`TT_Get_Var_Design` 在 2.9.1/2.13.3 存在，差 24-33 行；状态/偏移覆盖不足。
+- **动态核对（GDB）**：无可用目标 harness 二进制，GDB 未完成；本项仅源码核对。
 - **原因**：完整阶段约 16 万候选，目标 2.8.1-2.13.3 均无 same_func；freetype 设计空间/状态组合未覆盖，2.8.1 还有单独 ERROR。
 - **备注/置信度**：多字段状态/偏移覆盖不足。
 
@@ -455,6 +481,7 @@
 - **最后位置**：[*] Testing pair 0x3d26+0x3d27 (original=00,00)...
 - **归类：2b（次要 1）**
 - **源码核对**：`bit_read_RC` 在 0.13.3 与参考完全相同（diff 0），0.12.4 差 23 行；0.13.3 的 no-match 是搜索/状态。
+- **动态核对（GDB）**：target 0.13.3 命中 bit_read_RC；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：源码核对：目标 0.13.3 的 `bit_read_RC` 与参考 0.13.4 完全相同（diff 0），0.12.4 才差 23 行；因此 0.13.3 的 no-match 是搜索/状态（2b），不是代码条件差异。
 - **备注/置信度**：版本相关。
 
@@ -470,6 +497,7 @@
 - **最后位置**：[*] Testing pair 0xde+0xe2 (original=77,61)...
 - **归类：3（次要 1）**
 - **源码核对**：目标 3.9.3/4.0.3/4.0.4/4.0.4beta 的 `_tiffWriteProc` 为单次 write（无循环）；参考 4.0.7 为循环 write，崩溃行 115 在循环内。4.0.6 已有循环但本轮超时。
+- **动态核对（GDB）**：target 4.0.4beta 命中 _tiffWriteProc；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：源码核对：目标 3.9.3/4.0.3/4.0.4/4.0.4beta 的 `_tiffWriteProc` 是单次 write，没有参考 4.0.7 的 `for (bytes_written...)` 循环写入；参考崩溃行 115 位于该循环内。no-match 的这几个目标缺少该循环（3）；4.0.6 已有循环但本轮超时，未计入 no-match。
 - **备注/置信度**：版本相关：不能把 10268 统一归为“搜索问题”。
 
@@ -485,6 +513,7 @@
 - **最后位置**：[*] Testing pair 0xde+0xe2 (original=00,00)...
 - **归类：3（次要 2b）**
 - **源码核对**：`_TIFFmemcpy` 在 3.9.6/3.9.3 与参考基本一致（diff 2 行）；问题在 PixarLog/压缩解码路径，不在 memcpy 实现。
+- **动态核对（GDB）**：target 3.9.6 命中 _TIFFmemcpy；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：目标 3.9.3-3.9.6 缺少 PixarLog 解码→写路径（文档记录：缺 PixarLog 时原 PoC 返回 rc=1），`_TIFFmemcpy` 虽存在但完整漏洞路径不完整；4.0.0-4.0.6 会 baseline 触发，未作为 no-match 目标。
 - **备注/置信度**：路径不完整为主，变异搜索为辅。
 
@@ -499,6 +528,7 @@
 - **变异证据（代表版本 2.0.1）**：阶段 {'f': 3, 'h': 4}，候选约 315；no_crash=0、fork_flip=0、same_type=0、different_type=0；gdb_fail=0、fallback=0、not_reached=0、code_change=3
 - **归类：3（次要 1）**
 - **源码核对**：`opj_mqc_byteout` 在 2.0/2.1 存在（grep 确认），但目标缺 `opj_tcd_code_block_enc_allocate_data`，完整调用链不成立。
+- **动态核对（GDB）**：GDB 在 2.1 未命中 opj_mqc_byteout；目标报 unknown BMP header size 124，BMP 加载失败。
 - **原因**：目标 2.0/2.0.1/2.1 不含 `opj_tcd_code_block_enc_allocate_data`，参考 2.2.0 的 `opj_mqc_byteout` 溢出调用链在目标不完整；日志只有 315 候选、code_change fork。
 - **备注/置信度**：文档归为格式门禁，但源码显示完整漏洞链在目标不成立；原 PoC 在 2.0/2.1 更早失败。
 
@@ -514,6 +544,7 @@
 - **最后位置**：[*] Testing pair 0x605+0xdbf (original=14,14)...
 - **归类：3（次要 2a）**
 - **源码核对**：`jas_matrix_asl` 在 1.900.8/1.900.19 与参考差 6-9 行；文档确认漏洞行为 1.900.25 才引入，函数存在≠漏洞路径存在。
+- **动态核对（GDB）**：target 1.900.19 命中 jas_matrix_asl；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：`jas_matrix_asl` 在 1.900.24 已存在，但负 ROI shift 的漏洞行为实际在 1.900.25 才引入；目标 1.900.8-1.900.24 的完整触发路径不存在。
 - **备注/置信度**：文档：引入版本 1.900.25。
 
@@ -529,6 +560,7 @@
 - **最后位置**：[*] Testing pair 0x141+0x142 (original=ff,ff)...
 - **归类：3（次要 2a）**
 - **源码核对**：`jas_matrix_bindsub` 在 1.900.8/1.900.19 与参考差 6 行；文档确认漏洞行为 1.900.25 才引入。
+- **动态核对（GDB）**：GDB 在 1.900.19 未命中 jas_matrix_bindsub；目标报 cannot decode code stream。
 - **原因**：`jas_matrix_bindsub` 在目标 1.900.8-1.900.24 已存在，但漏洞行为在 1.900.25 才引入；目标版本完整路径不存在。
 - **备注/置信度**：文档：引入版本 1.900.25。
 
@@ -544,6 +576,7 @@
 - **最后位置**：[*] Testing pair 0x1f4+0x1f8 (original=3c,6f)...
 - **归类：3（次要 2a）**
 - **源码核对**：`TiffComponent::accept` 在 0.27.7 与 0.28.4 仅格式差异；UAF 来自 0.28 的 composite/TiffSubIfd 重写，需查 doAccept/析构路径；NVD 明确 <0.28 不受影响。
+- **动态核对（GDB）**：target 0.27.7 命中 Exiv2::Internal::TiffComponent::accept；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：0.27.7 早于 0.28 的 TIFF composite 重写；NVD 明确 <0.28.0 不受影响，目标缺少 UAF 的完整实现路径。
 - **备注/置信度**：文档：0.28.0 引入，0.27.7 不触发。
 
@@ -559,6 +592,7 @@
 - **最后位置**：[*] Testing pair 0x170+0x172 (original=03,0c)...
 - **归类：3（次要 2b）**
 - **源码核对**：4.7.0 在 `create_colorcell`/`quant_fsdither` 新增 `_TIFFfree(cell)`（4.7.0:831）及 ColorCells 释放（274/326），4.5.1 没有；UAF 路径未引入。
+- **动态核对（GDB）**：GDB 在 target 4.0.10 命中 quant_fsdither（setImage 路径），目标可进入该函数；未崩溃，源码显示 UAF 释放逻辑 4.7.0 才加入。
 - **原因**：源码对比：4.7.0 在 `quant_fsdither`/`create_colorcell` 增加了 `_TIFFfree(cell)` 和 `ColorCells` 释放（4.5.1 没有），UAF 的完整路径在目标 4.5.1 及更早不存在；崩溃行虽在，释放/复用生命周期缺失。
 - **备注/置信度**：14 个目标版本全部 no-match，符合“漏洞未引入”。
 
@@ -574,6 +608,7 @@
 - **最后位置**：[*] Testing pair 0x15e+0xa8c9 (original=00,2f)...
 - **归类：3（次要 2b）**
 - **源码核对**：`dwg_next_entity` 在 0.12.5 与参考 0.13.4 差 15 行；0.13 才引入相关崩溃行为。
+- **动态核对（GDB）**：target 0.12.5 命中 dwg_next_entity；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：目标 0.12.5 早于 0.13 的 `dwg_next_entity` 崩溃路径/行为；完整阶段约 4 千候选无 same_func。
 - **备注/置信度**：文档：0.13-0.13.4 触发，0.12.x 完整路径不存在。
 
@@ -589,6 +624,7 @@
 - **最后位置**：[*] Testing pair 0x617f0+0x617f1 (original=8c,01)...
 - **归类：3（次要 2b）**
 - **源码核对**：`dwg_next_entity` 0.12.5 与参考差 15 行；0.13 才引入崩溃行为。
+- **动态核对（GDB）**：target 0.12.5 命中 dwg_next_entity；目标能进入该函数，原 PoC 未产生参考崩溃。
 - **原因**：目标 0.12.4/0.12.5 早于 0.13 的 `dwg_next_entity` 崩溃行为；完整阶段仅约 2.6 千候选，无 same_func。
 - **备注/置信度**：文档：0.13-0.13.4 触发。
 
@@ -621,3 +657,48 @@
 - **流程回退导致 no-match 不具结论性**：CVE-2016-9572、issue908、CVE-2025-48071、CVE-2025-8177、CVE-2026-9504 的 GDB fork 未定位，只跑了 Step 6h；这些应优先修复/手工指定 fork 后复测，再判断 2a/2b/3。
 - **下一步**：对 2a 类不再投入无结构变异；对 2b 类优先做字段级/跨字段状态变异并限制预算；对 3 类换更老/更接近引入点的目标版本或明确标记“不可变异”；对回退类先修 GDB/rr 再跑。
 - 注意：本快照仍有 113 个 pair 未完成；后续若有版本转 MATCH，本文件对应条目的结论需要更新。
+## 6. 严格动态核对（GDB 断点）
+
+- 方法：对每个 CVE 取最近的一个 no-match 目标版本，在参考崩溃函数上设 GDB 断点，用原始 PoC/同配置命令运行；记录是否命中。命中只说明“到达该函数”，是否崩溃/条件是否满足再结合源码与守卫判断。freetype 两项因目标 harness 未构建，未完成 GDB。
+- 关键发现：CVE-2017-14939 的 target <2.29 不支持 `--with-symbol-versions`，原 no-match 无效；多项 no-match 是目标在崩溃函数之前就因格式/加载/解码门禁失败（如 3618、18088、3575、30775、9572/908、9504、5915、6851、10270、14151/14164），而不是“到达崩溃行但条件不满足”。
+- 动态命中但未崩溃的例子：33034、44840、1972、8176、8177、34459、7597、9605、9500/9502、15520、15184/9503、26623、1620 等，需按源码守卫/状态进一步区分 2a/2b/3。
+
+| CVE | target | breakpoint | GDB | 备注 |
+|---|---|---|---|---|
+| CVE-2016-10270 | 3.9.6 | TIFFFillStrip | NO_BREAK | GDB 在 3.9.6 未命中 TIFFFillStrip；目标在 required tags/StripByteCounts 阶段失败。 |
+| CVE-2016-9572 | 2.0 | imagetopnm | NO_HIT | GDB 在 2.0 未命中 imagetopnm；原 PoC（含改名 .j2k）仍 decode 失败。 |
+| CVE-2017-14939 | 2.27 | read_1_byte | NO_HIT | 目标 2.24-2.27 的 nm-new 不支持 --with-symbol-versions，流水线命令直接打印 help 退出；修正命令后 GDB 显示 2.24 命中 read_1_byte、2.27 在 print_symbol 触发另一个 SEGV。 |
+| CVE-2017-7597 | 4.0.6 | TIFFReverseBits | HIT | target 4.0.6 命中 TIFFReverseBits；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2025-8177 | 4.1.0 | setrow | HIT | GDB 在 target 4.1.0 命中 setrow（setImage1 调用），目标可进入该函数；未崩溃，属于后续状态/搜索问题。 |
+| CVE-2026-9504 | 0.13.3 | bit_convert_TU | NO_HIT | GDB 在 0.13.3 未命中 bit_convert_TU；目标 DWG read error 0x477。 |
+| issue1620 | 2.5.2 | opj_j2k_read_sod | HIT | target 2.5.2 命中 opj_j2k_read_sod；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| issue908 | 2.0 | imagetopnm | NO_HIT | target 2.0 未命中 imagetopnm；[ERROR] Failed to decode the codestream in the JP2 file。 |
+| CVE-2017-14152 | 2.1 | opj_write_bytes_LE | HIT | target 2.1 命中 opj_write_bytes_LE；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2017-14164 | 2.1 | opj_write_bytes_LE | NO_BREAK | GDB 在 2.1 未命中 opj_write_bytes_LE；目标在 TIFF 读取/opj_start_compress 失败。 |
+| CVE-2022-33034 | 0.12.4 | copy_bytes | HIT | target 0.12.4 命中 copy_bytes；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2022-44840 | 2.36 | find_section_in_set | HIT | target 2.36 命中 find_section_in_set；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2023-1972 | 2.38 | _bfd_elf_print_private_bfd_data | HIT | target 2.38 命中 _bfd_elf_print_private_bfd_data；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2023-3618 | 4.0.5 | Fax3Encode | NO_BREAK | GDB 在 4.0.5/4.1.0 均未命中 Fax3Encode；原 PoC 在 loadImage/tile 读取阶段失败。 |
+| CVE-2025-48071 | 3.2.12 | interleave | NO_HIT | GDB 在 3.2.12 未命中 interleave；exrcheck 报 file bad。 |
+| CVE-2026-15520 | 0.13.3 | decompress_R2004_section | HIT | target 0.13.3 命中 decompress_R2004_section；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2026-86145 | 10.30 | internal_dfa_match | HIT | target 10.30 命中 internal_dfa_match；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2026-9500 | 0.13.4 | read_2004_compressed_section | HIT | target 0.13.4 命中 read_2004_compressed_section；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2026-9502 | 0.13.3 | decompress_R2004_section | HIT | target 0.13.3 命中 decompress_R2004_section；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2018-18088 | 2.2.0 | imagetopnm | NO_HIT | GDB 在 2.2.0 未命中 imagetopnm；原 PoC（含改名 .j2k）仍 decode 失败。 |
+| CVE-2021-3575 | 2.3.0 | sycc420_to_rgb | NO_HIT | GDB 在 2.3.0 未命中 sycc420_to_rgb；目标 marker handler failed。 |
+| CVE-2023-30775 | 4.0.5 | extractContigSamples32bits | NO_HIT | GDB 在 4.0.5 未命中 extractContigSamples32bits；目标 StripByteCounts/TIFFReadDirectory 失败。 |
+| CVE-2024-34459 | 2.9.4 | xmlHTMLPrintFileContext | HIT | target 2.9.4 命中 xmlHTMLPrintFileContext；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2025-5915 | 3.5.3 | copy_from_lzss_window | NO_HIT | GDB 在 3.5.3 未命中 copy_from_lzss_window；bsdtar 报 RAR Parsing filters is unsupported。 |
+| CVE-2026-23865 | - | - | NO_BIN | 无可用目标 harness 二进制，GDB 未完成；本项仅源码核对。 |
+| CVE-2026-50811 | - | - | NO_BIN | 无可用目标 harness 二进制，GDB 未完成；本项仅源码核对。 |
+| CVE-2026-9605 | 0.13.3 | bit_read_RC | HIT | target 0.13.3 命中 bit_read_RC；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2016-10268 | 4.0.4beta | _tiffWriteProc | HIT | target 4.0.4beta 命中 _tiffWriteProc；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2016-10269 | 3.9.6 | _TIFFmemcpy | HIT | target 3.9.6 命中 _TIFFmemcpy；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2017-14151 | 2.1 | opj_mqc_byteout | NO_BREAK | GDB 在 2.1 未命中 opj_mqc_byteout；目标报 unknown BMP header size 124，BMP 加载失败。 |
+| CVE-2017-5505 | 1.900.19 | jas_matrix_asl | HIT | target 1.900.19 命中 jas_matrix_asl；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2017-6851 | 1.900.19 | jas_matrix_bindsub | NO_HIT | GDB 在 1.900.19 未命中 jas_matrix_bindsub；目标报 cannot decode code stream。 |
+| CVE-2025-26623 | 0.27.7 | Exiv2::Internal::TiffComponent::accept | HIT | target 0.27.7 命中 Exiv2::Internal::TiffComponent::accept；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2025-8176 | 4.0.10 | quant_fsdither | NO_HIT | GDB 在 target 4.0.10 命中 quant_fsdither（setImage 路径），目标可进入该函数；未崩溃，源码显示 UAF 释放逻辑 4.7.0 才加入。 |
+| CVE-2026-15184 | 0.12.5 | dwg_next_entity | HIT | target 0.12.5 命中 dwg_next_entity；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+| CVE-2026-9503 | 0.12.5 | dwg_next_entity | HIT | target 0.12.5 命中 dwg_next_entity；目标能进入该函数，原 PoC 未产生参考崩溃。 |
+
